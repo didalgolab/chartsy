@@ -53,6 +53,7 @@
         <module>branding</module>
         <module>application</module>
         <module>chartsy-commons</module>
+        <module>chartsy-core</module>
     </modules>
 
     <properties>
