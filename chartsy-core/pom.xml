@@ -17,7 +17,7 @@
                 <configuration>
                     <codeNameBase>one.chartsy.core</codeNameBase>
                     <publicPackages>
-                        <publicPackage>one.chartsy.core.*</publicPackage>
+                        <publicPackage>one.chartsy.*</publicPackage>
                     </publicPackages>
                 </configuration>
             </plugin>
