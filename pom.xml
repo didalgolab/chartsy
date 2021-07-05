@@ -30,14 +30,22 @@
                         <brandingToken>${brandingToken}</brandingToken>
                         <cluster>${brandingToken}</cluster>
                     </configuration>
+                    <dependencies>
+                        <!-- Temporary (or not) workaround for maven-dependency-analyser not supporting Java 16 yet -->
+                        <dependency>
+                            <groupId>org.ow2.asm</groupId>
+                            <artifactId>asm</artifactId>
+                            <version>9.2</version>
+                        </dependency>
+                    </dependencies>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>3.8.1</version>
                     <configuration>
-                        <source>15</source>
-                        <target>15</target>
+                        <source>16</source>
+                        <target>16</target>
                     </configuration>
                 </plugin>
                 <plugin>
