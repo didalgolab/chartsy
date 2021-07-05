@@ -17,6 +17,7 @@
                 <configuration>
                     <codeNameBase>one.chartsy.commons</codeNameBase>
                     <publicPackages>
+                        <publicPackage>com.google.gson.*</publicPackage>
                         <publicPackage>one.chartsy.commons.*</publicPackage>
                     </publicPackages>
                 </configuration>
@@ -36,6 +37,16 @@
         <dependency>
             <groupId>org.netbeans.api</groupId>
             <artifactId>org-netbeans-api-annotations-common</artifactId>
+            <version>${netbeans.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>${gson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.netbeans.api</groupId>
+            <artifactId>org-openide-util-lookup</artifactId>
             <version>${netbeans.version}</version>
         </dependency>
     </dependencies>
