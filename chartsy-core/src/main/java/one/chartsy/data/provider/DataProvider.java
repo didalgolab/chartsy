@@ -1,0 +1,21 @@
+package one.chartsy.data.provider;
+
+import one.chartsy.FinancialService;
+import one.chartsy.SymbolGroup;
+import org.openide.util.Lookup;
+
+import java.util.Collection;
+import java.util.List;
+
+public interface DataProvider extends FinancialService {
+    @Override
+    default Lookup getLookup() {
+        return Lookup.EMPTY;
+    }
+
+    default Collection<SymbolGroup> getAvailableGroups() {
+        return List.of(SymbolGroup.BASE);
+    }
+
+    // TODO - to be continued...
+}
