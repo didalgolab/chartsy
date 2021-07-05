@@ -54,6 +54,7 @@
         <module>application</module>
         <module>chartsy-commons</module>
         <module>chartsy-core</module>
+        <module>chartsy-simulation</module>
     </modules>
 
     <properties>
