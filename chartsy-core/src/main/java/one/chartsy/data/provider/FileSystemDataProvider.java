@@ -17,7 +17,11 @@ public class FileSystemDataProvider implements DataProvider, SymbolListAccessor,
     //private final FlatFileFormat fileFormat;
 
     public FileSystemDataProvider(DataProviderConfiguration config) throws IOException {
-        fileSystem = FileSystems.newFileSystem(config.getFileSystemPath(), Map.of());
+        this(FileSystems.newFileSystem(config.getFileSystemPath(), Map.of()), config);
+    }
+
+    private FileSystemDataProvider(FileSystem fileSystem, DataProviderConfiguration config) throws IOException {
+        this.fileSystem = fileSystem;
         //fileFormat = Objects.requireNonNull(config.getFileFormat(), "fileFormat");
 
         FileTreeVisitor visitor = new FileTreeVisitor();

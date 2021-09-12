@@ -92,6 +92,7 @@
         <junit5.version>5.7.2</junit5.version>
         <lombok.version>1.18.20</lombok.version>
         <netbeans.version>RELEASE124</netbeans.version>
+        <spring.boot.starter.version>2.5.4</spring.boot.starter.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 </project>
