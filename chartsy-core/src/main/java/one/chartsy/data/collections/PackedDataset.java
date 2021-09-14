@@ -1,11 +1,15 @@
 package one.chartsy.data.collections;
 
+import one.chartsy.data.AbstractDataset;
 import one.chartsy.data.Dataset;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.stream.Stream;
 
-public class PackedDataset<E> implements Dataset<E> {
+public class PackedDataset<E> extends AbstractDataset<E> {
+    public static final PackedDataset<?> EMPTY = new PackedDataset<>(new Object[0]);
+
     private final E[] values;
 
     protected PackedDataset(E[] values) {
@@ -14,6 +18,10 @@ public class PackedDataset<E> implements Dataset<E> {
 
     public static <E> PackedDataset<E> of(E[] values) {
         return new PackedDataset<>(values.clone());
+    }
+
+    public static <E> PackedDataset<E> of(Collection<? extends E> values) {
+        return new PackedDataset<>(values.toArray((E[])new Object[values.size()]));
     }
 
     public static <E> PackedDataset<E> from(Dataset<E> dataset) {

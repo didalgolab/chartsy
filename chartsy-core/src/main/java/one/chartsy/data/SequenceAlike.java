@@ -28,18 +28,21 @@ public interface SequenceAlike<E,
         return stream().iterator();
     }
 
-    default List<T_SEQ> subsequences(int len) {
+    default Dataset<T_SEQ> subsequences(int len) {
         if (len <= 0)
             throw new IllegalArgumentException("subsequences length `" + len + "` must be positive");
 
-        int length = length();
-        if (len > length)
-            return Collections.emptyList();
+        return new AbstractDataset<>() {
+            @Override
+            public T_SEQ get(int index) {
+                return SequenceAlike.this.take(index, len);
+            }
 
-        List<T_SEQ> subsequences = new ArrayList<>(1 + length - len);
-        for (int start = 0, end = length - len; start <= end; start++)
-            subsequences.add(take(start, len));
-        return subsequences;
+            @Override
+            public int length() {
+                return Math.max(0, SequenceAlike.this.length() - len + 1);
+            }
+        };
     }
 
     default List<E> toImmutableList() {

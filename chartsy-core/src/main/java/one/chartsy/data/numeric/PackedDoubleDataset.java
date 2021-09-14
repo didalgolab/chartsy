@@ -1,11 +1,12 @@
 package one.chartsy.data.numeric;
 
+import one.chartsy.data.AbstractDoubleDataset;
 import one.chartsy.data.DoubleDataset;
 
 import java.util.Arrays;
 import java.util.stream.DoubleStream;
 
-public class PackedDoubleDataset implements DoubleDataset {
+public class PackedDoubleDataset extends AbstractDoubleDataset {
     private final double[] values;
 
     protected PackedDoubleDataset(double[] values) {
@@ -38,5 +39,10 @@ public class PackedDoubleDataset implements DoubleDataset {
     @Override
     public DoubleStream stream() {
         return Arrays.stream(values);
+    }
+
+    @Override
+    public String toString() {
+        return Arrays.toString(values);
     }
 }

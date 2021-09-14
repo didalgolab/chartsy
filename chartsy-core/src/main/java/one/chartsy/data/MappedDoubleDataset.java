@@ -4,7 +4,7 @@ import one.chartsy.data.function.IndexedToDoubleFunction;
 
 import java.util.function.ToIntFunction;
 
-public class MappedDoubleDataset implements DoubleDataset {
+public class MappedDoubleDataset extends AbstractDoubleDataset {
     private final DoubleDataset origin;
     private final ToIntFunction<DoubleDataset> lengthFunction;
     private final IndexedToDoubleFunction<DoubleDataset> getterFunction;

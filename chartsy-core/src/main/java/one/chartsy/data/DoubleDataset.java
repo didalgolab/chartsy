@@ -2,6 +2,7 @@ package one.chartsy.data;
 
 import one.chartsy.data.numeric.PackedDoubleDataset;
 
+import java.util.function.DoubleFunction;
 import java.util.function.DoubleUnaryOperator;
 import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
@@ -18,29 +19,6 @@ public interface DoubleDataset extends SequenceAlike<Double, DoubleStream, Doubl
     @Override
     default DoubleStream stream() {
         return IntStream.range(0, length()).mapToDouble(this::get);
-    }
-
-    @Override
-    default DoubleDataset take(int start, int count) {
-        if (start < 0)
-            throw new IllegalArgumentException("The `start` argument cannot be negative");
-        if (count <= 0)
-            throw new IllegalArgumentException("The `count` argument must be positive");
-        if (length() < count - start)
-            throw new IllegalArgumentException("The take end index cannot exceed dataset length " + length());
-
-        //return new Partition()
-        return new DoubleDataset() {
-            @Override
-            public int length() {
-                return count;
-            }
-
-            @Override
-            public double get(int index) {
-                return DoubleDataset.this.get(start + Datasets.requireValidIndex(index, this));
-            }
-        };
     }
 
     default DoubleDataset map(DoubleUnaryOperator valueMapping) {
@@ -74,5 +52,13 @@ public interface DoubleDataset extends SequenceAlike<Double, DoubleStream, Doubl
 
     default DoubleDataset toDirect() {
         return PackedDoubleDataset.from(this);
+    }
+
+    DoubleDataset ref(int n);
+
+    <E> Dataset<E> mapToObject(DoubleFunction<E> mapper);
+
+    default Dataset<Double> boxed() {
+        return mapToObject(Double::valueOf);
     }
 }

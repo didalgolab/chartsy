@@ -4,7 +4,7 @@ import one.chartsy.data.function.IndexedFunction;
 
 import java.util.function.ToIntFunction;
 
-public class MappedDataset<E, R> implements Dataset<R> {
+public class MappedDataset<E, R> extends AbstractDataset<R> {
     private final Dataset<E> origin;
     private final ToIntFunction<Dataset<E>> lengthFunction;
     private final IndexedFunction<Dataset<E>, R> getterFunction;
