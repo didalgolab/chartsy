@@ -6,7 +6,7 @@
         <artifactId>chartsy-repository</artifactId>
         <version>0.1-SNAPSHOT</version>
     </parent>
-    <artifactId>chartsy-core</artifactId>
+    <artifactId>chartsy-core-ml</artifactId>
     <packaging>nbm</packaging>
     <build>
         <plugins>
@@ -15,10 +15,9 @@
                 <artifactId>nbm-maven-plugin</artifactId>
                 <extensions>true</extensions>
                 <configuration>
-                    <codeNameBase>one.chartsy.core</codeNameBase>
+                    <codeNameBase>one.chartsy.core.ml</codeNameBase>
                     <publicPackages>
-                        <publicPackage>one.chartsy.*</publicPackage>
-                        <publicPackage>org.slf4j.*</publicPackage>
+                        <publicPackage>one.chartsy.core.ml.*</publicPackage>
                     </publicPackages>
                 </configuration>
             </plugin>
@@ -39,37 +38,15 @@
             <artifactId>chartsy-commons</artifactId>
             <version>${project.version}</version>
         </dependency>
-
         <dependency>
-            <groupId>org.netbeans.api</groupId>
-            <artifactId>org-openide-util-lookup</artifactId>
-            <version>${netbeans.version}</version>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>chartsy-core</artifactId>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>${lombok.version}</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-batch</artifactId>
-            <version>${spring.boot.starter.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.latencyutils</groupId>
-                    <artifactId>LatencyUtils</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-starter-logging</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-log4j2</artifactId>
-            <version>${spring.boot.starter.version}</version>
+            <groupId>com.github.haifengl</groupId>
+            <artifactId>smile-core</artifactId>
+            <version>2.6.0</version>
         </dependency>
     </dependencies>
 </project>

@@ -62,6 +62,7 @@
         <module>application</module>
         <module>chartsy-commons</module>
         <module>chartsy-core</module>
+        <module>chartsy-core-ml</module>
         <module>chartsy-simulation</module>
     </modules>
 
