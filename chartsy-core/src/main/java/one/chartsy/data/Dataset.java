@@ -18,7 +18,7 @@ import java.util.stream.Stream;
  *
  * @param <E> the type of elements stored in this dataset
  */
-public interface Dataset<E> extends SequenceAlike<E, Stream<E>, Dataset<E>> {
+public interface Dataset<E> extends SequenceAlike<E, Dataset<E>> {
 
     E get(int index);
 

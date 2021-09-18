@@ -4,7 +4,7 @@ import java.util.PrimitiveIterator;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
-public interface LongSequence extends SequenceAlike<Long, LongStream, LongSequence> {
+public interface LongSequence extends SequenceAlike<Long, LongSequence> {
 
     long get(int index);
 

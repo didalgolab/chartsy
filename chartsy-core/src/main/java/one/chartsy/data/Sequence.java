@@ -3,7 +3,7 @@ package one.chartsy.data;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-public interface Sequence<E> extends SequenceAlike<E, Stream<E>, Sequence<E>> {
+public interface Sequence<E> extends SequenceAlike<E, Sequence<E>> {
 
     E get(int index);
 

@@ -12,7 +12,7 @@ import java.util.stream.IntStream;
  *
  * @author Mariusz Bernacki
  */
-public interface DoubleDataset extends SequenceAlike<Double, DoubleStream, DoubleDataset> {
+public interface DoubleDataset extends SequenceAlike<Double, DoubleDataset> {
 
     double get(int index);
 
@@ -52,6 +52,13 @@ public interface DoubleDataset extends SequenceAlike<Double, DoubleStream, Doubl
 
     default DoubleDataset toDirect() {
         return PackedDoubleDataset.from(this);
+    }
+
+    default double[] toArray() {
+        double[] array = new double[length()];
+        for (int i = 0; i < array.length; i++)
+            array[i] = get(i);
+        return array;
     }
 
     DoubleDataset ref(int n);

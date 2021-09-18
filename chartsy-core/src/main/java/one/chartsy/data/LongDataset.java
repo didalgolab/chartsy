@@ -10,7 +10,7 @@ import java.util.stream.LongStream;
  *
  * @author Mariusz Bernacki
  */
-public interface LongDataset extends SequenceAlike<Long, LongStream, LongDataset> {
+public interface LongDataset extends SequenceAlike<Long, LongDataset> {
 
     long get(int index);
 

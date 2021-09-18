@@ -4,7 +4,7 @@ import java.util.PrimitiveIterator;
 import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 
-public interface DoubleSequence extends SequenceAlike<Double, DoubleStream, DoubleSequence> {
+public interface DoubleSequence extends SequenceAlike<Double, DoubleSequence> {
 
     double get(int index);
 

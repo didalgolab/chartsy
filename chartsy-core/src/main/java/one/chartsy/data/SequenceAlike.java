@@ -7,12 +7,11 @@ import java.util.List;
 import java.util.stream.BaseStream;
 
 public interface SequenceAlike<E,
-        T_STREAM extends BaseStream<E, T_STREAM>,
-        T_SEQ extends SequenceAlike<E, T_STREAM, T_SEQ>> extends Iterable<E> {
+        T_SEQ extends SequenceAlike<E, T_SEQ>> extends Iterable<E> {
 
     int length();
 
-    T_STREAM stream();
+    BaseStream<E,?> stream();
 
     T_SEQ take(int start, int count);
 
