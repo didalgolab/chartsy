@@ -46,7 +46,44 @@
         <dependency>
             <groupId>com.github.haifengl</groupId>
             <artifactId>smile-core</artifactId>
+            <!--version>2.1.0</version-->
+            <!--version>2.6.0</version-->
+            <version>1.5.3</version>
+        </dependency>
+        <!--dependency>
+            <groupId>com.github.haifengl</groupId>
+            <artifactId>smile-mkl</artifactId>
             <version>2.6.0</version>
+        </dependency-->
+        <!--dependency>
+            <groupId>org.bytedeco</groupId>
+            <artifactId>javacpp</artifactId>
+            <version>1.5.6</version>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco</groupId>
+            <artifactId>javacpp</artifactId>
+            <version>1.5.6</version>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco</groupId>
+            <artifactId>openblas</artifactId>
+            <version>0.3.17-1.5.6</version>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco</groupId>
+            <artifactId>openblas-platform</artifactId>
+            <version>0.3.17-1.5.6</version>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco</groupId>
+            <artifactId>arpack-ng</artifactId>
+            <version>3.8.0-1.5.6</version>
+        </dependency-->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-math3</artifactId>
+            <version>3.6.1</version>
         </dependency>
     </dependencies>
 </project>
