@@ -18,6 +18,7 @@
                     <codeNameBase>one.chartsy.core</codeNameBase>
                     <publicPackages>
                         <publicPackage>one.chartsy.*</publicPackage>
+                        <publicPackage>org.apache.commons.logging.*</publicPackage>
                         <publicPackage>org.apache.logging.log4j.*</publicPackage>
                         <publicPackage>org.slf4j.*</publicPackage>
                     </publicPackages>
@@ -51,6 +52,11 @@
             <artifactId>lombok</artifactId>
             <version>${lombok.version}</version>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>2.0.0-alpha0</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

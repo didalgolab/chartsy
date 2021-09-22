@@ -647,6 +647,11 @@
             <artifactId>chartsy-core-ml</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>chartsy-chart-chartfx</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 
     <build>
