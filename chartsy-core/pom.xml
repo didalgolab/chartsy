@@ -18,6 +18,7 @@
                     <codeNameBase>one.chartsy.core</codeNameBase>
                     <publicPackages>
                         <publicPackage>one.chartsy.*</publicPackage>
+                        <publicPackage>org.apache.logging.log4j.*</publicPackage>
                         <publicPackage>org.slf4j.*</publicPackage>
                     </publicPackages>
                 </configuration>
@@ -75,7 +76,6 @@
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-jpl</artifactId>
             <version>${log4j.version}</version>
-            <scope>runtime</scope>
         </dependency>
     </dependencies>
 </project>
