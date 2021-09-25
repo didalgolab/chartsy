@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javafx.application.Application;
+import javafx.beans.property.SimpleDoubleProperty;
 import javafx.geometry.HPos;
 import javafx.scene.Scene;
 import javafx.scene.control.ToolBar;
@@ -148,7 +149,14 @@ public class FinancialRealtimeCandlestickSample extends AbstractBasicFinancialAp
         VBox.setVgrow(chart, Priority.SOMETIMES);
         root.getChildren().addAll(testVariableToolBar, chart);
 
-        return new Scene(root, prefSceneWidth, prefSceneHeight);
+        Scene scene = new Scene(root, prefSceneWidth, prefSceneHeight);
+//        scene.windowProperty().addListener((observable, oldValue, newValue) -> {
+//            if (newValue != null) {
+//                chart./*getCanvas().*/scaleXProperty().bind(new SimpleDoubleProperty(1.0).divide(scene.getWindow().outputScaleXProperty()));
+//                chart./*getCanvas().*/scaleYProperty().bind(new SimpleDoubleProperty(1.0).divide(scene.getWindow().outputScaleYProperty()));
+//            }
+//        });
+        return scene;
     }
 
     protected YRangeIndicator createRsLevel(Axis yAxis, double lowerBound, double upperBound, String description) {

@@ -86,7 +86,7 @@ public abstract class AbstractBasicFinancialApplication extends Application {
     // injection
     protected final FinancialColorSchemeAware financialColorScheme = new FinancialColorSchemeConfig();
 
-    private final Spinner<Double> updatePeriod = new Spinner<>(1.0, 500.0, UPDATE_PERIOD, 1.0);
+    private final Spinner<Double> updatePeriod = new Spinner<>(1.0, 1000.0, UPDATE_PERIOD, 1.0);
     private final CheckBox localRange = new CheckBox("auto-y");
 
     private boolean timerActivated = false;
@@ -109,6 +109,7 @@ public abstract class AbstractBasicFinancialApplication extends Application {
         primaryStage.setTitle(this.getClass().getSimpleName());
         primaryStage.setScene(scene);
         primaryStage.setOnCloseRequest(this::closeDemo);
+        primaryStage.setMaximized(true);
         primaryStage.show();
         ProcessingProfiler.getTimeDiff(startTime, "for showing");
 
@@ -183,7 +184,8 @@ public abstract class AbstractBasicFinancialApplication extends Application {
         Chart[] charts = Arrays.stream(getDefaultColorSchemes()).map(this::getDefaultFinancialTestChart).toArray(Chart[] ::new);
         root.getChildren().addAll(charts);
 
-        return new Scene(root, prefSceneWidth, prefSceneHeight);
+        Scene scene = new Scene(root, prefSceneWidth, prefSceneHeight);
+        return scene;
     }
 
     /**
