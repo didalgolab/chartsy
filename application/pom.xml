@@ -652,6 +652,11 @@
             <artifactId>chartsy-chart-chartfx</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>chartsy-chart-java2d</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 
     <build>

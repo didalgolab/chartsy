@@ -61,6 +61,7 @@
         <module>branding</module>
         <module>application</module>
         <module>chartsy-chart-chartfx</module>
+        <module>chartsy-chart-java2d</module>
         <module>chartsy-commons</module>
         <module>chartsy-core</module>
         <module>chartsy-core-ml</module>
