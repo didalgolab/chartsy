@@ -36,6 +36,7 @@ public class CanvasTest extends Application {
         Canvas canvas = new Canvas(100,100);
 
         GraphicsContext g2d = canvas.getGraphicsContext2D();
+        g2d.setImageSmoothing(false);
 
         double s = 1.0;
         g2d.fillRect(15 * s, 15 * s, 60 * s, 10 * s);
@@ -43,12 +44,12 @@ public class CanvasTest extends Application {
         g2d.fillRect(16 * s, 45 * s, 60 * s, 10 * s);
         g2d.fillRect(16.5 * s, 60 * s, 60 * s, 10 * s);  // supposed to be blurry
 
-        g2d.setLineWidth(3.0 / 1.25);
+//        g2d.setLineWidth(3.0 / 1.25);
         g2d.setStroke(Color.RED);
-        g2d.strokeLine(13.5 * (1.0/1.25), 13.5 * (1.0/1.25), 13.5 * (1.0/1.25), 93.5 * s);
-        g2d.strokeLine(13.5 * s, 13.5 * s, 93.5 * s, 93.5 * s);
-//        g2d.strokeLine(13. * s + .5, 13. * s + .5, 13. * s + .5, 93. * s + .5);
-//        g2d.strokeLine(13. * s + .5, 13. * s + .5, 93. * s + .5, 93. * s + .5);
+//        g2d.strokeLine(13.5 * (1.0/1.25), 13.5 * (1.0/1.25), 13.5 * (1.0/1.25), 93.5 * s);
+//        g2d.strokeLine(13.5 * s, 13.5 * s, 93.5 * s, 93.5 * s);
+        g2d.strokeLine(13. * s + .5, 13. * s + .5, 13. * s + .5, 93. * s + .5);
+        g2d.strokeLine(13. * s + .5, 13. * s + .5, 93. * s + .5, 93. * s + .5);
         hbox.getChildren().add(new Group(canvas));
 
         borderPane.setCenter(hbox);

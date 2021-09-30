@@ -13,5 +13,14 @@ public interface CandleSeries extends IndexedSymbolResourceData<Candle> {
         return new StandardCandleSeries(resource, PackedDataset.of(values));
     }
 
+    default DoubleSeries closes() {
+        return mapToDouble(Candle::close);
+    }
+
+    default DoubleSeries volumes() {
+        return mapToDouble(Candle::volume);
+    }
+
     DoubleSeries mapToDouble(ToDoubleFunction<Candle> mapper);
+
 }

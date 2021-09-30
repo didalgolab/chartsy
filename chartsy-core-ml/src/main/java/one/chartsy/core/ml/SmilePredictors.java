@@ -36,11 +36,11 @@ public class SmilePredictors {
 //        Formula formula = Formula.lhs("y");
 //        System.out.println(formula);
 //        ThreadLocalRandom r = ThreadLocalRandom.current();
-//        double[][] x = new double[100][10];
+//        double[][] x = new double[1000][10];
 //        for (int i = 0; i < x.length; i++)
 //            for (int j = 0; j < x[i].length; j++)
 //                x[i][j] = r.nextInt(100_000);
-//        double[] y = new double[100];
+//        double[] y = new double[1000];
 //        for (int i = 0; i < x.length; i++)
 //            y[i] = r.nextInt(1000);
 //
@@ -50,7 +50,7 @@ public class SmilePredictors {
 //        long startTime = System.nanoTime();
 //        double res = 0;
 //        //System.in.read();
-//        for (int i = 0; i < 200_000 + 2000; i++) {
+//        for (int i = 0; i < 200_000 + 20_000; i++) {
 //            Collections.shuffle(Arrays.asList(x));
 //            DataFrame df = DataFrame.of(x).merge(DoubleVector.of("y", y));
 //            //System.out.println(df);
@@ -58,10 +58,10 @@ public class SmilePredictors {
 //            //olslr.newSampleData(y, x);
 //            //double[] b = olslr.estimateRegressionParameters();
 //            //res += b[0];
-//            if (i % 10_000 == 0) {
+//            if (i % 20_000 == 0) {
 //                System.out.println(i);
 //            }
-//            if (i == 2000L)
+//            if (i == 20_000L)
 //                startTime = System.nanoTime();
 //        }
 //        long elapsedTime = System.nanoTime() - startTime;
@@ -73,11 +73,11 @@ public class SmilePredictors {
     // 9,38 ms / 100 000 elems
     public static void main(String[] args) throws IOException {
         ThreadLocalRandom r = ThreadLocalRandom.current();
-        double[][] x = new double[150_000][10];
+        double[][] x = new double[1000][10];
         for (int i = 0; i < x.length; i++)
             for (int j = 0; j < x[i].length; j++)
                 x[i][j] = r.nextInt(100_000);
-        double[] y = new double[150_000];
+        double[] y = new double[1000];
         for (int i = 0; i < x.length; i++)
             y[i] = r.nextInt(1000);
 
@@ -86,8 +86,8 @@ public class SmilePredictors {
         OLSMultipleLinearRegression olslr = new OLSMultipleLinearRegression();
         long startTime = System.nanoTime();
         double res = 0;
-        System.in.read();
-        for (int i = 0; i < 1000 + 10; i++) {
+        //System.in.read();
+        for (int i = 0; i < 100_000 + 1_000; i++) {
             Collections.shuffle(Arrays.asList(x));
             //DataFrame df = DataFrame.of(x).merge(DoubleVector.of("y", y));
             //System.out.println(df);
@@ -95,14 +95,14 @@ public class SmilePredictors {
             //olslr.newSampleData(y, x);
             //double[] b = olslr.estimateRegressionParameters();
             //res += b[0];
-            if (i % 100 == 0) {
+            if (i % 10_000 == 0) {
                 System.out.println(i);
             }
-            if (i == 10L)
+            if (i == 1_000L)
                 startTime = System.nanoTime();
         }
         long elapsedTime = System.nanoTime() - startTime;
-        System.out.println("Elapsed: " + elapsedTime / 1000L + " ns per iter");
+        System.out.println("Elapsed: " + elapsedTime / 100_000L + " ns per iter");
         System.out.println(res);
     }
 }

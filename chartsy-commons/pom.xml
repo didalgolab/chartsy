@@ -19,6 +19,7 @@
                     <publicPackages>
                         <publicPackage>com.google.gson.*</publicPackage>
                         <publicPackage>one.chartsy.commons.*</publicPackage>
+                        <publicPackage>org.apache.commons.math3.*</publicPackage>
                     </publicPackages>
                 </configuration>
             </plugin>
@@ -43,6 +44,11 @@
             <groupId>org.netbeans.api</groupId>
             <artifactId>org-openide-util-lookup</artifactId>
             <version>${netbeans.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-math3</artifactId>
+            <version>${commons.math.version}</version>
         </dependency>
     </dependencies>
 </project>
