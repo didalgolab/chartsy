@@ -1,7 +1,7 @@
 package one.chartsy.commons;
 
 public final class Range {
-    public static final Range EMPTY = new Range(-0.5, 0.5);
+    public static final Range EMPTY = new Range(0.5, -0.5);
 
     private final double min;
     private final double max;

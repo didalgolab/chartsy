@@ -18,6 +18,7 @@ import one.chartsy.data.DoubleDataset;
 import one.chartsy.ui.chart.data.VisibleValues;
 import one.chartsy.ui.chart.data.VisualRange;
 import one.chartsy.ui.chart.plot.AbstractTimeSeriesPlot;
+import one.chartsy.ui.chart.plot.TimeSeriesPlot;
 
 import javax.swing.*;
 
@@ -125,33 +126,25 @@ public abstract class Indicator extends ChartPlugin<Indicator> {
     
     public VisualRange getRange(ChartContext cf) {
         if (plots.isEmpty()) {
-            return new Range();
+            return new VisualRange(Range.empty());
         }
         
-        Range range = null;
         Iterator<String> it = plots.keySet().iterator();
         
-        DataInterval rv = new DataInterval();
+        Range.Builder rv = new Range.Builder();
         while (it.hasNext()) {
             VisibleValues d = visibleDataset(cf, it.next());
             
             if (d != null) {
                 rv = d.getRange(rv);
-                double min = rv.min;
-                double max = rv.max;
-                if (min <= max) {
-                    if (range == null) {
-                        range = new Range(min - (max - min) * 0.01, max + (max - min) * 0.01);
-                    } else {
-                        range = Range.combine(range, new Range(min - (max - min) * 0.01, max + (max - min) * 0.01));
-                    }
-                }
             }
         }
-        
-        if (range == null)
-            range = new Range();
-        return range;
+        Range range = rv.toRange();
+        if (range.isEmpty())
+            return new VisualRange(Range.of(0.0, Double.POSITIVE_INFINITY));
+
+        double margin = range.getLength() * 0.01;
+        return new VisualRange(rv.add(range.getMin() - margin).add(range.getMax() + margin).toRange());
     }
     
     public void paint(Graphics2D g, ChartContext view, Rectangle bounds) {

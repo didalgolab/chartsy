@@ -23,18 +23,12 @@ import java.util.Optional;
 import one.chartsy.*;
 import one.chartsy.commons.Range;
 import one.chartsy.data.CandleSeries;
-import one.chartsy.data.DataProviderEx;
-import one.chartsy.data.VisibleQuotes;
 import one.chartsy.data.provider.DataProvider;
 import one.chartsy.time.Chronological;
 import one.chartsy.ui.chart.axis.AxisScale;
 import one.chartsy.ui.chart.axis.DateScale;
 import one.chartsy.collections.DoubleArray;
-import one.chartsy.graphic.DataRenderingHint;
 import one.chartsy.ui.chart.data.VisibleCandles;
-import one.chartsy.util.DataInterval;
-import one.chartsy.util.Range;
-import one.chartsy.util.RectangleInsets;
 
 /**
  * Holds data associated with the displayed chart.
@@ -296,12 +290,12 @@ public class ChartData implements Serializable, ChartFrameListener {
     }
     
     public void calculateRange(ChartContext chartFrame, List<Overlay> overlays) {
-        Range range = new Range();
+        Range.Builder range = new Range.Builder();
         if (!isVisibleNull()) {
-            Range.Builder di = getVisible().getRange(null);
-            double min = di.max;
-            double max = di.min;
-            range = new Range(min - (max - min) * 0.00, max + (max - min) * 0.00);//TODO: changed
+            Range di = getVisible().getRange(null).toRange();
+            double min = di.getMax();
+            double max = di.getMin();
+            range.add(min - (max - min) * 0.00, max + (max - min) * 0.00);//TODO: changed
             
             if (!overlays.isEmpty())
                 for (int i = 0; i < overlays.size(); i++) {
@@ -310,14 +304,14 @@ public class ChartData implements Serializable, ChartFrameListener {
                         Range oRange = overlay.getRange(chartFrame);
                         if (oRange != null) {
                             if (oRange.getMin() > 0)
-                                range = Range.expandToInclude(range, oRange.getMin());
+                                range.add(oRange.getMin());
                             if (!Double.isInfinite(oRange.getMax()))
-                                range = Range.expandToInclude(range, oRange.getMax());
+                                range.add(oRange.getMax());
                         }
                     }
                 }
         }
-        setVisibleRange(range);
+        setVisibleRange(range.toRange());
     }
     
     public void calculate(ChartContext chartFrame) {
@@ -385,7 +379,7 @@ public class ChartData implements Serializable, ChartFrameListener {
             this.dates = dates.toArray(new LocalDateTime[dates.size()]);
             
             // construct subscale
-            if (timeFrame.isIntraday()) {
+            if (TimeFrameHelper.isIntraday(timeFrame)) {
                 switch (incrementUnit) {
                 case YEARS:
                     if (ChronoUnit.DAYS.between(startDate, endDate) < 7)
@@ -501,16 +495,16 @@ public class ChartData implements Serializable, ChartFrameListener {
     public DoubleArray getPriceValues(Range range, Rectangle bounds, Insets insets) {
         DoubleArray values = new DoubleArray();
         
-        double diff = range.getUpperBound() - range.getLowerBound();
+        double diff = range.getMax() - range.getMin();
         if (diff > 10) {
             int step = (int) (diff / 10) + 1;
-            double low = Math.ceil(range.getUpperBound() - (diff / 10) * 9);
+            double low = Math.ceil(range.getMax() - (diff / 10) * 9);
             
-            for (double i = low; i <= range.getUpperBound(); i += step)
+            for (double i = low; i <= range.getMax(); i += step)
                 values.add(i);
         } else {
             double step = diff / 10;
-            for (double i = range.getLowerBound(); i <= range.getUpperBound(); i += step)
+            for (double i = range.getMin(); i <= range.getMax(); i += step)
                 values.add(i);
         }
         

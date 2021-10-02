@@ -7,7 +7,6 @@ import java.awt.Color;
 
 import one.chartsy.data.DoubleDataset;
 import one.chartsy.ui.chart.ChartContext;
-import one.chartsy.ui.chart.TimeSeriesPlot;
 import one.chartsy.ui.chart.data.VisibleValues;
 
 public abstract class AbstractTimeSeriesPlot extends AbstractPlot implements TimeSeriesPlot {

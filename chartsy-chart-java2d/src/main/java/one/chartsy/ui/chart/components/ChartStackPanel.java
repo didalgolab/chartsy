@@ -58,23 +58,19 @@ public class ChartStackPanel extends JLayeredPane {
     private int markerIndex = -1;
     /** The marker listeners registry. */
     private ListenerList<MarkerListener> markerListeners;
-    
-    private static int width = 200;
-    private static int height;
-    private int lines = 5;
-    
+
+    private static final Font font = new Font("Dialog", Font.PLAIN, 10);
+    private static final int width = 200;
+    private static final int height = 14;
+
     private final Color lineColor = new Color(0xef2929);
     private final Color color = new Color(0x1C2331);
     private final Color backgroundColor = ColorServices.getDefault().getTransparentColor(color, 100);
     private final Color fontColor = new Color(0xffffff);
-    
-    private static Font font;
-    
-    static {
-        font = new Font("Dialog", Font.PLAIN, 10);
-        height = 14;
-    }
-    
+
+    private int lines = 5;
+
+
     public ChartStackPanel(ChartContext frame) {
         chartFrame = frame;
         chartPanel = new ChartPanel(chartFrame);
@@ -88,7 +84,6 @@ public class ChartStackPanel extends JLayeredPane {
         setLayout(new LayoutHandler());
         
         //add(label);
-        //add(chartPanel);
         add(chartPanel);
         label.setLocation(0, 50);
         Resizeable resizeable = new Resizeable();
@@ -123,10 +118,6 @@ public class ChartStackPanel extends JLayeredPane {
     public ChartPanel getChartPanel() {
         return chartPanel;
     }
-    
-    //	public IndicatorsPanel getStackPanel() {
-    //		return indicatorsPanel;
-    //	}
     
     /**
      * Adds a new marker listener.
@@ -680,10 +671,8 @@ public class ChartStackPanel extends JLayeredPane {
             Cursor c = getCursor();
             if (c.equals(Cursor.getPredefinedCursor(Cursor.N_RESIZE_CURSOR))) {
                 fix_pt_y = e.getY();
-                return;
             } else {
                 fix_pt_y = -1;
-                return;
             }
         }
         
@@ -793,16 +782,12 @@ public class ChartStackPanel extends JLayeredPane {
     }
     
     public void updateIndicatorsToolbar() {
-        for (IndicatorPanel ip : getIndicatorPanels())
-            ip.updateToolbox();
+        getIndicatorPanels().forEach(IndicatorPanel::updateToolbox);
     }
     
-    public IndicatorPanel getIndicatorPanel(Indicator ind) {
-        List<IndicatorPanel> panels = getIndicatorPanels();
-        for (int i = 0; i < panels.size(); i++)
-            if (ind.equals(panels.get(i).getIndicator()))
-                return panels.get(i);
-        return null;
+    public IndicatorPanel getIndicatorPanel(Indicator indicator) {
+        return getIndicatorPanels().stream()
+                .filter(panel -> indicator.equals(panel.getIndicator()))
+                .findFirst().orElse(null);
     }
-    
 }

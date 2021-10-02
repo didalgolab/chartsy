@@ -23,11 +23,11 @@ import one.chartsy.ui.chart.axis.PriceAxis;
 
 public class MainPanel extends JLayeredPane {
 
-    private ChartContext chartFrame;
-    private ChartStackPanel sPane;
-    private Grid grid;
-    private DateAxis dateAxis;
-    private PriceAxis priceAxis;
+    private final ChartContext chartFrame;
+    private final ChartStackPanel sPane;
+    private final Grid grid;
+    private final DateAxis dateAxis;
+    private final PriceAxis priceAxis;
     
     
     public MainPanel(ChartContext frame) {

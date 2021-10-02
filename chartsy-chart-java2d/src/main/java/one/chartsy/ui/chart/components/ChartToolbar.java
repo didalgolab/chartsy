@@ -11,7 +11,6 @@ import java.awt.Insets;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.Serializable;
-import java.util.List;
 
 import javax.swing.AbstractButton;
 import javax.swing.Action;
@@ -25,20 +24,13 @@ import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.border.MatteBorder;
 
-import one.chartsy.CandleSeries;
+import one.chartsy.SymbolIdentity;
+import one.chartsy.data.CandleSeries;
+import one.chartsy.data.provider.DataProvider;
 import one.chartsy.ui.chart.ChartFrame;
+import one.chartsy.ui.chart.ChartFrameListener;
+import one.chartsy.ui.chart.action.ChartActions;
 import org.openide.util.Lookup;
-
-import one.chartsy.Quotes;
-import one.chartsy.SymbolExt;
-import one.chartsy.SymbolGroupData.Stereotype;
-import one.chartsy.data.DataProvider;
-import one.chartsy.domain.SymbolLinkData;
-import one.chartsy.domain.SymbolLinkSearchCriteria;
-import one.chartsy.domain.model.SymbolLinkRepository;
-import one.chartsy.ui.SymbolChanger;
-import one.chartsy.ui.actions.ChartsyActions;
-import one.chartsy.ui.actions.ChartsyActions.FavoriteAction;
 
 /**
  * Provides the toolbar functionality to the chart frame.
@@ -70,33 +62,33 @@ public class ChartToolbar extends JToolBar implements Serializable {
         
         // ChartToolbar buttons
         addSeparator();
-        add(createButton(ChartsyActions.zoomIn(chartFrame)));
-        add(createButton(ChartsyActions.zoomOut(chartFrame)));
-        add(createButton(ChartsyActions.intervalPopup(chartFrame)));
-        add(createButton(ChartsyActions.chartPopup(chartFrame)));
-        add(createButton(ChartsyActions.openOverlays(chartFrame)));
-        add(createButton(ChartsyActions.openIndicators(chartFrame)));
-        add(annotationButton = createButton(ChartsyActions.annotationPopup(chartFrame)));
-        JToggleButton markerButton = createToggleButton(ChartsyActions.toggleMarker(chartFrame));
+        add(createButton(ChartActions.zoomIn(chartFrame)));
+        add(createButton(ChartActions.zoomOut(chartFrame)));
+        add(createButton(ChartActions.intervalPopup(chartFrame)));
+        add(createButton(ChartActions.chartPopup(chartFrame)));
+        add(createButton(ChartActions.openOverlays(chartFrame)));
+        add(createButton(ChartActions.openIndicators(chartFrame)));
+        add(annotationButton = createButton(ChartActions.annotationPopup(chartFrame)));
+        JToggleButton markerButton = createToggleButton(ChartActions.toggleMarker(chartFrame));
         //add(markerButton);
-        add(createButton(ChartsyActions.exportImage(chartFrame)));
-        add(createButton(ChartsyActions.printChart(chartFrame)));
-        add(createButton(ChartsyActions.chartProperties(chartFrame)));
+        add(createButton(ChartActions.exportImage(chartFrame)));
+        add(createButton(ChartActions.printChart(chartFrame)));
+        add(createButton(ChartActions.chartProperties(chartFrame)));
         addSeparator();
-        add(createButton(favoriteAction = ChartsyActions.addToFavorites(chartFrame)));
+        add(createButton(favoriteAction = ChartActions.addToFavorites(chartFrame)));
         
         markerButton.setSelected(false);
         chartFrame.addChartFrameListener(new ChartFrameListener() {
             @Override
             public void datasetChanged(CandleSeries quotes) {
-                SwingUtilities.invokeLater(() -> updateFavoriteActionState(new SymbolExt(quotes.getSymbol())));
+                SwingUtilities.invokeLater(() -> updateFavoriteActionState(quotes.getResource().getSymbol()));
             }
         });
         
         // if the quotes are already loaded update the favorite action as soon as possible
         CandleSeries dataset = chartFrame.getChartData().getDataset();
         if (dataset != null)
-            SwingUtilities.invokeLater(() -> updateFavoriteActionState(new SymbolExt(dataset.getSymbol())));
+            SwingUtilities.invokeLater(() -> updateFavoriteActionState(dataset.getResource().getSymbol()));
     }
     
     public void doBack() {
@@ -107,26 +99,26 @@ public class ChartToolbar extends JToolBar implements Serializable {
         symbolChanger.getForwardButton().doClick();
     }
     
-    protected void updateFavoriteActionState(SymbolExt symbol) {
-        // symbols without data provider are not supported
-        DataProvider provider = symbol.getProvider();
-        if (provider == null) {
-            favoriteAction.setEnabled(false);
-            return;
-        }
-        
-        SymbolLinkSearchCriteria criteria = new SymbolLinkSearchCriteria();
-        criteria.setName(symbol.getName());
-        criteria.setDpiUuid(provider.getUuid());
-        criteria.setSgrStereotype(Stereotype.FAVORITES);
-        
-        SymbolLinkRepository repo = Lookup.getDefault().lookup(SymbolLinkRepository.class);
-        List<SymbolLinkData> symbolLinks = repo.findSymbolLinks(criteria);
-        
-        // there shouldn't be more than one favorite link
-        SymbolLinkData symbolLink = symbolLinks.isEmpty()? null : symbolLinks.get(0);
-        favoriteAction.putValue(FavoriteAction.SYMBOL_LINK, symbolLink);
-        favoriteAction.setEnabled(true);
+    protected void updateFavoriteActionState(SymbolIdentity symbol) {
+//        // symbols without data provider are not supported
+//        DataProvider provider = symbol.getProvider();
+//        if (provider == null) {
+//            favoriteAction.setEnabled(false);
+//            return;
+//        }
+//
+//        SymbolLinkSearchCriteria criteria = new SymbolLinkSearchCriteria();
+//        criteria.setName(symbol.getName());
+//        criteria.setDpiUuid(provider.getUuid());
+//        criteria.setSgrStereotype(Stereotype.FAVORITES);
+//
+//        SymbolLinkRepository repo = Lookup.getDefault().lookup(SymbolLinkRepository.class);
+//        List<SymbolLinkData> symbolLinks = repo.findSymbolLinks(criteria);
+//
+//        // there shouldn't be more than one favorite link
+//        SymbolLinkData symbolLink = symbolLinks.isEmpty()? null : symbolLinks.get(0);
+//        favoriteAction.putValue(FavoriteAction.SYMBOL_LINK, symbolLink);
+//        favoriteAction.setEnabled(true);
     }
     
     public void updateToolbar() {
@@ -230,13 +222,13 @@ public class ChartToolbar extends JToolBar implements Serializable {
         JPopupMenu popup = new JPopupMenu();
         JCheckBoxMenuItem item;
         
-        popup.add(item = new JCheckBoxMenuItem(ChartsyActions.toggleToolbarSmallIcons(chartFrame, this)));
+        popup.add(item = new JCheckBoxMenuItem(ChartActions.toggleToolbarSmallIcons(chartFrame, this)));
         item.setState(chartFrame.getChartProperties().getToolbarSmallIcons());
         
-        popup.add(item = new JCheckBoxMenuItem(ChartsyActions.toggleToolbarShowLabels(chartFrame, this)));
+        popup.add(item = new JCheckBoxMenuItem(ChartActions.toggleToolbarShowLabels(chartFrame, this)));
         item.setState(!chartFrame.getChartProperties().getToolbarShowLabels());
-        popup.add(ChartsyActions.toggleToolbarVisibility(chartFrame));
-        
+        popup.add(ChartActions.toggleToolbarVisibility(chartFrame));
+
         return popup;
     }
     

@@ -27,9 +27,16 @@ public class VisibleValues {
     }
     
     public double getValueAt(int index) {
-        return values.get(offset + length - index - 1, Double.NaN);
+        return getOrElse(values, offset + length - index - 1, Double.NaN);
     }
-    
+
+    private static double getOrElse(DoubleDataset values, int index, double defaultValue) {
+        if (index < 0 || index >= values.length())
+            return defaultValue;
+        else
+            return values.get(index);
+    }
+
     public double getMinimum() {
         double min = Double.MAX_VALUE;
         for (int i = 0; i < length; i++) {
@@ -44,16 +51,21 @@ public class VisibleValues {
         double max = Double.NEGATIVE_INFINITY;
         for (int i = 0; i < length; i++) {
             double v0 = getValueAt(i);
-            if (v0 == v0 && v0 > max)
+            if (v0 > max)
                 max = v0;
         }
         return max;
     }
     
     public Range.Builder getRange(Range.Builder rv) {
-        int startIndex = offset;
-        int endIndex = offset + length;
-        return values.getRange(startIndex, endIndex, rv);
+        if (rv == null)
+            rv = new Range.Builder();
+
+        var startIndex = offset;
+        var endIndex = offset + length;
+        for (var i = startIndex; i < endIndex; i++)
+            rv.add(values.get(i));
+        return rv;
     }
     
     public int getLength() {

@@ -16,6 +16,7 @@ import one.chartsy.data.CandleSeries;
 import one.chartsy.data.DoubleDataset;
 import one.chartsy.ui.chart.data.VisibleValues;
 import one.chartsy.ui.chart.plot.AbstractTimeSeriesPlot;
+import one.chartsy.ui.chart.plot.TimeSeriesPlot;
 
 import javax.swing.*;
 
@@ -112,28 +113,19 @@ public abstract class Overlay extends ChartPlugin<Overlay> implements Serializab
     }
     
     public Range getRange(ChartContext cf) {
-        Range range = null;
         Range.Builder rv = new Range.Builder();
         for (String key : plots.keySet()) {
             VisibleValues dataset = visibleDataset(cf, key);
             if (dataset != null) {
                 rv = dataset.getRange(rv);
-                double min = rv.min;
-                double max = rv.max;
-                if (min <= max) {
-                    double margin = (max - min) * 0.00;//TODO: changed
-                    //double margin = Math.log(max - min) * 0.01;
-                    if (range == null) {
-                        range = new Range(min - margin, max + margin);
-                    } else {
-                        range = Range.combine(range, new Range(min - margin, max + margin));
-                    }
-                }
             }
         }
-        if (range == null)
-            range = Range.of(0.0, Double.POSITIVE_INFINITY);
-        return range;
+        Range range = rv.toRange();
+        if (range.isEmpty())
+            return Range.of(0.0, Double.POSITIVE_INFINITY);
+
+        double margin = range.getLength() * 0.01;
+        return rv.add(range.getMin() - margin).add(range.getMax() + margin).toRange();
     }
     
     public void paint(Graphics2D g, ChartContext cf, Rectangle bounds) {

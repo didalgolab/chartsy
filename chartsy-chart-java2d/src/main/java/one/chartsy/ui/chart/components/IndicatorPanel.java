@@ -35,7 +35,9 @@ import javax.swing.border.Border;
 
 import one.chartsy.ui.chart.ChartContext;
 import one.chartsy.ui.chart.ChartProperties;
+import one.chartsy.ui.chart.IconResource;
 import one.chartsy.ui.chart.Indicator;
+import one.chartsy.ui.chart.action.ChartAction;
 import one.chartsy.ui.chart.internal.ColorServices;
 import one.chartsy.ui.chart.internal.Graphics2DHelper;
 
@@ -184,17 +186,17 @@ public class IndicatorPanel extends JPanel {
     }
     
     private AbstractAction indicatorSettings(ChartContext frame, IndicatorPanel panel) {
-        return new AbstractAction("Indicator Settings", ResourcesUtils.getIcon("settings")) {
+        return new AbstractAction("Indicator Settings", IconResource.getIcon("settings")) {
             @Override
             public void actionPerformed(ActionEvent e) {
-                SettingsPanel.getDefault().openSettingsWindow(panel.getIndicator());
+                ChartAction.openSettingsWindow(panel.getIndicator());
                 chartFrame.getMainPanel().repaint();
             }
         };
     }
     
     private AbstractAction moveUp(ChartContext frame, IndicatorPanel panel) {
-        return new AbstractAction("Move Indicator Up", ResourcesUtils.getIcon("up")) {
+        return new AbstractAction("Move Indicator Up", IconResource.getIcon("up")) {
             @Override
             public void actionPerformed(ActionEvent e) {
                 frame.getMainPanel().getStackPanel().moveUp(panel);
@@ -203,7 +205,7 @@ public class IndicatorPanel extends JPanel {
     }
     
     private AbstractAction moveDown(ChartContext frame, IndicatorPanel panel) {
-        return new AbstractAction("Move Indicator Down", ResourcesUtils.getIcon("down")) {
+        return new AbstractAction("Move Indicator Down", IconResource.getIcon("down")) {
             @Override
             public void actionPerformed(ActionEvent e) {
                 frame.getMainPanel().getStackPanel().moveDown(panel);
@@ -212,7 +214,7 @@ public class IndicatorPanel extends JPanel {
     }
     
     private Action minimize() {
-        return new AbstractAction("Minimize Indicator", ResourcesUtils.getIcon("minimize")) {
+        return new AbstractAction("Minimize Indicator", IconResource.getIcon("minimize")) {
             @Override
             public void actionPerformed(ActionEvent e) {
                 setMinimized(true);
@@ -221,7 +223,7 @@ public class IndicatorPanel extends JPanel {
     }
     
     private Action maximize() {
-        return new AbstractAction("Maximize Indicator", ResourcesUtils.getIcon("maximize")) {
+        return new AbstractAction("Maximize Indicator", IconResource.getIcon("maximize")) {
             @Override
             public void actionPerformed(ActionEvent e) {
                 setMinimized(false);
@@ -229,8 +231,8 @@ public class IndicatorPanel extends JPanel {
         };
     }
     
-    private AbstractAction removeAction(ChartContext frame, IndicatorPanel panel) {
-        return new AbstractAction("Remove Indicator", ResourcesUtils.getIcon("remove")) {
+    private Action removeAction(ChartContext frame, IndicatorPanel panel) {
+        return new AbstractAction("Remove Indicator", IconResource.getIcon("remove")) {
             @Override
             public void actionPerformed(ActionEvent e) {
                 frame.indicatorRemoved(indicator);
@@ -381,8 +383,7 @@ public class IndicatorPanel extends JPanel {
             if (mouseOver) {
                 Graphics2D g2 = Graphics2DHelper.prepareGraphics2D(g);
                 g2.setColor(backColor);
-                RoundRectangle2D roundRectangle = new RoundRectangle2D.Double(getX(), getY(), getWidth(), getHeight(),
-                        10, 10);
+                RoundRectangle2D roundRectangle = new RoundRectangle2D.Double(getX(), getY(), getWidth(), getHeight(),10, 10);
                 g2.fill(roundRectangle);
             }
             
@@ -417,30 +418,32 @@ public class IndicatorPanel extends JPanel {
                     }
                 });
                 addMouseListener(new MouseAdapter() {
-                    public @Override void mouseExited(MouseEvent e) {
+
+                    @Override
+                    public void mouseExited(MouseEvent e) {
                         setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
                         IndicatorToolbox.this.mouseOver = false;
                         IndicatorToolbox.this.validate();
                         IndicatorToolbox.this.repaint();
                     }
-                    
-                    public @Override void mouseEntered(MouseEvent e) {
+
+                    @Override
+                    public void mouseEntered(MouseEvent e) {
                         setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
                         IndicatorToolbox.this.mouseOver = true;
                         IndicatorToolbox.this.validate();
                         IndicatorToolbox.this.repaint();
                     }
-                    
-                    public @Override void mousePressed(MouseEvent e) {
+
+                    @Override
+                    public void mousePressed(MouseEvent e) {
                         IndicatorToolbox.this.mouseOver = false;
                         IndicatorToolbox.this.validate();
                         IndicatorToolbox.this.repaint();
                     }
                 });
             }
-            
         }
-        
     }
     
     public UUID getId() {

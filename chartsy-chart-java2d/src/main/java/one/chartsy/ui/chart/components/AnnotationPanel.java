@@ -32,6 +32,8 @@ import one.chartsy.commons.HandleableCloseable;
 import one.chartsy.commons.Range;
 import one.chartsy.data.CandleSeries;
 import one.chartsy.ui.chart.*;
+import one.chartsy.ui.chart.action.ChartActions;
+import one.chartsy.ui.chart.annotation.AnnotationHolder;
 import one.chartsy.ui.chart.annotation.GraphicLayer;
 import one.chartsy.ui.chart.annotation.GraphicModel;
 import one.chartsy.ui.chart.annotation.GraphicModelListener;
@@ -282,7 +284,7 @@ public class AnnotationPanel extends JPanel implements OrganizedViewInteractorCo
         if (e.getButton() == MouseEvent.BUTTON1 && e.getClickCount() == 2) {
             Annotation graphic = model.getGraphic(e.getPoint(), coordinateSystem);
             if (graphic != null) {
-                Action action = ChartsyActions.annotationProperties(chartFrame, graphic);
+                Action action = ChartActions.annotationProperties(chartFrame, graphic);
                 action.actionPerformed(new ActionEvent(e.getSource(), ActionEvent.ACTION_PERFORMED, graphic.getName()));
             }
         }
@@ -299,7 +301,7 @@ public class AnnotationPanel extends JPanel implements OrganizedViewInteractorCo
             if (getCursor().getType() == Cursor.N_RESIZE_CURSOR)
                 getParent().requestFocusInWindow();
             
-            if (!AnnotationManager.getDefault().hasNew()) {
+            if (!AnnotationHolder.current().hasNew()) {
                 //				chartFrame.deselectAll();
                 Annotation graphic = model.getGraphic(e.getPoint(), coordinateSystem);
                 if (graphic != null) {
@@ -367,9 +369,9 @@ public class AnnotationPanel extends JPanel implements OrganizedViewInteractorCo
                 if (getCursor().getType() == Cursor.N_RESIZE_CURSOR)
                     getParent().requestFocusInWindow();
                 
-                if (AnnotationManager.getDefault().hasNew()) {
+                if (AnnotationHolder.current().hasNew()) {
                     chartFrame.getMainPanel().deselectAll();
-                    Annotation ann = AnnotationManager.getDefault().getNewAnnotation(this);
+                    Annotation ann = AnnotationHolder.current().getNewAnnotation(this);
                     // add newly created annotation to the model
                     addAnnotation(ann);
                     // and make it immediately selected
@@ -788,9 +790,11 @@ public class AnnotationPanel extends JPanel implements OrganizedViewInteractorCo
                 return 0;
             
             CandleSeries quotes = cd.getDataset();
-            
-            long barTime = TimeFrameHelper.truncateMicros(epochMicros, cd.getTimeFrame());
-            
+
+            // TODO
+            //long barTime = TimeFrameHelper.truncateMicros(epochMicros, cd.getTimeFrame());
+            long barTime = epochMicros;
+
             int barNo = quotes.getTimeline().getTimeLocation(barTime);
             int count = quotes.length();
             if (barNo < 0) {
@@ -803,7 +807,7 @@ public class AnnotationPanel extends JPanel implements OrganizedViewInteractorCo
                 else if (epochMicros > max)
                     barNo = 0;
                 else
-                    barNo = -barNo - (cd.getTimeFrame().isIntraday()? 1: 2);
+                    barNo = -barNo - (TimeFrameHelper.isIntraday(cd.getTimeFrame())? 1: 2);
             }
             return barNo;
         }

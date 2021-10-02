@@ -3,17 +3,11 @@
  * See the file "LICENSE.txt" for the full license governing this code. */
 package one.chartsy.ui.chart;
 
-import java.awt.BasicStroke;
 import java.awt.Graphics2D;
 import java.awt.Paint;
 import java.awt.Stroke;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.io.Serializable;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -29,13 +23,10 @@ import java.util.logging.Logger;
 
 import javax.swing.Painter;
 
+import one.chartsy.commons.NamedProperty;
 import one.chartsy.ui.chart.ChartPlugin.Parameter;
 import one.chartsy.ui.chart.annotation.GraphicBag;
 import one.chartsy.ui.chart.graphic.GraphicInteractor;
-import org.openide.nodes.AbstractNode;
-
-import one.chartsy.ui.chart.plugin.ChartPlugin.Parameter;
-import one.chartsy.ui.SerializableBasicStroke;
 
 /**
  * The base class for the annotation objects being drawn over the chart.
@@ -481,60 +472,5 @@ public abstract class Annotation implements Painter<CoordinateSystem> {
         } while ((clazz = clazz.getSuperclass()) != Object.class);
         
         return result;
-    }
-    
-    public AbstractNode getNode() {
-        return new AnnotationNode(this);
-    }
-    
-    @Override
-    public void writeExternal(ObjectOutput out) throws IOException {
-        Map<String, NamedProperty<Object, Annotation>> properties = getNamedProperties();
-        for (NamedProperty<?, Annotation> property : properties.values()) {
-            try {
-                String name = property.getName();
-                if (name.length() == 0)
-                    continue;
-                Object value = writeReplace(property.getValue(this));
-                out.writeUTF(name);
-                out.writeObject(value);
-            } catch (IllegalArgumentException | IllegalAccessException e) {
-                e.printStackTrace();
-            }
-        }
-        out.writeUTF("");
-    }
-    
-    @Override
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        Map<String, NamedProperty<Object, Annotation>> properties = getNamedProperties();
-        
-        while (true) {
-            String name = in.readUTF();
-            if (name.equals(""))
-                break;
-            
-            Object obj = in.readObject();
-            NamedProperty<Object, Annotation> property = properties.get(name);
-            if (property != null) {
-                try {
-                    property.setValue(this, obj);
-                } catch (IllegalArgumentException | IllegalAccessException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
-    
-    protected Object writeReplace(Object value) throws IOException {
-        if (value == null)
-            return value;
-        if (value instanceof Serializable || value instanceof Externalizable)
-            return value;
-        if (value.getClass() == BasicStroke.class)
-            return new SerializableBasicStroke((BasicStroke) value);
-        
-        // TODO
-        return null;
     }
 }

@@ -32,7 +32,7 @@ public class PriceAxisMarker {
     
     protected synchronized String formatValue(double value) {
         DecimalFormat format = this.preciseDecimalFormat;
-        if (format == null || value > 9.9999 || value < -9.9999)
+        if (value > 9.9999 || value < -9.9999)
             format = this.decimalFormat;
         return format.format(value);
     }

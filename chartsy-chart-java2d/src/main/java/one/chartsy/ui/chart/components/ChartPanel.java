@@ -37,9 +37,11 @@ import javax.swing.JToolBar;
 import javax.swing.SwingConstants;
 import javax.swing.border.Border;
 
+import one.chartsy.TimeFrameHelper;
 import one.chartsy.commons.Range;
 import one.chartsy.data.CandleSeries;
 import one.chartsy.ui.chart.*;
+import one.chartsy.ui.chart.action.ChartAction;
 import one.chartsy.ui.chart.internal.ColorServices;
 import one.chartsy.ui.chart.internal.Graphics2DHelper;
 import org.openide.util.Lookup;
@@ -89,9 +91,7 @@ public class ChartPanel extends JLayeredPane implements Serializable {
         setStockTitleFromChartData(chartFrame.getChartData());
         
         ChartFrameListener frameAdapter = new ChartFrameListener() {
-            
-            private static final long serialVersionUID = -2843367182509698089L;
-            
+
             @Override
             public void datasetChanged(CandleSeries quotes) {
                 setStockTitleFromChartData(chartFrame.getChartData());
@@ -445,7 +445,7 @@ public class ChartPanel extends JLayeredPane implements Serializable {
                 setContentAreaFilled(false);
                 setMargin(new Insets(0, 0, 0, 0));
                 setBorder(new Border() {
-                    
+
                     @Override
                     public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
                     }
@@ -461,16 +461,15 @@ public class ChartPanel extends JLayeredPane implements Serializable {
                     }
                 });
                 addMouseListener(new MouseAdapter() {
-                    
-                    public @Override
-                    void mouseExited(MouseEvent e) {
+                    @Override
+                    public  void mouseExited(MouseEvent e) {
                         setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
                         mouseOver = false;
                         OverlayToolbox.this.repaint();
                     }
-                    
-                    public @Override
-                    void mouseEntered(MouseEvent e) {
+
+                    @Override
+                    public void mouseEntered(MouseEvent e) {
                         setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
                         mouseOver = true;
                         OverlayToolbox.this.repaint();
@@ -481,23 +480,17 @@ public class ChartPanel extends JLayeredPane implements Serializable {
     }
     
     private AbstractAction overlaySettings(Overlay overlay) {
-        return new AbstractAction("Overlay Settings", ResourcesUtils.getIcon("settings")) {
-            
-            private static final long serialVersionUID = 5932793199823651379L;
-            
+        return new AbstractAction("Overlay Settings", IconResource.getIcon("settings")) {
             @Override
             public void actionPerformed(ActionEvent e) {
-                SettingsPanel.getDefault().openSettingsWindow(overlay);
+                ChartAction.openSettingsWindow(overlay);
                 chartFrame.getMainPanel().repaint();
             }
         };
     }
     
     private AbstractAction removeAction(Overlay overlay) {
-        return new AbstractAction("Remove Indicator", ResourcesUtils.getIcon("remove")) {
-            
-            private static final long serialVersionUID = 7350546738497690142L;
-            
+        return new AbstractAction("Remove Indicator", IconResource.getIcon("remove")) {
             @Override
             public void actionPerformed(ActionEvent e) {
                 chartFrame.fireOverlayRemoved(overlay);
