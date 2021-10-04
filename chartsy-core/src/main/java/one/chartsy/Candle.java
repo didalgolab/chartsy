@@ -75,6 +75,10 @@ public interface Candle extends Chronological {
         return (high() + low()) / 2;
     }
 
+    default double range() {
+        return high() - low();
+    }
+
 
     static Candle of(long time, double price) {
         return of(time, price, price, price, price);
