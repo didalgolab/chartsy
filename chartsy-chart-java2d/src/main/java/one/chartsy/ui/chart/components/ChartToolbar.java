@@ -26,11 +26,9 @@ import javax.swing.border.MatteBorder;
 
 import one.chartsy.SymbolIdentity;
 import one.chartsy.data.CandleSeries;
-import one.chartsy.data.provider.DataProvider;
 import one.chartsy.ui.chart.ChartFrame;
 import one.chartsy.ui.chart.ChartFrameListener;
 import one.chartsy.ui.chart.action.ChartActions;
-import org.openide.util.Lookup;
 
 /**
  * Provides the toolbar functionality to the chart frame.
@@ -81,14 +79,14 @@ public class ChartToolbar extends JToolBar implements Serializable {
         chartFrame.addChartFrameListener(new ChartFrameListener() {
             @Override
             public void datasetChanged(CandleSeries quotes) {
-                SwingUtilities.invokeLater(() -> updateFavoriteActionState(quotes.getResource().getSymbol()));
+                SwingUtilities.invokeLater(() -> updateFavoriteActionState(quotes.getResource().symbol()));
             }
         });
         
         // if the quotes are already loaded update the favorite action as soon as possible
         CandleSeries dataset = chartFrame.getChartData().getDataset();
         if (dataset != null)
-            SwingUtilities.invokeLater(() -> updateFavoriteActionState(dataset.getResource().getSymbol()));
+            SwingUtilities.invokeLater(() -> updateFavoriteActionState(dataset.getResource().symbol()));
     }
     
     public void doBack() {

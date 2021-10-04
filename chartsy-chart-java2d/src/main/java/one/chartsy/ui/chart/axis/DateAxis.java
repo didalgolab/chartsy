@@ -20,15 +20,11 @@ import java.util.Calendar;
 
 import javax.swing.JPanel;
 
-import one.chartsy.ui.chart.ChartData;
-import one.chartsy.ui.chart.Template;
+import one.chartsy.ui.chart.*;
 import one.chartsy.ui.chart.components.ChartPanel;
 import one.chartsy.ui.chart.internal.CoordCalc;
 import one.chartsy.ui.chart.internal.Graphics2DHelper;
 import org.openide.util.NbBundle;
-
-import one.chartsy.ui.chart.ChartContext;
-import one.chartsy.ui.chart.ChartProperties;
 
 /**
  * Represents the date axis associated with the {@code ChartFrame}.
@@ -166,7 +162,7 @@ public class DateAxis extends JPanel implements Serializable {
         ChartProperties cp = chartFrame.getChartProperties();
         
         String year = String.valueOf(Calendar.getInstance().get(Calendar.YEAR));
-        String copy = NbBundle.getMessage(ChartContext.class, "Copyright.notice", year);
+        String copy = NbBundle.getMessage(ChartFrame.class, "copyright.notice", year);
         g2.setColor(cp.getFontColor());
         g2.setFont(cp.getFont().deriveFont(Font.BOLD));
         g2.drawString(copy, 0, getHeight() - 5);

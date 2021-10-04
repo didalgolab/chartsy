@@ -13,6 +13,6 @@ public interface When {
     boolean hasNext();
 
     default SymbolIdentity getSymbol() {
-        return getResource().getSymbol();
+        return getResource().symbol();
     }
 }

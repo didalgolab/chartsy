@@ -88,7 +88,7 @@ public class StockAutoCompleter extends AutoCompleter<StockAutoCompleter.Node> {
         public Node(Symbol symbolInfo) {
             super(Children.LEAF);
             this.symbolInfo = symbolInfo;
-            setName(symbolInfo.getName());
+            setName(symbolInfo.name());
         }
         
         protected void getLeft(StringBuilder out) {
@@ -107,7 +107,7 @@ public class StockAutoCompleter extends AutoCompleter<StockAutoCompleter.Node> {
                 exchange = "";
             
             out.append("<font color='#000000'><b>")
-            .append(symbolInfo.getName())
+            .append(symbolInfo.name())
             .append("</b></font>");
             if (!exchange.isEmpty())
                 out.append(" <font color='#aaaaaa' size='-2'><i>@")

@@ -12,8 +12,9 @@ import java.util.Map;
  */
 public interface SymbolIdentity {
 
-    String getName();
-    AssetType getType();
+    String name();
+
+    AssetType type();
 
     static SymbolIdentity of(String name) {
         return of(name, AssetTypes.GENERIC);

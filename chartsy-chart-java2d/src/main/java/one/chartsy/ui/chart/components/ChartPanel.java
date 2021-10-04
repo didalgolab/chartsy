@@ -222,12 +222,12 @@ public class ChartPanel extends JLayeredPane implements Serializable {
     protected void setStockTitleFromChartData(ChartData chartData) {
         String title;
         if (chartData == null || chartData.getSymbol() == null) {
-            title = NbBundle.getMessage(ChartPanel.class, "LBL_StockInfoNoData");
+            title = NbBundle.getMessage(ChartPanel.class, "ChartPanel.stockTitle.noData");
         } else {
-            String name = chartData.getSymbol().getName();
+            String name = chartData.getSymbol().name();
             String timeFrame = TimeFrameHelper.getName(chartData.getTimeFrame());
             String provider = (chartData.getDataProvider() == null)? " - ": chartData.getDataProvider().getName();
-            title = NbBundle.getMessage(ChartPanel.class, "LBL_StockInfo", name, timeFrame, provider);
+            title = NbBundle.getMessage(ChartPanel.class, "ChartPanel.stockTitle", name, timeFrame, provider);
         }
         
         // change label text if differs

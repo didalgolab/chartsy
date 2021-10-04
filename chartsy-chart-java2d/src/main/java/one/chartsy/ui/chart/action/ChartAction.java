@@ -2,14 +2,14 @@ package one.chartsy.ui.chart.action;
 
 import one.chartsy.ui.chart.Indicator;
 import one.chartsy.ui.chart.Overlay;
-import org.openide.util.Lookup;
+import one.chartsy.util.ServiceLookup;
 
 import javax.swing.*;
 
 public interface ChartAction {
 
     private static ChartActionServices actions() {
-        return Lookup.getDefault().lookup(ChartActionServices.class);
+        return ServiceLookup.getOrDefault(ChartActionServices.class, EmptyChartActionServices::new);
     }
 
     static Action find(String name, Object... args) {

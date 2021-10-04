@@ -182,8 +182,8 @@ public class ChartData implements Serializable, ChartFrameListener {
      * @param quotes the new dataset to set
      */
     public void setDataset(CandleSeries quotes) {
-        SymbolIdentity symbol = quotes.getResource().getSymbol();
-        TimeFrame timeFrame = quotes.getResource().getTimeFrame();
+        SymbolIdentity symbol = quotes.getResource().symbol();
+        TimeFrame timeFrame = quotes.getResource().timeFrame();
         boolean symbolChanged = !symbol.equals(getSymbol());
         boolean timeFrameChanged = !timeFrame.equals(getTimeFrame());
         
@@ -293,8 +293,8 @@ public class ChartData implements Serializable, ChartFrameListener {
         Range.Builder range = new Range.Builder();
         if (!isVisibleNull()) {
             Range di = getVisible().getRange(null).toRange();
-            double min = di.getMax();
-            double max = di.getMin();
+            double min = di.getMin();
+            double max = di.getMax();
             range.add(min - (max - min) * 0.00, max + (max - min) * 0.00);//TODO: changed
             
             if (!overlays.isEmpty())
@@ -330,6 +330,7 @@ public class ChartData implements Serializable, ChartFrameListener {
             if (period == 0)
                 period = 150;
             period = Math.min(period, dataset.length());
+            System.out.println("[CHART] Period: " + period + " = " + rectWidth + "/" + barWidth);
             
             setVisible(new VisibleCandles(dataset, dataset.length() - last, period));
             

@@ -17,7 +17,7 @@
                 <configuration>
                     <codeNameBase>one.chartsy.chart</codeNameBase>
                     <publicPackages>
-                        <publicPackage>one.chartsy.chart.java2d.*</publicPackage>
+                        <publicPackage>one.chartsy.ui.chart.*</publicPackage>
                     </publicPackages>
                 </configuration>
             </plugin>

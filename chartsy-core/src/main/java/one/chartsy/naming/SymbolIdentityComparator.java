@@ -10,9 +10,9 @@ public class SymbolIdentityComparator implements Comparator<SymbolIdentity> {
 
     @Override
     public int compare(SymbolIdentity o1, SymbolIdentity o2) {
-        int cmp = o1.getName().compareTo(o2.getName());
+        int cmp = o1.name().compareTo(o2.name());
         if (cmp == 0)
-            cmp = o1.getType().name().compareTo(o2.getType().name());
+            cmp = o1.type().name().compareTo(o2.type().name());
         return cmp;
     }
 

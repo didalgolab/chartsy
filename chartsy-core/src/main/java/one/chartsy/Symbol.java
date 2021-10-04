@@ -1,9 +1,7 @@
 package one.chartsy;
 
-import lombok.Getter;
 import one.chartsy.data.provider.DataProvider;
 
-@Getter
 public class Symbol implements SymbolIdentity {
     private String name;
     private AssetType type;
@@ -16,8 +14,30 @@ public class Symbol implements SymbolIdentity {
     }
 
     public Symbol(SymbolIdentity symbol, DataProvider provider) {
-        this.name = symbol.getName();
-        this.type = symbol.getType();
+        this.name = symbol.name();
+        this.type = symbol.type();
         this.provider = provider;
+    }
+
+    @Override
+    public String name() {
+        return name;
+    }
+
+    @Override
+    public AssetType type() {
+        return type;
+    }
+
+    public String getExchange() {
+        return exchange;
+    }
+
+    public DataProvider getProvider() {
+        return provider;
+    }
+
+    public String getDisplayName() {
+        return displayName;
     }
 }

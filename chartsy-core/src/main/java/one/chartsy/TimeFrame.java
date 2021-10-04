@@ -4,6 +4,7 @@ public interface TimeFrame {
 
     enum Period implements TimeFrame {
         DAILY,
+        M1,
         H1, H3, H4, H6
     }
 

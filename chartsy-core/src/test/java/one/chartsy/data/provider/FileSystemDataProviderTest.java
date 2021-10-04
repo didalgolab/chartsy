@@ -66,6 +66,6 @@ class FileSystemDataProviderTest {
     }
 
     private static List<String> names(List<? extends SymbolIdentity> list) {
-        return list.stream().map(SymbolIdentity::getName).collect(toList());
+        return list.stream().map(SymbolIdentity::name).collect(toList());
     }
 }

@@ -7,12 +7,12 @@ import org.openide.util.Lookup;
 import java.util.Map;
 
 public interface SymbolResource<E> {
-    SymbolIdentity getSymbol();
-    TimeFrame getTimeFrame();
-    Class<? extends E> getDataType();
+    SymbolIdentity symbol();
+    TimeFrame timeFrame();
+    Class<? extends E> dataType();
 
     default SymbolResource<E> withTimeFrame(TimeFrame newTimeFrame) {
-        return of(getSymbol(), newTimeFrame, getDataType());
+        return of(symbol(), newTimeFrame, dataType());
     }
 
     static SymbolResource<Candle> of(String name, TimeFrame timeFrame) {

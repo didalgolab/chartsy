@@ -18,6 +18,6 @@ public class StandardCandleSeries extends StandardIndexedSymbolResourceData<Cand
 
     @Override
     public String toString() {
-        return getResource() + ": " + getData();
+        return getResource() + ": " /*+ getData()*/;
     }
 }

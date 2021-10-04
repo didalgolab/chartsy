@@ -79,6 +79,7 @@ public class CandlestickChart implements Chart {
         
         Line2D line2d = new Line2D.Double();
         Rectangle2D rect2d = new Rectangle2D.Double();
+        System.out.println("[CHART] Rect: " + rect);
         for (int i = 0, j = dataset.getLength(); i < j; i++) {
             Candle q0 = dataset.getQuoteAt(i);
             

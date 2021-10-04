@@ -9,6 +9,7 @@ import one.chartsy.ui.chart.components.MainPanel;
 import one.chartsy.ui.chart.internal.ChartFrameDropTarget;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.openide.util.NbBundle;
 
 import javax.swing.*;
 import java.awt.*;
@@ -204,6 +205,29 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
     @Override
     public ChartData getChartData() {
         return chartData;
+    }
+
+
+    /**
+     * Changes {@code ChartData} associated with this chart frame.
+     *
+     * @param data
+     *            the chart data
+     * @throws IllegalArgumentException
+     *             if the {@code data} or {@code data.getSymbol()} is
+     *             {@code null}
+     */
+    public void setChartData(ChartData data) {
+        if (data == null)
+            throw new IllegalArgumentException("ChartData cannot be NULL");
+        if (data.getSymbol() == null)
+            throw new IllegalArgumentException("ChartData Symbol cannot be NULL");
+        if (chartData != null)
+            removeChartFrameListener(chartData);
+
+        chartData = data;
+        addChartFrameListener(data);
+        setName(NbBundle.getMessage(ChartFrame.class, "ChartFrame.name", chartData.getSymbol().name()));
     }
 
     @Override

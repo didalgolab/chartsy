@@ -65,7 +65,7 @@ public class SymbolChanger extends JToolBar implements Serializable {
         txtSymbol = new JTextField(11);
         ((AbstractDocument) txtSymbol.getDocument()).setDocumentFilter(new UpperCaseDocumentFilter());
         txtSymbol.setMargin(new Insets(0, 2, 0, 2));
-        txtSymbol.setText(chartFrame.getChartData().getSymbol().getName());
+        txtSymbol.setText(chartFrame.getChartData().getSymbol().name());
         Dimension d1 = new Dimension(90, 20);
         d1.height = Math.max(d1.height, txtSymbol.getPreferredSize().height);
         txtSymbol.setPreferredSize(d1);
