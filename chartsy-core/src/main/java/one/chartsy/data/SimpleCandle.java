@@ -26,7 +26,7 @@ public final class SimpleCandle implements Candle, Serializable {
     private final double volume;
     private final int count;
 
-    SimpleCandle(long time, double open, double high, double low, double close, double volume, int count) {
+    private SimpleCandle(long time, double open, double high, double low, double close, double volume, int count) {
         this.time = time;
         this.open = open;
         this.high = high;

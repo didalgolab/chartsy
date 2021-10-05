@@ -3,30 +3,7 @@ package one.chartsy.data;
 import one.chartsy.Candle;
 import one.chartsy.CandleBuilder;
 
-public class SimpleCandleBuilder implements CandleBuilder<Candle> {
-
-    private boolean present;
-    protected long time;
-    protected double open;
-    protected double high;
-    protected double low;
-    protected double close;
-    protected double volume;
-    protected int count;
-
-
-    @Override
-    public boolean isPresent() {
-        return present;
-    }
-
-    @Override
-    public SimpleCandle get() {
-        if (isPresent())
-            return new SimpleCandle(time, open, high, low, close, volume, count);
-        else
-            return null;
-    }
+public class SimpleCandleBuilder extends CandleBuilder.From<Candle> {
 
     @Override
     public void put(Candle c) {
@@ -37,7 +14,7 @@ public class SimpleCandleBuilder implements CandleBuilder<Candle> {
         close = c.close();
         volume = c.volume();
         count = c.count();
-        present = true;
+        setPresent();
     }
 
     @Override

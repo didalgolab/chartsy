@@ -4,19 +4,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
-public interface TimeFrameAggregator<T, S> {
+public interface TimeFrameAggregator<T, E> {
 
-    Incomplete<T> add(S sourceItem, Consumer<T> completedItemConsumer);
+    Incomplete<T> add(E element, Consumer<T> completedItemConsumer);
 
-    default List<T> aggregate(List<S> source) {
-        return aggregate(source, true);
+    default List<T> aggregate(List<E> elements) {
+        return aggregate(elements, true);
     }
 
-    default List<T> aggregate(List<S> source, boolean emitLast) {
+    default List<T> aggregate(List<E> elements, boolean emitLast) {
         List<T> aggregated = new ArrayList<>();
         Incomplete<T> last = null;
-        for (S sourceItem : source)
-            last = add(sourceItem, aggregated::add);
+        for (E element : elements)
+            last = add(element, aggregated::add);
 
         if (emitLast && last != null)
             aggregated.add(last.get());
