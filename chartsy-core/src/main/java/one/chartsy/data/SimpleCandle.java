@@ -48,7 +48,7 @@ public final class SimpleCandle implements Candle, Serializable {
     }
 
     @Override
-    public final long getTime() {
+    public long getTime() {
         return time;
     }
 
