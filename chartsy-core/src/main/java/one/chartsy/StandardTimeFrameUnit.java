@@ -11,6 +11,10 @@ public enum StandardTimeFrameUnit implements TimeFrameUnit {
     VOLUME ("Volume", false, false),
     /** The certain price change. */
     PRICE ("Price", false, true),
+    /** The certain price change percentage. */
+    PRICE_PERCENTAGE ("Price Percentage", false, true),
+    /** The certain price change using line break charts. */
+    PRICE_LINE_BREAK ("Price Line Break Lines", false, true),
     /** The certain price change using renko bars. */
     PRICE_RENKO ("Price Renko", false, true)
     ;

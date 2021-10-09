@@ -1,4 +1,4 @@
-package one.chartsy.core;
+package one.chartsy.core.services;
 
 import one.chartsy.Incomplete;
 import one.chartsy.TimeFrameAggregator;

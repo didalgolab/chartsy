@@ -127,6 +127,15 @@ public interface Chronological extends Comparable<Chronological> {
     }
 
     /**
+     * Gives current time.
+     *
+     * @return the current time's epoch microseconds
+     */
+    static long now() {
+        return toEpochMicros(Instant.now());
+    }
+
+    /**
      * Returns an object's time as a number of microseconds elapsed since the epoch
      * measured with a UTC clock.
      *

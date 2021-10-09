@@ -22,6 +22,7 @@ public enum AssetTypes implements AssetType {
     FUTURE_OPTION(true),
     GENERIC(true),
     INDEX(false),
+    INDICATOR(false),
     INTEREST_RATE(true),
     OPTION(true),
     STOCK(true);

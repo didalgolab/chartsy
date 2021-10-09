@@ -9,7 +9,7 @@ public class TickCandleBuilder extends CandleBuilder.From<Tick> {
     public void put(Tick t) {
         time = t.getTime();
         open = high = low = close = t.price();
-        volume = t.volume();
+        volume = t.size();
         count = 1;
         setPresent();
     }
@@ -24,7 +24,7 @@ public class TickCandleBuilder extends CandleBuilder.From<Tick> {
             high = Math.max(high, price);
             low = Math.min(low, price);
             close = price;
-            volume += t.volume();
+            volume += t.size();
             count++;
         }
     }

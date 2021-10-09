@@ -63,7 +63,7 @@ public class SimpleTick implements Tick {
     }
 
     @Override
-    public final double volume() {
+    public final double size() {
         return size;
     }
 

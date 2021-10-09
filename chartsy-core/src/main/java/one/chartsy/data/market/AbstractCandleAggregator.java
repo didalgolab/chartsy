@@ -22,8 +22,10 @@ public abstract class AbstractCandleAggregator<E> implements TimeFrameAggregator
     public Incomplete<Candle> add(E element, Consumer<Candle> completedItemConsumer) {
         if (isCompletedBy(element) && candle.isPresent()) {
             completedItemConsumer.accept(candle.get());
+            candle.put(element);
+        } else {
+            candle.merge(element);
         }
-        candle.put(element);
         return candle;
     }
 }

@@ -41,7 +41,7 @@ public interface Tick extends Chronological {
      * 
      * @return the tick volume
      */
-    double volume();
+    double size();
 
     static <T extends Tick> T parse(String json, Class<T> type) {
         return SimpleTick.JsonFormat.fromJson(json, type);

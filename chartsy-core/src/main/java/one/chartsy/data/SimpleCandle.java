@@ -44,6 +44,9 @@ public final class SimpleCandle implements Candle, Serializable {
         if (c instanceof SimpleCandle) {
             return (SimpleCandle) c;
         }
+        if (c instanceof AbstractCandle) {
+            return ((AbstractCandle) c).baseCandle();
+        }
         return new SimpleCandle(c.getTime(), c.open(), c.high(), c.low(), c.close(), c.volume(), c.count());
     }
 
