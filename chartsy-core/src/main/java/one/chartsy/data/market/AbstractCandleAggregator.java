@@ -7,19 +7,19 @@ import one.chartsy.TimeFrameAggregator;
 
 import java.util.function.Consumer;
 
-public abstract class AbstractCandleAggregator<E> implements TimeFrameAggregator<Candle, E> {
+public abstract class AbstractCandleAggregator<T extends Candle, E> implements TimeFrameAggregator<T, E> {
 
-    private final CandleBuilder<Candle, E> candle;
+    private final CandleBuilder<T, E> candle;
 
 
-    public AbstractCandleAggregator(CandleBuilder<Candle, E> builder) {
+    public AbstractCandleAggregator(CandleBuilder<T, E> builder) {
         this.candle = builder;
     }
 
     protected abstract boolean isCompletedBy(E element);
 
     @Override
-    public Incomplete<Candle> add(E element, Consumer<Candle> completedItemConsumer) {
+    public Incomplete<T> add(E element, Consumer<T> completedItemConsumer) {
         if (isCompletedBy(element) && candle.isPresent()) {
             completedItemConsumer.accept(candle.get());
             candle.put(element);

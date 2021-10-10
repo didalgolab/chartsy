@@ -2,16 +2,19 @@ package one.chartsy.data.market;
 
 import one.chartsy.Candle;
 import one.chartsy.CandleBuilder;
+import one.chartsy.time.Chronological;
 
 import java.time.Period;
+import java.time.temporal.TemporalAmount;
 
-public class PeriodCandleAggregator<E extends Candle> extends AbstractCandleAggregator<E> {
+public class PeriodCandleAggregator<E extends Chronological> extends AbstractCandleAggregator<Candle, E> {
 
-    protected final Period period;
+    protected final TemporalAmount period;
     protected final PeriodCandleAlignment alignment;
     protected long candleCloseTime = Long.MIN_VALUE;
 
-    public PeriodCandleAggregator(CandleBuilder<Candle, E> builder, Period period, PeriodCandleAlignment alignment) {
+
+    public PeriodCandleAggregator(CandleBuilder<Candle, E> builder, TemporalAmount period, PeriodCandleAlignment alignment) {
         super(builder);
         this.period = period;
         this.alignment = alignment;

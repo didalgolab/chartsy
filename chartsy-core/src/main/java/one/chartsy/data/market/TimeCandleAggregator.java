@@ -3,10 +3,11 @@ package one.chartsy.data.market;
 import one.chartsy.Candle;
 import one.chartsy.CandleBuilder;
 import one.chartsy.TradingDay;
+import one.chartsy.time.Chronological;
 
 import java.time.Duration;
 
-public class TimeCandleAggregator<E extends Candle> extends AbstractCandleAggregator<E> {
+public class TimeCandleAggregator<E extends Chronological> extends AbstractCandleAggregator<Candle, E> {
 
     protected final Duration granularity;
     protected final TimeCandleAlignment alignment;

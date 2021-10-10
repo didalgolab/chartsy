@@ -1,6 +1,6 @@
 package one.chartsy;
 
-public interface TimeFrameUnit {
+public /*sealed*/ interface TimeFrameUnit /*permits StandardTimeFrameUnit, TimeFrameUnit.Custom*/ {
 
     boolean isEventBased();
 
@@ -8,4 +8,8 @@ public interface TimeFrameUnit {
 
     @Override
     String toString();
+
+    /*non-sealed*/ interface Custom extends TimeFrameUnit {
+
+    }
 }

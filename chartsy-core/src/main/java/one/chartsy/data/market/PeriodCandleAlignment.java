@@ -3,10 +3,10 @@ package one.chartsy.data.market;
 import one.chartsy.time.Chronological;
 
 import java.time.LocalTime;
-import java.time.Period;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.TemporalAdjuster;
+import java.time.temporal.TemporalAmount;
 
 import static java.time.LocalTime.MIDNIGHT;
 
@@ -16,7 +16,7 @@ public record PeriodCandleAlignment(
         TemporalAdjuster... moreAlignments
 ) {
 
-    public long getRegularCandleCloseTime(long time, Period candleGranularity) {
+    public long getRegularCandleCloseTime(long time, TemporalAmount candlePeriod) {
         ZonedDateTime timeAtZone = Chronological.toDateTime(time, dailyAlignmentTimeZone);
         ZonedDateTime candleEndTime = timeAtZone.with(dailyAlignment);
         if (moreAlignments != null)
@@ -26,7 +26,7 @@ public record PeriodCandleAlignment(
         if (!MIDNIGHT.equals(dailyAlignment))
             candleEndTime = candleEndTime.minusDays(1);
         while (candleEndTime.isBefore(timeAtZone))
-            candleEndTime = candleEndTime.plus(candleGranularity);
+            candleEndTime = candleEndTime.plus(candlePeriod);
 
         return Chronological.toEpochMicros(candleEndTime);
     }

@@ -1,7 +1,13 @@
 package one.chartsy;
 
+import one.chartsy.core.TimeFrameServices;
+import one.chartsy.data.SimpleCandleBuilder;
+import one.chartsy.data.market.PeriodCandleAlignment;
+import one.chartsy.data.market.TimeCandleAlignment;
+import one.chartsy.time.Chronological;
 import one.chartsy.time.DayOfMonth;
 import one.chartsy.time.Months;
+import one.chartsy.time.Seconds;
 
 import java.time.*;
 import java.time.temporal.IsoFields;
@@ -18,6 +24,8 @@ public interface TimeFrame {
     Number getDuration(TimeFrameUnit unit);
 
     String getDisplayName();
+
+    TimeFrameAggregator<Candle, Chronological> getAggregator(TimeFrameServices services);
 
     default LocalTime getDailyAlignment() {
         return LocalTime.MIDNIGHT;
@@ -143,6 +151,11 @@ public interface TimeFrame {
             return timeFrame.getCandleAlignment();
         }
 
+        @Override
+        public TimeFrameAggregator<Candle, Chronological> getAggregator(TimeFrameServices services) {
+            return timeFrame.getAggregator(services);
+        }
+
         public TimeBasedTimeFrame withDailyAlignment(LocalTime dailyAlignment, ZoneId dailyAlignmentTimeZone) {
             return timeFrame.withDailyAlignment(dailyAlignment, dailyAlignmentTimeZone);
         }
@@ -223,6 +236,22 @@ public interface TimeFrame {
                 return null;
         }
 
+        @SuppressWarnings({"rawtypes", "unchecked"})
+        @Override
+        public TimeFrameAggregator<Candle, Chronological> getAggregator(TimeFrameServices services) {
+            try {
+                final var SECS_IN_DAY = Duration.ofDays(1).getSeconds();
+                var exactDuration = Duration.from(duration);
+                var seconds = exactDuration.getSeconds();
+                if (SECS_IN_DAY % seconds == 0)
+                    return (TimeFrameAggregator) services.createTimeCandleAggregator(exactDuration, new SimpleCandleBuilder(), new TimeCandleAlignment(getDailyAlignmentTimeZone(), getDailyAlignment()));
+
+            } catch (DateTimeException ignored) {
+                // ignored, fallback to generic-period aggregator
+            }
+            return (TimeFrameAggregator) services.createPeriodCandleAggregator(duration, new SimpleCandleBuilder(), new PeriodCandleAlignment(getDailyAlignmentTimeZone(), getDailyAlignment(), getCandleAlignment().orElse(null)));
+        }
+
         @Override
         public String getDisplayName() {
             return displayName;
@@ -239,7 +268,7 @@ public interface TimeFrame {
         }
 
         @Override
-        public Optional<?> getCandleAlignment() {
+        public Optional<TemporalAdjuster> getCandleAlignment() {
             return Optional.ofNullable(candleAlignment);
         }
     }
@@ -259,9 +288,33 @@ public interface TimeFrame {
         public String getDisplayName() {
             return "Ticks";
         }
+
+        @SuppressWarnings("unchecked")
+        @Override
+        public TimeFrameAggregator<Candle, Chronological> getAggregator(TimeFrameServices services) {
+            return (TimeFrameAggregator) services.createTickOnlyAggregator();
+        }
     };
 
     default boolean isAssignableFrom(TimeFrame other) {
         return equals(other);
+    }
+
+    default Optional<Seconds> getAsSeconds() {
+        if (this instanceof TimeBasedTimeFrame tbf) {
+            try {
+                return Optional.of(Seconds.from(tbf.getDuration()));
+            } catch (DateTimeException ignored) {}// not convertible to seconds-only instance
+        }
+        return Optional.empty();
+    }
+
+    default Optional<Months> getAsMonths() {
+        if (this instanceof TimeBasedTimeFrame tbf) {
+            try {
+                return Optional.of(Months.from(tbf.getDuration()));
+            } catch (DateTimeException ignored) {}// not convertible to seconds-only instance
+        }
+        return Optional.empty();
     }
 }

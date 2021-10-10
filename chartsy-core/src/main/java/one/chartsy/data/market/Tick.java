@@ -1,5 +1,6 @@
 package one.chartsy.data.market;
 
+import one.chartsy.Candle;
 import one.chartsy.time.Chronological;
 
 /**
@@ -42,6 +43,10 @@ public interface Tick extends Chronological {
      * @return the tick volume
      */
     double size();
+
+    default Candle toCandle() {
+        return Candle.of(getTime(), price(), price(), price(), price(), size(), 1);
+    }
 
     static <T extends Tick> T parse(String json, Class<T> type) {
         return SimpleTick.JsonFormat.fromJson(json, type);
