@@ -53,7 +53,7 @@ public class StooqFlatFileItemReader {
             System.out.println(file.getFileName() + "\t" + count + "\t" + last + "\t" + first);
             SymbolResource<Candle> resource = SymbolResource.of("ZWC", TimeFrame.Period.DAILY);
             Collections.reverse(candles);
-            CandleSeries series = CandleSeries.from(resource, candles);
+            CandleSeries series = CandleSeries.of(resource, candles);
             System.out.println("Length: " + series.length());
             System.out.println("First: " + series.getFirst());
             System.out.println("Last: " + series.getLast());

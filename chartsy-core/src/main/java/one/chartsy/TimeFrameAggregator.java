@@ -8,11 +8,11 @@ public interface TimeFrameAggregator<T, E> {
 
     Incomplete<T> add(E element, Consumer<T> completedItemConsumer);
 
-    default List<T> aggregate(List<E> elements) {
+    default List<T> aggregate(List<? extends E> elements) {
         return aggregate(elements, true);
     }
 
-    default List<T> aggregate(List<E> elements, boolean emitLast) {
+    default List<T> aggregate(List<? extends E> elements, boolean emitLast) {
         List<T> aggregated = new ArrayList<>();
         Incomplete<T> last = null;
         for (E element : elements)

@@ -1,7 +1,5 @@
 package one.chartsy.samples.json;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
 import one.chartsy.Candle;
 import one.chartsy.SymbolResource;
 import one.chartsy.TimeFrame;
@@ -10,11 +8,9 @@ import one.chartsy.data.SimpleCandle;
 import one.chartsy.ui.chart.ChartData;
 import one.chartsy.ui.chart.ChartFrame;
 import one.chartsy.ui.chart.type.CandlestickChart;
-import org.openjdk.jol.info.ClassLayout;
 
 import javax.swing.*;
 import java.io.BufferedReader;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.reflect.InvocationTargetException;
@@ -38,7 +34,7 @@ public class JsonsFilesSample {
             SymbolResource<Candle> symbol = SymbolResource.of("EURUSD", TimeFrame.Period.M1);
             list = new ArrayList<>(list);
             Collections.reverse(list);
-            CandleSeries series = CandleSeries.from(symbol, list);
+            CandleSeries series = CandleSeries.of(symbol, list);
 
             SwingUtilities.invokeAndWait(() -> {
                 ChartData chartData = new ChartData();

@@ -7,10 +7,12 @@ import one.chartsy.TimeFrameAggregator;
 import one.chartsy.core.TimeFrameServices;
 import one.chartsy.data.market.*;
 import one.chartsy.time.Chronological;
+import org.openide.util.lookup.ServiceProvider;
 
 import java.time.Duration;
 import java.time.temporal.TemporalAmount;
 
+@ServiceProvider(service = TimeFrameServices.class)
 public class DefaultTimeFrameServices implements TimeFrameServices {
 
     private static final TimeFrameAggregator<Candle, Tick> tickOnlyAggregator = (sourceTick, completedItemConsumer) -> {

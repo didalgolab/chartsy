@@ -38,7 +38,7 @@ public final class SymbolResourceFiles {
                     .collect(Collectors.toList());
         }
         Collections.reverse(candles);
-        return CandleSeries.from(symb, candles);
+        return CandleSeries.of(symb, candles);
     }
 
     public static Candle newCandle(Path path) throws IOException {

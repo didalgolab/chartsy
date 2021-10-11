@@ -5,11 +5,16 @@ import one.chartsy.CandleBuilder;
 import one.chartsy.TimeFrameAggregator;
 import one.chartsy.data.market.*;
 import one.chartsy.time.Chronological;
+import org.openide.util.Lookup;
 
 import java.time.Duration;
 import java.time.temporal.TemporalAmount;
 
 public interface TimeFrameServices {
+
+    static TimeFrameServices getDefault() {
+        return Lookup.getDefault().lookup(TimeFrameServices.class);
+    }
 
     TimeFrameAggregator<Candle, Tick> createTickOnlyAggregator();
 

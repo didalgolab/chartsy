@@ -4,7 +4,6 @@ import one.chartsy.Candle;
 import one.chartsy.CandleBuilder;
 import one.chartsy.time.Chronological;
 
-import java.time.Period;
 import java.time.temporal.TemporalAmount;
 
 public class PeriodCandleAggregator<E extends Chronological> extends AbstractCandleAggregator<Candle, E> {

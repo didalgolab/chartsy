@@ -4,16 +4,12 @@ import one.chartsy.*;
 import one.chartsy.core.services.DefaultTimeFrameServices;
 import one.chartsy.data.CandleSeries;
 import one.chartsy.data.SimpleCandle;
-import one.chartsy.data.SimpleCandleBuilder;
 import one.chartsy.data.file.SymbolResourceFiles;
-import one.chartsy.data.market.*;
 import one.chartsy.time.Chronological;
-import one.chartsy.time.Months;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.*;
-import java.time.temporal.TemporalAdjuster;
 import java.util.*;
 
 import static one.chartsy.TimeFrameHelper.*;
@@ -198,7 +194,7 @@ public class TimeFrameAggregationVerificationSample {
             result[i] = result[j];
             result[j] = q;
         }
-        return CandleSeries.from(quotes.getResource().withTimeFrame(targetTF), Arrays.asList(result));
+        return CandleSeries.of(quotes.getResource().withTimeFrame(targetTF), Arrays.asList(result));
     }
 
     private static boolean sameBar(Calendar t1, Calendar t2, int months) {
@@ -247,7 +243,7 @@ public class TimeFrameAggregationVerificationSample {
         }
         buffer.add(Candle.of(time, open, high, low, close, volume, openInterest));
         Collections.reverse(buffer);
-        return CandleSeries.from(quotes.getResource().withTimeFrame(targetTF), buffer);
+        return CandleSeries.of(quotes.getResource().withTimeFrame(targetTF), buffer);
     }
 
     private static boolean isAssignableFrom(TimeFrame a, TimeFrame b) {

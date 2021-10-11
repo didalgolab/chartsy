@@ -10,7 +10,7 @@ import java.util.function.ToDoubleFunction;
 
 public interface CandleSeries extends IndexedSymbolResourceData<Candle> {
 
-    static CandleSeries from(SymbolResource<Candle> resource, Collection<? extends Candle> values) {
+    static CandleSeries of(SymbolResource<Candle> resource, Collection<? extends Candle> values) {
         return new StandardCandleSeries(resource, PackedDataset.of(values));
     }
 

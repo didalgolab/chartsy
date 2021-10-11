@@ -27,6 +27,10 @@ public interface TimeFrame {
 
     TimeFrameAggregator<Candle, Chronological> getAggregator(TimeFrameServices services);
 
+    default TimeFrameAggregator<Candle, Chronological> getAggregator() {
+        return getAggregator(TimeFrameServices.getDefault());
+    }
+
     default LocalTime getDailyAlignment() {
         return LocalTime.MIDNIGHT;
     }
@@ -156,6 +160,10 @@ public interface TimeFrame {
             return timeFrame.getAggregator(services);
         }
 
+        public TimeBasedTimeFrame withDailyAlignment(ZoneId dailyAlignmentTimeZone) {
+            return timeFrame.withDailyAlignment(dailyAlignmentTimeZone);
+        }
+
         public TimeBasedTimeFrame withDailyAlignment(LocalTime dailyAlignment, ZoneId dailyAlignmentTimeZone) {
             return timeFrame.withDailyAlignment(dailyAlignment, dailyAlignmentTimeZone);
         }
@@ -207,6 +215,10 @@ public interface TimeFrame {
             if (duration instanceof Duration)
                 units = List.of(StandardTimeFrameUnit.SECONDS);
             this.units = units;
+        }
+
+        public CustomPeriod<T> withDailyAlignment(ZoneId dailyAlignmentTimeZone) {
+            return new CustomPeriod<T>(duration, displayName, dailyAlignment, dailyAlignmentTimeZone, candleAlignment);
         }
 
         public CustomPeriod<T> withDailyAlignment(LocalTime dailyAlignment, ZoneId dailyAlignmentTimeZone) {
