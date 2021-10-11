@@ -32,7 +32,17 @@ public class StandardIndexedSymbolResourceData<E extends Chronological> implemen
 
     @Override
     public ChronologicalIterator<E> chronologicalIterator(ChronologicalIteratorContext context) {
-        throw new UnsupportedOperationException();
+        return new AbstractChronologicalIterator<>(this, context) {
+            @Override
+            public E peek() {
+                return get(index - 1);
+            }
+
+            @Override
+            public E next() {
+                return (value = get(--index));
+            }
+        };
     }
 
     @Override
