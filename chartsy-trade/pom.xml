@@ -6,7 +6,7 @@
         <artifactId>chartsy-repository</artifactId>
         <version>0.1-SNAPSHOT</version>
     </parent>
-    <artifactId>chartsy-simulation</artifactId>
+    <artifactId>chartsy-trade</artifactId>
     <packaging>nbm</packaging>
     <build>
         <plugins>
@@ -15,9 +15,9 @@
                 <artifactId>nbm-maven-plugin</artifactId>
                 <extensions>true</extensions>
                 <configuration>
-                    <codeNameBase>one.chartsy.simulation</codeNameBase>
+                    <codeNameBase>one.chartsy.trade</codeNameBase>
                     <publicPackages>
-                        <publicPackage>one.chartsy.simulation.*</publicPackage>
+                        <publicPackage>one.chartsy.trade.*</publicPackage>
                     </publicPackages>
                 </configuration>
             </plugin>
@@ -41,11 +41,6 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>chartsy-core</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>chartsy-trade</artifactId>
             <version>${project.version}</version>
         </dependency>
     </dependencies>
