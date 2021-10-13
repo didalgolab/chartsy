@@ -4,21 +4,72 @@ import one.chartsy.Candle;
 import one.chartsy.SymbolResource;
 import one.chartsy.TimeFrame;
 import one.chartsy.data.CandleSeries;
+import one.chartsy.data.Series;
 import one.chartsy.simulation.impl.SimpleSimulationRunner;
-import one.chartsy.trade.TradingStrategyContext;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
+import org.openide.util.Lookup;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Stream;
 
+import static one.chartsy.time.Chronological.toEpochMicros;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.verify;
 
 class SimulationRunnerTest {
-    final SymbolResource<Candle> TEST_SYMBOL = SymbolResource.of("TEST_SYMBOL", TimeFrame.Period.DAILY);
+    static final SymbolResource<Candle> TEST_SYMBOL = SymbolResource.of("TEST_SYMBOL", TimeFrame.Period.DAILY);
     final CandleSeries emptySeries = CandleSeries.of(TEST_SYMBOL, List.of());
+    final CandleSeries series = CandleSeries.of(TEST_SYMBOL, List.of(
+            Candle.of(3L, 1),
+            Candle.of(2L, 2),
+            Candle.of(1L, 3)
+    ));
+
+    @ParameterizedTest
+    @MethodSource("runners")
+    void under_construction(SimulationRunner runner) {
+        SimulationDriver myStrategy = Mockito.spy(SimulationDriver.class);
+
+        runner.run(List.of(series), myStrategy);
+        var order = inOrder(myStrategy);
+        order.verify(myStrategy).initSimulation(any());
+        order.verify(myStrategy).postSimulation();
+    }
+
+    @ParameterizedTest
+    @MethodSource("runners")
+    void run_pushes_data_points_from_given_Series_to_SimulationDriver(SimulationRunner runner) {
+        SimulationDriver simDriver = Mockito.spy(SimulationDriver.class);
+        Candle dataPoint = candle();
+        LocalDate dataPointDate = dataPoint.getDate();
+
+        runner.run(seriesOf(dataPoint), simDriver);
+
+        var order = inOrder(simDriver);
+        order.verify(simDriver).initSimulation(any());
+        order.verify(simDriver).onTradingDayStart(dataPointDate);
+        order.verify(simDriver).onData(any(), same(dataPoint));
+        order.verify(simDriver).onTradingDayEnd(dataPointDate);
+        order.verify(simDriver).postSimulation();
+    }
+
+    @ParameterizedTest
+    @MethodSource("runners")
+    void run_passes_given_Series_in_SimulationContext(SimulationRunner runner) {
+        SimulationDriver simDriver = Mockito.spy(SimulationDriver.class);
+        List<Series<Candle>> series = List.of(seriesOf(candle()));
+
+        runner.run(series, simDriver);
+        verify(simDriver).initSimulation(
+                argThat(
+                        context -> series.equals(context.dataSeries())));
+    }
 
     @ParameterizedTest
     @MethodSource("runners")
@@ -30,8 +81,16 @@ class SimulationRunnerTest {
         assertNotNull(result, "SimulationResult");
     }
 
+    static Candle candle() {
+        return Candle.of(toEpochMicros(LocalDateTime.of(2021, 12, 2, 0, 0)), 1.0);
+    }
+
+    static Series<Candle> seriesOf(Candle... cs) {
+        return CandleSeries.of(TEST_SYMBOL, List.of(cs));
+    }
+
     static Stream<SimulationRunner> runners() {
-        TradingStrategyContext context = new TradingStrategyContext() {};
+        SimulationContext context = Lookup.getDefault().lookup(SimulationContext.class);
         return Stream.of(new SimpleSimulationRunner(context));
     }
 }

@@ -8,11 +8,6 @@ import java.util.NoSuchElementException;
 
 public interface ChronologicalIterator<E extends Chronological> extends Iterator<E>, When {
     /**
-     * Gives the unique identifier of this iterator.
-     */
-    Integer getId();
-
-    /**
      * Gives the underlying dataset being iterated.
      */
     IndexedSymbolResourceData<E> getDataset();

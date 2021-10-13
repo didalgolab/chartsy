@@ -8,9 +8,14 @@ public class Symbol implements SymbolIdentity {
     private String exchange;
     private String displayName;
     private DataProvider provider;
+    private double spread;
 
     public Symbol(String name, DataProvider provider) {
         this(SymbolIdentity.of(name), provider);
+    }
+
+    public Symbol(SymbolIdentity symbol) {
+        this(symbol, null);
     }
 
     public Symbol(SymbolIdentity symbol, DataProvider provider) {
@@ -39,5 +44,9 @@ public class Symbol implements SymbolIdentity {
 
     public String getDisplayName() {
         return displayName;
+    }
+
+    public double getSpread() {
+        return spread;
     }
 }

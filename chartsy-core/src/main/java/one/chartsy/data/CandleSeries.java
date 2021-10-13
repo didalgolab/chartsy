@@ -8,7 +8,7 @@ import one.chartsy.data.collections.PackedDataset;
 import java.util.Collection;
 import java.util.function.ToDoubleFunction;
 
-public interface CandleSeries extends IndexedSymbolResourceData<Candle> {
+public interface CandleSeries extends Series<Candle> {
 
     static CandleSeries of(SymbolResource<Candle> resource, Collection<? extends Candle> values) {
         return new StandardCandleSeries(resource, PackedDataset.of(values));

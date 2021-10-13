@@ -1,28 +1,29 @@
 package one.chartsy.simulation.impl;
 
-import one.chartsy.data.ChronologicalIterator;
-import one.chartsy.data.IndexedSymbolResourceData;
 import one.chartsy.collections.PriorityMap;
+import one.chartsy.data.ChronologicalIterator;
+import one.chartsy.data.Series;
+import one.chartsy.simulation.SimulationContext;
 import one.chartsy.simulation.SimulationDriver;
 import one.chartsy.simulation.SimulationResult;
 import one.chartsy.simulation.SimulationRunner;
 import one.chartsy.simulation.data.TradingData;
 import one.chartsy.time.Chronological;
-import one.chartsy.trade.TradingStrategyContext;
 
 import java.time.LocalDate;
 import java.util.Collection;
 
 public class SimpleSimulationRunner implements SimulationRunner {
-    private final TradingStrategyContext context;
+    private final SimulationContext context;
 
-    public SimpleSimulationRunner(TradingStrategyContext context) {
+    public SimpleSimulationRunner(SimulationContext context) {
         this.context = context;
     }
 
     @Override
-    public SimulationResult run(Collection<? extends IndexedSymbolResourceData<?>> datasets, SimulationDriver strategy) {
-        strategy.setTradingStrategyContext(context);
+    public SimulationResult run(Collection<? extends Series<?>> datasets, SimulationDriver strategy) {
+        SimulationContext context = this.context.withDataSeries(datasets);
+        strategy.initSimulation(context);
         PriorityMap<Chronological, ChronologicalIterator<?>> map = TradingData.priorityMap(context, datasets);
 
         if (!map.isEmpty()) {

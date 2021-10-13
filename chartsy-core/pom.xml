@@ -18,6 +18,7 @@
                     <codeNameBase>one.chartsy.core</codeNameBase>
                     <publicPackages>
                         <publicPackage>one.chartsy.*</publicPackage>
+                        <publicPackage>org.apache.commons.lang3.*</publicPackage>
                         <publicPackage>org.apache.commons.logging.*</publicPackage>
                         <publicPackage>org.apache.logging.log4j.*</publicPackage>
                         <publicPackage>org.slf4j.*</publicPackage>
@@ -42,6 +43,11 @@
             <version>${project.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>${commons.lang.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.netbeans.api</groupId>
             <artifactId>org-openide-util-lookup</artifactId>

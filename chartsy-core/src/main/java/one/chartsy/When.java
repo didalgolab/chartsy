@@ -6,6 +6,11 @@ public interface When {
 
     SymbolResource<?> getResource();
 
+    /**
+     * Gives the unique identifier of this iterator.
+     */
+    Integer getId();
+
     int index();
 
     Chronological current();
