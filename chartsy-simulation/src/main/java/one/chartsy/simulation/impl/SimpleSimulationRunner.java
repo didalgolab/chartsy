@@ -45,7 +45,7 @@ public class SimpleSimulationRunner implements SimulationRunner {
                     strategy.onData(when, event, (eventTime > et));
 
                 // Check for a trading day boundary
-                if (eventTime >= nextDayTime) {
+                if (eventTime > nextDayTime) {
                     strategy.onTradingDayEnd(currDate);
                     strategy.onTradingDayStart(currDate = event.getDate());
                     nextDayTime = Chronological.toEpochMicros(currDate.plusDays(1).atStartOfDay());

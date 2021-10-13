@@ -57,6 +57,7 @@ class SimulationRunnerTest {
         order.verify(simDriver).onData(any(), same(dataPoint));
         order.verify(simDriver).onTradingDayEnd(dataPointDate);
         order.verify(simDriver).postSimulation();
+        Mockito.verifyNoMoreInteractions(simDriver);
     }
 
     @ParameterizedTest
