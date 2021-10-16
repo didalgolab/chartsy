@@ -266,7 +266,7 @@ public class SimpleMatchingEngine extends OrderStatusUpdater implements OrderBro
             throw new SimulationException(
                     "Non-transactional " + order.getSymbol() + " order price " + price + " at bar " + ohlc);
 
-        Instrument instrument = account.getInstrument(order.getSymbol());
+        StandardInstrument instrument = account.getInstrument(order.getSymbol());
         Position position = instrument.position(); //
 
         if (order.isBuy())

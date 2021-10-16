@@ -8,7 +8,7 @@ import one.chartsy.time.Timeline;
 import java.util.Collections;
 
 @Getter
-public class StandardIndexedSymbolResourceData<E extends Chronological> implements IndexedSymbolResourceData<E>, Timeline {
+public class StandardIndexedSymbolResourceData<E extends Chronological> implements IndexedSymbolResourceData<E>, Series<E>, Timeline {
 
     private final SymbolResource<E> resource;
     private final Dataset<E> data;

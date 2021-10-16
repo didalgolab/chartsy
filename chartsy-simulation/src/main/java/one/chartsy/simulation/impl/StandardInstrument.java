@@ -40,7 +40,6 @@ public class StandardInstrument implements Instrument {
         return position;
     }
 
-    @Override
     public void setPosition(Position position) {
         this.position = position;
     }

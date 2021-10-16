@@ -8,62 +8,57 @@ import one.chartsy.time.Chronological;
 import one.chartsy.trade.data.Position;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Supplier;
+import java.util.*;
 
 @SuppressWarnings("ForLoopReplaceableByForEach")
 public class MetaStrategy implements TradingStrategy {
 
     private Account account;
 
-    private final List<TradingStrategy> childStrategies = new ArrayList<>();
-    private final Map<SymbolIdentifier, List<TradingStrategy>> symbolStrategies = new HashMap<>();
-    private final Map<SymbolIdentifier, List<Series<?>>> symbolDatasets = new HashMap<>();
+    private final List<TradingStrategyProvider> childStrategiesProviders;
+    private final List<TradingStrategy> subStrategies = new ArrayList<>();
+    private final Map<SymbolIdentifier, List<TradingStrategy>> symbolStrategies = new LinkedHashMap<>();
+    private final Map<SymbolIdentifier, List<Series<?>>> symbolDatasets = new LinkedHashMap<>();
     private List<TradingStrategy>[] dispatchTable;
 
+
+    public MetaStrategy(TradingStrategyProvider... childStrategies) {
+        this.childStrategiesProviders = List.of(childStrategies);
+    }
 
     @Override
     public void initTradingStrategy(TradingStrategyContext context) {
         this.account = context.tradingService().getAccounts().get(0);
-        childStrategies.forEach(strategy -> strategy.initTradingStrategy(context));
+        initSimulation(context.dataSeries());
+        subStrategies.forEach(strategy -> strategy.initTradingStrategy(context));
     }
 
-    public void initSimulation(List<Series<?>> datasets) {
+    public void initSimulation(Collection<? extends Series<?>> datasets) {
+        subStrategies.clear();
+        symbolStrategies.clear();
+        symbolDatasets.clear();
         dispatchTable = new List[datasets.size()];
 
-        for (int index = 0; index < datasets.size(); index++) {
-            Series<?> dataset = datasets.get(index);
+        int index = 0;
+        for (Series<?> dataset : datasets) {
             SymbolIdentifier symbol = new SymbolIdentifier(dataset.getResource().symbol());
-            dispatchTable[index] = symbolStrategies.computeIfAbsent(symbol, __ -> new ArrayList<>());
+            symbolDatasets.computeIfAbsent(symbol, __ -> new ArrayList<>(2)).add(dataset);
+            dispatchTable[index++] = symbolStrategies.computeIfAbsent(symbol, __ -> new ArrayList<>(2));
         }
 
+        for (TradingStrategyProvider provider : childStrategiesProviders)
+            initChildStrategy(provider);
     }
 
-    public void addChildStrategy(Supplier<TradingStrategy> supplier) {
-        StrategyInitializer initializer = new StrategyInitializer(supplier);
+    protected void initChildStrategy(TradingStrategyProvider provider) {
+        StrategyInitializer initializer = new StrategyInitializer();
         symbolDatasets.forEach((symbol, datasets) -> {
-            TradingStrategy childStrategy = initializer.newInstance(symbol, datasets);
+            var config = new StrategyConfigData(symbol, datasets, Map.of());
+            var childStrategy = initializer.newInstance(provider, config);
 
-            childStrategies.add(childStrategy);
+            subStrategies.add(childStrategy);
             symbolStrategies.get(symbol).add(childStrategy);
         });
-    }
-
-    public static class StrategyInitializer {
-        private final Supplier<TradingStrategy> supplier;
-
-        public StrategyInitializer(Supplier<TradingStrategy> supplier) {
-            this.supplier = supplier;
-        }
-
-        public TradingStrategy newInstance(SymbolIdentity symbol, List<Series<?>> datasets) {
-            // TODO with context
-            return supplier.get();
-        }
-
     }
 
     protected List<TradingStrategy> getTargetStrategies(When when) {
@@ -78,7 +73,7 @@ public class MetaStrategy implements TradingStrategy {
 
     @Override
     public void onData(When when, Chronological next, boolean timeTick) {
-        List<TradingStrategy> strategies = this.childStrategies;
+        List<TradingStrategy> strategies = this.subStrategies;
         for (int i = 0, count = strategies.size(); i < count; i++)
             strategies.get(i).onData(when, next, timeTick);
     }
@@ -90,12 +85,12 @@ public class MetaStrategy implements TradingStrategy {
 
     @Override
     public void onTradingDayStart(LocalDate date) {
-        childStrategies.forEach(strategy -> strategy.onTradingDayStart(date));
+        subStrategies.forEach(strategy -> strategy.onTradingDayStart(date));
     }
 
     @Override
     public void onTradingDayEnd(LocalDate date) {
-        childStrategies.forEach(strategy -> strategy.onTradingDayEnd(date));
+        subStrategies.forEach(strategy -> strategy.onTradingDayEnd(date));
     }
 
     @Override

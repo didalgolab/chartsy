@@ -1,17 +1,16 @@
 package one.chartsy.trade;
 
-import one.chartsy.Symbol;
+import one.chartsy.SymbolIdentity;
 import one.chartsy.trade.data.Position;
 
 import java.util.List;
 
 public interface Instrument {
 
-    Symbol getSymbol();
+    SymbolIdentity getSymbol();
 
     List<Order> orders();
 
     Position position();
 
-    void setPosition(Position position);
 }
