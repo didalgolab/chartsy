@@ -126,7 +126,7 @@ public class Order implements java.io.Serializable, Cloneable, CustomValuesHolde
             }
         }
     }
-    
+
     public enum State {
         /** The order was cancelled by a user. */
         CANCELLED ("cancel", true),
@@ -149,13 +149,14 @@ public class Order implements java.io.Serializable, Cloneable, CustomValuesHolde
 
         private final String action;
         private final boolean isFinal;
-        private final EnumSet<State> nextAllowed;
+        private final Set<State> nextAllowed = new HashSet<>();
 
-        State(String action, boolean selfAllowed, State... nextAllowed) {
+        State(String action, boolean selfTransitionAllowed, State... nextAllowed) {
             this.action = action;
             this.isFinal = (nextAllowed == null || nextAllowed.length == 0);
-            this.nextAllowed = isFinal? EnumSet.noneOf(State.class) : EnumSet.copyOf(Arrays.asList(nextAllowed));
-            if (selfAllowed)
+            if (!isFinal)
+                this.nextAllowed.addAll(List.of(nextAllowed));
+            if (selfTransitionAllowed)
                 this.nextAllowed.add(this);
         }
 
@@ -180,15 +181,8 @@ public class Order implements java.io.Serializable, Cloneable, CustomValuesHolde
             throw new IllegalStateException("Cannot cancel " + name() + " order");
         }
         
-        /**
-         * Determines if the order with the current state can be marked as filled.
-         * 
-         * @return the {@code FILLED} order state if and only if the current
-         *         state allows filling, otherwise throws
-         *         {@code IllegalStateException}
-         */
         public State toFilled() {
-            throw new IllegalStateException("Cannot fill " + name() + " order");
+            return to(FILLED);
         }
         
         /**

@@ -170,7 +170,10 @@ public class SimpleMatchingEngine extends OrderStatusUpdater implements OrderBro
         List<Order> transmitQueue = instrument.getTransmitQueue();
         List<Order> orders = instrument.orders();
         if (!transmitQueue.isEmpty()) {
-            int orderCount = onDataAtTheClose(transmitQueue, orders, instrument.lastCandle().close(), when.current().getTime());
+            int orderCount = 0;
+            Candle lastCandle = instrument.lastCandle();
+            if (lastCandle != null)
+                orderCount = onDataAtTheClose(transmitQueue, orders, lastCandle.close(), lastCandle.getTime());
             onDataAtTheOpen(transmitQueue, orders, ohlc.open(), ohlc.getTime(), orderCount);
         }
 

@@ -31,6 +31,10 @@ public class TradingSimulator extends TradingStrategyProxy implements TradingSer
         return List.of(matchingEngine.getAccount());
     }
 
+    public Account getMainAccount() {
+        return matchingEngine.getAccount();
+    }
+
     @Override
     public OrderBroker getOrderBroker() {
         return matchingEngine;
@@ -52,7 +56,7 @@ public class TradingSimulator extends TradingStrategyProxy implements TradingSer
             Collection<? extends Series<?>> datasets)
     {
         if (matchingEngine != null)
-            throw new SimulationException("Simulation already started");
+            throw new SimulationException("Simulation already performed");
 
         SimulationResult.Builder result = new SimulationResult.Builder();
         result.state(SimulationResult.State.RUNNING);
@@ -125,8 +129,7 @@ public class TradingSimulator extends TradingStrategyProxy implements TradingSer
         if (model == null)
             throw new SimulationException("Simulation not started");
 
-        this.matchingEngine = null;
-
+        var endTime = LocalDateTime.now();
         var result = model.getResult();
         var remainedOrders = model.getAccount().getPendingOrders();
         result.remainingOrders(model.getAccount().getPendingOrders());
@@ -134,8 +137,8 @@ public class TradingSimulator extends TradingStrategyProxy implements TradingSer
                 .values().stream()
                 .mapToInt(List::size)
                 .sum());
-        result.endTime(LocalDateTime.now());
-        result.testDuration(Duration.between(result.getStartTime().toInstant(ZoneOffset.UTC), Instant.now()));
+        result.endTime(endTime);
+        result.testDuration(Duration.between(result.getStartTime(), endTime));
         result.state(SimulationResult.State.READY);
         return result.build();
     }
