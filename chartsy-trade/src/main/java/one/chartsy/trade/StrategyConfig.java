@@ -13,4 +13,6 @@ public interface StrategyConfig {
     List<? extends Series<?>> dataSources();
 
     Map<String, ?> properties();
+
+    Account account();
 }

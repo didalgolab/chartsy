@@ -25,7 +25,6 @@ import java.util.stream.Stream;
 import static one.chartsy.time.Chronological.toEpochMicros;
 import static one.chartsy.trade.StrategyInitializer.probeDataType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class MetaStrategyTest {
     static final SymbolResource<Candle> TEST_SYMBOL1 = SymbolResource.of("TEST_SYMBOL1", TimeFrame.Period.DAILY);
@@ -52,7 +51,7 @@ public class MetaStrategyTest {
 
     @ParameterizedTest
     @MethodSource("runners")
-    void creates_separate_Strategy_instance_for_each_Symbol_from_a_Series(SimulationRunner runner) {
+    void creates_separate_Strategy_instance_for_each_Symbol_in_a_Series(SimulationRunner runner) {
         var inputSeries = multiAssetSeriesOf(TEST_SYMBOL1, TEST_SYMBOL2);
 
         var usedSymbols = new ArrayList<>();
@@ -62,7 +61,7 @@ public class MetaStrategyTest {
             {
                 usedSymbols.add(this.symbol);
                 usedDatasets.add(this.series);
-                usedDataTypes.add(this.primaryDataType);
+                usedDataTypes.add(this.getPrimaryDataType());
             }
         }
         MetaStrategy metaStrategy = new MetaStrategy(MyStrategy::new);

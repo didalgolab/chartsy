@@ -11,6 +11,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public abstract class Strategy<E extends Chronological> implements TradingStrategy {
@@ -22,10 +23,14 @@ public abstract class Strategy<E extends Chronological> implements TradingStrate
     protected final StrategyConfig config;
     /** The symbol assigned to the current Strategy. */
     protected final SymbolIdentifier symbol;
+    /** The account associated with the Strategy. */
+    protected final Account account;
     /** The data series associated with the current strategy. */
     protected final Series<E> series;
     /** The type of primary data accepted by this strategy. */
     protected final Class<E> primaryDataType;
+
+    protected TradingStrategyContext tradingStrategyContext;
 
 
     protected Strategy() {
@@ -50,9 +55,11 @@ public abstract class Strategy<E extends Chronological> implements TradingStrate
         if (config != null) {
             this.symbol = config.symbol();
             this.series = selectPrimaryDataSeries(primaryDataType, config.dataSources());
+            this.account = config.account();
         } else {
             this.symbol = null;
             this.series = null;
+            this.account = null;
         }
     }
 
@@ -69,8 +76,13 @@ public abstract class Strategy<E extends Chronological> implements TradingStrate
         return null;
     }
 
+    public Class<E> getPrimaryDataType() {
+        return primaryDataType;
+    }
+
     @Override
     public void initTradingStrategy(TradingStrategyContext context) {
+        tradingStrategyContext = context;
         log().info("Strategy {} configured", symbol.name());
     }
 
@@ -112,6 +124,18 @@ public abstract class Strategy<E extends Chronological> implements TradingStrate
 
     }
 
+    public boolean isLongOnMarket() {
+        return account.isLongOnMarket(symbol);
+    }
+
+    public boolean isShortOnMarket() {
+        return account.isShortOnMarket(symbol);
+    }
+
+    public boolean isOnMarket() {
+        return account.isOnMarket(symbol);
+    }
+
     public final Logger log() {
         return log;
     }
@@ -129,6 +153,144 @@ public abstract class Strategy<E extends Chronological> implements TradingStrate
                 throw new TradingException("Valid StrategyConfig not found, found instead: " + config.getClass().getSimpleName());
         } catch (ThreadContext.NotFoundException e) {
             return null;
+        }
+    }
+
+    public SymbolIdentifier getSymbol() {
+        return symbol;
+    }
+
+    public double orderUnitSize() {
+        return 1.0;
+    }
+
+    public Order submitOrder(Order order) {
+        return tradingStrategyContext.tradingService().getOrderBroker().submitOrder(order);
+    }
+
+    public Order buy() {
+        return buy(orderUnitSize());
+    }
+
+    public Order buy(double quantity) {
+        return submitOrder(new Order(getSymbol(), OrderType.MARKET, Order.Side.BUY, quantity));
+    }
+
+    /**
+     * Submits a new order; or resets existing position exit stop and clears exit
+     * limit.
+     *
+     * @param quantity
+     *            the order quantity
+     * @param exitStop
+     *            the order exit stop (stop loss) price
+     * @return the submitted order (optionally)
+     * @see #buyOrResetExits(double, double, double)
+     */
+    public Optional<Order> buyOrResetExits(double quantity, double exitStop) {
+        return buyOrResetExits(quantity, exitStop, Double.NaN);
+    }
+
+    /**
+     * Submits a new order or resets existing position exit stop and limit.
+     * <p>
+     * The method is equivalent of {@link #submitOrder(Order)} if there is currently
+     * no long position open on the market. Otherwise an existing position's exit
+     * stop and limit are updated to the given prices.
+     *
+     * @param quantity
+     *            the order quantity
+     * @param exitStop
+     *            the order exit stop (stop loss) price
+     * @param exitLimit
+     *            the order exit limit (take profit) price
+     * @return the submitted order (optionally)
+     */
+    public Optional<Order> buyOrResetExits(double quantity, double exitStop, double exitLimit) {
+        Position position = account.getPosition(symbol);
+        if (!isLongOnMarket()) {
+            Order order = new Order(symbol, OrderType.MARKET, Order.Side.BUY, TimeInForce.OPEN);
+            order.setExitStop(exitStop);
+            order.setExitLimit(exitLimit);
+            order.setQuantity(quantity);
+
+            return Optional.of(submitOrder(order));
+        } else {
+            position.getEntryOrder().setExitStop(exitStop);
+            position.getEntryOrder().setExitLimit(exitLimit);
+
+            return Optional.empty();
+        }
+    }
+
+    public Order buyToCover() {
+        return buyToCover(orderUnitSize());
+    }
+
+    public Order buyToCover(double volume) {
+        return submitOrder(new Order(getSymbol(), OrderType.MARKET, Order.Side.BUY_TO_COVER, volume));
+    }
+
+    public Order sell() {
+        return sell(orderUnitSize());
+    }
+
+    public Order sell(double volume) {
+        return submitOrder(new Order(getSymbol(), OrderType.MARKET, Order.Side.SELL, volume));
+    }
+
+    public Order sellShort() {
+        return sellShort(orderUnitSize());
+    }
+
+    public Order sellShort(double volume) {
+        return submitOrder(new Order(getSymbol(), OrderType.MARKET, Order.Side.SELL_SHORT, volume));
+    }
+
+    /**
+     * Submits a new order; or resets existing position exit stop and clears exit
+     * limit.
+     *
+     * @param quantity
+     *            the order quantity
+     * @param exitStop
+     *            the order exit stop (stop loss) price
+     * @return the submitted order (optionally)
+     * @see #sellShortOrResetExits(double, double, double)
+     */
+    public Optional<Order> sellShortOrResetExits(double quantity, double exitStop) {
+        return sellShortOrResetExits(quantity, exitStop, Double.NaN);
+    }
+
+    /**
+     * Submits a new order or resets existing position exit stop and limit.
+     * <p>
+     * The method is equivalent of {@link #submitOrder(Order)} if there is currently
+     * no short position open on the market. Otherwise an existing position's exit
+     * stop and limit are updated to the given prices.
+     *
+     * @param quantity
+     *            the order quantity
+     * @param exitStop
+     *            the order exit stop (stop loss) price
+     * @param exitLimit
+     *            the order exit limit (take profit) price
+     * @return the submitted order (optionally)
+     */
+    public Optional<Order> sellShortOrResetExits(double quantity, double exitStop, double exitLimit) {
+        Position position = account.getPosition(symbol);
+        if (!isShortOnMarket()) {
+            Order order = new Order(symbol, OrderType.MARKET, Order.Side.SELL_SHORT, TimeInForce.OPEN);
+            order.setExitStop(exitStop);
+            order.setExitLimit(exitLimit);
+            order.setQuantity(quantity);
+
+            return Optional.of(submitOrder(order));
+        } else {
+            position.getEntryOrder().setExitStop(exitStop);
+            position.getEntryOrder().setExitLimit(exitLimit);
+
+            return Optional.empty();
         }
     }
 }

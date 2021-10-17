@@ -34,9 +34,7 @@ public class MetaStrategy implements TradingStrategy {
     }
 
     public void initSimulation(Collection<? extends Series<?>> datasets) {
-        subStrategies.clear();
-        symbolStrategies.clear();
-        symbolDatasets.clear();
+        clear();
         dispatchTable = new List[datasets.size()];
 
         int index = 0;
@@ -53,12 +51,18 @@ public class MetaStrategy implements TradingStrategy {
     protected void initChildStrategy(TradingStrategyProvider provider) {
         StrategyInitializer initializer = new StrategyInitializer();
         symbolDatasets.forEach((symbol, datasets) -> {
-            var config = new StrategyConfigData(symbol, datasets, Map.of());
+            var config = new StrategyConfigData(symbol, datasets, Map.of(), account);
             var childStrategy = initializer.newInstance(provider, config);
 
             subStrategies.add(childStrategy);
             symbolStrategies.get(symbol).add(childStrategy);
         });
+    }
+
+    protected void clear() {
+        subStrategies.clear();
+        symbolStrategies.clear();
+        symbolDatasets.clear();
     }
 
     protected List<TradingStrategy> getTargetStrategies(When when) {

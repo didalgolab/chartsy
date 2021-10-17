@@ -9,7 +9,8 @@ import java.util.Map;
 public record StrategyConfigData(
         SymbolIdentifier symbol,
         List<Series<?>> dataSources,
-        Map<String, ?> properties
+        Map<String, ?> properties,
+        Account account
 ) implements StrategyConfig {
 
 }
