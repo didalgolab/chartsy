@@ -31,6 +31,10 @@ public class RandomWalk {
         return candles(LocalDate.ofEpochDay(0).atStartOfDay(), 0.0, Duration.ofDays(1), RandomCandleSpecification.BASIC, ThreadLocalRandom.current());
     }
 
+    public static Stream<Candle> candles(Duration granularity, LocalDateTime startTime) {
+        return candles(startTime, 0.0, granularity, RandomCandleSpecification.BASIC, ThreadLocalRandom.current());
+    }
+
     public static Stream<Candle> candles(LocalDateTime startTime, double referencePrice, Duration granularity, RandomCandleSpecification spec, RandomGenerator rnd) {
         var timeStepMicros = Chronological.toMicros(granularity);
         var seedEndTime = Chronological.toEpochMicros(startTime) + timeStepMicros;

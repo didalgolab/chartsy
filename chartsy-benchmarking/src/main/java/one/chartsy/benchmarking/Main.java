@@ -1,7 +1,15 @@
 package one.chartsy.benchmarking;
 
 import one.chartsy.Candle;
+import one.chartsy.SymbolResource;
+import one.chartsy.TimeFrame;
+import one.chartsy.data.CandleSeries;
+import one.chartsy.data.Series;
+import one.chartsy.random.RandomWalk;
+import one.chartsy.simulation.SimulationContext;
+import one.chartsy.simulation.impl.SimpleSimulationRunner;
 import org.apache.commons.math3.random.RandomGeneratorFactory;
+import org.openide.util.Lookup;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 import org.openjdk.jmh.runner.Runner;
@@ -10,12 +18,17 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.TimeValue;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.random.RandomGenerator;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Main {
 
@@ -49,15 +62,15 @@ public class Main {
     {
         List<Integer> list;
         ThreadLocalRandom random = ThreadLocalRandom.current();
+        Series<Candle> series;
 
         @Setup(Level.Trial) public void
         initialize() {
-
-            Random rand = new Random();
-
-            list = new ArrayList<>();
-            for (int i = 0; i < 1000; i++)
-                list.add (rand.nextInt());
+            List<Candle> candles = RandomWalk.candles(Duration.ofMinutes(15), LocalDateTime.of(1900, 1, 1, 0, 0))
+                    .limit(1000_000)
+                    .collect(Collectors.toList());
+            Collections.reverse(candles);
+            series = CandleSeries.of(SymbolResource.of("RANDOM", TimeFrame.Period.M15), candles);
         }
     }
 
@@ -113,18 +126,9 @@ public class Main {
         @Benchmark
     @OutputTimeUnit(TimeUnit.NANOSECONDS)
     @BenchmarkMode(Mode.AverageTime)
+        @Measurement(time = 10)
     public Object randomNextDouble3(BenchmarkState state) {
-        RandomGenerator r = state.random;
-        double curr = r.nextGaussian(), open = curr / 10.0;
-        double min = Math.min(curr, open), max = Math.max(curr, open);
-
-        for (int i = 0; i < 3; i++) {
-            curr += r.nextGaussian();
-            min = Math.min(min, curr);
-            max = Math.max(max, curr);
-        }
-        Candle c = Candle.of(0L, open, max, min, curr);
-           // System.out.println(c);
-        return c;
+            SimulationContext context = Lookup.getDefault().lookup(SimulationContext.class);
+            return Stream.of(new SimpleSimulationRunner(context));
     }
 }
