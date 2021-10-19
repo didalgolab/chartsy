@@ -1,5 +1,7 @@
 package one.chartsy.benchmarking;
 
+import one.chartsy.Candle;
+import org.apache.commons.math3.random.RandomGeneratorFactory;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 import org.openjdk.jmh.runner.Runner;
@@ -11,7 +13,9 @@ import org.openjdk.jmh.runner.options.TimeValue;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.random.RandomGenerator;
 
 public class Main {
 
@@ -44,6 +48,7 @@ public class Main {
     public static class BenchmarkState
     {
         List<Integer> list;
+        ThreadLocalRandom random = ThreadLocalRandom.current();
 
         @Setup(Level.Trial) public void
         initialize() {
@@ -56,13 +61,70 @@ public class Main {
         }
     }
 
+//    @Benchmark
+//    public void
+//    benchmark1 (BenchmarkState state, Blackhole bh) {
+//
+//        List<Integer> list = state.list;
+//
+//        for (int i = 0; i < 1000; i++)
+//            bh.consume (list.get (i));
+//    }
+
     @Benchmark
-    public void
-    benchmark1 (BenchmarkState state, Blackhole bh) {
+    @OutputTimeUnit(TimeUnit.NANOSECONDS)
+    @BenchmarkMode(Mode.AverageTime)
+    public double randomNextDouble(BenchmarkState state) {
+        return state.random.nextDouble(10.0);
+    }
 
-        List<Integer> list = state.list;
+    @Benchmark
+    @OutputTimeUnit(TimeUnit.NANOSECONDS)
+    @BenchmarkMode(Mode.AverageTime)
+    public double randomNextDoubleRound(BenchmarkState state) {
+        double v = state.random.nextDouble(10.0);
+        v = Math.rint(v * 100.0) / 100.0;
+        return v;
+    }
 
-        for (int i = 0; i < 1000; i++)
-            bh.consume (list.get (i));
+    @Benchmark
+    @OutputTimeUnit(TimeUnit.NANOSECONDS)
+    @BenchmarkMode(Mode.AverageTime)
+    public double randomNextDoubleRound2(BenchmarkState state) {
+        double v = state.random.nextDouble(10.0);
+        v = Math.round(v * 100.0) / 100.0;
+        return v;
+    }
+
+//    @Benchmark
+//    @OutputTimeUnit(TimeUnit.NANOSECONDS)
+//    @BenchmarkMode(Mode.AverageTime)
+    public double randomNextDouble2() {
+        ThreadLocalRandom r = ThreadLocalRandom.current();
+        double min = 0.0, max = 0.0, curr = 0.0;
+        for (int i = 0; i < 16; i++) {
+            curr += r.nextDouble();
+            min = Math.min(min, curr);
+            max = Math.max(max, curr);
+        }
+        return max - min;
+    }
+
+        @Benchmark
+    @OutputTimeUnit(TimeUnit.NANOSECONDS)
+    @BenchmarkMode(Mode.AverageTime)
+    public Object randomNextDouble3(BenchmarkState state) {
+        RandomGenerator r = state.random;
+        double curr = r.nextGaussian(), open = curr / 10.0;
+        double min = Math.min(curr, open), max = Math.max(curr, open);
+
+        for (int i = 0; i < 3; i++) {
+            curr += r.nextGaussian();
+            min = Math.min(min, curr);
+            max = Math.max(max, curr);
+        }
+        Candle c = Candle.of(0L, open, max, min, curr);
+           // System.out.println(c);
+        return c;
     }
 }

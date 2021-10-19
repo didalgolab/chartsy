@@ -127,6 +127,18 @@ public interface Chronological extends Comparable<Chronological> {
     }
 
     /**
+     * Converts the specified {@code Duration} to number of microseconds suitable for adding to or removing from
+     * the epoch-micros based timestamps.
+     *
+     * @param duration
+     *            the time duration
+     * @return the number of microseconds in {@code duration}
+     */
+    static long toMicros(Duration duration) {
+        return duration.toNanos() / 1000L;
+    }
+
+    /**
      * Gives current time.
      *
      * @return the current time's epoch microseconds
