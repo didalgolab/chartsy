@@ -260,7 +260,8 @@ public class SimpleMatchingEngine extends OrderStatusUpdater implements OrderBro
     @Override
     public Execution fillOrder(Order order, Candle ohlc, double price) {
         Execution execution = fillAtMarket(order, price, ohlc);
-        order.fill();
+        if (execution != null)
+            order.fill();
         return execution;
     }
 
@@ -282,14 +283,11 @@ public class SimpleMatchingEngine extends OrderStatusUpdater implements OrderBro
         double tradeVolume = volume;
         Execution execution;
         if (position != null) {
-            double closingCommission;
             if (position.getDirection().tag == order.getSide().tag) { // scale-in
                 positionType = position.getDirection();
                 positionSize = position.getQuantity() + volume;
                 openingCommission = order.getCommission(price, volume, null);
-                closingCommission = 0.0;
 
-                //
                 String executionId = String.valueOf(executionIds.incrementAndGet());
                 execution = new Execution(order.getSymbol(), executionId, ohlc.getTime(), positionType, price, tradeVolume);
                 execution.setScaleIn(true);
@@ -299,10 +297,8 @@ public class SimpleMatchingEngine extends OrderStatusUpdater implements OrderBro
                 positionType = position.getDirection().reverse();
                 positionSize = volume;
                 openingCommission = order.getCommission(price, volume, null);
-                closingCommission = order.getCommission(price, position.getQuantity(), position);
                 tradeVolume += position.getQuantity();
 
-                //
                 String executionId = String.valueOf(executionIds.incrementAndGet());
                 execution = new Execution(order.getSymbol(), executionId, ohlc.getTime(), positionType, price, tradeVolume);
                 execution.setScaleIn(true);
@@ -313,9 +309,7 @@ public class SimpleMatchingEngine extends OrderStatusUpdater implements OrderBro
                 positionType = position.getDirection();
                 positionSize = position.getQuantity() - volume;
                 openingCommission = 0.0;
-                closingCommission = order.getCommission(price, volume, position);
 
-                //
                 String executionId = String.valueOf(executionIds.incrementAndGet());
                 execution = new Execution(order.getSymbol(), executionId, ohlc.getTime(), positionType.reverse(), price, tradeVolume);
                 execution.setScaleOut(true);
@@ -336,7 +330,6 @@ public class SimpleMatchingEngine extends OrderStatusUpdater implements OrderBro
             positionType = order.getSide().getDirection();
             positionSize = order.getQuantity();
 
-            //
             String executionId = String.valueOf(executionIds.incrementAndGet());
             execution = new Execution(order.getSymbol(), executionId, ohlc.getTime(), positionType, price, positionSize);
             execution.setScaleIn(true);

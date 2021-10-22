@@ -138,12 +138,12 @@ public class Order implements java.io.Serializable, Cloneable, CustomValuesHolde
         PARTIALLY_FILLED ("partially fill", true, FILLED, CANCELLING, CANCELLED), // TODO: not implemented yet
         /** The order was received and acknowledged by the broker service or exchange. */
         ACCEPTED ("acknowledge", false, FILLED, PARTIALLY_FILLED, CANCELLED), // TODO: not implemented yet
-        /** The state of an order submitted to the broker service or exchange. */
-        SUBMITTED ("submit", false, CANCELLED, CANCELLING, FILLED, PARTIALLY_FILLED, ACCEPTED),
-        /** The newly created order state. */
-        NEWLY_CREATED ("create", false, SUBMITTED, CANCELLING, CANCELLED),
         /** The order was rejected by the system or a user code. */
         REJECTED ("reject", false),
+        /** The state of an order submitted to the broker service or exchange. */
+        SUBMITTED ("submit", false, CANCELLED, CANCELLING, FILLED, PARTIALLY_FILLED, ACCEPTED, REJECTED),
+        /** The newly created order state. */
+        NEWLY_CREATED ("create", false, SUBMITTED, CANCELLING, CANCELLED),
         /** The order has expired. */
         EXPIRED ("expire", false); // TODO: not implemented yet
 

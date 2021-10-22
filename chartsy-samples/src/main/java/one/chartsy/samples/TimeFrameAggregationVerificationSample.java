@@ -34,7 +34,7 @@ public class TimeFrameAggregationVerificationSample {
             List<Candle> candles = new ArrayList<>();
 
             startTime = System.nanoTime();
-            TimeBasedTimeFrame tbf = (TimeBasedTimeFrame) timeFrame;
+            TimeFrame.TemporallyRegular tbf = (TimeFrame.TemporallyRegular) timeFrame;
             TimeFrameAggregator<Candle, Chronological> aggregator = tbf.getAggregator(new DefaultTimeFrameServices());
 //            if (tbf.getDuration() instanceof Period)
 //                aggregator = new PeriodCandleAggregator<>(new SimpleCandleBuilder(), (Period)tbf.getDuration(), new PeriodCandleAlignment(tbf.getDailyAlignmentTimeZone(), tbf.getDailyAlignment(), (TemporalAdjuster) tbf.getCandleAlignment().orElse(null)));

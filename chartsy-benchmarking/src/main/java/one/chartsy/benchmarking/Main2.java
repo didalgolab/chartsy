@@ -8,7 +8,6 @@ import one.chartsy.data.CandleSeries;
 import one.chartsy.data.Series;
 import one.chartsy.random.RandomWalk;
 import one.chartsy.simulation.SimulationContext;
-import one.chartsy.simulation.SimulationDriver;
 import one.chartsy.simulation.SimulationRunner;
 import one.chartsy.simulation.TradingSimulator;
 import one.chartsy.simulation.impl.SimpleSimulationRunner;
@@ -18,7 +17,6 @@ import one.chartsy.trade.Strategy;
 import org.openide.util.Lookup;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.profile.StackProfiler;
-import org.openjdk.jmh.profile.WinPerfAsmProfiler;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
@@ -26,7 +24,6 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.TimeValue;
 
 import java.time.Duration;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -48,9 +45,9 @@ public class Main2 {
                 .mode (Mode.AverageTime)
                 .timeUnit(TimeUnit.MICROSECONDS)
                 .warmupTime(TimeValue.seconds(1))
-                .warmupIterations(2)
-                .measurementTime(TimeValue.seconds(60))
-                .measurementIterations(3)
+                .warmupIterations(3)
+                .measurementTime(TimeValue.seconds(3))
+                .measurementIterations(10)
                 .threads(2)
                 .forks(1)
                 .shouldFailOnError(true)
@@ -74,9 +71,9 @@ public class Main2 {
 
         @Setup(Level.Trial) public void
         initialize() {
-            for (int i = 0; i < 1; i++) {
+            for (int i = 0; i < 30; i++) {
                 List<Candle> candles = RandomWalk.candles(Duration.ofMinutes(15), LocalDateTime.of(1900, 1, 1, 0, 0))
-                        .limit(1000_000)
+                        .limit(82636 / 30)
                         .collect(Collectors.toList());
                 Collections.reverse(candles);
                 seriesList.add(CandleSeries.of(SymbolResource.of("RANDOM", TimeFrame.Period.M15), candles));
@@ -88,31 +85,39 @@ public class Main2 {
     @OutputTimeUnit(TimeUnit.NANOSECONDS)
     @BenchmarkMode(Mode.AverageTime)
     @Measurement(time = 10)
-    public Object randomNextDouble3(BenchmarkState state) {
+    public int randomNextDouble3(BenchmarkState state) {
         SimulationContext context = Lookup.getDefault().lookup(SimulationContext.class);
         SimulationRunner runner = new SimpleSimulationRunner(context);
         AtomicLong cnt = new AtomicLong();
         DoubleAdder cnt2 = new DoubleAdder();
-        SimulationDriver driver = new SimulationDriver() {
-            @Override public void initSimulation(SimulationContext context) { }
-            @Override public void onTradingDayStart(LocalDate date) { }
-            @Override public void onTradingDayEnd(LocalDate date) { }
-            @Override public void onData(When when, Chronological next, boolean timeTick) { }
-
-            @Override
-            public void onData(When when, Chronological last) {
-                cnt.addAndGet(last.getTime());
-                cnt2.add(((Candle) last).close());
-            }
-        };
+//        SimulationDriver driver = new SimulationDriver() {
+//            @Override public void initSimulation(SimulationContext context) { }
+//            @Override public void onTradingDayStart(LocalDate date) { }
+//            @Override public void onTradingDayEnd(LocalDate date) { }
+//            @Override public void onData(When when, Chronological next, boolean timeTick) { }
+//
+//            @Override
+//            public void onData(When when, Chronological last) {
+//                cnt.addAndGet(last.getTime());
+//                cnt2.add(((Candle) last).close());
+//            }
+//        };
         class MyStrategy extends Strategy<Candle> {
             @Override
             public void entryOrders(When when, Chronological data) {
                 cnt.addAndGet(data.getTime());
                 //cnt2.add(((Candle) data).close());
-                cnt2.add(series.get(when.index()).close());
+                if (when.index() % 10 == 0) {
+                    if (series.get(when.index()).isBullish())
+                        buy();
+                    else
+                        sell();
+                }
             }
         }
-        return runner.run(state.seriesList, new TradingSimulator(new MetaStrategy(MyStrategy::new)));
+        int r = 0;
+        for (int i = 0; i < 900; i++)
+            r += runner.run(state.seriesList, new TradingSimulator(new MetaStrategy(MyStrategy::new))).remainingOrderCount();
+        return r;
     }
 }

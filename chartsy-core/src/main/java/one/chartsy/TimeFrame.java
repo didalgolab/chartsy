@@ -21,7 +21,7 @@ public interface TimeFrame {
 
     List<TimeFrameUnit> getUnits();
 
-    Number getDuration(TimeFrameUnit unit);
+    Number getSize(TimeFrameUnit unit);
 
     String getDisplayName();
 
@@ -43,7 +43,7 @@ public interface TimeFrame {
         return Optional.empty();
     }
 
-    enum Period implements TimeFrame, TimeBasedTimeFrame {
+    enum Period implements TimeFrame, TemporallyRegular {
         /** The 1 day bars, day alignment. */
         DAILY(Duration.ofSeconds(86400), "Daily", LocalTime.MIDNIGHT),
         /** The 1 week bars, aligned to start of a week. */
@@ -126,13 +126,13 @@ public interface TimeFrame {
         }
 
         @Override
-        public TemporalAmount getDuration() {
-            return timeFrame.getDuration();
+        public TemporalAmount getRegularity() {
+            return timeFrame.getRegularity();
         }
 
         @Override
-        public Number getDuration(TimeFrameUnit unit) {
-            return timeFrame.getDuration(unit);
+        public Number getSize(TimeFrameUnit unit) {
+            return timeFrame.getSize(unit);
         }
 
         @Override
@@ -160,20 +160,20 @@ public interface TimeFrame {
             return timeFrame.getAggregator(services);
         }
 
-        public TimeBasedTimeFrame withDailyAlignment(ZoneId dailyAlignmentTimeZone) {
+        public TemporallyRegular withDailyAlignment(ZoneId dailyAlignmentTimeZone) {
             return timeFrame.withDailyAlignment(dailyAlignmentTimeZone);
         }
 
-        public TimeBasedTimeFrame withDailyAlignment(LocalTime dailyAlignment, ZoneId dailyAlignmentTimeZone) {
+        public TemporallyRegular withDailyAlignment(LocalTime dailyAlignment, ZoneId dailyAlignmentTimeZone) {
             return timeFrame.withDailyAlignment(dailyAlignment, dailyAlignmentTimeZone);
         }
 
-        public TimeBasedTimeFrame withCandleAlignment(TemporalAdjuster candleAlignment) {
+        public TemporallyRegular withCandleAlignment(TemporalAdjuster candleAlignment) {
             return timeFrame.withCandleAlignment(candleAlignment);
         }
     }
 
-    class CustomPeriod<T extends TemporalAmount & Comparable<T>> implements TimeFrame, TimeBasedTimeFrame {
+    class CustomPeriod<T extends TemporalAmount & Comparable<T>> implements TimeFrame, TemporallyRegular {
         private final T duration;
         private final List<TimeFrameUnit> units;
         private final String displayName;
@@ -230,7 +230,7 @@ public interface TimeFrame {
         }
 
         @Override
-        public T getDuration() {
+        public T getRegularity() {
             return duration;
         }
 
@@ -240,7 +240,7 @@ public interface TimeFrame {
         }
 
         @Override
-        public Number getDuration(TimeFrameUnit unit) {
+        public Number getSize(TimeFrameUnit unit) {
             var units = getUnits();
             if (!units.isEmpty() && units.get(0).equals(unit))
                 return duration.get(duration.getUnits().get(0));
@@ -292,7 +292,7 @@ public interface TimeFrame {
         }
 
         @Override
-        public Number getDuration(TimeFrameUnit unit) {
+        public Number getSize(TimeFrameUnit unit) {
             return 1L;
         }
 
@@ -313,20 +313,26 @@ public interface TimeFrame {
     }
 
     default Optional<Seconds> getAsSeconds() {
-        if (this instanceof TimeBasedTimeFrame tbf) {
+        if (this instanceof TemporallyRegular tbf) {
             try {
-                return Optional.of(Seconds.from(tbf.getDuration()));
+                return Optional.of(Seconds.from(tbf.getRegularity()));
             } catch (DateTimeException ignored) {}// not convertible to seconds-only instance
         }
         return Optional.empty();
     }
 
     default Optional<Months> getAsMonths() {
-        if (this instanceof TimeBasedTimeFrame tbf) {
+        if (this instanceof TemporallyRegular tbf) {
             try {
-                return Optional.of(Months.from(tbf.getDuration()));
+                return Optional.of(Months.from(tbf.getRegularity()));
             } catch (DateTimeException ignored) {}// not convertible to seconds-only instance
         }
         return Optional.empty();
+    }
+
+    interface TemporallyRegular extends TimeFrame {
+
+        TemporalAmount getRegularity();
+
     }
 }
