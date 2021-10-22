@@ -15,8 +15,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class PeriodCandleAggregatorTest {
     static final long MICROSECOND = 1000L; //number of microseconds in a nanosecond
     static final Period DAILY = Period.ofDays(1), WEEKLY = Period.ofWeeks(1), MONTHLY = Period.ofMonths(1);
-    static final PeriodCandleAlignment BREAK_AT_MIDNIGHT_UTC = new PeriodCandleAlignment(ZoneOffset.UTC, LocalTime.MIDNIGHT);
-    static final PeriodCandleAlignment BREAK_AT_MIDNIGHT_CET = new PeriodCandleAlignment(ZoneId.of("Europe/Paris"), LocalTime.MIDNIGHT);
+    static final DateCandleAlignment BREAK_AT_MIDNIGHT_UTC = new DateCandleAlignment(ZoneOffset.UTC, LocalTime.MIDNIGHT);
+    static final DateCandleAlignment BREAK_AT_MIDNIGHT_CET = new DateCandleAlignment(ZoneId.of("Europe/Paris"), LocalTime.MIDNIGHT);
 
     LinkedList<Candle> emitted = new LinkedList<>();
 
@@ -74,7 +74,7 @@ class PeriodCandleAggregatorTest {
 
     @Test
     void can_break_weekly_Candles_at_specified_day_of_week_here_assuming_SUNDAY() {
-        var BREAK_BEFORE_SUNDAY_CET = new PeriodCandleAlignment(ZoneId.of("Europe/Paris"), LocalTime.MIDNIGHT, DayOfWeek.SUNDAY);
+        var BREAK_BEFORE_SUNDAY_CET = new DateCandleAlignment(ZoneId.of("Europe/Paris"), LocalTime.MIDNIGHT, DayOfWeek.SUNDAY);
         var agg = new PeriodCandleAggregator<>(new SimpleCandleBuilder(), WEEKLY, BREAK_BEFORE_SUNDAY_CET);
         // candles before Sunday midnight CET
         agg.add(newCandle(LocalDateTime.of(2021, 10,  9, 22, 1), 1.0), emitted::add);
@@ -91,7 +91,7 @@ class PeriodCandleAggregatorTest {
 
     @Test
     void can_break_weekly_Candles_at_specified_day_of_week_here_assuming_MONDAY() {
-        var BREAK_BEFORE_MONDAY_CET = new PeriodCandleAlignment(ZoneId.of("Europe/Paris"), LocalTime.MIDNIGHT, DayOfWeek.MONDAY);
+        var BREAK_BEFORE_MONDAY_CET = new DateCandleAlignment(ZoneId.of("Europe/Paris"), LocalTime.MIDNIGHT, DayOfWeek.MONDAY);
         var agg = new PeriodCandleAggregator<>(new SimpleCandleBuilder(), WEEKLY, BREAK_BEFORE_MONDAY_CET);
         // candles before midnight CET
         agg.add(newCandle(LocalDateTime.of(2021, 10, 10, 22, 1), 1.0), emitted::add);
@@ -108,7 +108,7 @@ class PeriodCandleAggregatorTest {
 
     @Test
     void supports_MONTHLY_Candles() {
-        var BREAK_ON_EACH_NEW_MONTH_MIDNIGHT_UTC = new PeriodCandleAlignment(ZoneOffset.UTC, LocalTime.MIDNIGHT, DayOfMonth.of(1));
+        var BREAK_ON_EACH_NEW_MONTH_MIDNIGHT_UTC = new DateCandleAlignment(ZoneOffset.UTC, LocalTime.MIDNIGHT, DayOfMonth.of(1));
         var agg = new PeriodCandleAggregator<>(new SimpleCandleBuilder(), MONTHLY, BREAK_ON_EACH_NEW_MONTH_MIDNIGHT_UTC);
         // candles before midnight CET
         agg.add(newCandle(LocalDateTime.of(2021, 10, 1, 0, 0).plusNanos(MICROSECOND), 1.0), emitted::add);

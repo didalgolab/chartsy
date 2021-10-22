@@ -9,11 +9,11 @@ import java.time.temporal.TemporalAmount;
 public class PeriodCandleAggregator<E extends Chronological> extends AbstractCandleAggregator<Candle, E> {
 
     protected final TemporalAmount period;
-    protected final PeriodCandleAlignment alignment;
+    protected final DateCandleAlignment alignment;
     protected long candleCloseTime = Long.MIN_VALUE;
 
 
-    public PeriodCandleAggregator(CandleBuilder<Candle, E> builder, TemporalAmount period, PeriodCandleAlignment alignment) {
+    public PeriodCandleAggregator(CandleBuilder<Candle, E> builder, TemporalAmount period, DateCandleAlignment alignment) {
         super(builder);
         this.period = period;
         this.alignment = alignment;

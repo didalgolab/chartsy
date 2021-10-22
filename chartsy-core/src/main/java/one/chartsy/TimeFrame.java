@@ -2,7 +2,7 @@ package one.chartsy;
 
 import one.chartsy.core.TimeFrameServices;
 import one.chartsy.data.SimpleCandleBuilder;
-import one.chartsy.data.market.PeriodCandleAlignment;
+import one.chartsy.data.market.DateCandleAlignment;
 import one.chartsy.data.market.TimeCandleAlignment;
 import one.chartsy.time.Chronological;
 import one.chartsy.time.DayOfMonth;
@@ -15,6 +15,7 @@ import java.time.temporal.TemporalAdjuster;
 import java.time.temporal.TemporalAdjusters;
 import java.time.temporal.TemporalAmount;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 public interface TimeFrame {
@@ -218,14 +219,23 @@ public interface TimeFrame {
         }
 
         public CustomPeriod<T> withDailyAlignment(ZoneId dailyAlignmentTimeZone) {
+            if (dailyAlignmentTimeZone.equals(this.dailyAlignmentTimeZone)) {
+                return this;
+            }
             return new CustomPeriod<T>(duration, displayName, dailyAlignment, dailyAlignmentTimeZone, candleAlignment);
         }
 
         public CustomPeriod<T> withDailyAlignment(LocalTime dailyAlignment, ZoneId dailyAlignmentTimeZone) {
+            if (dailyAlignmentTimeZone.equals(this.dailyAlignmentTimeZone) && Objects.equals(dailyAlignment, this.dailyAlignment)) {
+                return this;
+            }
             return new CustomPeriod<T>(duration, displayName, dailyAlignment, dailyAlignmentTimeZone, candleAlignment);
         }
 
         public CustomPeriod<T> withCandleAlignment(TemporalAdjuster candleAlignment) {
+            if (candleAlignment.equals(this.candleAlignment)) {
+                return this;
+            }
             return new CustomPeriod<T>(duration, displayName, dailyAlignment, dailyAlignmentTimeZone, candleAlignment);
         }
 
@@ -261,7 +271,7 @@ public interface TimeFrame {
             } catch (DateTimeException ignored) {
                 // ignored, fallback to generic-period aggregator
             }
-            return (TimeFrameAggregator) services.createPeriodCandleAggregator(duration, new SimpleCandleBuilder(), new PeriodCandleAlignment(getDailyAlignmentTimeZone(), getDailyAlignment(), getCandleAlignment().orElse(null)));
+            return (TimeFrameAggregator) services.createPeriodCandleAggregator(duration, new SimpleCandleBuilder(), new DateCandleAlignment(getDailyAlignmentTimeZone(), getDailyAlignment(), getCandleAlignment().orElse(null)));
         }
 
         @Override

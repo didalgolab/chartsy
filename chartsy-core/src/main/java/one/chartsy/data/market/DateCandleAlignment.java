@@ -10,7 +10,7 @@ import java.time.temporal.TemporalAmount;
 
 import static java.time.LocalTime.MIDNIGHT;
 
-public record PeriodCandleAlignment(
+public record DateCandleAlignment(
         ZoneId dailyAlignmentTimeZone,
         LocalTime dailyAlignment,
         TemporalAdjuster... moreAlignments

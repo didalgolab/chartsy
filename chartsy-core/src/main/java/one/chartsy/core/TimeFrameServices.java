@@ -26,7 +26,7 @@ public interface TimeFrameServices {
     <E extends Chronological> PeriodCandleAggregator<E> createPeriodCandleAggregator(
             TemporalAmount periodicity,
             CandleBuilder<Candle, E> builder,
-            PeriodCandleAlignment alignment);
+            DateCandleAlignment alignment);
 
     //<E> TimeCandleAggregator<E> createTimeCandleAggregator(CandleBuilder<Candle,E> cb, Duration dur, TimeCandleAlignment align);
 }

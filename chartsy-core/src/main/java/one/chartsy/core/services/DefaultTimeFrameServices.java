@@ -38,7 +38,7 @@ public class DefaultTimeFrameServices implements TimeFrameServices {
     public <E extends Chronological> PeriodCandleAggregator<E> createPeriodCandleAggregator(
             TemporalAmount periodicity,
             CandleBuilder<Candle, E> builder,
-            PeriodCandleAlignment alignment) {
+            DateCandleAlignment alignment) {
 
         return new PeriodCandleAggregator<>(builder, periodicity, alignment);
     }
