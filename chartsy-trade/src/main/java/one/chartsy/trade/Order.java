@@ -114,69 +114,51 @@ public class Order implements java.io.Serializable, Cloneable, CustomValuesHolde
         }
         
         public final Side opposite() {
-            switch (this) {
-            case BUY:
-            case BUY_TO_COVER:
-                return SELL_SHORT;
-            case SELL:
-            case SELL_SHORT:
-                return BUY;
-            default:
-                throw new UnsupportedOperationException(this + ".opposite()");
-            }
+            return switch (this) {
+                case BUY, BUY_TO_COVER -> SELL_SHORT;
+                case SELL, SELL_SHORT -> BUY;
+            };
         }
     }
 
     public enum State {
         /** The order was cancelled by a user. */
-        CANCELLED ("cancel", true),
+        CANCELLED ("cancel"),
         /** The order cancellation is pending. */
-        CANCELLING ("request cancelling", false, CANCELLED), // TODO: not implemented yet
+        CANCELLING ("request cancelling"), // TODO: not implemented yet
         /** The completely filled order. */
-        FILLED ("fill", false),
+        FILLED ("fill"),
         /** The partially filled order state. */
-        PARTIALLY_FILLED ("partially fill", true, FILLED, CANCELLING, CANCELLED), // TODO: not implemented yet
+        PARTIALLY_FILLED ("partially fill"), // TODO: not implemented yet
         /** The order was received and acknowledged by the broker service or exchange. */
-        ACCEPTED ("acknowledge", false, FILLED, PARTIALLY_FILLED, CANCELLED), // TODO: not implemented yet
+        ACCEPTED ("acknowledge"), // TODO: not implemented yet
         /** The order was rejected by the system or a user code. */
-        REJECTED ("reject", false),
+        REJECTED ("reject"),
         /** The state of an order submitted to the broker service or exchange. */
-        SUBMITTED ("submit", false, CANCELLED, CANCELLING, FILLED, PARTIALLY_FILLED, ACCEPTED, REJECTED),
+        SUBMITTED ("submit"),
         /** The newly created order state. */
-        NEWLY_CREATED ("create", false, SUBMITTED, CANCELLING, CANCELLED),
+        NEWLY_CREATED ("create"),
         /** The order has expired. */
-        EXPIRED ("expire", false); // TODO: not implemented yet
+        EXPIRED ("expire"); // TODO: not implemented yet
 
         private final String action;
-        private final boolean isFinal;
-        private final Set<State> nextAllowed = new HashSet<>();
+        private Set<State> transitionsAllowed;
 
-        State(String action, boolean selfTransitionAllowed, State... nextAllowed) {
+        State(String action) {
             this.action = action;
-            this.isFinal = (nextAllowed == null || nextAllowed.length == 0);
-            if (!isFinal)
-                this.nextAllowed.addAll(List.of(nextAllowed));
-            if (selfTransitionAllowed)
-                this.nextAllowed.add(this);
         }
 
         public boolean isFinal() {
-            return isFinal;
+            return transitionsAllowed.isEmpty() || transitionsAllowed.contains(this) && transitionsAllowed.size() == 1;
         }
 
         public State to(State next) {
-            if (!nextAllowed.contains(next))
+            if (!transitionsAllowed.contains(next)) {
                 throw new IllegalStateException("Cannot " + next.action + " " + name() + " order");
+            }
             return next;
         }
         
-        /**
-         * Determines if the order with the current state can be cancelled.
-         * 
-         * @return the {@code CANCELLED} order state if and only if the
-         *         current state allows canceling, otherwise throws
-         *         {@code IllegalStateException}
-         */
         public State toCancelled() {
             throw new IllegalStateException("Cannot cancel " + name() + " order");
         }
@@ -185,40 +167,36 @@ public class Order implements java.io.Serializable, Cloneable, CustomValuesHolde
             return to(FILLED);
         }
         
-        /**
-         * Returns {@code true} if the order state is {@link #NEWLY_CREATED}
-         * 
-         * @return {@code true} when {@link #NEWLY_CREATED}
-         */
         public final boolean isNewlyCreated() {
             return (this == NEWLY_CREATED);
         }
         
-        /**
-         * Returns {@code true} if the order state is {@link #SUBMITTED}
-         * 
-         * @return {@code true} when {@link #SUBMITTED}
-         */
         public final boolean isSubmitted() {
             return (this == SUBMITTED);
         }
         
-        /**
-         * Returns {@code true} if the order state is {@link #CANCELLED}
-         * 
-         * @return {@code true} when {@link #CANCELLED}
-         */
         public final boolean isCancelled() {
             return (this == CANCELLED);
         }
-        
-        /**
-         * Returns {@code true} if the order state is {@link #FILLED}
-         * 
-         * @return {@code true} when {@link #FILLED}
-         */
+
         public final boolean isFilled() {
             return (this == FILLED);
+        }
+
+        static {
+            Set<State> NONE = EnumSet.noneOf(State.class);
+            CANCELLING.transitionsAllowed = CANCELLED.transitionsAllowed = EnumSet.of(CANCELLED);
+            FILLED.transitionsAllowed = NONE;
+            EXPIRED.transitionsAllowed = NONE;
+            REJECTED.transitionsAllowed = NONE;
+            PARTIALLY_FILLED
+                    .transitionsAllowed = EnumSet.of(FILLED, PARTIALLY_FILLED, CANCELLING, CANCELLED);
+            ACCEPTED
+                    .transitionsAllowed = EnumSet.of(FILLED, PARTIALLY_FILLED, CANCELLING, CANCELLED, EXPIRED);
+            SUBMITTED
+                    .transitionsAllowed = EnumSet.of(ACCEPTED, FILLED, PARTIALLY_FILLED, CANCELLING, CANCELLED, EXPIRED, REJECTED);
+            NEWLY_CREATED
+                    .transitionsAllowed = EnumSet.of(SUBMITTED, CANCELLING, CANCELLED);
         }
     }
     
