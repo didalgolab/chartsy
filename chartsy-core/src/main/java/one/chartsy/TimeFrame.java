@@ -15,14 +15,22 @@ import java.time.temporal.TemporalAdjuster;
 import java.time.temporal.TemporalAdjusters;
 import java.time.temporal.TemporalAmount;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 public interface TimeFrame {
 
+    /**
+     * Gives all units uniquely identifying the time frame.
+     */
     List<TimeFrameUnit> getUnits();
 
-    Number getSize(TimeFrameUnit unit);
+    /**
+     * Gives the length of the time frame quantified in the specified unit.
+     *
+     * @param unit the time frame unit (e.g. SECONDS, TICKS, PRICE_RANGE,...)
+     * @return length of the time frame as a number, usually of type {@code Long} or {@code BigDecimal}
+     */
+    Number getDuration(TimeFrameUnit unit);
 
     String getDisplayName();
 
@@ -32,14 +40,24 @@ public interface TimeFrame {
         return getAggregator(TimeFrameServices.getDefault());
     }
 
+    /**
+     * Gives the time zone associated with the time frame. The specified time zone may be used by the
+     * {@link #getDailyAlignment() dailyAlignment} and other time zone parameters if supported by the subclass.
+     */
+    default ZoneId getTimeZone() {
+        return ZoneOffset.UTC;
+    }
+
+    /**
+     * Gives the expected alignment of candles in respect of time.
+     */
     default LocalTime getDailyAlignment() {
         return LocalTime.MIDNIGHT;
     }
 
-    default ZoneId getDailyAlignmentTimeZone() {
-        return ZoneOffset.UTC;
-    }
-
+    /**
+     * Gives an additional alignment to which candles represented by this time frame are aligned to.
+     */
     default Optional<?> getCandleAlignment() {
         return Optional.empty();
     }
@@ -132,8 +150,8 @@ public interface TimeFrame {
         }
 
         @Override
-        public Number getSize(TimeFrameUnit unit) {
-            return timeFrame.getSize(unit);
+        public Number getDuration(TimeFrameUnit unit) {
+            return timeFrame.getDuration(unit);
         }
 
         @Override
@@ -147,8 +165,8 @@ public interface TimeFrame {
         }
 
         @Override
-        public ZoneId getDailyAlignmentTimeZone() {
-            return timeFrame.getDailyAlignmentTimeZone();
+        public ZoneId getTimeZone() {
+            return timeFrame.getTimeZone();
         }
 
         @Override
@@ -161,12 +179,16 @@ public interface TimeFrame {
             return timeFrame.getAggregator(services);
         }
 
-        public TemporallyRegular withDailyAlignment(ZoneId dailyAlignmentTimeZone) {
-            return timeFrame.withDailyAlignment(dailyAlignmentTimeZone);
+        public TemporallyRegular withTimeZone(ZoneId timeZone) {
+            return timeFrame.withTimeZone(timeZone);
         }
 
-        public TemporallyRegular withDailyAlignment(LocalTime dailyAlignment, ZoneId dailyAlignmentTimeZone) {
-            return timeFrame.withDailyAlignment(dailyAlignment, dailyAlignmentTimeZone);
+        public TemporallyRegular withDailyAlignment(LocalTime dailyAlignment) {
+            return timeFrame.withDailyAlignment(dailyAlignment);
+        }
+
+        public TemporallyRegular withDailyAlignment(LocalTime dailyAlignment, ZoneId timeZone) {
+            return timeFrame.withDailyAlignment(dailyAlignment, timeZone);
         }
 
         public TemporallyRegular withCandleAlignment(TemporalAdjuster candleAlignment) {
@@ -177,9 +199,9 @@ public interface TimeFrame {
     class CustomPeriod<T extends TemporalAmount & Comparable<T>> implements TimeFrame, TemporallyRegular {
         private final T duration;
         private final List<TimeFrameUnit> units;
-        private final String displayName;
+        private final String name;
+        private final ZoneId timeZone;
         private final LocalTime dailyAlignment;
-        private final ZoneId dailyAlignmentTimeZone;
         private final TemporalAdjuster candleAlignment;
 
 
@@ -196,18 +218,18 @@ public interface TimeFrame {
         }
 
         public static CustomPeriod<Duration> of(Duration duration, String displayName, LocalTime dailyAlignment, ZoneId dailyAlignmentTimeZone, TemporalAdjuster candleAlignment) {
-            return new CustomPeriod<>(duration, displayName, dailyAlignment, dailyAlignmentTimeZone, candleAlignment);
+            return new CustomPeriod<>(duration, displayName, dailyAlignmentTimeZone, dailyAlignment, candleAlignment);
         }
 
         public static CustomPeriod<Months> of(Months duration, String displayName, LocalTime dailyAlignment, ZoneId dailyAlignmentTimeZone, TemporalAdjuster candleAlignment) {
-            return new CustomPeriod<>(duration, displayName, dailyAlignment, dailyAlignmentTimeZone, candleAlignment);
+            return new CustomPeriod<>(duration, displayName, dailyAlignmentTimeZone, dailyAlignment, candleAlignment);
         }
 
-        protected CustomPeriod(T duration, String displayName, LocalTime dailyAlignment, ZoneId dailyAlignmentTimeZone, TemporalAdjuster candleAlignment) {
+        protected CustomPeriod(T duration, String displayName, ZoneId timeZone, LocalTime dailyAlignment, TemporalAdjuster candleAlignment) {
             this.duration = duration;
-            this.displayName = displayName;
+            this.name = displayName;
+            this.timeZone = timeZone;
             this.dailyAlignment = dailyAlignment;
-            this.dailyAlignmentTimeZone = dailyAlignmentTimeZone;
             this.candleAlignment = candleAlignment;
 
             List<TimeFrameUnit> units = List.of();
@@ -218,25 +240,28 @@ public interface TimeFrame {
             this.units = units;
         }
 
-        public CustomPeriod<T> withDailyAlignment(ZoneId dailyAlignmentTimeZone) {
-            if (dailyAlignmentTimeZone.equals(this.dailyAlignmentTimeZone)) {
+        public CustomPeriod<T> withTimeZone(ZoneId timeZone) {
+            if (timeZone.equals(this.timeZone))
                 return this;
-            }
-            return new CustomPeriod<T>(duration, displayName, dailyAlignment, dailyAlignmentTimeZone, candleAlignment);
+            return new CustomPeriod<T>(duration, name, timeZone, dailyAlignment, candleAlignment);
         }
 
-        public CustomPeriod<T> withDailyAlignment(LocalTime dailyAlignment, ZoneId dailyAlignmentTimeZone) {
-            if (dailyAlignmentTimeZone.equals(this.dailyAlignmentTimeZone) && Objects.equals(dailyAlignment, this.dailyAlignment)) {
+        public CustomPeriod<T> withDailyAlignment(LocalTime dailyAlignment) {
+            if (dailyAlignment.equals(this.dailyAlignment))
                 return this;
-            }
-            return new CustomPeriod<T>(duration, displayName, dailyAlignment, dailyAlignmentTimeZone, candleAlignment);
+            return new CustomPeriod<T>(duration, name, timeZone, dailyAlignment, candleAlignment);
+        }
+
+        public CustomPeriod<T> withDailyAlignment(LocalTime dailyAlignment, ZoneId timeZone) {
+            if (timeZone.equals(this.timeZone) && dailyAlignment.equals(this.dailyAlignment))
+                return this;
+            return new CustomPeriod<T>(duration, name, timeZone, dailyAlignment, candleAlignment);
         }
 
         public CustomPeriod<T> withCandleAlignment(TemporalAdjuster candleAlignment) {
-            if (candleAlignment.equals(this.candleAlignment)) {
+            if (candleAlignment.equals(this.candleAlignment))
                 return this;
-            }
-            return new CustomPeriod<T>(duration, displayName, dailyAlignment, dailyAlignmentTimeZone, candleAlignment);
+            return new CustomPeriod<T>(duration, name, timeZone, dailyAlignment, candleAlignment);
         }
 
         @Override
@@ -250,7 +275,7 @@ public interface TimeFrame {
         }
 
         @Override
-        public Number getSize(TimeFrameUnit unit) {
+        public Number getDuration(TimeFrameUnit unit) {
             var units = getUnits();
             if (!units.isEmpty() && units.get(0).equals(unit))
                 return duration.get(duration.getUnits().get(0));
@@ -266,17 +291,17 @@ public interface TimeFrame {
                 var exactDuration = Duration.from(duration);
                 var seconds = exactDuration.getSeconds();
                 if (SECS_IN_DAY % seconds == 0)
-                    return (TimeFrameAggregator) services.createTimeCandleAggregator(exactDuration, new SimpleCandleBuilder(), new TimeCandleAlignment(getDailyAlignmentTimeZone(), getDailyAlignment()));
+                    return (TimeFrameAggregator) services.createTimeCandleAggregator(exactDuration, new SimpleCandleBuilder(), new TimeCandleAlignment(getTimeZone(), getDailyAlignment()));
 
             } catch (DateTimeException ignored) {
                 // ignored, fallback to generic-period aggregator
             }
-            return (TimeFrameAggregator) services.createPeriodCandleAggregator(duration, new SimpleCandleBuilder(), new DateCandleAlignment(getDailyAlignmentTimeZone(), getDailyAlignment(), getCandleAlignment().orElse(null)));
+            return (TimeFrameAggregator) services.createPeriodCandleAggregator(duration, new SimpleCandleBuilder(), new DateCandleAlignment(getTimeZone(), getDailyAlignment(), getCandleAlignment().orElse(null)));
         }
 
         @Override
         public String getDisplayName() {
-            return displayName;
+            return name;
         }
 
         @Override
@@ -285,8 +310,8 @@ public interface TimeFrame {
         }
 
         @Override
-        public ZoneId getDailyAlignmentTimeZone() {
-            return dailyAlignmentTimeZone;
+        public ZoneId getTimeZone() {
+            return timeZone;
         }
 
         @Override
@@ -302,7 +327,7 @@ public interface TimeFrame {
         }
 
         @Override
-        public Number getSize(TimeFrameUnit unit) {
+        public Number getDuration(TimeFrameUnit unit) {
             return 1L;
         }
 

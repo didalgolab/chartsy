@@ -28,19 +28,20 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.DoubleAdder;
 import java.util.stream.Collectors;
 
-public class Main2 {
+public class CandleFactoryBenchmarkTest {
 
     public static void main(String[] args) throws RunnerException {
         Options opt = new OptionsBuilder()
                 // Specify which benchmarks to run.
                 // You can be more specific if you'd like to run only one benchmark per test.
-                .include(Main2.class.getName() + ".*")
+                .include(CandleFactoryBenchmarkTest.class.getName() + ".*")
                 // Set the following options as needed
                 .mode (Mode.AverageTime)
                 .timeUnit(TimeUnit.MICROSECONDS)
@@ -68,6 +69,7 @@ public class Main2 {
         List<Integer> list;
         ThreadLocalRandom random = ThreadLocalRandom.current();
         List<Series<Candle>> seriesList = new ArrayList<>();
+        AtomicLong counter = new AtomicLong();
 
         @Setup(Level.Trial) public void
         initialize() {
@@ -85,39 +87,8 @@ public class Main2 {
     @OutputTimeUnit(TimeUnit.NANOSECONDS)
     @BenchmarkMode(Mode.AverageTime)
     @Measurement(time = 10)
-    public int randomNextDouble3(BenchmarkState state) {
-        SimulationContext context = Lookup.getDefault().lookup(SimulationContext.class);
-        SimulationRunner runner = new SimpleSimulationRunner(context);
-        AtomicLong cnt = new AtomicLong();
-        DoubleAdder cnt2 = new DoubleAdder();
-//        SimulationDriver driver = new SimulationDriver() {
-//            @Override public void initSimulation(SimulationContext context) { }
-//            @Override public void onTradingDayStart(LocalDate date) { }
-//            @Override public void onTradingDayEnd(LocalDate date) { }
-//            @Override public void onData(When when, Chronological next, boolean timeTick) { }
-//
-//            @Override
-//            public void onData(When when, Chronological last) {
-//                cnt.addAndGet(last.getTime());
-//                cnt2.add(((Candle) last).close());
-//            }
-//        };
-        class MyStrategy extends Strategy<Candle> {
-            @Override
-            public void entryOrders(When when, Chronological data) {
-                cnt.addAndGet(data.getTime());
-                //cnt2.add(((Candle) data).close());
-                if (when.index() % 10 == 0) {
-                    if (series.get(when.index()).isBullish())
-                        buy();
-                    else
-                        sell();
-                }
-            }
-        }
-        int r = 0;
-        //for (int i = 0; i < 900; i++)
-            r += runner.run(state.seriesList, new TradingSimulator(new MetaStrategy(MyStrategy::new))).remainingOrderCount();
-        return r;
+    public Object randomNextDouble3(BenchmarkState state) {
+        ThreadLocalRandom r = ThreadLocalRandom.current();
+        return new UUID(r.nextLong(), r.nextLong()).toString();
     }
 }
