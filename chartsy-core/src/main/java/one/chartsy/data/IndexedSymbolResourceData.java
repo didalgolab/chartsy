@@ -16,8 +16,4 @@ public interface IndexedSymbolResourceData<E extends Chronological> extends Symb
     default E getLast() {
         return get(0);
     }
-
-    ChronologicalIterator<E> chronologicalIterator(ChronologicalIteratorContext context);
-
-    Timeline getTimeline();
 }

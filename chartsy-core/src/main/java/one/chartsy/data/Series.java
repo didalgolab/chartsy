@@ -8,8 +8,30 @@ import one.chartsy.time.Chronological;
 import java.util.List;
 import java.util.function.ToDoubleFunction;
 
-public interface Series<E extends Chronological> extends IndexedSymbolResourceData<E> {
+/**
+ * Defines a data series whose elements are represented, among others, by a point
+ * in time of its particular elements.
+ * <p>
+ * The order of elements in the series <b><i>must be</i></b> provided from the
+ * newest element being at <b>{@code index = 0}</b> to the oldest element at
+ * index <b> {@link #length()} - 1</b> unless specified otherwise by the
+ * {@link #getTimeline() timeline}'s order.
+ *
+ * @author Mariusz Bernacki
+ *
+ */
+public interface Series<E extends Chronological> extends IndexedSymbolResourceData<E>, TimeSeriesAlike {
 
+    DoubleSeries mapToDouble(ToDoubleFunction<E> mapper);
+
+    ChronologicalIterator<E> chronologicalIterator(ChronologicalIteratorContext context);
+
+    default <R> R query(Query<? super Series<? extends E>, R> query) {
+        return query.queryFrom(this);
+    }
+
+
+    /*-------------------------------------------- STATIC FACTORY METHODS --------------------------------------------*/
     static <E extends Chronological> Series<E> empty(SymbolResource<E> resource) {
         return new PackedSeries<>(resource, Dataset.empty());
     }
@@ -17,11 +39,4 @@ public interface Series<E extends Chronological> extends IndexedSymbolResourceDa
     static <E extends Chronological> Series<E> of(SymbolResource<E> resource, List<E> data) {
         return new PackedSeries<>(resource, PackedDataset.of(data));
     }
-
-    default <R> R query(Query<? super Series<? extends E>, R> query) {
-        return query.queryFrom(this);
-    }
-
-    DoubleSeries mapToDouble(ToDoubleFunction<E> mapper);
-
 }

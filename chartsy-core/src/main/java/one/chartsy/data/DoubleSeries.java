@@ -1,12 +1,9 @@
 package one.chartsy.data;
 
-import one.chartsy.time.Timeline;
-
-public interface DoubleSeries {
-
-    Timeline getTimeline();
-
-    int length();
+/**
+ * Primitive equivalent of {@code Series} suitable for holding double values.
+ */
+public interface DoubleSeries extends TimeSeriesAlike {
 
     double get(int index);
 
