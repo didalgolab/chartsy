@@ -1,4 +1,4 @@
-package one.chartsy.data.numeric;
+package one.chartsy.data.packed;
 
 import one.chartsy.data.AbstractDoubleDataset;
 import one.chartsy.data.DoubleDataset;

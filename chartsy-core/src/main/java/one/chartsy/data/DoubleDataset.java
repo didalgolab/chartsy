@@ -1,6 +1,6 @@
 package one.chartsy.data;
 
-import one.chartsy.data.numeric.PackedDoubleDataset;
+import one.chartsy.data.packed.PackedDoubleDataset;
 
 import java.util.function.DoubleFunction;
 import java.util.function.DoubleUnaryOperator;

@@ -1,4 +1,4 @@
-package one.chartsy.data.collections;
+package one.chartsy.data.packed;
 
 import one.chartsy.data.AbstractDataset;
 import one.chartsy.data.Dataset;
@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.stream.Stream;
 
 public class PackedDataset<E> extends AbstractDataset<E> {
+
     public static final PackedDataset<?> EMPTY = new PackedDataset<>(new Object[0]);
 
     private final E[] values;

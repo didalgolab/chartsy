@@ -1,6 +1,6 @@
 package one.chartsy.data;
 
-import one.chartsy.data.collections.PackedDataset;
+import one.chartsy.data.packed.PackedDataset;
 import one.chartsy.data.function.IndexedToDoubleFunction;
 import one.chartsy.util.Pair;
 

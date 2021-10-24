@@ -3,15 +3,22 @@ package one.chartsy.data;
 import one.chartsy.Candle;
 import one.chartsy.SymbolResource;
 import one.chartsy.TimeFrame;
-import one.chartsy.data.collections.PackedDataset;
+import one.chartsy.data.packed.PackedCandleSeries;
+import one.chartsy.data.packed.PackedDataset;
 
 import java.util.Collection;
-import java.util.function.ToDoubleFunction;
 
 public interface CandleSeries extends Series<Candle> {
 
     static CandleSeries of(SymbolResource<Candle> resource, Collection<? extends Candle> values) {
-        return new StandardCandleSeries(resource, PackedDataset.of(values));
+        return new PackedCandleSeries(resource, PackedDataset.of(values));
+    }
+
+    static <T extends Candle> CandleSeries from(Series<T> series) {
+        if (series instanceof CandleSeries)
+            return (CandleSeries) series;
+
+        return new PackedCandleSeries((SymbolResource<Candle>) series.getResource(), (Dataset<Candle>) series.getData());
     }
 
     default TimeFrame getTimeFrame() {
@@ -25,7 +32,5 @@ public interface CandleSeries extends Series<Candle> {
     default DoubleSeries volumes() {
         return mapToDouble(Candle::volume);
     }
-
-    DoubleSeries mapToDouble(ToDoubleFunction<Candle> mapper);
 
 }

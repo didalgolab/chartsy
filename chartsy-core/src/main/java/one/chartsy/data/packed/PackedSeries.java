@@ -1,19 +1,22 @@
-package one.chartsy.data;
+package one.chartsy.data.packed;
 
 import lombok.Getter;
 import one.chartsy.SymbolResource;
+import one.chartsy.data.*;
 import one.chartsy.time.Chronological;
 import one.chartsy.time.Timeline;
 
 import java.util.Collections;
+import java.util.function.ToDoubleFunction;
 
 @Getter
-public class StandardIndexedSymbolResourceData<E extends Chronological> implements IndexedSymbolResourceData<E>, Series<E>, Timeline {
+public class PackedSeries<E extends Chronological> implements Series<E>, Timeline {
 
     private final SymbolResource<E> resource;
     private final Dataset<E> data;
 
-    public StandardIndexedSymbolResourceData(SymbolResource<E> resource, Dataset<E> dataset) {
+
+    public PackedSeries(SymbolResource<E> resource, Dataset<E> dataset) {
         this.resource = resource;
         this.data = dataset;
         if (!getOrder().isOrdered(dataset.values()))
@@ -28,6 +31,11 @@ public class StandardIndexedSymbolResourceData<E extends Chronological> implemen
     @Override
     public E get(int index) {
         return data.get(index);
+    }
+
+    @Override
+    public DoubleSeries mapToDouble(ToDoubleFunction<E> mapper) {
+        return new StandardDoubleSeries(getTimeline(), getData().mapToDouble(mapper));
     }
 
     @Override

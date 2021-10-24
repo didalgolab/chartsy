@@ -1,6 +1,6 @@
 package one.chartsy.data;
 
-import one.chartsy.data.numeric.PackedLongDataset;
+import one.chartsy.data.packed.PackedLongDataset;
 
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
