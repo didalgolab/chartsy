@@ -93,11 +93,11 @@ public class VisibleCandles {
     }
     
     public VisibleValues getCloses() {
-        return getVisibleDataset(series.closes().getDataset());
+        return getVisibleDataset(series.closes().values());
     }
     
     public VisibleValues getVolumes() {
-        return getVisibleDataset(series.volumes().getDataset());
+        return getVisibleDataset(series.volumes().values());
     }
     
     public VisibleValues getVisibleDataset(DoubleDataset values) {

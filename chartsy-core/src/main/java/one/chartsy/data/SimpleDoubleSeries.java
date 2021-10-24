@@ -2,14 +2,14 @@ package one.chartsy.data;
 
 import one.chartsy.time.Timeline;
 
-public class StandardDoubleSeries implements DoubleSeries {
+public class SimpleDoubleSeries implements DoubleSeries {
 
     private final Timeline timeline;
-    private final DoubleDataset dataset;
+    private final DoubleDataset values;
 
-    public StandardDoubleSeries(Timeline timeline, DoubleDataset dataset) {
+    public SimpleDoubleSeries(Timeline timeline, DoubleDataset values) {
         this.timeline = timeline;
-        this.dataset = dataset;
+        this.values = values;
     }
 
     @Override
@@ -19,21 +19,21 @@ public class StandardDoubleSeries implements DoubleSeries {
 
     @Override
     public int length() {
-        return dataset.length();
+        return values.length();
     }
 
     @Override
     public double get(int index) {
-        return dataset.get(index);
+        return values.get(index);
     }
 
     @Override
-    public DoubleDataset getDataset() {
-        return dataset;
+    public DoubleDataset values() {
+        return values;
     }
 
     @Override
     public String toString() {
-        return dataset.toString();
+        return values.toString();
     }
 }

@@ -10,5 +10,5 @@ public interface DoubleSeries {
 
     double get(int index);
 
-    DoubleDataset getDataset();
+    DoubleDataset values();
 }

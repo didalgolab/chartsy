@@ -59,12 +59,12 @@ public class StooqFlatFileItemReader {
             System.out.println("Last: " + series.getLast());
             System.out.println(series.length());
             System.out.println(series.mapToDouble(Candle::signum).length());
-            System.out.println(series.mapToDouble(Candle::signum).getDataset().subsequences(2).length());
+            System.out.println(series.mapToDouble(Candle::signum).values().subsequences(2).length());
             System.out.println(series.mapToDouble(Candle::signum));
-            System.out.println(series.mapToDouble(Candle::signum).getDataset().subsequences(2));
-            System.out.println(series.mapToDouble(Candle::signum).getDataset().ref(-1).subsequences(2));
+            System.out.println(series.mapToDouble(Candle::signum).values().subsequences(2));
+            System.out.println(series.mapToDouble(Candle::signum).values().ref(-1).subsequences(2));
             DoubleDataset target = series.getData().mapToDouble(Candle::signum);
-            Dataset<DoubleDataset> input = series.mapToDouble(Candle::signum).getDataset().ref(-1).subsequences(2);
+            Dataset<DoubleDataset> input = series.mapToDouble(Candle::signum).values().ref(-1).subsequences(2);
             System.out.println(input.withRight(target).take(0, 100));
             System.out.println(input.withRight(target).take(0, 100).subsequences(3));
             Dataset<Dataset<Pair<DoubleDataset, Double>>> datasets = input.withRight(target).take(0, 100).subsequences(3);
