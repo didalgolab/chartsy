@@ -3,6 +3,7 @@ package one.chartsy.simulation;
 import one.chartsy.*;
 import one.chartsy.data.Series;
 import one.chartsy.simulation.impl.SimpleMatchingEngine;
+import one.chartsy.simulation.time.SimulationClock;
 import one.chartsy.time.Chronological;
 import one.chartsy.trade.*;
 import one.chartsy.trade.data.Position;
@@ -13,6 +14,8 @@ import java.util.Collection;
 import java.util.List;
 
 public class TradingSimulator extends TradingStrategyProxy implements TradingService, SimulationDriver {
+
+    private final SimulationClock clock = new SimulationClock(ZoneId.systemDefault(), 0);
 
     protected SimpleMatchingEngine matchingEngine;
 
@@ -81,12 +84,26 @@ public class TradingSimulator extends TradingStrategyProxy implements TradingSer
     }
 
     @Override
+    public void onTradingDayEnd(LocalDate date) {
+        clock.setTime(date.atStartOfDay().plusDays(1));
+        super.onTradingDayEnd(date);
+    }
+
+    @Override
+    public void onTradingDayStart(LocalDate date) {
+        clock.setTime(date.atStartOfDay());
+        super.onTradingDayStart(date);
+    }
+
+    @Override
     public void onData(When when, Chronological next, boolean timeTick) {
+        super.onData(when, next, timeTick);
         matchingEngine.onData(when, next, timeTick);
     }
 
     @Override
     public void onData(When when, Chronological data) {
+        clock.setTime(data);
         var target = getTarget();
 
         target.exitOrders(when);

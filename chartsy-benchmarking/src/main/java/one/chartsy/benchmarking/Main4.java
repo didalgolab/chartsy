@@ -4,15 +4,17 @@ import one.chartsy.Candle;
 import one.chartsy.SymbolResource;
 import one.chartsy.TimeFrame;
 import one.chartsy.When;
+import one.chartsy.collections.PriorityMap;
 import one.chartsy.data.CandleSeries;
 import one.chartsy.data.Series;
 import one.chartsy.random.RandomWalk;
 import one.chartsy.simulation.SimulationContext;
-import one.chartsy.simulation.SimulationDriver;
 import one.chartsy.simulation.SimulationRunner;
 import one.chartsy.simulation.TradingSimulator;
 import one.chartsy.simulation.impl.SimpleSimulationRunner;
+import one.chartsy.simulation.time.SimulationClock;
 import one.chartsy.time.Chronological;
+import one.chartsy.time.Clock;
 import one.chartsy.trade.MetaStrategy;
 import one.chartsy.trade.Strategy;
 import org.openide.util.Lookup;
@@ -25,24 +27,25 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.TimeValue;
 
 import java.time.Duration;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.PriorityQueue;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.DoubleAdder;
 import java.util.stream.Collectors;
 
-public class Main2 {
+public class Main4 {
 
     public static void main(String[] args) throws RunnerException {
         Options opt = new OptionsBuilder()
                 // Specify which benchmarks to run.
                 // You can be more specific if you'd like to run only one benchmark per test.
-                .include(Main2.class.getName() + ".*")
+                .include(Main4.class.getName() + ".*")
                 // Set the following options as needed
                 .mode (Mode.AverageTime)
                 .timeUnit(TimeUnit.MICROSECONDS)
@@ -69,16 +72,22 @@ public class Main2 {
     {
         List<Integer> list;
         ThreadLocalRandom random = ThreadLocalRandom.current();
-        List<Series<Candle>> seriesList = new ArrayList<>();
+        List<Candle> candles = new ArrayList<>();
+        PriorityMap<Chronological, Candle> map = new PriorityMap<>();
+        PriorityQueue<Chronological> queue = new PriorityQueue<>();
+        int index;
+        SimulationClock simClock = new SimulationClock(ZoneId.systemDefault(), Chronological.now());
 
         @Setup(Level.Trial) public void
         initialize() {
-            for (int i = 0; i < 1; i++) {
-                List<Candle> candles = RandomWalk.candles(Duration.ofMinutes(15), LocalDateTime.of(1900, 1, 1, 0, 0))
-                        .limit(10_000_000)
-                        .collect(Collectors.toList());
-                Collections.reverse(candles);
-                seriesList.add(CandleSeries.of(SymbolResource.of("RANDOM", TimeFrame.Period.M15), candles));
+            candles = RandomWalk.candles(Duration.ofMinutes(15), LocalDateTime.of(1900, 1, 1, 0, 0))
+                    .limit(10_000_000)
+                    .collect(Collectors.toList());
+            for (int i = 0; i < 10; i++) {
+                Candle c = candles.get(i);
+                map.put(c, c);
+                queue.add(c);
+                index++;
             }
         }
     }
@@ -87,40 +96,18 @@ public class Main2 {
     @OutputTimeUnit(TimeUnit.NANOSECONDS)
     @BenchmarkMode(Mode.AverageTime)
     @Measurement(time = 10)
-    public int randomNextDouble3(BenchmarkState state) {
-        SimulationContext context = Lookup.getDefault().lookup(SimulationContext.class);
-        SimulationRunner runner = new SimpleSimulationRunner(context);
-        AtomicLong cnt = new AtomicLong();
-        DoubleAdder cnt2 = new DoubleAdder();
-        SimulationDriver driver = new SimulationDriver() {
-            @Override public void initSimulation(SimulationContext context) { }
-            @Override public void onTradingDayStart(LocalDate date) { }
-            @Override public void onTradingDayEnd(LocalDate date) { }
-            @Override public void onData(When when, Chronological next, boolean timeTick) { }
-
-            @Override
-            public void onData(When when, Chronological last) {
-                cnt.addAndGet(last.getTime());
-                cnt2.add(((Candle) last).close());
-            }
-        };
-        class MyStrategy extends Strategy<Candle> {
-            @Override
-            public void entryOrders(When when, Chronological data) {
-                cnt.addAndGet(data.getTime());
-                cnt2.add(((Candle) data).close());
-//                if (when.index() % 10 == 0) {
-//                    if (series.get(when.index()).isBullish())
-//                        buy();
-//                    else
-//                        sell();
-//                }
-            }
-        }
-        int r = 0;
-        ////for (int i = 0; i < 900; i++)
-        r += runner.run(state.seriesList, new TradingSimulator(new MetaStrategy(MyStrategy::new))).remainingOrderCount();
-        //runner.run(state.seriesList, driver);
-        return cnt2.intValue() + r;
+    public Object randomNextDouble3(BenchmarkState state) {
+//        Candle c1 = state.map.remove();
+//        Candle c2 = state.candles.get(state.index++);
+//        state.map.put(c2, c2);
+////        Chronological c1 = state.queue.remove();
+////        Candle c2 = state.candles.get(state.index++);
+////        state.queue.add(c2);
+//
+        state.simClock.setTime(state.candles.get(state.index++));
+        if (state.index >= 10_000_000)
+            state.index = 0;
+//        return c1;
+        return state.simClock;
     }
 }

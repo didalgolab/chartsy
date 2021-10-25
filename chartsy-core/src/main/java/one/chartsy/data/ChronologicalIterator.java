@@ -7,9 +7,8 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 public interface ChronologicalIterator<E extends Chronological> extends Iterator<E>, When {
-    /**
-     * Gives the underlying dataset being iterated.
-     */
+
+    /** Gives the underlying dataset being iterated. */
     IndexedSymbolResourceData<E> getDataset();
 
     /**

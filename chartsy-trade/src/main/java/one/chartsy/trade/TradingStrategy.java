@@ -2,6 +2,7 @@ package one.chartsy.trade;
 
 import one.chartsy.When;
 import one.chartsy.time.Chronological;
+import one.chartsy.trade.annotations.LookAheadBiasHazard;
 import one.chartsy.trade.data.Position;
 
 import java.time.LocalDate;
@@ -22,6 +23,7 @@ public interface TradingStrategy {
 
     void adjustRisk(When when);
 
+    @LookAheadBiasHazard
     default void onData(When when, Chronological next, boolean timeTick) { }
 
     default void onExecution(Execution execution, Order order) {

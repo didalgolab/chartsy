@@ -343,6 +343,29 @@ public interface TimeFrame {
         }
     };
 
+    /** Indicates an irregular, possibly non-continuous (or overlapping each other) bar sequences. */
+    TimeFrame IRREGULAR = new TimeFrame() {
+        @Override
+        public List<TimeFrameUnit> getUnits() {
+            return List.of();
+        }
+
+        @Override
+        public Number getDuration(TimeFrameUnit unit) {
+            return 0L;
+        }
+
+        @Override
+        public String getDisplayName() {
+            return "Irregular";
+        }
+
+        @Override
+        public TimeFrameAggregator<Candle, Chronological> getAggregator(TimeFrameServices services) {
+            throw new UnsupportedOperationException("TimeFrame is IRREGULAR");
+        }
+    };
+
     default boolean isAssignableFrom(TimeFrame other) {
         return equals(other);
     }

@@ -40,6 +40,18 @@ public interface Chronological extends Comparable<Chronological> {
     }
 
     /**
+     * Converts the specified epoch microseconds to an {@code Instant}.
+     *
+     * @param epochMicros
+     *            the number of microseconds elapsed since the "epoch"
+     * @return the {@code Instant}
+     */
+    static Instant toInstant(long epochMicros) {
+        return Instant.ofEpochSecond(Math.floorDiv(epochMicros, 1000_000L),
+                Math.floorMod(epochMicros, 1000_000L) * 1000);
+    }
+
+    /**
      * Converts the specified epoch microseconds to a {@code ZonedDateTime} at the
      * specified time zone.
      *
@@ -52,8 +64,7 @@ public interface Chronological extends Comparable<Chronological> {
      * @return the {@code ZonedDateTime}
      */
     static ZonedDateTime toDateTime(long epochMicros, ZoneId zone) {
-        return ZonedDateTime.ofInstant(Instant.ofEpochSecond(Math.floorDiv(epochMicros, 1000_000L),
-                Math.floorMod(epochMicros, 1000_000L) * 1000), (zone == null) ? TIME_ZONE : zone);
+        return ZonedDateTime.ofInstant(toInstant(epochMicros), (zone == null) ? TIME_ZONE : zone);
     }
 
     /**
