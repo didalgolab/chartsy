@@ -17,10 +17,13 @@ import java.time.temporal.TemporalAmount;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Holds the attributes which specify the time interval of the candle.
+ */
 public interface TimeFrame {
 
     /**
-     * Gives all units uniquely identifying the time frame.
+     * Gives all units of measure uniquely identifying the time frame.
      */
     List<TimeFrameUnit> getUnits();
 
@@ -32,7 +35,11 @@ public interface TimeFrame {
      */
     Number getDuration(TimeFrameUnit unit);
 
-    String getDisplayName();
+    /**
+     * A human-readable string describing the time frame.
+     */
+    @Override
+    String toString();
 
     TimeFrameAggregator<Candle, Chronological> getAggregator(TimeFrameServices services);
 
@@ -155,11 +162,6 @@ public interface TimeFrame {
         }
 
         @Override
-        public String getDisplayName() {
-            return timeFrame.getDisplayName();
-        }
-
-        @Override
         public LocalTime getDailyAlignment() {
             return timeFrame.getDailyAlignment();
         }
@@ -194,6 +196,11 @@ public interface TimeFrame {
         public TemporallyRegular withCandleAlignment(TemporalAdjuster candleAlignment) {
             return timeFrame.withCandleAlignment(candleAlignment);
         }
+
+        @Override
+        public String toString() {
+            return timeFrame.toString();
+        }
     }
 
     class CustomPeriod<T extends TemporalAmount & Comparable<T>> implements TimeFrame, TemporallyRegular {
@@ -205,29 +212,29 @@ public interface TimeFrame {
         private final TemporalAdjuster candleAlignment;
 
 
-        public static CustomPeriod<Duration> of(Duration duration, String displayName) {
-            return of(duration, displayName, LocalTime.MIDNIGHT, ZoneOffset.UTC, null);
+        public static CustomPeriod<Duration> of(Duration duration, String name) {
+            return of(duration, name, LocalTime.MIDNIGHT, ZoneOffset.UTC, null);
         }
 
-        public static CustomPeriod<Duration> of(Duration duration, String displayName, LocalTime dailyAlignment) {
-            return of(duration, displayName, dailyAlignment, ZoneOffset.UTC, null);
+        public static CustomPeriod<Duration> of(Duration duration, String name, LocalTime dailyAlignment) {
+            return of(duration, name, dailyAlignment, ZoneOffset.UTC, null);
         }
 
-        public static CustomPeriod<Duration> of(Duration duration, String displayName, LocalTime dailyAlignment, ZoneId dailyAlignmentTimeZone) {
-            return of(duration, displayName, dailyAlignment, dailyAlignmentTimeZone, null);
+        public static CustomPeriod<Duration> of(Duration duration, String name, LocalTime dailyAlignment, ZoneId dailyAlignmentTimeZone) {
+            return of(duration, name, dailyAlignment, dailyAlignmentTimeZone, null);
         }
 
-        public static CustomPeriod<Duration> of(Duration duration, String displayName, LocalTime dailyAlignment, ZoneId dailyAlignmentTimeZone, TemporalAdjuster candleAlignment) {
-            return new CustomPeriod<>(duration, displayName, dailyAlignmentTimeZone, dailyAlignment, candleAlignment);
+        public static CustomPeriod<Duration> of(Duration duration, String name, LocalTime dailyAlignment, ZoneId dailyAlignmentTimeZone, TemporalAdjuster candleAlignment) {
+            return new CustomPeriod<>(duration, name, dailyAlignmentTimeZone, dailyAlignment, candleAlignment);
         }
 
-        public static CustomPeriod<Months> of(Months duration, String displayName, LocalTime dailyAlignment, ZoneId dailyAlignmentTimeZone, TemporalAdjuster candleAlignment) {
-            return new CustomPeriod<>(duration, displayName, dailyAlignmentTimeZone, dailyAlignment, candleAlignment);
+        public static CustomPeriod<Months> of(Months duration, String name, LocalTime dailyAlignment, ZoneId dailyAlignmentTimeZone, TemporalAdjuster candleAlignment) {
+            return new CustomPeriod<>(duration, name, dailyAlignmentTimeZone, dailyAlignment, candleAlignment);
         }
 
-        protected CustomPeriod(T duration, String displayName, ZoneId timeZone, LocalTime dailyAlignment, TemporalAdjuster candleAlignment) {
+        protected CustomPeriod(T duration, String name, ZoneId timeZone, LocalTime dailyAlignment, TemporalAdjuster candleAlignment) {
             this.duration = duration;
-            this.name = displayName;
+            this.name = name;
             this.timeZone = timeZone;
             this.dailyAlignment = dailyAlignment;
             this.candleAlignment = candleAlignment;
@@ -300,11 +307,6 @@ public interface TimeFrame {
         }
 
         @Override
-        public String getDisplayName() {
-            return name;
-        }
-
-        @Override
         public LocalTime getDailyAlignment() {
             return dailyAlignment;
         }
@@ -317,6 +319,11 @@ public interface TimeFrame {
         @Override
         public Optional<TemporalAdjuster> getCandleAlignment() {
             return Optional.ofNullable(candleAlignment);
+        }
+
+        @Override
+        public String toString() {
+            return name;
         }
     }
 
@@ -331,19 +338,19 @@ public interface TimeFrame {
             return 1L;
         }
 
-        @Override
-        public String getDisplayName() {
-            return "Ticks";
-        }
-
         @SuppressWarnings("unchecked")
         @Override
         public TimeFrameAggregator<Candle, Chronological> getAggregator(TimeFrameServices services) {
             return (TimeFrameAggregator) services.createTickOnlyAggregator();
         }
+
+        @Override
+        public String toString() {
+            return "Ticks";
+        }
     };
 
-    /** Indicates an irregular, possibly non-continuous (or overlapping each other) bar sequences. */
+    /** Indicates an irregular, possibly non-continuous (or overlapping) bar sequences. */
     TimeFrame IRREGULAR = new TimeFrame() {
         @Override
         public List<TimeFrameUnit> getUnits() {
@@ -356,13 +363,13 @@ public interface TimeFrame {
         }
 
         @Override
-        public String getDisplayName() {
-            return "Irregular";
+        public TimeFrameAggregator<Candle, Chronological> getAggregator(TimeFrameServices services) {
+            throw new UnsupportedOperationException("TimeFrame is IRREGULAR");
         }
 
         @Override
-        public TimeFrameAggregator<Candle, Chronological> getAggregator(TimeFrameServices services) {
-            throw new UnsupportedOperationException("TimeFrame is IRREGULAR");
+        public String toString() {
+            return "Irregular";
         }
     };
 
@@ -391,6 +398,5 @@ public interface TimeFrame {
     interface TemporallyRegular extends TimeFrame {
 
         TemporalAmount getRegularity();
-
     }
 }

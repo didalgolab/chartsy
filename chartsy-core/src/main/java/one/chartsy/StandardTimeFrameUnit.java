@@ -20,12 +20,12 @@ public enum StandardTimeFrameUnit implements TimeFrameUnit {
     ;
 
     StandardTimeFrameUnit(String name, boolean eventBased, boolean priceBased) {
-        this.displayName = name;
+        this.name = name;
         this.eventBased = eventBased;
         this.priceBased = priceBased;
     }
 
-    private final String displayName;
+    private final String name;
     private final boolean eventBased;
     private final boolean priceBased;
 
@@ -41,6 +41,6 @@ public enum StandardTimeFrameUnit implements TimeFrameUnit {
 
     @Override
     public String toString() {
-        return displayName;
+        return name;
     }
 }

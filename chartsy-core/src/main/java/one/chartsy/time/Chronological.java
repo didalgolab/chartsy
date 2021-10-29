@@ -203,7 +203,7 @@ public interface Chronological extends Comparable<Chronological> {
     }
 
     /**
-     * Returns an objects's date and time as a {@code ZonedDateTime} instance
+     * Returns an object's date and time as a {@code ZonedDateTime} instance
      * converted to the specified time-zone. The method is equivalent to:
      *
      * <pre>

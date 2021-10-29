@@ -6,5 +6,12 @@ public interface CandleOpen {
 
     long openTime();
 
-    boolean isOpenTimeKnown();
+    boolean isOpenTimed();
+
+    record NonTimed(double open, long openTime) implements CandleOpen {
+        @Override
+        public boolean isOpenTimed() {
+            return false;
+        }
+    }
 }

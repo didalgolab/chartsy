@@ -55,9 +55,6 @@ public interface Timeline {
         if (length != b.length())
             return false;
 
-        //if (!a.getTimeZone().equals(b.getTimeZone()))
-        //    return false;
-
         for (int i = 0; i < length; i++)
             if (a.getTimeAt(i) != b.getTimeAt(i))
                 return false;

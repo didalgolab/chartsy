@@ -5,8 +5,7 @@ import one.chartsy.SymbolResource;
 import one.chartsy.TimeFrame;
 import one.chartsy.When;
 import one.chartsy.collections.PriorityMap;
-import one.chartsy.data.CandleSeries;
-import one.chartsy.data.Series;
+import one.chartsy.data.*;
 import one.chartsy.random.RandomWalk;
 import one.chartsy.simulation.SimulationContext;
 import one.chartsy.simulation.SimulationRunner;
@@ -82,6 +81,8 @@ public class Main4 {
         initialize() {
             candles = RandomWalk.candles(Duration.ofMinutes(15), LocalDateTime.of(1900, 1, 1, 0, 0))
                     .limit(10_000_000)
+                    .map(c -> ThreadLocalRandom.current().nextInt(4)==0? new ExtendedCandle(c, c.getTime(), 0, 0) : c)
+                    //.map(c -> new ExtendedCandle(c, c.getTime(), 0, 0))
                     .collect(Collectors.toList());
             for (int i = 0; i < 10; i++) {
                 Candle c = candles.get(i);
@@ -96,7 +97,7 @@ public class Main4 {
     @OutputTimeUnit(TimeUnit.NANOSECONDS)
     @BenchmarkMode(Mode.AverageTime)
     @Measurement(time = 10)
-    public Object randomNextDouble3(BenchmarkState state) {
+    public Candle randomNextDouble3(BenchmarkState state) {
 //        Candle c1 = state.map.remove();
 //        Candle c2 = state.candles.get(state.index++);
 //        state.map.put(c2, c2);
@@ -104,10 +105,14 @@ public class Main4 {
 ////        Candle c2 = state.candles.get(state.index++);
 ////        state.queue.add(c2);
 //
-        state.simClock.setTime(state.candles.get(state.index++));
+//        state.simClock.setTime(state.candles.get(state.index++));
+//        if (state.index >= 10_000_000)
+//            state.index = 0;
+////        return c1;
+//        return state.simClock;
+        int index = state.index++;
         if (state.index >= 10_000_000)
             state.index = 0;
-//        return c1;
-        return state.simClock;
+        return state.candles.get(index);
     }
 }

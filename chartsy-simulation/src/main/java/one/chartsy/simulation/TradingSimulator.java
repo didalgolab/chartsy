@@ -2,6 +2,7 @@ package one.chartsy.simulation;
 
 import one.chartsy.*;
 import one.chartsy.data.Series;
+import one.chartsy.data.TimedEntry;
 import one.chartsy.simulation.impl.SimpleMatchingEngine;
 import one.chartsy.simulation.time.SimulationClock;
 import one.chartsy.time.Chronological;
@@ -12,10 +13,13 @@ import org.openide.util.Lookup;
 import java.time.*;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 public class TradingSimulator extends TradingStrategyProxy implements TradingService, SimulationDriver {
 
     private final SimulationClock clock = new SimulationClock(ZoneId.systemDefault(), 0);
+    private final EventCorrelator eventCorrelator = new EventCorrelator();
 
     protected SimpleMatchingEngine matchingEngine;
 
@@ -50,6 +54,7 @@ public class TradingSimulator extends TradingStrategyProxy implements TradingSer
 
     @Override
     public void initSimulation(SimulationContext context) {
+        eventCorrelator.clear();
         initDataSource(context.properties(), context.dataSeries());
         super.initTradingStrategy(context.withTradingService(this));
     }
@@ -103,7 +108,7 @@ public class TradingSimulator extends TradingStrategyProxy implements TradingSer
 
     @Override
     public void onData(When when, Chronological data) {
-        clock.setTime(data);
+        eventCorrelator.triggerEventsUpTo(data.getTime(), clock);
         var target = getTarget();
 
         target.exitOrders(when);
@@ -138,6 +143,47 @@ public class TradingSimulator extends TradingStrategyProxy implements TradingSer
     @Override
     public void entryOrderFilled(Order order, Execution execution) {
         // DO NOT propagate Executions from the outer scope
+    }
+
+    public <T> void addReminder(long time, T state) {
+        eventCorrelator.addTimedEvent(new TimedEntry<>(time, state), onReminderCallback);
+    }
+
+    public <T> void addReminder(long time, T state, Consumer<T> onReminder) {
+        var event = new ReminderActivity<>(time, state, onReminder);
+        eventCorrelator.addTimedEvent(new TimedEntry<>(time, state), event);
+    }
+
+    public <T> void addReminder(LocalDateTime datetime, T state, Consumer<T> onReminder) {
+        addReminder(Chronological.toEpochMicros(datetime), state, onReminder);
+    }
+
+    public <T> void addReminder(LocalDateTime datetime, T state, BiConsumer<LocalDateTime, T> onReminder) {
+        addReminder(Chronological.toEpochMicros(datetime), state, __ -> onReminder.accept(datetime, state));
+    }
+
+    public void onReminder(LocalDateTime time, Object state) {
+        // TODO: impl here
+    }
+
+    protected void fireOnReminder(Chronological event) {
+        if (event instanceof TimedEntry entry)
+            onReminder(Chronological.toDateTime(entry.getTime()), entry.getValue());
+    }
+
+    private final EventCorrelator.EventHandler onReminderCallback = this::fireOnReminder;
+
+    static record ReminderActivity<T>(
+            long time,
+            T state,
+            Consumer<T> onReminder
+    ) implements EventCorrelator.EventHandler {
+
+        @Override
+        public void handle(Chronological event) {
+            if (onReminder != null)
+                onReminder.accept(state);
+        }
     }
 
     @Override
