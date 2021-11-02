@@ -4,6 +4,7 @@ import one.chartsy.scheduling.EventScheduler;
 import one.chartsy.time.Clock;
 import one.chartsy.trade.Account;
 import one.chartsy.trade.OrderBroker;
+import one.chartsy.trade.TradingOptions;
 import one.chartsy.trade.TradingService;
 import org.openide.util.Lookup;
 import org.openide.util.lookup.ServiceProvider;
@@ -17,7 +18,6 @@ import java.util.concurrent.TimeUnit;
 public class HostTradingAgentRuntime implements TradingAgentRuntime {
 
     private final Clock hostClock = Clock.systemDefaultZone();
-
     private final EventScheduler scheduler = new Scheduler();
 
     @Override
@@ -33,6 +33,16 @@ public class HostTradingAgentRuntime implements TradingAgentRuntime {
     @Override
     public TradingService tradingService() {
         return FakeTradingService.INSTANCE;
+    }
+
+    @Override
+    public TradingOptions options() {
+        return TradingOptions.getDefault();
+    }
+
+    @Override
+    public Lookup getLookup() {
+        return Lookup.getDefault();
     }
 
     @Override

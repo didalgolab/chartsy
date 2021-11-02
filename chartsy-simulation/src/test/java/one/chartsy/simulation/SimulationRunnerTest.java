@@ -5,7 +5,7 @@ import one.chartsy.SymbolResource;
 import one.chartsy.TimeFrame;
 import one.chartsy.data.CandleSeries;
 import one.chartsy.data.Series;
-import one.chartsy.simulation.impl.SimpleSimulationRunner;
+import one.chartsy.simulation.engine.SimpleSimulationRunner;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;

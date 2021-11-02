@@ -15,7 +15,7 @@ public interface TradingStrategy {
 
     void onTradingDayEnd(LocalDate date);
 
-    void exitOrders(When when);
+    void onExitManagement(When when);
 
     void exitOrders(When when, Position position);
 

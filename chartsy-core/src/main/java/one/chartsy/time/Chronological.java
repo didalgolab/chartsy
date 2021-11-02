@@ -220,6 +220,26 @@ public interface Chronological extends Comparable<Chronological> {
     }
 
     /**
+     * Checks if this chronological is after the specified time.
+     *
+     * @param other the other chronological event to compare to, not null
+     * @return {@code true} if and only if {@code this.getTime() > other.getTime()}
+     */
+    default boolean isAfter(Chronological other) {
+        return getTime() > other.getTime();
+    }
+
+    /**
+     * Checks if this chronological is before the specified time.
+     *
+     * @param other the other chronological event to compare to, not null
+     * @return {@code true} if and only if {@code this.getTime() < other.getTime()}
+     */
+    default boolean isBefore(Chronological other) {
+        return getTime() < other.getTime();
+    }
+
+    /**
      * Compares two chronological values for time ordering.
      *
      * @param other

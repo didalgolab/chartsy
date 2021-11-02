@@ -1,4 +1,4 @@
-package one.chartsy.simulation.impl;
+package one.chartsy.simulation.engine;
 
 import one.chartsy.*;
 import one.chartsy.commons.event.ListenerList;
@@ -240,12 +240,12 @@ public class SimpleMatchingEngine extends OrderStatusUpdater implements OrderBro
     }
 
     protected Execution closePosition(Position position, Candle ohlc, double price) {
-        double closingCommission = position.getEntryOrder().getCommission(price, position.getQuantity(), position);
-
+        Order.Side exitOrderSide = (position.getDirection() == Direction.LONG)? Order.Side.SELL : Order.Side.BUY_TO_COVER;
+        Order exitOrder = new Order(position.getSymbol(), OrderType.MARKET, exitOrderSide, position.getQuantity());
         //
         Direction side = position.getDirection().reverse();
         String executionId = String.valueOf(executionIds.incrementAndGet());
-        Execution execution = new Execution(position.getSymbol(), executionId, ohlc.getTime(), side, price, position.getQuantity());
+        Execution execution = new Execution(exitOrder, executionId, ohlc.getTime(), price, position.getQuantity());
         execution.setScaleOut(true);
         execution.setClosingCommission(position.getEntryOrder().getCommission(price, position.getQuantity(), position));
 
@@ -289,7 +289,7 @@ public class SimpleMatchingEngine extends OrderStatusUpdater implements OrderBro
                 openingCommission = order.getCommission(price, volume, null);
 
                 String executionId = String.valueOf(executionIds.incrementAndGet());
-                execution = new Execution(order.getSymbol(), executionId, ohlc.getTime(), positionType, price, tradeVolume);
+                execution = new Execution(order, executionId, ohlc.getTime(), price, tradeVolume);
                 execution.setScaleIn(true);
                 execution.setOpeningCommission(order.getCommission(price, volume, null));
 
@@ -300,7 +300,7 @@ public class SimpleMatchingEngine extends OrderStatusUpdater implements OrderBro
                 tradeVolume += position.getQuantity();
 
                 String executionId = String.valueOf(executionIds.incrementAndGet());
-                execution = new Execution(order.getSymbol(), executionId, ohlc.getTime(), positionType, price, tradeVolume);
+                execution = new Execution(order, executionId, ohlc.getTime(), price, tradeVolume);
                 execution.setScaleIn(true);
                 execution.setOpeningCommission(order.getCommission(price, volume, null));
                 execution.setClosingCommission(order.getCommission(price, position.getQuantity(), position));
@@ -311,7 +311,7 @@ public class SimpleMatchingEngine extends OrderStatusUpdater implements OrderBro
                 openingCommission = 0.0;
 
                 String executionId = String.valueOf(executionIds.incrementAndGet());
-                execution = new Execution(order.getSymbol(), executionId, ohlc.getTime(), positionType.reverse(), price, tradeVolume);
+                execution = new Execution(order, executionId, ohlc.getTime(), price, tradeVolume);
                 execution.setScaleOut(true);
                 execution.setClosingCommission(order.getCommission(price, volume, position));
 
@@ -331,7 +331,7 @@ public class SimpleMatchingEngine extends OrderStatusUpdater implements OrderBro
             positionSize = order.getQuantity();
 
             String executionId = String.valueOf(executionIds.incrementAndGet());
-            execution = new Execution(order.getSymbol(), executionId, ohlc.getTime(), positionType, price, positionSize);
+            execution = new Execution(order, executionId, ohlc.getTime(), price, positionSize);
             execution.setScaleIn(true);
             execution.setOpeningCommission(order.getCommission(price, volume, null));
         }

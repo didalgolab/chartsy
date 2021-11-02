@@ -1,4 +1,4 @@
-package one.chartsy.simulation.impl;
+package one.chartsy.simulation.engine;
 
 import one.chartsy.Candle;
 import one.chartsy.Symbol;
@@ -11,8 +11,8 @@ import java.util.List;
 
 public class StandardInstrument implements Instrument {
     private final Symbol symbol;
-    private final List<Order> orders = new ArrayList<>(2);
-    private final List<Order> transmitQueue = new ArrayList<>(2);
+    private final List<Order> orders = new ArrayList<>();
+    private final List<Order> transmitQueue = new ArrayList<>();
     private Position position;
     private Candle lastCandle;
 

@@ -11,7 +11,7 @@ import one.chartsy.data.market.Tick;
 import one.chartsy.simulation.SimulationContext;
 import one.chartsy.simulation.SimulationRunner;
 import one.chartsy.simulation.TradingSimulator;
-import one.chartsy.simulation.impl.SimpleSimulationRunner;
+import one.chartsy.simulation.engine.SimpleSimulationRunner;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;

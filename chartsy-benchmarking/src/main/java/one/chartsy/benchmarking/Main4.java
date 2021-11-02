@@ -1,22 +1,11 @@
 package one.chartsy.benchmarking;
 
 import one.chartsy.Candle;
-import one.chartsy.SymbolResource;
-import one.chartsy.TimeFrame;
-import one.chartsy.When;
 import one.chartsy.collections.PriorityMap;
 import one.chartsy.data.*;
 import one.chartsy.random.RandomWalk;
-import one.chartsy.simulation.SimulationContext;
-import one.chartsy.simulation.SimulationRunner;
-import one.chartsy.simulation.TradingSimulator;
-import one.chartsy.simulation.impl.SimpleSimulationRunner;
 import one.chartsy.simulation.time.SimulationClock;
 import one.chartsy.time.Chronological;
-import one.chartsy.time.Clock;
-import one.chartsy.trade.MetaStrategy;
-import one.chartsy.trade.Strategy;
-import org.openide.util.Lookup;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.profile.StackProfiler;
 import org.openjdk.jmh.runner.Runner;
@@ -29,13 +18,10 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.PriorityQueue;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.DoubleAdder;
 import java.util.stream.Collectors;
 
 public class Main4 {
@@ -76,6 +62,7 @@ public class Main4 {
         PriorityQueue<Chronological> queue = new PriorityQueue<>();
         int index;
         SimulationClock simClock = new SimulationClock(ZoneId.systemDefault(), Chronological.now());
+        Class[] classes = new Class[] {Chronological.class, Candle.class, ExtendedCandle.class, SimpleCandle.class, AbstractCandle.class};
 
         @Setup(Level.Trial) public void
         initialize() {
@@ -97,7 +84,7 @@ public class Main4 {
     @OutputTimeUnit(TimeUnit.NANOSECONDS)
     @BenchmarkMode(Mode.AverageTime)
     @Measurement(time = 10)
-    public Candle randomNextDouble3(BenchmarkState state) {
+    public boolean randomNextDouble3(BenchmarkState state) {
 //        Candle c1 = state.map.remove();
 //        Candle c2 = state.candles.get(state.index++);
 //        state.map.put(c2, c2);
@@ -113,6 +100,7 @@ public class Main4 {
         int index = state.index++;
         if (state.index >= 10_000_000)
             state.index = 0;
-        return state.candles.get(index);
+//        return state.candles.get(index);
+        return state.candles.get(index).getClass().isAssignableFrom(state.classes[ThreadLocalRandom.current().nextInt(state.classes.length)]);
     }
 }

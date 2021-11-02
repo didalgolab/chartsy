@@ -9,6 +9,8 @@ public class Symbol implements SymbolIdentity {
     private String displayName;
     private DataProvider provider;
     private double spread;
+    private double bigPointValue = 1.0;
+    private double roundLot;
 
     public Symbol(String name, DataProvider provider) {
         this(SymbolIdentity.of(name), provider);
@@ -22,6 +24,20 @@ public class Symbol implements SymbolIdentity {
         this.name = symbol.name();
         this.type = symbol.type();
         this.provider = provider;
+    }
+
+    /**
+     * Gives a standard minimum trading size for a security or asset.
+     */
+    public double roundLot() {
+        return roundLot;
+    }
+
+    /**
+     * Gives how much value (per 1 contract) has 1 full price point move.
+     */
+    public double bigPointValue() {
+        return bigPointValue;
     }
 
     @Override

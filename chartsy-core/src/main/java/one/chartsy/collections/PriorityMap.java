@@ -6,6 +6,9 @@ package one.chartsy.collections;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Objects;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 /**
  * The binary min-heap implementation that provides priority queue with a
@@ -180,6 +183,48 @@ public class PriorityMap<K extends Comparable<? super K>, V> implements Serializ
      */
     public V peekValue() {
         return values[0];
+    }
+
+    /**
+     * Performs the given action for each entry in this map until all entries
+     * have been processed or the action throws an exception.
+     *
+     * @param action
+     *          the action to be performed for each entry
+     * @throws NullPointerException if the specified action is null
+     */
+    public void forEach(BiConsumer<? super K,? super V> action) {
+        Objects.requireNonNull(action);
+        for (int i = 0; i < size; i++)
+            action.accept(keys[i], values[i]);
+    }
+
+    /**
+     * Performs the given action for each key in this map until all keys
+     * have been processed or the action throws an exception.
+     *
+     * @param action
+     *          the action to be performed for each key
+     * @throws NullPointerException if the specified action is null
+     */
+    public void forEachKey(Consumer<? super K> action) {
+        Objects.requireNonNull(action);
+        for (int i = 0; i < size; i++)
+            action.accept(keys[i]);
+    }
+
+    /**
+     * Performs the given action for each value in this map until all values
+     * have been processed or the action throws an exception.
+     *
+     * @param action
+     *          the action to be performed for each value
+     * @throws NullPointerException if the specified action is null
+     */
+    public void forEachValue(Consumer<? super V> action) {
+        Objects.requireNonNull(action);
+        for (int i = 0; i < size; i++)
+            action.accept(values[i]);
     }
 
     /**

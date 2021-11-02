@@ -1,6 +1,7 @@
 package one.chartsy.trade;
 
 import one.chartsy.When;
+import one.chartsy.collections.ImmutableCollections;
 import one.chartsy.core.ThreadContext;
 import one.chartsy.data.Series;
 import one.chartsy.naming.SymbolIdentifier;
@@ -13,14 +14,18 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 public abstract class Strategy<E extends Chronological> implements TradingStrategy {
     /** The unique identifier of the strategy. */
-    private final UUID uuid = UUID.randomUUID();
+    private final UUID strategyUUID = UUID.randomUUID();
     /** The instance logger currently in use. */
     private final Logger log = LogManager.getLogger(getClass());
     /** The current strategy configuration. */
     protected final StrategyConfig config;
+    /** The variables shared between all strategies created under the same meta-strategy. */
+    protected final ConcurrentMap<String, ?> globalVariables;
     /** The symbol assigned to the current Strategy. */
     protected final SymbolIdentifier symbol;
     /** The account associated with the Strategy. */
@@ -53,10 +58,12 @@ public abstract class Strategy<E extends Chronological> implements TradingStrate
 
         this.config = config;
         if (config != null) {
+            this.globalVariables = config.sharedVariables();
             this.symbol = config.symbol();
             this.series = selectPrimaryDataSeries(primaryDataType, config.dataSources());
             this.account = config.account();
         } else {
+            this.globalVariables = ImmutableCollections.emptyConcurrentMap();
             this.symbol = null;
             this.series = null;
             this.account = null;
@@ -95,7 +102,7 @@ public abstract class Strategy<E extends Chronological> implements TradingStrate
     }
 
     @Override
-    public void exitOrders(When when) {
+    public void onExitManagement(When when) {
 
     }
 
@@ -140,8 +147,8 @@ public abstract class Strategy<E extends Chronological> implements TradingStrate
         return log;
     }
 
-    public final UUID getUID() {
-        return uuid;
+    public final UUID getStrategyUUID() {
+        return strategyUUID;
     }
 
     private static StrategyConfig findConfig() {
@@ -164,6 +171,11 @@ public abstract class Strategy<E extends Chronological> implements TradingStrate
         return 1.0;
     }
 
+    public interface BrokerContext {
+        Account getAccount();
+        TradingService getTradingService();
+    }
+
     public Order submitOrder(Order order) {
         return tradingStrategyContext.tradingService().getOrderBroker().submitOrder(order);
     }
@@ -173,7 +185,7 @@ public abstract class Strategy<E extends Chronological> implements TradingStrate
     }
 
     public Order buy(double quantity) {
-        return submitOrder(new Order(getSymbol(), OrderType.MARKET, Order.Side.BUY, quantity));
+        return submitOrder(new Order(symbol, OrderType.MARKET, Order.Side.BUY, quantity));
     }
 
     /**
@@ -228,7 +240,7 @@ public abstract class Strategy<E extends Chronological> implements TradingStrate
     }
 
     public Order buyToCover(double volume) {
-        return submitOrder(new Order(getSymbol(), OrderType.MARKET, Order.Side.BUY_TO_COVER, volume));
+        return submitOrder(new Order(symbol, OrderType.MARKET, Order.Side.BUY_TO_COVER, volume));
     }
 
     public Order sell() {
@@ -236,7 +248,7 @@ public abstract class Strategy<E extends Chronological> implements TradingStrate
     }
 
     public Order sell(double volume) {
-        return submitOrder(new Order(getSymbol(), OrderType.MARKET, Order.Side.SELL, volume));
+        return submitOrder(new Order(symbol, OrderType.MARKET, Order.Side.SELL, volume));
     }
 
     public Order sellShort() {
@@ -244,7 +256,7 @@ public abstract class Strategy<E extends Chronological> implements TradingStrate
     }
 
     public Order sellShort(double volume) {
-        return submitOrder(new Order(getSymbol(), OrderType.MARKET, Order.Side.SELL_SHORT, volume));
+        return submitOrder(new Order(symbol, OrderType.MARKET, Order.Side.SELL_SHORT, volume));
     }
 
     /**

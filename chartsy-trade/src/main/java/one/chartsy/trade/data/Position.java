@@ -7,7 +7,7 @@ import one.chartsy.SymbolIdentity;
 import one.chartsy.trade.Direction;
 import one.chartsy.trade.Order;
 
-public final class Position implements Cloneable {
+public class Position implements Cloneable {
     /** The unique position identifier. */
     private final int ID;
     /** The symbol of the position. */
@@ -37,8 +37,7 @@ public final class Position implements Cloneable {
     /** The number of bars the position has been or was open for. */
     private int barsHeld;
     // TODO: position units
-    
-    
+
     /**
      * Units represent concurrent positions taken in the same instrument.
      * 
@@ -46,19 +45,23 @@ public final class Position implements Cloneable {
      *
      */
     public static class Unit {
-        /** The entry date/time of the unit. */
+        private int unitNumber;
+        private final Order entryOrder;
         private final long entryTime;
-        /** The quantity of the unit. */
         private final double quantity;
         
         
-        public Unit(long entryTime, double quantity) {
+        public Unit(Order entryOrder, long entryTime, double quantity) {
+            this.entryOrder = entryOrder;
             this.entryTime = entryTime;
             this.quantity = quantity;
         }
-        
+
+        public int getUnitNumber() {
+            return unitNumber;
+        }
     }
-    
+
     //	public Order createStopAndReverseOrder(double volume, long setupTime) {
     //		Side transactionType = order.getSide().opposite();
     //		double price = openPrice - direction.tag * order.getStopLoss();
@@ -109,7 +112,7 @@ public final class Position implements Cloneable {
         this.commission = commission;
         this.entryTime = entryTime;
     }
-    
+
     @Override
     public Position clone() {
         try {
@@ -293,4 +296,5 @@ public final class Position implements Cloneable {
     public double getClosingCommission() {
         return closingCommission;
     }
+
 }

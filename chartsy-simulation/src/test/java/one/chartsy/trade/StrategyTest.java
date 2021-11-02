@@ -10,7 +10,7 @@ import one.chartsy.simulation.SimulationContext;
 import one.chartsy.simulation.SimulationResult;
 import one.chartsy.simulation.SimulationRunner;
 import one.chartsy.simulation.TradingSimulator;
-import one.chartsy.simulation.impl.SimpleSimulationRunner;
+import one.chartsy.simulation.engine.SimpleSimulationRunner;
 import one.chartsy.time.Chronological;
 import one.chartsy.trade.data.Position;
 import org.junit.jupiter.params.ParameterizedTest;

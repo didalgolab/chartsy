@@ -9,12 +9,15 @@ import one.chartsy.trade.data.Position;
 
 import java.time.LocalDate;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 @SuppressWarnings("ForLoopReplaceableByForEach")
 public class MetaStrategy implements TradingStrategy {
 
     private Account account;
 
+    private final ConcurrentMap<String, ?> sharedVariables = new ConcurrentHashMap<>();
     private final List<TradingStrategyProvider> childStrategiesProviders;
     private final List<TradingStrategy> subStrategies = new ArrayList<>();
     private final Map<SymbolIdentifier, List<TradingStrategy>> symbolStrategies = new LinkedHashMap<>();
@@ -51,7 +54,7 @@ public class MetaStrategy implements TradingStrategy {
     protected void initChildStrategy(TradingStrategyProvider provider) {
         StrategyInitializer initializer = new StrategyInitializer();
         symbolDatasets.forEach((symbol, datasets) -> {
-            var config = new StrategyConfigData(symbol, datasets, Map.of(), account);
+            var config = new StrategyConfigData(symbol, datasets, sharedVariables, Map.of(), account);
             var childStrategy = initializer.newInstance(provider, config);
 
             subStrategies.add(childStrategy);
@@ -63,6 +66,7 @@ public class MetaStrategy implements TradingStrategy {
         subStrategies.clear();
         symbolStrategies.clear();
         symbolDatasets.clear();
+        sharedVariables.clear();
     }
 
     protected List<TradingStrategy> getTargetStrategies(When when) {
@@ -98,8 +102,8 @@ public class MetaStrategy implements TradingStrategy {
     }
 
     @Override
-    public void exitOrders(When when) {
-        getTargetStrategies(when).forEach(strategy -> strategy.exitOrders(when));
+    public void onExitManagement(When when) {
+        getTargetStrategies(when).forEach(strategy -> strategy.onExitManagement(when));
     }
 
     @Override

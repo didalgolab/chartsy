@@ -8,9 +8,10 @@ import one.chartsy.data.CandleSeries;
 import one.chartsy.data.Series;
 import one.chartsy.random.RandomWalk;
 import one.chartsy.simulation.SimulationContext;
+import one.chartsy.simulation.SimulationResult;
 import one.chartsy.simulation.SimulationRunner;
 import one.chartsy.simulation.TradingSimulator;
-import one.chartsy.simulation.impl.SimpleSimulationRunner;
+import one.chartsy.simulation.engine.SimpleSimulationRunner;
 import one.chartsy.time.Chronological;
 import one.chartsy.trade.MetaStrategy;
 import one.chartsy.trade.Strategy;
@@ -32,8 +33,8 @@ public class Main3 {
         List<Series<Candle>> seriesList = new ArrayList<>();
 
         for (int i = 0; i < 1; i++) {
-            List<Candle> candles = RandomWalk.candles(Duration.ofMinutes(15), LocalDateTime.of(1900, 1, 1, 0, 0))
-                    .limit(10)
+            List<Candle> candles = RandomWalk.candles(Duration.ofMinutes(5), LocalDateTime.of(1900, 1, 1, 0, 0))
+                    .limit(10_000_000)
                     .collect(Collectors.toList());
             Collections.reverse(candles);
             seriesList.add(CandleSeries.of(SymbolResource.of("RANDOM", TimeFrame.Period.M15), candles));
@@ -60,11 +61,12 @@ public class Main3 {
             public void entryOrders(When when, Chronological data) {
                 cnt.addAndGet(data.getTime());
                 //cnt2.add(((Candle) data).close());
-                System.out.println(when.current());
+                //System.out.println(when.current());
             }
         }
         //System.in.read();
         //for (int i = 0; i < 100; i++)
-            runner.run(seriesList, new TradingSimulator(new MetaStrategy(MyStrategy::new)));
+        SimulationResult result = runner.run(seriesList, new TradingSimulator(new MetaStrategy(MyStrategy::new)));
+        System.out.println(result.testDays());
     }
 }

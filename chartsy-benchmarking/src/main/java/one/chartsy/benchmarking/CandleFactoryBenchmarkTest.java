@@ -3,18 +3,9 @@ package one.chartsy.benchmarking;
 import one.chartsy.Candle;
 import one.chartsy.SymbolResource;
 import one.chartsy.TimeFrame;
-import one.chartsy.When;
 import one.chartsy.data.CandleSeries;
 import one.chartsy.data.Series;
 import one.chartsy.random.RandomWalk;
-import one.chartsy.simulation.SimulationContext;
-import one.chartsy.simulation.SimulationRunner;
-import one.chartsy.simulation.TradingSimulator;
-import one.chartsy.simulation.impl.SimpleSimulationRunner;
-import one.chartsy.time.Chronological;
-import one.chartsy.trade.MetaStrategy;
-import one.chartsy.trade.Strategy;
-import org.openide.util.Lookup;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.profile.StackProfiler;
 import org.openjdk.jmh.runner.Runner;
@@ -32,7 +23,6 @@ import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.DoubleAdder;
 import java.util.stream.Collectors;
 
 public class CandleFactoryBenchmarkTest {

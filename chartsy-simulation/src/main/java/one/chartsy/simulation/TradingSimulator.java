@@ -3,7 +3,7 @@ package one.chartsy.simulation;
 import one.chartsy.*;
 import one.chartsy.data.Series;
 import one.chartsy.data.TimedEntry;
-import one.chartsy.simulation.impl.SimpleMatchingEngine;
+import one.chartsy.simulation.engine.SimpleMatchingEngine;
 import one.chartsy.simulation.time.SimulationClock;
 import one.chartsy.time.Chronological;
 import one.chartsy.trade.*;
@@ -20,6 +20,7 @@ public class TradingSimulator extends TradingStrategyProxy implements TradingSer
 
     private final SimulationClock clock = new SimulationClock(ZoneId.systemDefault(), 0);
     private final EventCorrelator eventCorrelator = new EventCorrelator();
+    private int currentDayNumber;
 
     protected SimpleMatchingEngine matchingEngine;
 
@@ -54,6 +55,7 @@ public class TradingSimulator extends TradingStrategyProxy implements TradingSer
 
     @Override
     public void initSimulation(SimulationContext context) {
+        currentDayNumber = 0;
         eventCorrelator.clear();
         initDataSource(context.properties(), context.dataSeries());
         super.initTradingStrategy(context.withTradingService(this));
@@ -90,6 +92,7 @@ public class TradingSimulator extends TradingStrategyProxy implements TradingSer
 
     @Override
     public void onTradingDayEnd(LocalDate date) {
+        currentDayNumber++;
         clock.setTime(date.atStartOfDay().plusDays(1));
         super.onTradingDayEnd(date);
     }
@@ -111,14 +114,14 @@ public class TradingSimulator extends TradingStrategyProxy implements TradingSer
         eventCorrelator.triggerEventsUpTo(data.getTime(), clock);
         var target = getTarget();
 
-        target.exitOrders(when);
+        target.onExitManagement(when);
         target.entryOrders(when, data);
         target.adjustRisk(when);
     }
 
     @Override
-    public void exitOrders(When when) {
-        getTarget().exitOrders(when);
+    public void onExitManagement(When when) {
+        getTarget().onExitManagement(when);
 
         Position position = matchingEngine.getAccount().getPosition(when.getSymbol());
         if (position != null)
@@ -202,6 +205,7 @@ public class TradingSimulator extends TradingStrategyProxy implements TradingSer
                 .sum());
         result.endTime(endTime);
         result.testDuration(Duration.between(result.getStartTime(), endTime));
+        result.testDays(currentDayNumber);
         result.state(SimulationResult.State.READY);
         return result.build();
     }

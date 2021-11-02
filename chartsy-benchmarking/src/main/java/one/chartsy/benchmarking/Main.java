@@ -7,11 +7,9 @@ import one.chartsy.data.CandleSeries;
 import one.chartsy.data.Series;
 import one.chartsy.random.RandomWalk;
 import one.chartsy.simulation.SimulationContext;
-import one.chartsy.simulation.impl.SimpleSimulationRunner;
-import org.apache.commons.math3.random.RandomGeneratorFactory;
+import one.chartsy.simulation.engine.SimpleSimulationRunner;
 import org.openide.util.Lookup;
 import org.openjdk.jmh.annotations.*;
-import org.openjdk.jmh.infra.Blackhole;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
@@ -20,13 +18,10 @@ import org.openjdk.jmh.runner.options.TimeValue;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-import java.util.random.RandomGenerator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 

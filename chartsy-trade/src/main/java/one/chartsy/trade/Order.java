@@ -59,7 +59,9 @@ public class Order implements java.io.Serializable, Cloneable, CustomValuesHolde
     private long orderLatency;
     /** A user-definable set of custom values associated with the order. */
     private Map<String, Object> customValues = Collections.emptyMap();
-    
+    /** The rejection reason, may be null. */
+    private String rejectionReason;
+
     /** The list of {@code OrderStatusListener}'s associated with this order. */
     private OrderStatusListener[] listeners = EMPTY_LISTENER_LIST;
     
@@ -340,8 +342,17 @@ public class Order implements java.io.Serializable, Cloneable, CustomValuesHolde
     }
 
     Order toRejected() {
+        return toRejected(null);
+    }
+
+    Order toRejected(String rejectionReason) {
         setState(state.to(State.REJECTED));
+        this.rejectionReason = rejectionReason;
         return this;
+    }
+
+    public final String getRejectionReason() {
+        return rejectionReason;
     }
 
     Order toAccepted(long time) {
@@ -366,18 +377,17 @@ public class Order implements java.io.Serializable, Cloneable, CustomValuesHolde
         return (cancelledTime == UNSPECIFIED)? Optional.empty() : Optional.of(Chronological.toDateTime(cancelledTime));
     }
 
-
-    /**
-     * @return the quantity
-     */
-    public double getQuantity() {
+    public final double getQuantity() {
         return quantity;
     }
-    
-    /**
-     * @param quantity the quantity to set
-     */
+
     public void setQuantity(double quantity) {
+        if (quantity < 0.0)
+            throw new IllegalArgumentException(String.format("Order quantity `%f` cannot be negative", quantity));
+        var status = getState();
+        if (status != State.NEWLY_CREATED)
+            throw new InvalidOrderStatusException(status, String.format("Cannot setQuantity on %s order", status));
+
         this.quantity = quantity;
     }
     
@@ -542,7 +552,7 @@ public class Order implements java.io.Serializable, Cloneable, CustomValuesHolde
      * The entry risk of the order, which is a difference between the order
      * entry price and the protective exit stop price.
      * <p>
-     * This is not adjusted by the fill price and it's recomputed on each method
+     * This is not adjusted by the fill price, and it's recomputed on each method
      * call even if the order is already filled. If the order has no protective
      * stop {@code Double.NaN} is returned, otherwise the returned value is
      * always non-negative regardless of the order {@link #getType() type} and

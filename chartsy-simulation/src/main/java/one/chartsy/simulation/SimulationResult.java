@@ -20,6 +20,7 @@ public abstract class SimulationResult {
     public abstract LocalDateTime startTime();
     public abstract LocalDateTime endTime();
     public abstract Duration testDuration();
+    public abstract int testDays();
     public abstract long estimatedDataPointCount();
     public abstract Map<SymbolIdentity, List<Order>> remainingOrders();
     public abstract int remainingOrderCount();

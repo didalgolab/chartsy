@@ -15,6 +15,7 @@ public class HostSimulationResultBuilderFactory implements SimulationResultBuild
         return new SimulationResult.Builder()
                 .startTime(LocalDateTime.MAX)
                 .endTime(LocalDateTime.MAX)
+                .testDays(0)
                 .testDuration(Duration.ZERO)
                 .estimatedDataPointCount(0)
                 .remainingOrderCount(0);

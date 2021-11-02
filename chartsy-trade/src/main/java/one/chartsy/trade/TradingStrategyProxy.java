@@ -31,8 +31,8 @@ public class TradingStrategyProxy implements TradingStrategy {
     }
 
     @Override
-    public void exitOrders(When when) {
-        getTarget().exitOrders(when);
+    public void onExitManagement(When when) {
+        getTarget().onExitManagement(when);
     }
 
     @Override
