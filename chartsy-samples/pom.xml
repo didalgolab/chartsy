@@ -55,6 +55,11 @@
             <artifactId>chartsy-chart-java2d</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>chartsy-chart-overlays</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>org.apache.commons</groupId>

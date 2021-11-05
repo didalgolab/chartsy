@@ -37,6 +37,6 @@ public interface ChartContext {
     
     void zoomIn();
     
-    Template getTemplate();
+    ChartTemplate getChartTemplate();
     
 }

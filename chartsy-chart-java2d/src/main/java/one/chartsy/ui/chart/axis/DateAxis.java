@@ -83,10 +83,10 @@ public class DateAxis extends JPanel implements Serializable {
             public void mouseClicked(MouseEvent e) {
                 if (e.getClickCount() == 2) {
                     // reverse back to the predefined bar width and the recent position
-                    Template template = chartFrame.getTemplate();
-                    if (template != null) {
+                    ChartTemplate chartTemplate = chartFrame.getChartTemplate();
+                    if (chartTemplate != null) {
                         ChartProperties properties = chartFrame.getChartProperties();
-                        properties.setBarWidth(template.getChartProperties().getBarWidth());
+                        properties.setBarWidth(chartTemplate.getChartProperties().getBarWidth());
                         chartFrame.getChartData().setLast(0);
                         chartFrame.updateHorizontalScrollBar();
                     }

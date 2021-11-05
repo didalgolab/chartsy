@@ -15,7 +15,7 @@ import one.chartsy.ui.chart.Overlay;
  * 
  * @author Mariusz Bernacki
  */
-public class Template {
+public class ChartTemplate {
     
     private final String name;
     private Chart chart;
@@ -23,7 +23,7 @@ public class Template {
     private final List<Overlay> overlays;
     private final List<Indicator> indicators;
     
-    public Template(String name) {
+    public ChartTemplate(String name) {
         this.name = name;
         this.chartProperties = new ChartProperties();
         this.overlays = new ArrayList<>();

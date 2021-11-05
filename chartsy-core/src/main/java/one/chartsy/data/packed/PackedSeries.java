@@ -35,7 +35,7 @@ public class PackedSeries<E extends Chronological> implements Series<E>, Timelin
 
     @Override
     public DoubleSeries mapToDouble(ToDoubleFunction<E> mapper) {
-        return new SimpleDoubleSeries(getTimeline(), getData().mapToDouble(mapper));
+        return new PackedDoubleSeries(getTimeline(), getData().mapToDouble(mapper));
     }
 
     @Override

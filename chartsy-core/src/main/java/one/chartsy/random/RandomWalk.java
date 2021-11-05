@@ -1,11 +1,16 @@
 package one.chartsy.random;
 
 import one.chartsy.Candle;
+import one.chartsy.SymbolResource;
+import one.chartsy.data.CandleSeries;
 import one.chartsy.time.Chronological;
 
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.random.RandomGenerator;
 import java.util.stream.Stream;
@@ -27,6 +32,15 @@ public class RandomWalk {
         return Candle.of(time, open, max, min, curr);
     }
 
+    public static CandleSeries candleSeries(int count, SymbolResource<Candle> symbol) {
+        List<Candle> list = RandomWalk.candles()
+                .limit(count)
+                .toList();
+        list = new ArrayList<>(list);
+        Collections.reverse(list);
+        return CandleSeries.of(symbol, list);
+    }
+
     public static Stream<Candle> candles() {
         return candles(LocalDate.ofEpochDay(0).atStartOfDay(), 0.0, Duration.ofDays(1), RandomCandleSpecification.BASIC, ThreadLocalRandom.current());
     }
@@ -41,7 +55,6 @@ public class RandomWalk {
         var seed = candle(seedEndTime, referencePrice, spec.withGappiness(0.0), rnd);
         return Stream.iterate(seed, c -> candle(c.getTime() + timeStepMicros, c.close(), spec, rnd));
     }
-
 
     private RandomWalk() {}
 }

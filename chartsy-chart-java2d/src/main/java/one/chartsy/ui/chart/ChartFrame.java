@@ -4,6 +4,7 @@ import one.chartsy.SymbolIdentity;
 import one.chartsy.TimeFrame;
 import one.chartsy.commons.event.ListenerList;
 import one.chartsy.data.CandleSeries;
+import one.chartsy.ui.chart.components.ChartStackPanel;
 import one.chartsy.ui.chart.components.ChartToolbar;
 import one.chartsy.ui.chart.components.MainPanel;
 import one.chartsy.ui.chart.internal.ChartFrameDropTarget;
@@ -29,7 +30,7 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
     private ChartProperties chartProperties = new ChartProperties();
     private ChartData chartData;
     private ChartHistory history = new ChartHistory();
-    private Template template;
+    private ChartTemplate chartTemplate;
 
     private final transient ListenerList<ChartFrameListener> chartFrameListeners = ListenerList.of(ChartFrameListener.class);
 
@@ -59,10 +60,10 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
 
         validate();
 
-        if (template != null) {
-            for (Overlay overlay : template.getOverlays())
+        if (chartTemplate != null) {
+            for (Overlay overlay : chartTemplate.getOverlays())
                 fireOverlayAdded(overlay);
-            for (Indicator indicator : template.getIndicators())
+            for (Indicator indicator : chartTemplate.getIndicators())
                 fireIndicatorAdded(indicator);
         }
         if (chartData.getAnnotations() != null)
@@ -132,8 +133,34 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
     }
 
     @Override
-    public Template getTemplate() {
-        return template;
+    public ChartTemplate getChartTemplate() {
+        return chartTemplate;
+    }
+
+    public ChartStackPanel getMainStackPanel() {
+        if (mainPanel != null)
+            return mainPanel.getStackPanel();
+        return null;
+    }
+
+    public void setChartTemplate(ChartTemplate chartTemplate) {
+        this.chartTemplate = chartTemplate;
+        chartProperties.copyFrom(chartTemplate.getChartProperties());
+
+        if (isDisplayable()) {
+            for (Overlay overlay : getMainStackPanel().getChartPanel().getOverlays())
+                fireOverlayRemoved(overlay);
+            for (Overlay overlay : chartTemplate.getOverlays())
+                fireOverlayAdded(overlay);
+
+            for (Indicator indicator : getMainStackPanel().getIndicatorsList())
+                indicatorRemoved(indicator);
+            for (Indicator indicator : chartTemplate.getIndicators())
+                fireIndicatorAdded(indicator);
+        } else {
+            // if the chart is not yet displayed use default bar width from the template
+            chartProperties.setBarWidth(chartTemplate.getChartProperties().getBarWidth());
+        }
     }
 
     @Override
@@ -266,8 +293,8 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
         datasetLoading(symbol, timeFrame);
 
         // reverse back to predefined bar width
-        if (template != null)
-            chartProperties.setBarWidth(template.getChartProperties().getBarWidth());
+        if (chartTemplate != null)
+            chartProperties.setBarWidth(chartTemplate.getChartProperties().getBarWidth());
 
         // notify listeners
         chartFrameListeners.fire().symbolChanged(symbol);
