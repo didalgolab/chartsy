@@ -1,16 +1,19 @@
 package one.chartsy.data;
 
-import one.chartsy.SymbolIdentity;
-import one.chartsy.TimeFrame;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.experimental.Accessors;
+import one.chartsy.SymbolResource;
 import one.chartsy.time.Chronological;
 
 import java.time.LocalDateTime;
 
-public interface DataQuery<T> {
-    SymbolIdentity symbol();
-    TimeFrame timeFrame();
-    LocalDateTime startTime();
-    LocalDateTime endTime();
-    int limit();
-    Chronological.Order order();
+@Builder(builderClassName = "Builder")
+@Getter @Accessors(fluent = true)
+public class DataQuery<T> {
+    private final SymbolResource<T> resource;
+    private final LocalDateTime startTime;
+    private final LocalDateTime endTime;
+    private final int limit;
+    private final Chronological.Order order;
 }

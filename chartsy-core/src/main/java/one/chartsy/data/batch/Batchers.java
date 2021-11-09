@@ -20,4 +20,21 @@ public class Batchers {
             }
         };
     }
+
+    public static class StandaloneQueryBatcher<T extends Chronological> extends Batcher<T> {
+
+        public StandaloneQueryBatcher(DataQuery<T> query) {
+            super(query);
+        }
+
+        @Override
+        public boolean hasNext(Batch<T> prevBatch) {
+            return false;
+        }
+
+        @Override
+        public Batch<T> getNext(Batch<T> prevBatch) {
+            return null;
+        }
+    }
 }

@@ -14,7 +14,7 @@ public interface OrderType {
     
     Execution tryFill(Order order, Candle ohlc, OrderFiller filler);
 
-    default boolean isCancellable() {
-        return true;
+    default boolean isImmediateOrCancelOnly() {
+        return false;
     }
 }

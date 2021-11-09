@@ -3,6 +3,7 @@ package one.chartsy.data.provider.file;
 import one.chartsy.data.SimpleCandle;
 import one.chartsy.time.Chronological;
 import one.chartsy.util.Pair;
+import org.springframework.batch.item.ExecutionContext;
 import org.springframework.batch.item.file.LineMapper;
 import org.springframework.batch.item.file.transform.FlatFileFormatException;
 
@@ -13,45 +14,80 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
+import static java.time.format.DateTimeFormatter.*;
+
 public class SimpleCandleLineMapper implements LineMapper<SimpleCandle> {
 
-    private final char delimiter;
-    private final List<String> fields;
-    private final boolean hasOpen, hasHighLow;
-    private DateTimeFormatter dateFormat = DateTimeFormatter.ISO_LOCAL_DATE;
-    private DateTimeFormatter timeFormat = DateTimeFormatter.ISO_LOCAL_TIME;
-    private DateTimeFormatter dateTimeFormat = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+    public static class Type implements LineMapperType<SimpleCandle> {
+        private final char delimiter;
+        private final List<String> fields;
+        private final boolean hasOpen, hasHighAndLow;
+        private final DateTimeFormatter dateFormat;
+        private final DateTimeFormatter timeFormat;
+        private final DateTimeFormatter dateTimeFormat;
 
+
+        public Type(char delimiter, List<String> fields) {
+            this(delimiter, fields, ISO_LOCAL_DATE);
+        }
+
+        public Type(char delimiter, List<String> fields, DateTimeFormatter dateFormat) {
+            this(delimiter, fields, dateFormat, ISO_LOCAL_TIME, ISO_LOCAL_DATE_TIME);
+        }
+
+        public Type(char delimiter, List<String> fields, DateTimeFormatter dateFormat, DateTimeFormatter timeFormat, DateTimeFormatter dateTimeFormat) {
+            this.delimiter = delimiter;
+            this.fields = new ArrayList<>(fields);
+            this.fields.replaceAll(String::toUpperCase);
+            this.dateFormat = dateFormat;
+            this.timeFormat = timeFormat;
+            this.dateTimeFormat = dateTimeFormat;
+            this.hasOpen = this.fields.contains("OPEN");
+            this.hasHighAndLow = this.fields.contains("HIGH");
+            checkRequiredFieldsPresence(this.fields);
+        }
+
+        public Type withDateFormat(DateTimeFormatter dateFormat) {
+            return new Type(delimiter, fields, dateFormat, timeFormat, dateTimeFormat);
+        }
+
+        public Type withTimeFormat(DateTimeFormatter timeFormat) {
+            return new Type(delimiter, fields, dateFormat, timeFormat, dateTimeFormat);
+        }
+
+        public Type withDateTimeFormat(DateTimeFormatter dateTimeFormat) {
+            return new Type(delimiter, fields, dateFormat, timeFormat, dateTimeFormat);
+        }
+
+        public Type withDateAndTimeFormat(DateTimeFormatter dateFormat, DateTimeFormatter timeFormat) {
+            return new Type(delimiter, fields, dateFormat, timeFormat, dateTimeFormat);
+        }
+
+        private static void checkRequiredFieldsPresence(List<String> fields) {
+            if (!fields.contains("DATE") && !fields.contains("DATE_TIME"))
+                throw new FlatFileFormatException("Required fields missing: DATE or DATE_TIME");
+            if (!fields.contains("CLOSE"))
+                throw new FlatFileFormatException("Required fields missing: CLOSE");
+            if (fields.contains("HIGH") != fields.contains("LOW"))
+                throw new FlatFileFormatException("Required fields missing: neither or both are allowed: HIGH,LOW");
+        }
+
+        @Override
+        public LineMapper<SimpleCandle> createLineMapper(ExecutionContext context) {
+            return new SimpleCandleLineMapper(this);
+        }
+    }
+
+    private final Type type;
     private Pair<String, LocalDate> cachedLastDateParsed;
 
-    public SimpleCandleLineMapper(char delimiter, List<String> fields) {
-        this.delimiter = delimiter;
-        this.fields = new ArrayList<>(fields);
-        this.fields.replaceAll(String::toUpperCase);
-        this.hasOpen = this.fields.contains("OPEN");
-        this.hasHighLow = this.fields.contains("HIGH");
-        checkRequiredFieldsPresence(this.fields);
+
+    public SimpleCandleLineMapper(Type type) {
+        this.type = type;
     }
 
-    private void checkRequiredFieldsPresence(List<String> fields) {
-        if (!fields.contains("DATE") && !fields.contains("DATE_TIME"))
-            throw new FlatFileFormatException("Required fields missing: DATE or DATE_TIME");
-        if (!fields.contains("CLOSE"))
-            throw new FlatFileFormatException("Required fields missing: CLOSE");
-        if (fields.contains("HIGH") != fields.contains("LOW"))
-            throw new FlatFileFormatException("Required fields missing: neither or both are allowed: HIGH,LOW");
-    }
-
-    public void setDateFormat(DateTimeFormatter dateFormat) {
-        this.dateFormat = dateFormat;
-    }
-
-    public void setTimeFormat(DateTimeFormatter timeFormat) {
-        this.timeFormat = timeFormat;
-    }
-
-    public void setDateTimeFormat(DateTimeFormatter dateTimeFormat) {
-        this.dateTimeFormat = dateTimeFormat;
+    public final Type getType() {
+        return type;
     }
 
     protected String[] tokenize(String line, char delimiter) {
@@ -68,16 +104,16 @@ public class SimpleCandleLineMapper implements LineMapper<SimpleCandle> {
     }
 
     @Override
-    public SimpleCandle mapLine(String line, int lineNumber) throws Exception {
-        String[] tokens = tokenize(line, delimiter);
+    public SimpleCandle mapLine(String line, int lineNumber) {
+        String[] tokens = tokenize(line, type.delimiter);
 
         double open = 0.0, high = 0.0, low = 0.0, close = 0.0, volume = 0.0;
         int count = 0;
         LocalDate date = null;
         LocalTime time = LocalTime.MIN;
         LocalDateTime dateTime = null;
-        for (int i = 0, fieldCount = fields.size(); i < fieldCount; i++) {
-            String field = fields.get(i);
+        for (int i = 0, fieldCount = type.fields.size(); i < fieldCount; i++) {
+            String field = type.fields.get(i);
             String token = tokens[i];
             switch (field) {
                 case "DATE" -> date = readDate(token);
@@ -96,37 +132,37 @@ public class SimpleCandleLineMapper implements LineMapper<SimpleCandle> {
 
         if (dateTime == null)
             dateTime = LocalDateTime.of(date, time);
-        if (!hasOpen)
+        if (!type.hasOpen)
             open = close;
-        if (!hasHighLow)
+        if (!type.hasHighAndLow)
             high = low = close;
 
         return SimpleCandle.of(Chronological.toEpochMicros(dateTime), open, high, low, close, volume, count);
     }
 
-    private LocalDate readDate(String token) {
+    protected LocalDate readDate(String token) {
         Pair<String, LocalDate> cachedDate = this.cachedLastDateParsed;
         if (cachedDate != null && cachedDate.getLeft().equals(token))
             return cachedDate.getRight();
 
-        LocalDate result = LocalDate.parse(token, dateFormat);
+        LocalDate result = LocalDate.parse(token, type.dateFormat);
         cachedLastDateParsed = Pair.of(token, result);
         return result;
     }
 
-    private LocalDateTime readDateTime(CharSequence token) {
-        return LocalDateTime.parse(token, dateTimeFormat);
+    protected LocalDateTime readDateTime(CharSequence token) {
+        return LocalDateTime.parse(token, type.dateTimeFormat);
     }
 
-    private LocalTime readTime(CharSequence token) {
-        return LocalTime.parse(token, timeFormat);
+    protected LocalTime readTime(CharSequence token) {
+        return LocalTime.parse(token, type.timeFormat);
     }
 
-    private double readDouble(CharSequence s) {
+    protected double readDouble(CharSequence s) {
         return Double.parseDouble(s.toString());
     }
 
-    private int readInt(CharSequence s) {
+    protected int readInt(CharSequence s) {
         return Integer.parseInt(s, 0, s.length(), 10);
     }
 }

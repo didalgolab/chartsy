@@ -122,7 +122,7 @@ public class SimpleMatchingEngine extends OrderStatusUpdater implements OrderBro
                     fireOrderExecution(order, execution);
                 else
                     toRejected(order);
-            } else if (order.getTimeInForce() == TimeInForce.Standard.OPEN || !order.getType().isCancellable()) {
+            } else if (order.getTimeInForce() == TimeInForce.Standard.OPEN || order.getType().isImmediateOrCancelOnly()) {
                 transmitQueue.add(orderCount, order); // move at-the-open or market order to the end of the queue
             } else
                 workingOrders.add(order);
@@ -147,7 +147,7 @@ public class SimpleMatchingEngine extends OrderStatusUpdater implements OrderBro
                 continue;
             else if (order.getTimeInForce() == TimeInForce.Standard.CLOSE)
                 toRejected(order);
-            else if (order.getTimeInForce() == TimeInForce.Standard.OPEN || !order.getType().isCancellable()) {
+            else if (order.getTimeInForce() == TimeInForce.Standard.OPEN || order.getType().isImmediateOrCancelOnly()) {
                 if (openCandle == null)
                     openCandle = Candle.of(time, openPrice);
                 Execution execution = fillOrder(order, openCandle, openCandle.open());

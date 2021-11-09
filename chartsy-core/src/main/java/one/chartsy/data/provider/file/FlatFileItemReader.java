@@ -1,5 +1,7 @@
 package one.chartsy.data.provider.file;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.batch.item.file.FlatFileParseException;
 import org.springframework.batch.item.file.LineMapper;
 import org.springframework.core.io.InputStreamSource;
@@ -7,10 +9,14 @@ import org.springframework.core.io.InputStreamSource;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 
 import static java.util.Objects.requireNonNull;
 
+@Getter
+@Setter
 public class FlatFileItemReader<T> {
 
     public static final String[] NO_COMMENT_PREFIXES = new String[0];
@@ -30,42 +36,10 @@ public class FlatFileItemReader<T> {
     public FlatFileItemReader() { }
 
     public FlatFileItemReader(FlatFileFormat fileFormat) {
-        setLinesToSkip(fileFormat.getLinesToSkip());
+        setLinesToSkip(fileFormat.getSkipFirstLines());
         setEncoding(fileFormat.getEncoding());
         setStripLines(fileFormat.isStripLines());
         setIgnoreEmptyLines(fileFormat.isIgnoreEmptyLines());
-    }
-
-    public void setInputStreamSource(InputStreamSource inputStreamSource) {
-        this.inputStreamSource = requireNonNull(inputStreamSource, "inputStreamSource");
-    }
-
-    public void setLinesToSkip(int linesToSkip) {
-        this.linesToSkip = linesToSkip;
-    }
-
-    public void setSkippedLinesHandler(Consumer<String> skippedLinesHandler) {
-        this.skippedLinesHandler = skippedLinesHandler;
-    }
-
-    public void setIgnoreEmptyLines(boolean ignoreEmptyLines) {
-        this.ignoreEmptyLines = ignoreEmptyLines;
-    }
-
-    public void setStripLines(boolean stripLines) {
-        this.stripLines = stripLines;
-    }
-
-    public void setCommentPrefixes(String[] commentPrefixes) {
-        this.commentPrefixes = requireNonNull(commentPrefixes, "commentPrefixes");
-    }
-
-    public void setEncoding(String encoding) {
-        this.encoding = requireNonNull(encoding, "encoding");
-    }
-
-    public void setLineMapper(LineMapper<? extends T> lineMapper) {
-        this.lineMapper = requireNonNull(lineMapper, "lineMapper");
     }
 
     public void open() throws IOException {
@@ -83,6 +57,10 @@ public class FlatFileItemReader<T> {
             if (skippedLinesHandler != null)
                 skippedLinesHandler.accept(line);
         }
+    }
+
+    public boolean isOpen() {
+        return input != null;
     }
 
     protected BufferedReader createReader(InputStreamSource iss) throws IOException {
@@ -124,6 +102,15 @@ public class FlatFileItemReader<T> {
         } catch (Exception e) {
             throw new FlatFileParseException("Unable to parse line", e, line, lineCount);
         }
+    }
+
+    public List<T> readAll() throws IOException {
+        List<T> resultList = new ArrayList<>();
+        T item;
+        while ((item = read()) != null)
+            resultList.add(item);
+
+        return resultList;
     }
 
     public void close() {

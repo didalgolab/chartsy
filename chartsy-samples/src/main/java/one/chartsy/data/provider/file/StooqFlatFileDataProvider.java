@@ -3,10 +3,8 @@ package one.chartsy.data.provider.file;
 import one.chartsy.Candle;
 import one.chartsy.SymbolResource;
 import one.chartsy.TimeFrame;
-import one.chartsy.data.CandleSeries;
-import one.chartsy.data.Dataset;
-import one.chartsy.data.DoubleDataset;
-import one.chartsy.data.SimpleCandle;
+import one.chartsy.data.*;
+import one.chartsy.data.provider.FlatFileDataProvider;
 import one.chartsy.util.Pair;
 import org.springframework.batch.item.ExecutionContext;
 import org.springframework.batch.item.file.LineMapper;
@@ -23,9 +21,26 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
-public class StooqFlatFileItemReader {
+public class StooqFlatFileDataProvider {
 
     public static void main(String[] args) throws IOException {
+        FlatFileDataProvider dataProvider = FlatFileFormat.STOOQ
+                .newDataProvider(Path.of("C:/Users/Mariusz/Downloads/d_pl_txt(2).zip"));
+
+        DataQuery<Candle> query = DataQuery.<Candle>builder()
+                .resource(SymbolResource.of("bio", TimeFrame.Period.DAILY))
+                .build();
+
+        System.out.println(dataProvider.queryForCandles(query).flatten()
+                //.map(Batch::list)
+                //.map((order() == REVERSE_CHRONOLOGICAL)? Batch::reverseList: Function.identity())
+                //.flatMap(List::stream)
+                .toList().size()
+        );
+        //System.out.println(dataProvider.getSymbolFiles());
+        if (true)
+            return;
+
         FileSystem fs = FileSystems.newFileSystem(Path.of("C:/Users/Mariusz/Downloads/d_pl_txt(2).zip"));
 
         Stream<Path> files = Files.list(fs.getPath("data/daily/pl/wse stocks"));

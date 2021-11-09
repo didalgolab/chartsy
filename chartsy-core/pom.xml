@@ -22,6 +22,7 @@
                         <publicPackage>org.apache.commons.logging.*</publicPackage>
                         <publicPackage>org.apache.logging.log4j.*</publicPackage>
                         <publicPackage>org.slf4j.*</publicPackage>
+                        <publicPackage>org.springframework.*</publicPackage>
                     </publicPackages>
                 </configuration>
             </plugin>

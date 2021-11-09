@@ -16,7 +16,7 @@ public final class MarketOrderType implements OrderType {
     }
 
     @Override
-    public boolean isCancellable() {
-        return false;
+    public boolean isImmediateOrCancelOnly() {
+        return true;
     }
 }

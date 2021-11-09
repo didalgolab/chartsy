@@ -150,7 +150,7 @@ public class Order implements java.io.Serializable, Cloneable, CustomValuesHolde
             this.action = action;
         }
 
-        public boolean isFinal() {
+        public boolean isDone() {
             return transitionsAllowed.isEmpty() || transitionsAllowed.contains(this) && transitionsAllowed.size() == 1;
         }
 
@@ -192,13 +192,17 @@ public class Order implements java.io.Serializable, Cloneable, CustomValuesHolde
             EXPIRED.transitionsAllowed = NONE;
             REJECTED.transitionsAllowed = NONE;
             PARTIALLY_FILLED
-                    .transitionsAllowed = EnumSet.of(FILLED, PARTIALLY_FILLED, CANCELLING, CANCELLED);
+                    .transitionsAllowed = EnumSet.of(
+                            FILLED, PARTIALLY_FILLED, CANCELLING, CANCELLED);
             ACCEPTED
-                    .transitionsAllowed = EnumSet.of(FILLED, PARTIALLY_FILLED, CANCELLING, CANCELLED, EXPIRED);
+                    .transitionsAllowed = EnumSet.of(
+                            FILLED, PARTIALLY_FILLED, CANCELLING, CANCELLED, EXPIRED);
             SUBMITTED
-                    .transitionsAllowed = EnumSet.of(ACCEPTED, FILLED, PARTIALLY_FILLED, CANCELLING, CANCELLED, EXPIRED, REJECTED);
+                    .transitionsAllowed = EnumSet.of(
+                            ACCEPTED, FILLED, PARTIALLY_FILLED, CANCELLING, CANCELLED, EXPIRED, REJECTED);
             NEWLY_CREATED
-                    .transitionsAllowed = EnumSet.of(SUBMITTED, CANCELLING, CANCELLED);
+                    .transitionsAllowed = EnumSet.of(
+                            SUBMITTED, CANCELLING, CANCELLED);
         }
     }
     

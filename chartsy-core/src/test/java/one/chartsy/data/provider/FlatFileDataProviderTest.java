@@ -2,31 +2,33 @@ package one.chartsy.data.provider;
 
 import one.chartsy.SymbolGroup;
 import one.chartsy.SymbolIdentity;
+import one.chartsy.data.provider.file.FlatFileFormat;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.*;
 
-class FileSystemDataProviderTest {
+class FlatFileDataProviderTest {
 
-    FileSystemDataProvider provider;
+    FlatFileDataProvider provider;
 
     @BeforeEach
     void loadDataProvider() throws URISyntaxException, IOException {
-        DataProviderConfiguration config = new DataProviderConfiguration();
-        config.setType(FileSystemDataProvider.class.getName());
-        //config.setFileFormat(new FlatFileFormat());
-        config.setFileSystemPath(Paths.get(getClass().getResource("/FileSystemDataProvider.zip").toURI()));
+        FlatFileFormat fileFormat = FlatFileFormat.builder().build();
+        FileSystem fileSystem = FileSystems.newFileSystem(Paths.get(getClass().getResource("/FileSystemDataProvider.zip").toURI()), Map.of());
 
-        provider = new FileSystemDataProvider(config);
+        provider = new FlatFileDataProvider(fileFormat, fileSystem);
     }
 
     @Test
