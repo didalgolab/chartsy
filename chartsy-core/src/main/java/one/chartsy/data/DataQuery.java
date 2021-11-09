@@ -16,4 +16,12 @@ public class DataQuery<T> {
     private final LocalDateTime endTime;
     private final int limit;
     private final Chronological.Order order;
+
+    public static <T> DataQuery.Builder<T> resource(SymbolResource<T> resource) {
+        return DataQuery.<T>builder().resource(resource);
+    }
+
+    public static <T> DataQuery<T> of(SymbolResource<T> resource) {
+        return resource(resource).build();
+    }
 }

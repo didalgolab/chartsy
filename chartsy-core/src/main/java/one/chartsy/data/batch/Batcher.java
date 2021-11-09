@@ -28,22 +28,4 @@ public abstract class Batcher<T extends Chronological> {
         return query;
     }
 
-
-    public static <T extends Chronological> Collector<Batch<T>, ?, Series<T>> toSeries() {
-        return Collectors.collectingAndThen(Collectors.toList(),
-                (List<Batch<T>> batches) -> {
-                    Collections.sort(batches);
-
-                    int itemCount = 0;
-                    for (Batch<T> batch : batches)
-                        itemCount += batch.size();
-
-                    List<T> list = new ArrayList<>(itemCount);
-                    for (Batch<T> batch : batches)
-                        list.addAll(batch.listOrdered());
-
-                    SymbolResource<T> resource = batches.get(0).batcher().getQuery().resource();
-                    return Series.of(resource, list);
-        });
-    }
 }

@@ -1,9 +1,8 @@
 package one.chartsy.data.provider.file;
 
-import one.chartsy.Candle;
-import one.chartsy.SymbolResource;
-import one.chartsy.TimeFrame;
+import one.chartsy.*;
 import one.chartsy.data.*;
+import one.chartsy.data.batch.Batches;
 import one.chartsy.data.provider.FlatFileDataProvider;
 import one.chartsy.util.Pair;
 import org.springframework.batch.item.ExecutionContext;
@@ -27,16 +26,22 @@ public class StooqFlatFileDataProvider {
         FlatFileDataProvider dataProvider = FlatFileFormat.STOOQ
                 .newDataProvider(Path.of("C:/Users/Mariusz/Downloads/d_pl_txt(2).zip"));
 
-        DataQuery<Candle> query = DataQuery.<Candle>builder()
+        DataQuery<Candle> query = DataQuery
                 .resource(SymbolResource.of("bio", TimeFrame.Period.DAILY))
                 .build();
 
-        System.out.println(dataProvider.queryForCandles(query).flatten()
-                //.map(Batch::list)
-                //.map((order() == REVERSE_CHRONOLOGICAL)? Batch::reverseList: Function.identity())
-                //.flatMap(List::stream)
-                .toList().size()
-        );
+        Series<Candle> s = dataProvider.queryForCandles(query).collect(Batches.toSeries());
+        System.out.println(s.length());
+        System.out.println(dataProvider.getSubGroups(new SymbolGroup("/data/daily/pl/wse stocks")));
+        for (SymbolIdentity symbol : dataProvider.getSymbolList(new SymbolGroup("/data/daily/pl/wse stocks"))) {
+            System.out.println(symbol.name());
+            System.out.println(dataProvider
+                    .queryForCandles(DataQuery.of(SymbolResource.of(symbol, TimeFrame.Period.DAILY)))
+                    .collect(Batches.toSeries())
+                    .length()
+            );
+        }
+
         //System.out.println(dataProvider.getSymbolFiles());
         if (true)
             return;
