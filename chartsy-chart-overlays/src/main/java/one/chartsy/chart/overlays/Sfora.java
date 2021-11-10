@@ -11,6 +11,7 @@ import one.chartsy.data.CandleSeries;
 import one.chartsy.data.DoubleSeries;
 import one.chartsy.data.packed.PackedCandleSeries;
 import one.chartsy.finance.FinancialIndicators;
+import one.chartsy.finance.FinancialIndicators.Sfora.Properties;
 import one.chartsy.ui.chart.StrokeFactory;
 import org.openide.util.lookup.ServiceProvider;
 
@@ -39,7 +40,7 @@ public class Sfora extends AbstractOverlay {
     public void calculate() {
         CandleSeries quotes = getDataset();
         if (quotes != null) {
-            List<DoubleSeries> result = FinancialIndicators.sfora(PackedCandleSeries.from(quotes), framaPeriod, numberOfEnvelops, slowdownPeriod);
+            List<DoubleSeries> result = FinancialIndicators.sfora(PackedCandleSeries.from(quotes), new Properties(framaPeriod, slowdownPeriod, numberOfEnvelops));
             
             for (int i = 0; i < numberOfEnvelops; i++)
                 addPlot(String.valueOf(i), new LinePlot(result.get(i).values(), color, stroke));

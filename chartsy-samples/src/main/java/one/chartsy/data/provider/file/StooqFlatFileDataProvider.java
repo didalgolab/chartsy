@@ -26,9 +26,8 @@ public class StooqFlatFileDataProvider {
         FlatFileDataProvider dataProvider = FlatFileFormat.STOOQ
                 .newDataProvider(Path.of("C:/Users/Mariusz/Downloads/d_pl_txt(2).zip"));
 
-        DataQuery<Candle> query = DataQuery
-                .resource(SymbolResource.of("bio", TimeFrame.Period.DAILY))
-                .build();
+        DataQuery<Candle> query = DataQuery.of(
+                SymbolResource.of("bio", TimeFrame.Period.DAILY));
 
         Series<Candle> s = dataProvider.queryForCandles(query).collect(Batches.toSeries());
         System.out.println(s.length());

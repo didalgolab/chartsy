@@ -26,6 +26,14 @@ public interface DoubleSeries extends TimeSeriesAlike {
         return mapThread(Double::sum, y);
     }
 
+    default DoubleSeries max(DoubleSeries y) {
+        return mapThread(Double::max, y);
+    }
+
+    default DoubleSeries min(DoubleSeries y) {
+        return mapThread(Double::min, y);
+    }
+
     /**
      * Applies the binary function to each element of both this and the other
      * series to produce a new time series.

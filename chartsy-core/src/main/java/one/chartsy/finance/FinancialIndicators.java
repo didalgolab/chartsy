@@ -1,5 +1,6 @@
 package one.chartsy.finance;
 
+import one.chartsy.core.collections.DoubleMinMaxList;
 import one.chartsy.data.CandleSeries;
 import one.chartsy.data.DoubleSeries;
 import one.chartsy.data.PackedDoubleSeries;
@@ -10,9 +11,13 @@ import java.util.List;
 
 public class FinancialIndicators {
 
-    public static List<DoubleSeries> sfora(PackedCandleSeries quotes, int framaPeriod, int numberOfEnvelops, int slowdownPeriod) {
+    public static List<DoubleSeries> sfora(PackedCandleSeries series) {
+        return sfora(series, new Sfora.Properties());
+    }
+
+    public static List<DoubleSeries> sfora(PackedCandleSeries series, Sfora.Properties props) {
         List<DoubleSeries> resultList = new ArrayList<>();
-        Sfora.calculate(quotes, framaPeriod, numberOfEnvelops, slowdownPeriod, resultList);
+        Sfora.calculate(series, props, resultList);
         return resultList;
     }
 
@@ -93,12 +98,32 @@ public class FinancialIndicators {
     }
 
 
-    static final class Sfora {
+    public static final class Sfora {
 
-        static void calculate(PackedCandleSeries quotes, int framaPeriod, int numberOfEnvelops, int slowdownPeriod, List<DoubleSeries> resultList) {
-            for (int i = 1; i <= numberOfEnvelops; i++) {
-                var frama = leadingFrama(quotes, framaPeriod + 1 - i);
-                resultList.add(frama.sma(i * slowdownPeriod));
+        public static record Properties(int framaPeriod, int slowdownPeriod, int numberOfEnvelops) {
+            private static final int DEFAULT_FRAMA_PERIOD = 45;
+            private static final int DEFAULT_SLOWDOWN_PERIOD = 16;
+            private static final int DEFAULT_NUMBER_OF_ENVELOPS = 8;
+
+            public Properties() {
+                this(DEFAULT_FRAMA_PERIOD, DEFAULT_SLOWDOWN_PERIOD, DEFAULT_NUMBER_OF_ENVELOPS);
+            }
+        }
+
+        public static DoubleMinMaxList bands(PackedCandleSeries series) {
+            return bands(series, new Properties());
+        }
+
+        public static DoubleMinMaxList bands(PackedCandleSeries series, Properties props) {
+            DoubleMinMaxList resultList = new DoubleMinMaxList();
+            calculate(series, props, resultList);
+            return resultList;
+        }
+
+        public static void calculate(PackedCandleSeries series, Properties props, List<DoubleSeries> resultList) {
+            for (int i = 1; i <= props.numberOfEnvelops; i++) {
+                var frama = leadingFrama(series, props.framaPeriod + 1 - i);
+                resultList.add(frama.sma(i * props.slowdownPeriod));
             }
         }
     }

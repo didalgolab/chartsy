@@ -65,6 +65,6 @@ class HostTradingAgentRuntimeTest {
 
         Semaphore sync = new Semaphore(0);
         scheduler.schedule((Chronological.now() + 1000L), sync::release);
-        assertTrue(sync.tryAcquire(20, TimeUnit.MILLISECONDS), "Scheduled event triggered");
+        assertTrue(sync.tryAcquire(50, TimeUnit.MILLISECONDS), "Scheduled event triggered");
     }
 }
