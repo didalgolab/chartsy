@@ -62,14 +62,15 @@
         <module>application</module>
         <module>chartsy-benchmarking</module>
         <module>chartsy-chart-chartfx</module>
+        <module>chartsy-chart-indicators</module>
         <module>chartsy-chart-java2d</module>
+        <module>chartsy-chart-overlays</module>
         <module>chartsy-commons</module>
         <module>chartsy-core</module>
         <module>chartsy-core-ml</module>
         <module>chartsy-samples</module>
         <module>chartsy-simulation</module>
         <module>chartsy-trade</module>
-        <module>chartsy-chart-overlays</module>
     </modules>
 
     <dependencies>
