@@ -32,7 +32,7 @@ public interface Dataset<E> extends SequenceAlike<E, Dataset<E>> {
     }
 
     default List<E> values() {
-        return new ListView<>(this);
+        return new Values<>(this);
     }
 
     Dataset<E> ref(int n);
@@ -58,10 +58,10 @@ public interface Dataset<E> extends SequenceAlike<E, Dataset<E>> {
         return (Dataset<E>) PackedDataset.EMPTY;
     }
 
-    class ListView<E> extends AbstractList<E> {
+    class Values<E> extends AbstractList<E> {
         private final Dataset<E> dataset;
 
-        public ListView(Dataset<E> dataset) {
+        public Values(Dataset<E> dataset) {
             this.dataset = dataset;
         }
 

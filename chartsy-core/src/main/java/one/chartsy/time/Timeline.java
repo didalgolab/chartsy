@@ -55,9 +55,10 @@ public interface Timeline {
         if (length != b.length())
             return false;
 
-        for (int i = 0; i < length; i++)
-            if (a.getTimeAt(i) != b.getTimeAt(i))
-                return false;
+        if (a != b)
+            for (int i = 0; i < length; i++)
+                if (a.getTimeAt(i) != b.getTimeAt(i))
+                    return false;
 
         return true;
     }
