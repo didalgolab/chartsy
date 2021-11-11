@@ -15,4 +15,11 @@ public record VisualRange(Range range, boolean isLogarithmic) {
     public double getMax() {
         return range().getMax();
     }
+
+    public VisualRange asLogarithmic() {
+        if (isLogarithmic())
+            return this;
+
+        return new VisualRange(range, true);
+    }
 }

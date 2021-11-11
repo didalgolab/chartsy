@@ -43,7 +43,7 @@ public class Sfora extends AbstractOverlay {
             List<DoubleSeries> result = FinancialIndicators.sfora(PackedCandleSeries.from(quotes), new Properties(framaPeriod, slowdownPeriod, numberOfEnvelops));
             
             for (int i = 0; i < numberOfEnvelops; i++)
-                addPlot(String.valueOf(i), new LinePlot(result.get(i).values(), color, stroke));
+                addPlot(String.valueOf(i), new LinePlot(result.get(i), color, stroke));
         }
     }
     

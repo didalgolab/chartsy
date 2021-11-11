@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 
 import one.chartsy.commons.Range;
-import one.chartsy.data.DoubleDataset;
+import one.chartsy.data.DoubleSeries;
 import one.chartsy.ui.chart.ChartContext;
 import one.chartsy.ui.chart.ChartData;
 import one.chartsy.ui.chart.data.VisibleValues;
@@ -27,8 +27,8 @@ public class LinePlot extends AbstractTimeSeriesPlot {
     protected final Stroke stroke;
     
     
-    public LinePlot(DoubleDataset timeSeries, Color color, Stroke stroke) {
-        super(timeSeries, color);
+    public LinePlot(DoubleSeries timeSeries, Color color, Stroke stroke) {
+        super(timeSeries.values(), color);
         this.stroke = stroke;
     }
     

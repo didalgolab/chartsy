@@ -2,6 +2,7 @@ package one.chartsy.samples.charting;
 
 import one.chartsy.SymbolResource;
 import one.chartsy.TimeFrame;
+import one.chartsy.chart.indicators.SforaWidth;
 import one.chartsy.chart.overlays.Sfora;
 import one.chartsy.data.CandleSeries;
 import one.chartsy.random.RandomWalk;
@@ -26,6 +27,7 @@ public class ChartWithOverlayExample {
 
             ChartTemplate template = new ChartTemplate("Default");
             template.addOverlay(new Sfora());
+            template.addIndicator(new SforaWidth());
 
             ChartFrame chartFrame = new ChartFrame();
             chartFrame.setChartData(chartData);

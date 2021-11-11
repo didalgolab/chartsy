@@ -1,11 +1,12 @@
-package one.chartsy.data;
+package one.chartsy.data.packed;
 
-import one.chartsy.data.packed.PackedDoubleDataset;
+import one.chartsy.data.DoubleDataset;
+import one.chartsy.data.DoubleSeries;
 import one.chartsy.time.Timeline;
 
 import java.util.function.DoubleBinaryOperator;
 
-public class PackedDoubleSeries implements DoubleSeries {
+public class PackedDoubleSeries extends AbstractDoubleSeries<PackedDoubleSeries> implements DoubleSeries {
 
     private final Timeline timeline;
     private final DoubleDataset values;
@@ -45,6 +46,15 @@ public class PackedDoubleSeries implements DoubleSeries {
     }
 
     @Override
+    public PackedDoubleSeries mapThread(DoubleBinaryOperator f, double rightValue) {
+        double[] z = new double[length()];
+        for (int i = z.length-1; i >= 0; i--)
+            z[i] = f.applyAsDouble(get(i), rightValue);
+
+        return DoubleSeries.of(z, getTimeline());
+    }
+
+    @Override
     public PackedDoubleSeries mapThread(DoubleBinaryOperator f, DoubleSeries other) {
         requireSameTimeline(this, other);
 
@@ -77,6 +87,7 @@ public class PackedDoubleSeries implements DoubleSeries {
      * @throws IllegalArgumentException
      *             if the {@code periods} argument is not positive
      */
+    @Override
     public PackedDoubleSeries sma(int periods) {
         if (periods <= 0)
             throw new IllegalArgumentException("The `periods` argument " + periods + " must be positive integer");
@@ -97,22 +108,7 @@ public class PackedDoubleSeries implements DoubleSeries {
         return DoubleSeries.of(result, getTimeline());
     }
 
-    /**
-     * Computes the <i>Wilders Moving Average</i> of the price series.
-     * <p>
-     * The Wilders MA was developed by Welles Wilder.<br>
-     * The Wilders MA is a variation of an exponential moving average and is
-     * used for computation other indicators developed by the same author, such
-     * as {@link Quotes#rsi(int) RSI}, {@link Quotes#atr(int) ATR} and
-     * {@link Quotes#adx(int) ADX}.
-     *
-     * @param periods
-     *            the moving average smoothing parameter
-     * @return the Wilders moving average series of length {@code n-periods+1},
-     *         where {@code n} is the length of {@code this} series
-     * @throws IllegalArgumentException
-     *             if the {@code periods} parameter is not positive
-     */
+    @Override
     public PackedDoubleSeries wilders(int periods) {
         if (periods <= 0)
             throw new IllegalArgumentException("The `periods` argument " + periods + " must be a positive integer");

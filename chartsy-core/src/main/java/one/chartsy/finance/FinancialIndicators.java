@@ -3,7 +3,7 @@ package one.chartsy.finance;
 import one.chartsy.core.collections.DoubleMinMaxList;
 import one.chartsy.data.CandleSeries;
 import one.chartsy.data.DoubleSeries;
-import one.chartsy.data.PackedDoubleSeries;
+import one.chartsy.data.packed.PackedDoubleSeries;
 import one.chartsy.data.packed.PackedCandleSeries;
 
 import java.util.ArrayList;
@@ -21,7 +21,7 @@ public class FinancialIndicators {
         return resultList;
     }
 
-    public static PackedDoubleSeries leadingFrama(PackedCandleSeries quotes, int framaPeriods) {
+    public static PackedDoubleSeries leadingFrama(CandleSeries quotes, int framaPeriods) {
         var frama = frama(quotes, framaPeriods);
         var atr = quotes.atr(15);
         return frama.add(atr);
@@ -114,13 +114,13 @@ public class FinancialIndicators {
             return bands(series, new Properties());
         }
 
-        public static DoubleMinMaxList bands(PackedCandleSeries series, Properties props) {
+        public static DoubleMinMaxList bands(CandleSeries series, Properties props) {
             DoubleMinMaxList resultList = new DoubleMinMaxList();
             calculate(series, props, resultList);
             return resultList;
         }
 
-        public static void calculate(PackedCandleSeries series, Properties props, List<DoubleSeries> resultList) {
+        public static void calculate(CandleSeries series, Properties props, List<DoubleSeries> resultList) {
             for (int i = 1; i <= props.numberOfEnvelops; i++) {
                 var frama = leadingFrama(series, props.framaPeriod + 1 - i);
                 resultList.add(frama.sma(i * props.slowdownPeriod));
