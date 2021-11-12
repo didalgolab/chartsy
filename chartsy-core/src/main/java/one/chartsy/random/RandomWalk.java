@@ -1,8 +1,13 @@
 package one.chartsy.random;
 
 import one.chartsy.Candle;
+import one.chartsy.SymbolIdentity;
 import one.chartsy.SymbolResource;
+import one.chartsy.data.AdjustmentMethod;
 import one.chartsy.data.CandleSeries;
+import one.chartsy.data.Series;
+import one.chartsy.data.packed.PackedCandleSeries;
+import one.chartsy.data.packed.PackedDataset;
 import one.chartsy.time.Chronological;
 
 import java.time.Duration;
@@ -12,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.IntUnaryOperator;
 import java.util.random.RandomGenerator;
 import java.util.stream.Stream;
 
@@ -55,6 +61,106 @@ public class RandomWalk {
         var seed = candle(seedEndTime, referencePrice, spec.withGappiness(0.0), rnd);
         return Stream.iterate(seed, c -> candle(c.getTime() + timeStepMicros, c.close(), spec, rnd));
     }
+
+    /**
+     * Performs a time series bootstrapping of the specified series using default
+     * source of randomness.
+     * <p>
+     * The method utilizes the <i>drawing with replacement</i> idea.<br>
+     * The generated series have the same {@link Series#length() length} and
+     * {@link Series#getTimeline() Timeline} as the origin.<br>
+     * The generated series have an artificial {@link SymbolIdentity} created and
+     * with the original name prepended with a <i>tilde</i> character. For example
+     * a tradeable symbol <i>"EURUSD"</i> will have a bootstrap symbol <i>"~EURUSD"</i>.
+     *
+     * <p>
+     * <b>Code examples</b><br>
+     * Use the following code to obtain a single bootstrap series for the given
+     * {@code series}:
+     *
+     * <pre>{@code Series<Candle> newSample = RandomWalk.bootstrap(series);}</pre>
+     *
+     * <p>
+     * Use the following code to obtain an infinite stream of bootstrap series
+     * for the given {@code series}:
+     *
+     * <pre>{@code Stream<Series<Candle>> newSamples = Stream.generate(RandomWalk::bootstrap);}</pre>
+     *
+     * <p>
+     * When having the set of quotes with different symbols, use the following
+     * code to replace each quotes with its bootstrap at one single step:
+     *
+     * <pre>
+     * {@code
+     * Collection<Quotes> marketData = ...
+     * marketData.replaceAll(Quotes::bootstrap);
+     * }
+     * </pre>
+     *
+     * <p>
+     * When deterministic randomization strategy is required, use an externally
+     * seeded random generator (not recommended in normal case, since
+     * statistical value of bootstrap methods usually depend on <i>large</i>
+     * number of <i>nondeterministic</i> samples):
+     *
+     * <pre>
+     * {@code
+     * long seed = ...
+     * Random rand = new Random(seed);
+     * ... = quotes.randomWalk(rand);
+     * }
+     * </pre>
+     *
+     * @implSpec The default implementation is equivalent to, for this
+     *           {@code quotes}:
+     * <pre>
+     * {@code quotes.randomWalk(ThreadLocalRandom.current())}
+     * </pre>
+     *
+     * @return the sequence of quotes randomly resampled with replacement from
+     *         the original one
+     */
+    public static CandleSeries bootstrap(Series<Candle> origin) {
+        return bootstrap(origin, ThreadLocalRandom.current());
+    }
+
+    public static CandleSeries bootstrap(Series<Candle> origin, RandomGenerator rnd) {
+        return bootstrap(origin, rnd, AdjustmentMethod.RELATIVE);
+    }
+
+    public static CandleSeries bootstrap(Series<Candle> origin, RandomGenerator rnd, AdjustmentMethod method) {
+        int[] mapping = rnd.ints(origin.length(), 0, origin.length()).toArray();
+        return bootstrap(origin, index -> mapping[index], method);
+    }
+
+    public static CandleSeries bootstrap(Series<Candle> series, IntUnaryOperator mapping, AdjustmentMethod method) {
+        int barCount = series.length();
+
+        // Fill the resulting Quote array
+        Candle[] result = new Candle[barCount];
+        if (barCount > 0) {
+            double ref = series.get(barCount - 1).open();
+            for (int barNo = barCount - 1; barNo >= 0; barNo--) {
+                int index = mapping.applyAsInt(barNo);
+                Candle choice = series.get(index);
+                Candle origin = series.get(barNo);
+                double open = (index + 1 == series.length())? ref : method.calculate(choice.open(), series.get(index + 1).close(), ref);
+                double close = method.calculate(choice.close(), choice.open(), open);
+                result[barNo] = Candle.of(
+                        origin.getTime(),
+                        open,
+                        method.calculate(choice.high(), choice.open(), open),
+                        method.calculate(choice.low(), choice.open(), open),
+                        close,
+                        choice.volume());
+                ref = close;
+            }
+        }
+        var resource = series.getResource();
+        var symbol = resource.symbol();
+        return new PackedCandleSeries(resource.withSymbol(SymbolIdentity.of("~" + symbol.name(), symbol.type())), PackedDataset.of(result));
+    }
+
 
     private RandomWalk() {}
 }

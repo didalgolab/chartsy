@@ -15,6 +15,10 @@ public interface SymbolResource<E> {
         return of(symbol(), newTimeFrame, dataType());
     }
 
+    default SymbolResource<E> withSymbol(SymbolIdentity newSymbol) {
+        return of(newSymbol, timeFrame(), dataType());
+    }
+
     static SymbolResource<Candle> of(String name, TimeFrame timeFrame) {
         return of(SymbolIdentity.of(name), timeFrame);
     }

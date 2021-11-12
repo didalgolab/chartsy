@@ -5,8 +5,10 @@ import one.chartsy.SymbolResource;
 import one.chartsy.TimeFrame;
 import one.chartsy.data.packed.PackedCandleSeries;
 import one.chartsy.data.packed.PackedDataset;
+import one.chartsy.random.RandomWalk;
 
 import java.util.Collection;
+import java.util.concurrent.ThreadLocalRandom;
 
 public interface CandleSeries extends Series<Candle> {
 
@@ -92,4 +94,11 @@ public interface CandleSeries extends Series<Candle> {
      */
     DoubleSeries trueRange();
 
+    default CandleSeries bootstrap() {
+        return RandomWalk.bootstrap(this);
+    }
+
+    default CandleSeries bootstrap(AdjustmentMethod method) {
+        return RandomWalk.bootstrap(this, ThreadLocalRandom.current(), method);
+    }
 }
