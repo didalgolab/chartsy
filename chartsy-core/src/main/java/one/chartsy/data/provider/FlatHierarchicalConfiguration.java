@@ -14,7 +14,7 @@ class FlatHierarchicalConfiguration implements HierarchicalConfiguration {
 
     @Override
     public List<SymbolGroup> getRootGroups() {
-        return List.copyOf(provider.getAvailableGroups());
+        return List.copyOf(provider.listAvailableGroups());
     }
 
     @Override

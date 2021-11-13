@@ -52,7 +52,7 @@ class FlatFileDataProviderTest {
     @Test
     void getAvailableGroups_gives_list_of_directories_on_the_FileSystem() {
         assertEquals(List.of("/", "/group1", "/group2", "/group2/2a", "/group2/2b"),
-                names(provider.getAvailableGroups()));
+                names(provider.listAvailableGroups()));
     }
 
     @Test

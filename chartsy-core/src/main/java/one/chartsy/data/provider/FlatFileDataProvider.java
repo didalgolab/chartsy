@@ -1,9 +1,6 @@
 package one.chartsy.data.provider;
 
-import one.chartsy.AssetTypes;
-import one.chartsy.Candle;
-import one.chartsy.SymbolGroup;
-import one.chartsy.SymbolIdentity;
+import one.chartsy.*;
 import one.chartsy.data.DataQuery;
 import one.chartsy.data.SimpleCandle;
 import one.chartsy.data.UnsupportedDataQueryException;
@@ -27,8 +24,9 @@ import java.util.*;
 
 public class FlatFileDataProvider implements DataProvider, SymbolListAccessor, HierarchicalConfiguration {
     private final Lookup lookup = Lookups.singleton(this);
-    private final FileSystem fileSystem;
     private final FlatFileFormat fileFormat;
+    private final FileSystem fileSystem;
+    private final Iterable<Path> baseDirectories;
     private final ExecutionContext context;
 
     public FlatFileDataProvider(FlatFileFormat fileFormat, Path archiveFile) throws IOException {
@@ -36,13 +34,15 @@ public class FlatFileDataProvider implements DataProvider, SymbolListAccessor, H
     }
 
     public FlatFileDataProvider(FlatFileFormat fileFormat, FileSystem fileSystem) throws IOException {
+        this(fileFormat, fileSystem, fileSystem.getRootDirectories());
+    }
+
+    public FlatFileDataProvider(FlatFileFormat fileFormat, FileSystem fileSystem, Iterable<Path> baseDirectories) throws IOException {
         this.fileFormat = Objects.requireNonNull(fileFormat, "fileFormat");
-        this.fileSystem = fileSystem;
+        this.fileSystem = Objects.requireNonNull(fileSystem, "fileSystem");
+        this.baseDirectories = Objects.requireNonNull(baseDirectories, "baseDirectories");
         this.context = new ExecutionContext();
 
-        FileTreeVisitor visitor = new FileTreeVisitor();
-        for (Path rootDir : fileSystem.getRootDirectories())
-            Files.walkFileTree(rootDir, visitor);
     }
 
     @Override
@@ -89,9 +89,9 @@ public class FlatFileDataProvider implements DataProvider, SymbolListAccessor, H
 
     public <T extends Candle> Batch<T> queryForCandles(DataQuery<T> request) {
         SymbolIdentifier identifier = new SymbolIdentifier(request.resource().symbol());
-        Path file = getSymbolFiles().get(identifier);
+        Path file = getFileTreeMetadata().availableSymbols.get(identifier);
         if (file == null)
-            throw new IllegalArgumentException(String.format("Symbol %s not found", identifier));
+            throw new DataProviderException(String.format("Symbol '%s' not found", identifier));
 
         FlatFileItemReader<T> itemReader = new FlatFileItemReader<>();
         itemReader.setLineMapper((LineMapper<T>) fileFormat.getLineMapper().createLineMapper(context));
@@ -108,49 +108,27 @@ public class FlatFileDataProvider implements DataProvider, SymbolListAccessor, H
         }
     }
 
-    public FileSystem getFileSystem() {
+    public final FileSystem getFileSystem() {
         return fileSystem;
     }
 
-    @Override
-    public Collection<SymbolGroup> getAvailableGroups() {
-        return immutableGroups.values();
-    }
-
-    @Override
-    public List<SymbolIdentity> getSymbolList(SymbolGroup group) {
-        return getSymbols(group);
-    }
-
-    private final Map<String, SymbolGroup> availableGroups = new TreeMap<>();
-    private final Map<String, SymbolGroup> immutableGroups = Collections.unmodifiableMap(availableGroups);
-
-    private final Map<SymbolIdentifier, Path> symbolFiles = Collections.synchronizedMap(new HashMap<>());
-
-    public Map<SymbolIdentifier, Path> getSymbolFiles() {
-        if (symbolFiles.isEmpty()) {
-            synchronized (symbolFiles) {
-                var visitor = new SymbolFileVisitor();
-                try {
-                    for (Path rootDir : fileSystem.getRootDirectories())
-                        Files.walkFileTree(rootDir, visitor);
-
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                }
-            }
-        }
-        return symbolFiles;
-    }
-
-    protected String asSymbolName(Path fileName) {
-        String name = fileName.toString();
-        int lastDot = name.lastIndexOf('.');
-        return (lastDot > 0)? name.substring(0, lastDot): name;
+    public final FlatFileFormat getFileFormat() {
+        return fileFormat;
     }
 
     protected SymbolIdentity asIdentifier(Path path) {
-        return new SymbolIdentifier(asSymbolName(path.getFileName()), AssetTypes.GENERIC);
+        return new SymbolIdentifier(asAssetName(path.getFileName()), asAssetType(path));
+    }
+
+    protected String asAssetName(Path fileName) {
+        String name = fileName.toString();
+        int lastDot = name.lastIndexOf('.');
+        name = (lastDot > 0)? name.substring(0, lastDot): name;
+        return getFileFormat().isCaseSensitiveSymbols()? name : name.toUpperCase();
+    }
+
+    protected AssetType asAssetType(Path path) {
+        return AssetTypes.GENERIC;
     }
 
     protected List<SymbolIdentity> asIdentifiers(Iterable<Path> paths) {
@@ -178,20 +156,87 @@ public class FlatFileDataProvider implements DataProvider, SymbolListAccessor, H
         return getFileSystem().getPath(pathName);
     }
 
-    private class FileTreeVisitor extends SimpleFileVisitor<Path> {
+    @Override
+    public List<SymbolGroup> listAvailableGroups() {
+        return getFileTreeMetadata().getAvailableGroupsList();
+    }
+
+    @Override
+    public List<SymbolIdentity> getSymbolList(SymbolGroup group) {
+        return getSymbols(group);
+    }
+
+    public List<SymbolIdentifier> getAvailableSymbols() {
+        return getFileTreeMetadata().getAvailableSymbolsList();
+    }
+
+    private static class FileTreeMetadata {
+        private final Map<String, SymbolGroup> availableGroups;
+        private final Map<SymbolIdentifier, Path> availableSymbols;
+        private List<SymbolGroup> availableGroupsList;
+        private List<SymbolIdentifier> availableSymbolsList;
+
+        private FileTreeMetadata(Map<String, SymbolGroup> availableGroups, Map<SymbolIdentifier, Path> availableSymbols) {
+            this.availableGroups = availableGroups;
+            this.availableSymbols = availableSymbols;
+        }
+
+        public List<SymbolGroup> getAvailableGroupsList() {
+            if (availableGroupsList == null)
+                availableGroupsList = List.copyOf(availableGroups.values());
+            return availableGroupsList;
+        }
+
+        public List<SymbolIdentifier> getAvailableSymbolsList() {
+            if (availableSymbolsList == null)
+                availableSymbolsList = List.copyOf(availableSymbols.keySet());
+            return availableSymbolsList;
+        }
+    }
+
+    private FileTreeMetadata metadata;
+
+    private FileTreeMetadata getFileTreeMetadata() {
+        if (metadata == null)
+            metadata = scanFileTree(baseDirectories);
+        return metadata;
+    }
+
+    protected FileTreeMetadata scanFileTree(Iterable<Path> baseDirs) {
+        var availableGroups = new TreeMap<String, SymbolGroup>();
+        var availableSymbols = new TreeMap<SymbolIdentifier, Path>();
+
+        try {
+            FileTreeScanner scanner = new FileTreeScanner(availableGroups, availableSymbols);
+            for (Path rootDir : baseDirs)
+                Files.walkFileTree(rootDir, scanner);
+
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        return new FileTreeMetadata(availableGroups, availableSymbols);
+    }
+
+    private class FileTreeScanner extends SimpleFileVisitor<Path> {
+        private final Map<String, SymbolGroup> availableGroups;
+        private final Map<SymbolIdentifier, Path> availableSymbols;
+
+        private FileTreeScanner(Map<String, SymbolGroup> availableGroups, Map<SymbolIdentifier, Path> availableSymbols) {
+            this.availableGroups = availableGroups;
+            this.availableSymbols = availableSymbols;
+        }
+
         @Override
         public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
             SymbolGroup group = asGroup(dir);
             availableGroups.put(group.name(), group);
             return super.preVisitDirectory(dir, attrs);
         }
-    }
 
-    private class SymbolFileVisitor extends SimpleFileVisitor<Path> {
         @Override
         public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
             SymbolIdentity symbol = asIdentifier(file);
-            symbolFiles.put(new SymbolIdentifier(symbol), file);
+            availableSymbols.put(new SymbolIdentifier(symbol), file);
             return super.visitFile(file, attrs);
         }
     }

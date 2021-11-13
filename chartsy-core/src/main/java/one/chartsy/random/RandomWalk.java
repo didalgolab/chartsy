@@ -3,6 +3,7 @@ package one.chartsy.random;
 import one.chartsy.Candle;
 import one.chartsy.SymbolIdentity;
 import one.chartsy.SymbolResource;
+import one.chartsy.data.AdjustmentFunction;
 import one.chartsy.data.AdjustmentMethod;
 import one.chartsy.data.CandleSeries;
 import one.chartsy.data.Series;
@@ -128,12 +129,12 @@ public class RandomWalk {
         return bootstrap(origin, rnd, AdjustmentMethod.RELATIVE);
     }
 
-    public static CandleSeries bootstrap(Series<Candle> origin, RandomGenerator rnd, AdjustmentMethod method) {
+    public static CandleSeries bootstrap(Series<Candle> origin, RandomGenerator rnd, AdjustmentFunction method) {
         int[] mapping = rnd.ints(origin.length(), 0, origin.length()).toArray();
         return bootstrap(origin, index -> mapping[index], method);
     }
 
-    public static CandleSeries bootstrap(Series<Candle> series, IntUnaryOperator mapping, AdjustmentMethod method) {
+    public static CandleSeries bootstrap(Series<Candle> series, IntUnaryOperator mapping, AdjustmentFunction method) {
         int barCount = series.length();
 
         // Fill the resulting Quote array
@@ -143,14 +144,14 @@ public class RandomWalk {
             for (int barNo = barCount - 1; barNo >= 0; barNo--) {
                 int index = mapping.applyAsInt(barNo);
                 Candle choice = series.get(index);
-                Candle origin = series.get(barNo);
-                double open = (index + 1 == series.length())? ref : method.calculate(choice.open(), series.get(index + 1).close(), ref);
-                double close = method.calculate(choice.close(), choice.open(), open);
+                Candle source = series.get(barNo);
+                double open = (index + 1 == series.length())? ref : method.calculate(series.get(index + 1).close(), choice.open(), ref);
+                double close = method.calculate(choice.open(), choice.close(), open);
                 result[barNo] = Candle.of(
-                        origin.getTime(),
+                        source.getTime(),
                         open,
-                        method.calculate(choice.high(), choice.open(), open),
-                        method.calculate(choice.low(), choice.open(), open),
+                        method.calculate(choice.open(), choice.high(), open),
+                        method.calculate(choice.open(), choice.low(), open),
                         close,
                         choice.volume());
                 ref = close;
@@ -161,6 +162,5 @@ public class RandomWalk {
         return new PackedCandleSeries(resource.withSymbol(SymbolIdentity.of("~" + symbol.name(), symbol.type())), PackedDataset.of(result));
     }
 
-
-    private RandomWalk() {}
+    private RandomWalk() { }
 }

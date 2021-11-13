@@ -1,6 +1,8 @@
 package one.chartsy.data.batch;
 
+import one.chartsy.Candle;
 import one.chartsy.SymbolResource;
+import one.chartsy.data.CandleSeries;
 import one.chartsy.data.Series;
 import one.chartsy.time.Chronological;
 
@@ -11,6 +13,10 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 public final class Batches {
+
+    public static <T extends Candle> Collector<Batch<T>, ?, CandleSeries> toCandleSeries() {
+        return Collectors.collectingAndThen(toSeries(), CandleSeries::from);
+    }
 
     public static <T extends Chronological> Collector<Batch<T>, ?, Series<T>> toSeries() {
         return Collectors.collectingAndThen(Collectors.toList(),

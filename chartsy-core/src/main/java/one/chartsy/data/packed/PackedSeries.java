@@ -19,8 +19,12 @@ public class PackedSeries<E extends Chronological> implements Series<E>, Timelin
     public PackedSeries(SymbolResource<E> resource, Dataset<E> dataset) {
         this.resource = resource;
         this.data = dataset;
-        if (!getOrder().isOrdered(dataset.values()))
-            throw new IllegalArgumentException("Given values aren't in " + getOrder() + " order");
+
+        if (!dataset.isEmpty()) {
+            boolean reversed = getOrder().isReversed();
+            if (reversed && getFirst().isAfter(getLast()) || !reversed && getFirst().isBefore(getLast()))
+                throw new IllegalArgumentException("Given values aren't in " + getOrder() + " order");
+        }
     }
 
     @Override

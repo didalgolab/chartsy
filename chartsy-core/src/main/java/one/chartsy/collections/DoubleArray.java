@@ -306,7 +306,8 @@ public class DoubleArray implements Externalizable {
     
     public double[] toArray(int offset, int len) {
         double[] rv = new double[len];
-        toArray(rv, offset, len);
+        if (rv.length > 0)
+            toArray(rv, offset, len);
         return rv;
     }
     

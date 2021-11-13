@@ -2,10 +2,8 @@ package one.chartsy.data.batch;
 
 import one.chartsy.time.Chronological;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collector;
 import java.util.stream.Stream;
 
@@ -42,6 +40,17 @@ public interface Batch<T extends Chronological> extends Comparable<Batch<T>>, It
         return list().size();
     }
 
+    default void forEachInOrder(Consumer<T> action) {
+        List<T> list = list();
+        if (!order().isReversed())
+            list.forEach(action);
+        else {
+            ListIterator<T> iter = list.listIterator(list.size());
+            while (iter.hasPrevious())
+                action.accept(iter.previous());
+        }
+    }
+
     default List<T> listOrdered() {
         List<T> list = list();
         if (order().isReversed()) {
@@ -58,7 +67,7 @@ public interface Batch<T extends Chronological> extends Comparable<Batch<T>>, It
     default Stream<T> flatten() {
         return stream().sorted()
                 .map(Batch::listOrdered)
-                .flatMap(List::stream);
+                .mapMulti(List::forEach);
     }
 
     default <R, A> R collect(Collector<? super Batch<T>, A, R> collector) {

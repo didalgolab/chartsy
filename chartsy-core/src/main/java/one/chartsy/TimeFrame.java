@@ -33,7 +33,7 @@ public interface TimeFrame {
      * @param unit the time frame unit (e.g. SECONDS, TICKS, PRICE_RANGE,...)
      * @return length of the time frame as a number, usually of type {@code Long} or {@code BigDecimal}
      */
-    Number getDuration(TimeFrameUnit unit);
+    Number getSize(TimeFrameUnit unit);
 
     /**
      * A human-readable string describing the time frame.
@@ -157,8 +157,8 @@ public interface TimeFrame {
         }
 
         @Override
-        public Number getDuration(TimeFrameUnit unit) {
-            return timeFrame.getDuration(unit);
+        public Number getSize(TimeFrameUnit unit) {
+            return timeFrame.getSize(unit);
         }
 
         @Override
@@ -282,7 +282,7 @@ public interface TimeFrame {
         }
 
         @Override
-        public Number getDuration(TimeFrameUnit unit) {
+        public Number getSize(TimeFrameUnit unit) {
             var units = getUnits();
             if (!units.isEmpty() && units.get(0).equals(unit))
                 return duration.get(duration.getUnits().get(0));
@@ -334,7 +334,7 @@ public interface TimeFrame {
         }
 
         @Override
-        public Number getDuration(TimeFrameUnit unit) {
+        public Number getSize(TimeFrameUnit unit) {
             return 1L;
         }
 
@@ -358,7 +358,7 @@ public interface TimeFrame {
         }
 
         @Override
-        public Number getDuration(TimeFrameUnit unit) {
+        public Number getSize(TimeFrameUnit unit) {
             return 0L;
         }
 

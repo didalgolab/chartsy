@@ -19,6 +19,7 @@ public class FlatFileFormat {
     private final int skipFirstLines;
     private final boolean ignoreEmptyLines;
     private final boolean stripLines;
+    private final boolean caseSensitiveSymbols;
     private final LineMapperType<?> lineMapper;
 
     public static class Builder {

@@ -17,7 +17,7 @@ public interface DataProvider extends FinancialService {
         return Lookup.EMPTY;
     }
 
-    default Collection<SymbolGroup> getAvailableGroups() {
+    default List<SymbolGroup> listAvailableGroups() {
         return List.of(SymbolGroup.BASE);
     }
 
