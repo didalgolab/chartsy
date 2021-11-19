@@ -27,6 +27,10 @@ public interface CandleSeries extends Series<Candle> {
         return getResource().timeFrame();
     }
 
+    default DoubleSeries highs() {
+        return mapToDouble(Candle::high);
+    }
+
     default DoubleSeries closes() {
         return mapToDouble(Candle::close);
     }
@@ -93,6 +97,10 @@ public interface CandleSeries extends Series<Candle> {
      * @see #atr(int)
      */
     DoubleSeries trueRange();
+
+    default DoubleSeries highestSince() {
+        return highs().highestSince();
+    }
 
     default CandleSeries bootstrap() {
         return RandomWalk.bootstrap(this);

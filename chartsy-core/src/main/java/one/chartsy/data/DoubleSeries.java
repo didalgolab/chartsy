@@ -102,6 +102,8 @@ public interface DoubleSeries extends TimeSeriesAlike {
      */
     DoubleSeries wilders(int periods);
 
+    DoubleSeries highestSince();
+
     /**
      * Applies the binary function to each element of both this and the other
      * series to produce a new time series.

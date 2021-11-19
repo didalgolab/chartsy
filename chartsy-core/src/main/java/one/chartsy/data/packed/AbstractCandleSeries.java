@@ -12,6 +12,10 @@ public abstract class AbstractCandleSeries<T extends Candle, DS extends Abstract
         super(resource, dataset);
     }
 
+    public DS highs() {
+        return mapToDouble(Candle::high);
+    }
+
     public DS closes() {
         return mapToDouble(Candle::close);
     }

@@ -2,6 +2,7 @@ package one.chartsy.data.packed;
 
 import one.chartsy.data.DoubleDataset;
 import one.chartsy.data.DoubleSeries;
+import one.chartsy.data.Series;
 import one.chartsy.time.Timeline;
 
 import java.util.function.DoubleBinaryOperator;

@@ -4,6 +4,7 @@
 package one.chartsy.util;
 
 import java.beans.ConstructorProperties;
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Objects;
 
@@ -25,8 +26,8 @@ import java.util.Objects;
  */
 public final class Pair<L, R> implements Comparable<Pair<L, R>>, Serializable {
 
-    /** Serialization version */
-    private static final long serialVersionUID = 4954918890077093841L;
+    @Serial
+    private static final long serialVersionUID = 4726444774453032633L;
 
     /** The left object. */
     private final L left;
@@ -53,17 +54,6 @@ public final class Pair<L, R> implements Comparable<Pair<L, R>>, Serializable {
      */
     public static <L, R> Pair<L, R> of(L left, R right) {
         return new Pair<>(left, right);
-    }
-
-    /**
-     *
-     *
-     * @param left
-     * @param right
-     * @return
-     */
-    public static <T> T nvl(T left, T right) {
-        return (left == null)? right : left;
     }
 
     /**
@@ -117,10 +107,10 @@ public final class Pair<L, R> implements Comparable<Pair<L, R>>, Serializable {
     @Override
     public int compareTo(Pair<L, R> other) {
         int cmp = cmp(getLeft(), other.getLeft());
-        if (cmp != 0)
-            return cmp;
+        if (cmp == 0)
+            cmp = cmp(getRight(), other.getRight());
 
-        return cmp(getRight(), other.getRight());
+        return cmp;
     }
 
     /**
@@ -148,8 +138,7 @@ public final class Pair<L, R> implements Comparable<Pair<L, R>>, Serializable {
         if (obj == this)
             return true;
 
-        if (obj instanceof Pair<?, ?>) {
-            Pair<?, ?> other = (Pair<?, ?>) obj;
+        if (obj instanceof Pair<?, ?> other) {
             return Objects.equals(getLeft(), other.getLeft())
                     && Objects.equals(getRight(), other.getRight());
         }

@@ -26,18 +26,18 @@ public class StooqFlatFileDataProvider {
 
     public static void main(String[] args) throws IOException {
         FlatFileDataProvider dataProvider = FlatFileFormat.STOOQ
-                .newDataProvider(Path.of("C:/Users/Mariusz/Downloads/d_pl_txt(3).zip"));
+                .newDataProvider(Path.of("C:/Users/Mariusz/Downloads/d_pl_txt(4).zip"));
 
         DataQuery<Candle> query = DataQuery.of(
                 SymbolResource.of("BIO", TimeFrame.Period.DAILY));
 
         //CandleSeries series = dataProvider.queryForCandles(query).collect(Batches.toCandleSeries());
-        Map<Double, String> counts = new TreeMap<>();
+        Map<Pair<Double, String>, String> counts = new TreeMap<>();
         List<SymbolIdentity> stocks = dataProvider.getSymbolList(new SymbolGroup("/data/daily/pl/wse stocks"));
         System.out.println("Stocks: " + stocks.size());
         for (SymbolIdentity stock : stocks) {
             CandleSeries series = dataProvider.queryForCandles(
-                            DataQuery.resource(SymbolResource.of(stock, TimeFrame.Period.DAILY)).limit(170).build())
+                            DataQuery.resource(SymbolResource.of(stock, TimeFrame.Period.DAILY)).limit(250).build())
                     .collect(Batches.toCandleSeries());
 
             if (series.length() == 0) {
@@ -46,23 +46,28 @@ public class StooqFlatFileDataProvider {
             }
             DoubleMinMaxList bands = FinancialIndicators.Sfora.bands(PackedCandleSeries.from(series));
             DoubleSeries width = bands.getMaximum().sub(bands.getMinimum());
+            DoubleSeries highestSince = PackedCandleSeries.from(series).highestSince();
             if (width.length() == 0)
                 continue;
 
             double lastClose = series.getLast().close();
+            double widthLast = width.getLast();
             double widthPercent = width.getLast() / lastClose;
-            int n = 5_000, cnt = 0;
+            System.out.println("STOCK: " + stock.name() + " - " + series.getLast() + ": HighestSince=" + widthLast);
+            int n = 1_000, cnt = 0;
             for (int i = 0; i < n; i++) {
                 Series<Candle> newSeries = series.bootstrap();
 
                 DoubleMinMaxList newBands = FinancialIndicators.Sfora.bands(PackedCandleSeries.from(newSeries));
                 DoubleSeries newWidth = newBands.getMaximum().sub(newBands.getMinimum());
+                DoubleSeries newHighestSince = PackedCandleSeries.from(newSeries).highestSince();
                 double newLastClose = newSeries.getLast().close();
+                double newWidthLast = newWidth.getLast();
                 double newWidthPercent = newWidth.getLast() / newLastClose;
-                if (newWidthPercent < widthPercent)
+                if (newWidthPercent < widthPercent || newHighestSince.getLast() > highestSince.getLast())
                     cnt++;
             }
-            counts.put((cnt*10_000L/n)/100.0, stock.name());
+            counts.put(Pair.of((cnt*10_000L/n)/100.0, stock.name()), stock.name());
 
             System.out.println("" + stock.name() + ": " + (cnt*10_000L/n)/100.0 + " %");
         }

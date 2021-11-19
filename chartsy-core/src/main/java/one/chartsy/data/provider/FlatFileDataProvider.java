@@ -92,8 +92,8 @@ public class FlatFileDataProvider implements DataProvider, SymbolListAccessor, H
     }
 
     public <T extends Candle> CompletableFuture<Void> queryForCandles(DataQuery<T> request, Consumer<Batch<T>> consumer, Executor executor) {
-        var identifier = new SymbolIdentifier(request.resource().symbol());
-        var file = getFileTreeMetadata().availableSymbols.get(identifier);
+        SymbolIdentifier identifier = new SymbolIdentifier(request.resource().symbol());
+        Path file = getFileTreeMetadata().availableSymbols.get(identifier);
         if (file == null)
             throw new DataProviderException(String.format("Symbol '%s' not found", identifier));
 
