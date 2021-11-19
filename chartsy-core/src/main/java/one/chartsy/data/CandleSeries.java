@@ -102,11 +102,12 @@ public interface CandleSeries extends Series<Candle> {
         return highs().highestSince();
     }
 
-    default CandleSeries bootstrap() {
-        return RandomWalk.bootstrap(this);
-    }
-
-    default CandleSeries bootstrap(AdjustmentMethod method) {
+    /**
+     * Produces a random resample of a CandleSeries using sampling with replacement.
+     *
+     * @return a resampled series having the same size as the original one
+     */
+    default CandleSeries resample(AdjustmentMethod method) {
         return RandomWalk.bootstrap(this, ThreadLocalRandom.current(), method);
     }
 }

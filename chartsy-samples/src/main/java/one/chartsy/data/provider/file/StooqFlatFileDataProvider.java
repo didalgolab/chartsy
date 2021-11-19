@@ -56,7 +56,7 @@ public class StooqFlatFileDataProvider {
             System.out.println("STOCK: " + stock.name() + " - " + series.getLast() + ": HighestSince=" + widthLast);
             int n = 1_000, cnt = 0;
             for (int i = 0; i < n; i++) {
-                Series<Candle> newSeries = series.bootstrap();
+                Series<Candle> newSeries = series.resample(AdjustmentMethod.RELATIVE);
 
                 DoubleMinMaxList newBands = FinancialIndicators.Sfora.bands(PackedCandleSeries.from(newSeries));
                 DoubleSeries newWidth = newBands.getMaximum().sub(newBands.getMinimum());

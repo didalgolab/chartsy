@@ -21,7 +21,7 @@ public class RandomCandlesBootstrap {
         AdaptiveHistogram hist = new AdaptiveHistogram();
         for (int i = 0; i < n; i++) {
             CandleSeries series2 = RandomWalk.candleSeries(1000, SymbolResource.of("RANDOM", TimeFrame.Period.DAILY));
-            series2 = series2.bootstrap(AdjustmentMethod.ABSOLUTE);
+            series2 = series2.resample(AdjustmentMethod.ABSOLUTE);
             double newClose = series2.getLast().close();
             hist.addValue(newClose);
             //double newClose = series.bootstrap(AdjustmentMethod.ABSOLUTE).getLast().close();
