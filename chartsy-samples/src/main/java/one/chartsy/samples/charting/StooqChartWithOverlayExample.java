@@ -1,10 +1,15 @@
 package one.chartsy.samples.charting;
 
+import one.chartsy.Candle;
 import one.chartsy.SymbolResource;
 import one.chartsy.TimeFrame;
 import one.chartsy.chart.indicators.SforaWidth;
 import one.chartsy.chart.overlays.Sfora;
 import one.chartsy.data.CandleSeries;
+import one.chartsy.data.DataQuery;
+import one.chartsy.data.batch.Batches;
+import one.chartsy.data.provider.FlatFileDataProvider;
+import one.chartsy.data.provider.file.FlatFileFormat;
 import one.chartsy.random.RandomWalk;
 import one.chartsy.ui.chart.ChartData;
 import one.chartsy.ui.chart.ChartFrame;
@@ -14,11 +19,20 @@ import one.chartsy.ui.chart.type.CandlestickChart;
 import javax.swing.*;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.file.Path;
 
-public class ChartWithOverlayExample {
+public class StooqChartWithOverlayExample {
 
     public static void main(String[] args) throws IOException, InterruptedException, InvocationTargetException {
-        CandleSeries series = RandomWalk.candleSeries(1000, SymbolResource.of("RANDOM", TimeFrame.Period.DAILY));
+        FlatFileDataProvider dataProvider = FlatFileFormat.STOOQ
+                .newDataProvider(Path.of("C:/Users/Mariusz/Downloads/d_pl_txt(3).zip"));
+
+        DataQuery<Candle> query = DataQuery.resource(
+                SymbolResource.of("BDX", TimeFrame.Period.DAILY))
+                .limit(500)
+                .build();
+
+        CandleSeries series = dataProvider.queryForCandles(query).collect(Batches.toCandleSeries());
 
         SwingUtilities.invokeAndWait(() -> {
             ChartData chartData = new ChartData();

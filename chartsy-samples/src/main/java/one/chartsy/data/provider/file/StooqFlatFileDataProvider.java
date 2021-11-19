@@ -2,9 +2,12 @@ package one.chartsy.data.provider.file;
 
 import one.chartsy.*;
 import one.chartsy.collections.DoubleArray;
+import one.chartsy.core.collections.DoubleMinMaxList;
 import one.chartsy.data.*;
 import one.chartsy.data.batch.Batches;
+import one.chartsy.data.packed.PackedCandleSeries;
 import one.chartsy.data.provider.FlatFileDataProvider;
+import one.chartsy.finance.FinancialIndicators;
 import one.chartsy.util.Pair;
 import org.apache.commons.math3.random.EmpiricalDistribution;
 import org.springframework.batch.item.ExecutionContext;
@@ -16,53 +19,62 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Stream;
 
 public class StooqFlatFileDataProvider {
 
     public static void main(String[] args) throws IOException {
         FlatFileDataProvider dataProvider = FlatFileFormat.STOOQ
-                .newDataProvider(Path.of("C:/Users/Mariusz/Downloads/d_pl_txt(2).zip"));
+                .newDataProvider(Path.of("C:/Users/Mariusz/Downloads/d_pl_txt(3).zip"));
 
         DataQuery<Candle> query = DataQuery.of(
-                SymbolResource.of("bio", TimeFrame.Period.DAILY));
+                SymbolResource.of("BIO", TimeFrame.Period.DAILY));
 
-        CandleSeries series = dataProvider.queryForCandles(query).collect(Batches.toCandleSeries());
-        System.out.println("Last: " + series.getLast());
-        System.out.println("Last# " + series.bootstrap().getLast());
-        System.out.println("Last# " + series.bootstrap().getLast());
-        System.out.println("Last# " + series.bootstrap().getLast());
-        System.out.println("Last# " + series.bootstrap().getLast());
-        System.out.println("Last# " + series.bootstrap().getLast());
-        System.out.println("Last# " + series.bootstrap().getFirst());
+        //CandleSeries series = dataProvider.queryForCandles(query).collect(Batches.toCandleSeries());
+        Map<Double, String> counts = new TreeMap<>();
+        List<SymbolIdentity> stocks = dataProvider.getSymbolList(new SymbolGroup("/data/daily/pl/wse stocks"));
+        System.out.println("Stocks: " + stocks.size());
+        for (SymbolIdentity stock : stocks) {
+            CandleSeries series = dataProvider.queryForCandles(
+                            DataQuery.resource(SymbolResource.of(stock, TimeFrame.Period.DAILY)).limit(170).build())
+                    .collect(Batches.toCandleSeries());
 
-        EmpiricalDistribution dist = new EmpiricalDistribution(20);
-        DoubleArray arr = new DoubleArray();
-        double orgClose = series.getLast().close();
-        int n = 1000_000, cnt = 0;
-        //System.in.read();
-        long startTime = System.nanoTime();
-        for (int i = 0; i < n; i++) {
-            double newClose = series.bootstrap(AdjustmentMethod.RELATIVE).getLast().close();
-            if (newClose <= orgClose)
-                cnt++;
+            if (series.length() == 0) {
+                System.out.println("Empty series: " + stock);
+                continue;
+            }
+            DoubleMinMaxList bands = FinancialIndicators.Sfora.bands(PackedCandleSeries.from(series));
+            DoubleSeries width = bands.getMaximum().sub(bands.getMinimum());
+            if (width.length() == 0)
+                continue;
+
+            double lastClose = series.getLast().close();
+            double widthPercent = width.getLast() / lastClose;
+            int n = 5_000, cnt = 0;
+            for (int i = 0; i < n; i++) {
+                Series<Candle> newSeries = series.bootstrap();
+
+                DoubleMinMaxList newBands = FinancialIndicators.Sfora.bands(PackedCandleSeries.from(newSeries));
+                DoubleSeries newWidth = newBands.getMaximum().sub(newBands.getMinimum());
+                double newLastClose = newSeries.getLast().close();
+                double newWidthPercent = newWidth.getLast() / newLastClose;
+                if (newWidthPercent < widthPercent)
+                    cnt++;
+            }
+            counts.put((cnt*10_000L/n)/100.0, stock.name());
+
+            System.out.println("" + stock.name() + ": " + (cnt*10_000L/n)/100.0 + " %");
         }
-        long elapsedTime = System.nanoTime() - startTime;
-        System.out.println("PCT = " + (cnt*10_000L/n)/100.0 + "% - TIME INFO: " + (elapsedTime/1000_000L)/1000.0);
+        counts.forEach((k,v) -> System.out.println("# " + k + ": " + v));
 
-        dist.load(arr.toArray());
-        //System.out.println(dist.getNumericalMean());
         if (true)
             return;
 
         Series<Candle> s = dataProvider.queryForCandles(query).collect(Batches.toSeries());
         System.out.println(s.length());
         System.out.println(dataProvider.getSubGroups(new SymbolGroup("/data/daily/pl/wse stocks")));
-        for (SymbolIdentity symbol : dataProvider.getSymbolList(new SymbolGroup("/data/daily/pl/wse stocks"))) {
+        for (SymbolIdentity symbol : stocks) {
             System.out.println(symbol.name());
             System.out.println(dataProvider
                     .queryForCandles(DataQuery.of(SymbolResource.of(symbol, TimeFrame.Period.DAILY)))

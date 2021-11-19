@@ -130,6 +130,22 @@ public class PackedDoubleSeries extends AbstractDoubleSeries<PackedDoubleSeries>
     }
 
     @Override
+    public PackedDoubleSeries highestSince() {
+        double[] result = new double[length()];
+
+        for (int barNo = 0; barNo < result.length; barNo++) {
+            double high = get(barNo);
+
+            int index;
+            for (index = barNo+1; index < result.length; index++)
+                if (get(index) > high)
+                    break;
+            result[barNo] = index - barNo;
+        }
+        return DoubleSeries.of(result, getTimeline());
+    }
+
+    @Override
     public String toString() {
         return values.toString();
     }

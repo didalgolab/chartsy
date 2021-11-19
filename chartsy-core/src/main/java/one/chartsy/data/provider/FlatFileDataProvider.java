@@ -1,6 +1,7 @@
 package one.chartsy.data.provider;
 
 import one.chartsy.*;
+import one.chartsy.concurrent.AbstractCompletableRunnable;
 import one.chartsy.data.DataQuery;
 import one.chartsy.data.SimpleCandle;
 import one.chartsy.data.UnsupportedDataQueryException;
@@ -21,6 +22,9 @@ import java.io.UncheckedIOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.function.Consumer;
 
 public class FlatFileDataProvider implements DataProvider, SymbolListAccessor, HierarchicalConfiguration {
     private final Lookup lookup = Lookups.singleton(this);
@@ -87,6 +91,56 @@ public class FlatFileDataProvider implements DataProvider, SymbolListAccessor, H
             throw new UnsupportedDataQueryException(request, String.format("DataType `%s` not supported", type.getSimpleName()));
     }
 
+    public <T extends Candle> CompletableFuture<Void> queryForCandles(DataQuery<T> request, Consumer<Batch<T>> consumer, Executor executor) {
+        var identifier = new SymbolIdentifier(request.resource().symbol());
+        var file = getFileTreeMetadata().availableSymbols.get(identifier);
+        if (file == null)
+            throw new DataProviderException(String.format("Symbol '%s' not found", identifier));
+
+        var itemReader = new FlatFileItemReader<T>();
+        itemReader.setLineMapper((LineMapper<T>) fileFormat.getLineMapper().createLineMapper(context));
+        itemReader.setLinesToSkip(fileFormat.getSkipFirstLines());
+        itemReader.setInputStreamSource(() -> Files.newInputStream(file));
+
+        var work = new FlatFileItemReaderWork<>(itemReader, consumer, request);
+        executor.execute(work);
+        return work.getFuture();
+    }
+
+    protected static class FlatFileItemReaderWork<T extends Chronological> extends AbstractCompletableRunnable<Void> {
+        private final FlatFileItemReader<T> itemReader;
+        private final Consumer<Batch<T>> consumer;
+        private final DataQuery<T> request;
+
+        public FlatFileItemReaderWork(FlatFileItemReader<T> itemReader, Consumer<Batch<T>> consumer, DataQuery<T> request) {
+            this.itemReader = itemReader;
+            this.consumer = consumer;
+            this.request = request;
+        }
+
+        @Override
+        public void run(CompletableFuture<Void> future) {
+            try {
+                itemReader.open();
+                List<T> items = itemReader.readAll();
+                //items.sort(Comparator.naturalOrder());
+                int itemCount = items.size();
+                int itemLimit = request.limit();
+                if (itemLimit > 0 && itemLimit < itemCount)
+                    items = items.subList(itemCount - itemLimit, itemCount);
+                consumer.accept(createItemsBatch(items));
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            } finally {
+                itemReader.close();
+            }
+        }
+
+        protected Batch<T> createItemsBatch(List<T> items) {
+            return new SimpleBatch<>(new Batchers.StandaloneQueryBatcher<>(request), Chronological.Order.CHRONOLOGICAL, 0L, items);
+        }
+    }
+
     public <T extends Candle> Batch<T> queryForCandles(DataQuery<T> request) {
         SymbolIdentifier identifier = new SymbolIdentifier(request.resource().symbol());
         Path file = getFileTreeMetadata().availableSymbols.get(identifier);
@@ -100,7 +154,13 @@ public class FlatFileDataProvider implements DataProvider, SymbolListAccessor, H
 
         try {
             itemReader.open();
-            return new SimpleBatch<>(new Batchers.StandaloneQueryBatcher<>(request), Chronological.Order.CHRONOLOGICAL, 0L, itemReader.readAll());
+            List<T> items = itemReader.readAll();
+            //items.sort(Comparator.naturalOrder());
+            int itemCount = items.size();
+            int itemLimit = request.limit();
+            if (itemLimit > 0 && itemLimit < itemCount)
+                items = items.subList(itemCount - itemLimit, itemCount);
+            return new SimpleBatch<>(new Batchers.StandaloneQueryBatcher<>(request), Chronological.Order.CHRONOLOGICAL, 0L, items);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         } finally {

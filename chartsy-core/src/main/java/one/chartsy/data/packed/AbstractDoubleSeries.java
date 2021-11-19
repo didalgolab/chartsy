@@ -2,10 +2,11 @@ package one.chartsy.data.packed;
 
 import one.chartsy.data.DoubleSeries;
 import one.chartsy.data.DoubleSeriesSupport;
+import one.chartsy.data.FluentDoubleSeries;
 
 import java.util.function.DoubleBinaryOperator;
 
-public abstract class AbstractDoubleSeries<DS extends AbstractDoubleSeries<DS>> implements DoubleSeries {
+public abstract class AbstractDoubleSeries<DS extends AbstractDoubleSeries<DS>> implements FluentDoubleSeries {
 
     @Override
     public DS mul(double y) {
@@ -28,4 +29,6 @@ public abstract class AbstractDoubleSeries<DS extends AbstractDoubleSeries<DS>> 
     @Override
     public abstract DS wilders(int periods);
 
+    @Override
+    public abstract DS highestSince();
 }
