@@ -8,5 +8,5 @@ import java.util.List;
 @FunctionalInterface
 public interface SymbolListAccessor {
 
-    List<SymbolIdentity> getSymbolList(SymbolGroup group);
+    List<? extends SymbolIdentity> listSymbols(SymbolGroup group);
 }

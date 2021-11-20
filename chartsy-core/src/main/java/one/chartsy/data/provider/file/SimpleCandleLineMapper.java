@@ -35,6 +35,10 @@ public class SimpleCandleLineMapper implements LineMapper<SimpleCandle> {
             this(delimiter, fields, dateFormat, ISO_LOCAL_TIME, ISO_LOCAL_DATE_TIME);
         }
 
+        public Type(char delimiter, List<String> fields, DateTimeFormatter dateFormat, DateTimeFormatter timeFormat) {
+            this(delimiter, fields, dateFormat, timeFormat, ISO_LOCAL_DATE_TIME);
+        }
+
         public Type(char delimiter, List<String> fields, DateTimeFormatter dateFormat, DateTimeFormatter timeFormat, DateTimeFormatter dateTimeFormat) {
             this.delimiter = delimiter;
             this.fields = new ArrayList<>(fields);

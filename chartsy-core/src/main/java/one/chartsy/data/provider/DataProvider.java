@@ -8,7 +8,6 @@ import one.chartsy.data.batch.Batch;
 import one.chartsy.time.Chronological;
 import org.openide.util.Lookup;
 
-import java.util.Collection;
 import java.util.List;
 
 public interface DataProvider extends FinancialService {
@@ -17,15 +16,15 @@ public interface DataProvider extends FinancialService {
         return Lookup.EMPTY;
     }
 
-    default List<SymbolGroup> listAvailableGroups() {
+    default List<SymbolGroup> listSymbolGroups() {
         return List.of(SymbolGroup.BASE);
     }
 
-    default List<SymbolIdentity> getSymbols() {
-        return getSymbols(SymbolGroup.BASE);
+    default List<? extends SymbolIdentity> listSymbols() {
+        return listSymbols(SymbolGroup.BASE);
     }
 
-    List<SymbolIdentity> getSymbols(SymbolGroup group);
+    List<? extends SymbolIdentity> listSymbols(SymbolGroup group);
 
     <T extends Chronological> Batch<T> queryInBatches(Class<T> type, DataQuery<T> request);
 

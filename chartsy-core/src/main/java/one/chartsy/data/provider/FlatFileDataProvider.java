@@ -25,8 +25,9 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
-public class FlatFileDataProvider implements DataProvider, SymbolListAccessor, HierarchicalConfiguration {
+public class FlatFileDataProvider extends AbstractDataProvider implements SymbolListAccessor, HierarchicalConfiguration {
     private final Lookup lookup = Lookups.singleton(this);
     private final FlatFileFormat fileFormat;
     private final FileSystem fileSystem;
@@ -46,7 +47,6 @@ public class FlatFileDataProvider implements DataProvider, SymbolListAccessor, H
         this.fileSystem = Objects.requireNonNull(fileSystem, "fileSystem");
         this.baseDirectories = Objects.requireNonNull(baseDirectories, "baseDirectories");
         this.context = new ExecutionContext();
-
     }
 
     @Override
@@ -74,11 +74,11 @@ public class FlatFileDataProvider implements DataProvider, SymbolListAccessor, H
     }
 
     @Override
-    public List<SymbolIdentity> getSymbols(SymbolGroup group) {
+    public List<? extends SymbolIdentity> listSymbols(SymbolGroup group) {
         try {
             return asIdentifiers(Files.newDirectoryStream(asPath(group), Files::isRegularFile));
         } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            throw new DataProviderException("I/O error occurred", e);
         }
     }
 
@@ -217,16 +217,15 @@ public class FlatFileDataProvider implements DataProvider, SymbolListAccessor, H
     }
 
     @Override
-    public List<SymbolGroup> listAvailableGroups() {
-        return getFileTreeMetadata().getAvailableGroupsList();
+    public List<SymbolGroup> listSymbolGroups() {
+        return getFileTreeMetadata().availableGroupsList();
     }
 
-    @Override
-    public List<SymbolIdentity> getSymbolList(SymbolGroup group) {
-        return getSymbols(group);
+    public List<SymbolGroup> listSymbolGroups(Predicate<SymbolGroup> filter) {
+        return getFileTreeMetadata().availableGroupsList(filter);
     }
 
-    public List<SymbolIdentifier> getAvailableSymbols() {
+    public List<? extends SymbolIdentity> listSymbols() {
         return getFileTreeMetadata().getAvailableSymbolsList();
     }
 
@@ -241,10 +240,14 @@ public class FlatFileDataProvider implements DataProvider, SymbolListAccessor, H
             this.availableSymbols = availableSymbols;
         }
 
-        public List<SymbolGroup> getAvailableGroupsList() {
+        public List<SymbolGroup> availableGroupsList() {
             if (availableGroupsList == null)
                 availableGroupsList = List.copyOf(availableGroups.values());
             return availableGroupsList;
+        }
+
+        public List<SymbolGroup> availableGroupsList(Predicate<SymbolGroup> filter) {
+            return availableGroups.values().stream().filter(filter).toList();
         }
 
         public List<SymbolIdentifier> getAvailableSymbolsList() {

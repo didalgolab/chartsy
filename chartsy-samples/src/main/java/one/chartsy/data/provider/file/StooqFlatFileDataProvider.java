@@ -1,7 +1,6 @@
 package one.chartsy.data.provider.file;
 
 import one.chartsy.*;
-import one.chartsy.collections.DoubleArray;
 import one.chartsy.core.collections.DoubleMinMaxList;
 import one.chartsy.data.*;
 import one.chartsy.data.batch.Batches;
@@ -9,7 +8,6 @@ import one.chartsy.data.packed.PackedCandleSeries;
 import one.chartsy.data.provider.FlatFileDataProvider;
 import one.chartsy.finance.FinancialIndicators;
 import one.chartsy.util.Pair;
-import org.apache.commons.math3.random.EmpiricalDistribution;
 import org.springframework.batch.item.ExecutionContext;
 import org.springframework.batch.item.file.LineMapper;
 
@@ -26,14 +24,14 @@ public class StooqFlatFileDataProvider {
 
     public static void main(String[] args) throws IOException {
         FlatFileDataProvider dataProvider = FlatFileFormat.STOOQ
-                .newDataProvider(Path.of("C:/Users/Mariusz/Downloads/d_pl_txt(4).zip"));
+                .newDataProvider(Path.of("C:/Users/Mariusz/Downloads/d_pl_txt(5).zip"));
 
         DataQuery<Candle> query = DataQuery.of(
                 SymbolResource.of("BIO", TimeFrame.Period.DAILY));
 
         //CandleSeries series = dataProvider.queryForCandles(query).collect(Batches.toCandleSeries());
         Map<Pair<Double, String>, String> counts = new TreeMap<>();
-        List<SymbolIdentity> stocks = dataProvider.getSymbolList(new SymbolGroup("/data/daily/pl/wse stocks"));
+        List<? extends SymbolIdentity> stocks = dataProvider.listSymbols(new SymbolGroup("/data/daily/pl/wse stocks"));
         System.out.println("Stocks: " + stocks.size());
         for (SymbolIdentity stock : stocks) {
             CandleSeries series = dataProvider.queryForCandles(

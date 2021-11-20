@@ -31,7 +31,7 @@ public class FlatFileFormat {
             .fileNamePattern("*\\.zip")
             .lineMapper(
                     new SimpleCandleLineMapper.Type(
-                            ',', Arrays.asList("SKIP","SKIP","DATE","SKIP","OPEN","HIGH","LOW","CLOSE","VOLUME"), DateTimeFormatter.ofPattern("yyyyMMdd")))
+                            ',', Arrays.asList("SKIP","SKIP","DATE","TIME","OPEN","HIGH","LOW","CLOSE","VOLUME"), DateTimeFormatter.ofPattern("yyyyMMdd"), DateTimeFormatter.ofPattern("HHmmss")))
             .skipFirstLines(1)
             .build();
 

@@ -52,15 +52,15 @@ class FlatFileDataProviderTest {
     @Test
     void getAvailableGroups_gives_list_of_directories_on_the_FileSystem() {
         assertEquals(List.of("/", "/group1", "/group2", "/group2/2a", "/group2/2b"),
-                names(provider.listAvailableGroups()));
+                names(provider.listSymbolGroups()));
     }
 
     @Test
     void getSymbols_gives_list_of_files_on_the_FileSystem() {
         assertEquals(List.of("ID1", "ID2"),
-                names(provider.getSymbols(new SymbolGroup("/group1"))));
+                names(provider.listSymbols(new SymbolGroup("/group1"))));
         assertEquals(emptyList(),
-                names(provider.getSymbols(new SymbolGroup("/group2"))));
+                names(provider.listSymbols(new SymbolGroup("/group2"))));
     }
 
     private static List<String> names(Collection<SymbolGroup> list) {
