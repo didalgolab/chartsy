@@ -80,7 +80,7 @@ public class SimpleMatchingEngine extends OrderStatusUpdater implements OrderBro
 
     @Override
     public Order submitOrder(Order order) {
-        StandardInstrument instrument = account.getInstrument(order.getSymbol());
+        SimulationInstrument instrument = account.getInstrument(order.getSymbol());
         //instrument.orders().add(order);
         instrument.getTransmitQueue().add(order);
         toSubmitted(order, orderID.incrementAndGet(), currentTime);
@@ -166,7 +166,7 @@ public class SimpleMatchingEngine extends OrderStatusUpdater implements OrderBro
     long currentTime = Long.MIN_VALUE;
 
     public void onData(When when, Candle ohlc) {
-        StandardInstrument instrument = account.getInstrument(when.getSymbol());
+        SimulationInstrument instrument = account.getInstrument(when.getSymbol());
         List<Order> transmitQueue = instrument.getTransmitQueue();
         List<Order> orders = instrument.orders();
         if (!transmitQueue.isEmpty()) {
@@ -270,7 +270,7 @@ public class SimpleMatchingEngine extends OrderStatusUpdater implements OrderBro
             throw new SimulationException(
                     "Non-transactional " + order.getSymbol() + " order price " + price + " at bar " + ohlc);
 
-        StandardInstrument instrument = account.getInstrument(order.getSymbol());
+        SimulationInstrument instrument = account.getInstrument(order.getSymbol());
         Position position = instrument.position(); //
 
         if (order.isBuy())

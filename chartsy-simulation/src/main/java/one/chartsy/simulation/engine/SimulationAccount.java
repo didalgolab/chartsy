@@ -23,15 +23,15 @@ public class SimulationAccount implements Account {
     /** The account credit. */
     private double credit;
     /** The collection of traded instruments. */
-    private final Map<SymbolIdentifier, StandardInstrument> instruments = new HashMap<>();
+    private final Map<SymbolIdentifier, SimulationInstrument> instruments = new HashMap<>();
     /** The collection of traded instruments hashed by the symbol identity. */
-    private final Map<SymbolIdentity, StandardInstrument> lookupCache = new IdentityHashMap<>() {
+    private final Map<SymbolIdentity, SimulationInstrument> lookupCache = new IdentityHashMap<>() {
 
         private final LinkedList<SymbolIdentity> currentKeys = new LinkedList<>();
 
         @Override
-        public StandardInstrument put(SymbolIdentity key, StandardInstrument value) {
-            StandardInstrument previousValue = super.put(key, value);
+        public SimulationInstrument put(SymbolIdentity key, SimulationInstrument value) {
+            SimulationInstrument previousValue = super.put(key, value);
             if (previousValue == null) {
                 currentKeys.add(key);
                 if (currentKeys.size() >= instruments.size()*4 + 4) {
@@ -72,8 +72,8 @@ public class SimulationAccount implements Account {
     }
 
     @Override
-    public StandardInstrument getInstrument(SymbolIdentity symbol) {
-        StandardInstrument instrument = lookupCache.get(symbol);
+    public SimulationInstrument getInstrument(SymbolIdentity symbol) {
+        SimulationInstrument instrument = lookupCache.get(symbol);
         if (instrument == null) {
             synchronized (lookupCache) {
                 if ((instrument = lookupCache.get(symbol)) == null)
@@ -83,8 +83,8 @@ public class SimulationAccount implements Account {
         return instrument;
     }
 
-    public StandardInstrument getInstrument(SymbolIdentifier symbol) {
-        StandardInstrument instrument = instruments.get(symbol);
+    public SimulationInstrument getInstrument(SymbolIdentifier symbol) {
+        SimulationInstrument instrument = instruments.get(symbol);
         if (instrument == null) {
             synchronized (instruments) {
                 instrument = instruments.computeIfAbsent(symbol, this::createInstrument);
@@ -93,8 +93,8 @@ public class SimulationAccount implements Account {
         return instrument;
     }
 
-    protected StandardInstrument createInstrument(SymbolIdentifier symbol) {
-        return new StandardInstrument(new Symbol(symbol));
+    protected SimulationInstrument createInstrument(SymbolIdentifier symbol) {
+        return new SimulationInstrument(new Symbol(symbol));
     }
 
     @Override

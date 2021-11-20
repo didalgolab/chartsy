@@ -14,7 +14,6 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 public abstract class Strategy<E extends Chronological> implements TradingStrategy {
@@ -32,6 +31,8 @@ public abstract class Strategy<E extends Chronological> implements TradingStrate
     protected final Account account;
     /** The data series associated with the current strategy. */
     protected final Series<E> series;
+    /** The list of all series associated with the strategy. */
+    protected final List<? extends Series<?>> alternateSeries;
     /** The type of primary data accepted by this strategy. */
     protected final Class<E> primaryDataType;
 
@@ -60,18 +61,20 @@ public abstract class Strategy<E extends Chronological> implements TradingStrate
         if (config != null) {
             this.globalVariables = config.sharedVariables();
             this.symbol = config.symbol();
-            this.series = selectPrimaryDataSeries(primaryDataType, config.dataSources());
+            this.series = getPrimaryDataSeries(primaryDataType, config.dataSources());
+            this.alternateSeries = config.dataSources();
             this.account = config.account();
         } else {
             this.globalVariables = ImmutableCollections.emptyConcurrentMap();
             this.symbol = null;
             this.series = null;
+            this.alternateSeries = List.of();
             this.account = null;
         }
     }
 
     @SuppressWarnings("unchecked")
-    protected Series<E> selectPrimaryDataSeries(Class<E> primaryDataType, List<? extends Series<?>> dataSource) {
+    protected Series<E> getPrimaryDataSeries(Class<E> primaryDataType, List<? extends Series<?>> dataSource) {
         for (Series<?> dataSeries : dataSource)
             if (primaryDataType.equals(dataSeries.getResource().dataType()))
                 return (Series<E>) dataSeries;

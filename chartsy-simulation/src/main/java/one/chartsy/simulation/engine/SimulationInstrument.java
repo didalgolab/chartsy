@@ -9,7 +9,7 @@ import one.chartsy.trade.data.Position;
 import java.util.ArrayList;
 import java.util.List;
 
-public class StandardInstrument implements Instrument {
+public class SimulationInstrument implements Instrument {
     private final Symbol symbol;
     private final List<Order> orders = new ArrayList<>();
     private final List<Order> transmitQueue = new ArrayList<>();
@@ -17,7 +17,7 @@ public class StandardInstrument implements Instrument {
     private Candle lastCandle;
 
 
-    public StandardInstrument(Symbol symbol) {
+    public SimulationInstrument(Symbol symbol) {
         this.symbol = symbol;
     }
 
@@ -50,5 +50,11 @@ public class StandardInstrument implements Instrument {
 
     public void setLastCandle(Candle lastCandle) {
         this.lastCandle = lastCandle;
+    }
+
+    @Override
+    public boolean isActiveSince(long lastTradeTime) {
+        Candle c = lastCandle;
+        return (c != null && c.getTime() >= lastTradeTime);
     }
 }
