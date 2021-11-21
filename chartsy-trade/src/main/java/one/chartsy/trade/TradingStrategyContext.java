@@ -2,13 +2,14 @@ package one.chartsy.trade;
 
 import one.chartsy.data.Series;
 import org.immutables.value.Value;
+import org.openide.util.Lookup;
 
-import java.util.Collection;
+import java.util.List;
 
 @Value.Immutable
-public interface TradingStrategyContext {
+public interface TradingStrategyContext extends Lookup.Provider {
 
-    Collection<? extends Series<?>> dataSeries();
+    List<? extends Series<?>> dataSeries();
 
     TradingService tradingService();
 

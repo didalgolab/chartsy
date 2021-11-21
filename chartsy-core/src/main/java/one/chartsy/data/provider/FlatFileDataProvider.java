@@ -156,6 +156,11 @@ public class FlatFileDataProvider extends AbstractDataProvider implements Symbol
             itemReader.open();
             List<T> items = itemReader.readAll();
             //items.sort(Comparator.naturalOrder());
+            if (request.endTime() != null) {
+                long endTime = Chronological.toEpochMicros(request.endTime());
+                items.removeIf(item -> item.getTime() > endTime);
+            }
+
             int itemCount = items.size();
             int itemLimit = request.limit();
             if (itemLimit > 0 && itemLimit < itemCount)

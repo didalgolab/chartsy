@@ -19,12 +19,17 @@ import java.util.List;
 public class HostSimulationContext implements SimulationContext {
 
     @Override
+    public Lookup getLookup() {
+        return Lookup.EMPTY;
+    }
+
+    @Override
     public SimulationProperties properties() {
         return ImmutableSimulationProperties.builder().build();
     }
 
     @Override
-    public Collection<? extends Series<?>> dataSeries() {
+    public List<? extends Series<?>> dataSeries() {
         return List.of();
     }
 
@@ -42,7 +47,7 @@ public class HostSimulationContext implements SimulationContext {
     }
 
     @Override
-    public SimulationContext withDataSeries(Collection<? extends Series<?>> ds) {
+    public SimulationContext withDataSeries(List<? extends Series<?>> ds) {
         return ImmutableSimulationContext.builder()
                 .from(this)
                 .dataSeries(ds)

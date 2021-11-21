@@ -4,12 +4,12 @@ import one.chartsy.data.Series;
 import one.chartsy.trade.TradingStrategyContext;
 import org.immutables.value.Value;
 
-import java.util.Collection;
+import java.util.List;
 
 @Value.Immutable
 public interface SimulationContext extends TradingStrategyContext {
 
     SimulationProperties properties();
 
-    SimulationContext withDataSeries(Collection<? extends Series<?>> datasets);
+    SimulationContext withDataSeries(List<? extends Series<?>> datasets);
 }

@@ -2,7 +2,6 @@ package one.chartsy.simulation;
 
 import one.chartsy.data.Series;
 
-import java.util.Collection;
 import java.util.List;
 
 public interface SimulationRunner {
@@ -11,5 +10,5 @@ public interface SimulationRunner {
         return run(List.of(dataset), strategy);
     }
 
-    SimulationResult run(Collection<? extends Series<?>> datasets, SimulationDriver strategy);
+    SimulationResult run(List<? extends Series<?>> datasets, SimulationDriver strategy);
 }

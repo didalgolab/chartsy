@@ -12,6 +12,7 @@ import one.chartsy.time.Chronological;
 
 import java.time.LocalDate;
 import java.util.Collection;
+import java.util.List;
 
 public class SimpleSimulationRunner implements SimulationRunner {
     private final SimulationContext context;
@@ -21,7 +22,7 @@ public class SimpleSimulationRunner implements SimulationRunner {
     }
 
     @Override
-    public SimulationResult run(Collection<? extends Series<?>> datasets, SimulationDriver strategy) {
+    public SimulationResult run(List<? extends Series<?>> datasets, SimulationDriver strategy) {
         SimulationContext context = this.context.withDataSeries(datasets);
         strategy.initSimulation(context);
         PriorityMap<Chronological, ChronologicalIterator<?>> map = TradingData.priorityMap(context, datasets);
