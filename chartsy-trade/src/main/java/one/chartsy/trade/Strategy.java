@@ -9,6 +9,7 @@ import one.chartsy.time.Chronological;
 import one.chartsy.trade.data.Position;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.openide.util.Lookup;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -22,6 +23,8 @@ import java.util.function.Supplier;
 public abstract class Strategy<E extends Chronological> implements TradingStrategy {
     /** The unique identifier of the strategy. */
     private final UUID strategyUUID = UUID.randomUUID();
+    /** The external lookup associated with the strategy. */
+    private final Lookup lookup;
     /** The instance logger currently in use. */
     private final Logger log = LogManager.getLogger(getClass());
     /** The current strategy configuration. */
@@ -62,12 +65,14 @@ public abstract class Strategy<E extends Chronological> implements TradingStrate
 
         this.config = config;
         if (config != null) {
+            this.lookup = config.lookup();
             this.globalVariables = config.sharedVariables();
             this.symbol = config.symbol();
             this.series = getPrimaryDataSeries(primaryDataType, config.dataSources());
             this.alternateSeries = config.dataSources();
             this.account = config.account();
         } else {
+            this.lookup = Lookup.EMPTY;
             this.globalVariables = ImmutableCollections.emptyConcurrentMap();
             this.symbol = null;
             this.series = null;
@@ -107,6 +112,14 @@ public abstract class Strategy<E extends Chronological> implements TradingStrate
         @SuppressWarnings("unchecked")
         T value = (T)globalVariables().computeIfAbsent(name, __ -> Objects.requireNonNull(lazyValue.get()));
         return value;
+    }
+
+    public Lookup lookup() {
+        return lookup;
+    }
+
+    public <T> T lookup(Class<T> clazz) {
+        return lookup().lookup(clazz);
     }
 
     @Override

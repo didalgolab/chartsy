@@ -13,6 +13,8 @@ public interface Instrument {
 
     Position position();
 
+    boolean isActive();
+
     boolean isActiveSince(long lastTradeTime);
 
 }

@@ -40,6 +40,7 @@ public class StooqFlatFileDataBasedStrategy {
         AtomicInteger strategyInstanceCount = new AtomicInteger();
         AtomicInteger dataPointCount = new AtomicInteger();
         class MyStrategy extends Strategy<Candle> {
+            private MetaStrategy metaStrategy = lookup(MetaStrategy.class);
             private final Set<LocalDate> dates = globalVariable("dates", HashSet::new);
 
             MyStrategy() {
@@ -55,8 +56,9 @@ public class StooqFlatFileDataBasedStrategy {
             @Override
             public void onTradingDayStart(LocalDate date) {
                 super.onTradingDayStart(date);
-                if (dates.add(date))
-                    System.out.println(date);
+                if (dates.add(date)) {
+                    System.out.println(date + " " + metaStrategy.activeSymbolCount());
+                }
             }
         }
         MetaStrategy metaStrategy = new MetaStrategy(MyStrategy::new);

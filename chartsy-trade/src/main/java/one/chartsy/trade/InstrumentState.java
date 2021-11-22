@@ -9,6 +9,8 @@ public class InstrumentState {
 
     private Candle lastCandle;
 
+    private boolean active = true;
+
 
     public InstrumentState(SymbolIdentifier symbol) {
         this.symbol = symbol;
@@ -30,5 +32,13 @@ public class InstrumentState {
     public boolean isActiveSince(long lastTradeTime) {
         Candle c = lastCandle;
         return (c != null && c.getTime() >= lastTradeTime);
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
     }
 }

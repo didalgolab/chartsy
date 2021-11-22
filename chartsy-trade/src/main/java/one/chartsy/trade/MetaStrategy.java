@@ -31,7 +31,7 @@ public class MetaStrategy implements TradingStrategy {
     private final TradingStrategyProvider childStrategiesProviders;
 
     private final List<TradingStrategy> subStrategies = new ArrayList<>();
-    private final Map<SymbolIdentity, Slot> symbols = new HashMap<>();
+    private final Map<SymbolIdentity, Slot> symbols = new LinkedHashMap<>();
     private Slot[] instruments;
 
     private Lookup lookup = Lookup.EMPTY;
@@ -55,7 +55,7 @@ public class MetaStrategy implements TradingStrategy {
             Series<?> series = dataSeries.get(i);
             if (dataFilter.test(series)) {
                 Slot slot = instruments[i] = symbols.computeIfAbsent(series.getResource().symbol(),
-                        symb -> new Slot(new SymbolIdentifier(symb)));
+                        symb -> new Slot(new SymbolIdentifier(symb), account.getInstrument(symb)));
                 slot.addDataSeries(series);
             }
         }
@@ -63,7 +63,7 @@ public class MetaStrategy implements TradingStrategy {
         // init instrument strategies
         StrategyInitializer initializer = new StrategyInitializer();
         symbols.forEach((symbol, slot) -> {
-            var config = new StrategyConfigData(slot.getSymbol(), slot.dataSeries, sharedVariables, Map.of(), account);
+            var config = new StrategyConfigData(lookup, slot.getSymbol(), slot.dataSeries, sharedVariables, Map.of(), account);
             var childStrategy = initializer.newInstance(isp, config);
 
             slot.setStrategy(childStrategy);
@@ -83,10 +83,10 @@ public class MetaStrategy implements TradingStrategy {
         return symbols.size();
     }
 
-    public int activeSymbolCountSince(long lastTradeTime) {
+    public int activeSymbolCount() {
         int count = 0;
         for (InstrumentState instrument : symbols.values())
-            if (instrument.isActiveSince(lastTradeTime))
+            if (instrument.isActive())
                 count++;
 
         return count;
@@ -95,13 +95,24 @@ public class MetaStrategy implements TradingStrategy {
 
     private static final class Slot extends InstrumentState {
         private final List<Series<?>> dataSeries = new LinkedList<>();
+        private final Instrument instrument;
         private TradingStrategy strategy;
 
-        public Slot(SymbolIdentifier symbol) {
+        public Slot(SymbolIdentifier symbol, Instrument instrument) {
             super(symbol);
+            this.instrument = instrument;
         }
 
-        public void addDataSeries(Series<?> s) {
+        public Instrument getInstrument() {
+            return instrument;
+        }
+
+        @Override
+        public boolean isActive() {
+            return super.isActive() && getInstrument().isActive();
+        }
+
+        void addDataSeries(Series<?> s) {
             dataSeries.add(s);
         }
 
@@ -127,6 +138,7 @@ public class MetaStrategy implements TradingStrategy {
     @Override
     public void initTradingStrategy(TradingStrategyContext context) {
         this.account = context.tradingService().getAccounts().get(0);
+        this.lookup = createLookup(context);
         initSimulation(context.dataSeries(), dataSeriesFilter, childStrategiesProviders);
         forEachStrategy(strategy -> strategy.initTradingStrategy(context));
     }
