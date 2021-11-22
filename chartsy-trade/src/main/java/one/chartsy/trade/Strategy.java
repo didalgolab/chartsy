@@ -12,9 +12,12 @@ import org.apache.logging.log4j.Logger;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 public abstract class Strategy<E extends Chronological> implements TradingStrategy {
     /** The unique identifier of the strategy. */
@@ -24,7 +27,7 @@ public abstract class Strategy<E extends Chronological> implements TradingStrate
     /** The current strategy configuration. */
     protected final StrategyConfig config;
     /** The variables shared between all strategies created under the same meta-strategy. */
-    protected final ConcurrentMap<String, ?> globalVariables;
+    private final ConcurrentMap<String, Object> globalVariables;
     /** The symbol assigned to the current Strategy. */
     protected final SymbolIdentifier symbol;
     /** The account associated with the Strategy. */
@@ -94,6 +97,16 @@ public abstract class Strategy<E extends Chronological> implements TradingStrate
     public void initTradingStrategy(TradingStrategyContext context) {
         tradingStrategyContext = context;
         log().info("Strategy {} configured", symbol.name());
+    }
+
+    public ConcurrentMap<String, Object> globalVariables() {
+        return globalVariables;
+    }
+
+    public <T> T globalVariable(String name, Supplier<T> lazyValue) {
+        @SuppressWarnings("unchecked")
+        T value = (T)globalVariables().computeIfAbsent(name, __ -> Objects.requireNonNull(lazyValue.get()));
+        return value;
     }
 
     @Override

@@ -84,7 +84,7 @@ public class FlatFileDataProvider extends AbstractDataProvider implements Symbol
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T extends Chronological> Batch<T> queryInBatches(Class<T> type, DataQuery<T> request) {
+    public <T extends Chronological> Batch<T> queryForBatches(Class<T> type, DataQuery<T> request) {
         if (type == Candle.class || type == SimpleCandle.class)
             return (Batch<T>) queryForCandles((DataQuery<Candle>) request);
         else

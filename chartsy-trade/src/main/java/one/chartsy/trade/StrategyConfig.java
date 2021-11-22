@@ -13,7 +13,7 @@ public interface StrategyConfig {
 
     List<? extends Series<?>> dataSources();
 
-    ConcurrentMap<String, ?> sharedVariables();
+    ConcurrentMap<String, Object> sharedVariables();
 
     Map<String, ?> properties();
 

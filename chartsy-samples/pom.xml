@@ -7,7 +7,7 @@
         <version>0.1-SNAPSHOT</version>
     </parent>
     <artifactId>chartsy-samples</artifactId>
-    <packaging>nbm</packaging>
+    <packaging>jar</packaging>
     <build>
         <plugins>
             <plugin>
@@ -63,6 +63,11 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>chartsy-chart-overlays</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>chartsy-simulation</artifactId>
             <version>${project.version}</version>
         </dependency>
 

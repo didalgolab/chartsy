@@ -27,7 +27,7 @@ public class MetaStrategy implements TradingStrategy {
 
     private Account account;
 
-    private final ConcurrentMap<String, ?> sharedVariables = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, Object> sharedVariables = new ConcurrentHashMap<>();
     private final TradingStrategyProvider childStrategiesProviders;
 
     private final List<TradingStrategy> subStrategies = new ArrayList<>();

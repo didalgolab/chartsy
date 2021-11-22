@@ -26,7 +26,7 @@ public interface DataProvider extends FinancialService {
 
     List<? extends SymbolIdentity> listSymbols(SymbolGroup group);
 
-    <T extends Chronological> Batch<T> queryInBatches(Class<T> type, DataQuery<T> request);
+    <T extends Chronological> Batch<T> queryForBatches(Class<T> type, DataQuery<T> request);
 
     // TODO - to be continued...
 }
