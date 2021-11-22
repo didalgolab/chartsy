@@ -57,7 +57,7 @@ public class StooqFlatFileDataBasedStrategy {
             public void onTradingDayStart(LocalDate date) {
                 super.onTradingDayStart(date);
                 if (dates.add(date)) {
-                    System.out.println(date + " " + metaStrategy.activeSymbolCount());
+                    System.out.println(date + " " + metaStrategy.activeSymbolCountSince(Chronological.toEpochMicros(date.atStartOfDay().minusDays(14))));
                 }
             }
         }

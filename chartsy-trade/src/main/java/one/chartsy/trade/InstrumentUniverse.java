@@ -35,16 +35,4 @@ public class InstrumentUniverse {
         return instruments[datasetId];
     }
 
-    public int totalCount() {
-        return symbols.size();
-    }
-
-    public int activeCountSince(long lastTradeTime) {
-        int count = 0;
-        for (InstrumentState instrument : symbols.values())
-            if (instrument.isActiveSince(lastTradeTime))
-                count++;
-
-        return count;
-    }
 }

@@ -17,7 +17,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 public abstract class Strategy<E extends Chronological> implements TradingStrategy {
@@ -108,9 +107,9 @@ public abstract class Strategy<E extends Chronological> implements TradingStrate
         return globalVariables;
     }
 
-    public <T> T globalVariable(String name, Supplier<T> lazyValue) {
+    public <T> T globalVariable(String name, Supplier<T> initialValue) {
         @SuppressWarnings("unchecked")
-        T value = (T)globalVariables().computeIfAbsent(name, __ -> Objects.requireNonNull(lazyValue.get()));
+        T value = (T)globalVariables().computeIfAbsent(name, __ -> Objects.requireNonNull(initialValue.get()));
         return value;
     }
 

@@ -92,6 +92,19 @@ public class MetaStrategy implements TradingStrategy {
         return count;
     }
 
+    public int activeSymbolCountSince(long lastTradingTime) {
+        int count = 0;
+        for (Slot instrument : symbols.values())
+            if (instrument.isActiveSince(lastTradingTime))
+                count++;
+
+        return count;
+    }
+
+    public ConcurrentMap<String, Object> sharedVariables() {
+        return sharedVariables;
+    }
+
 
     private static final class Slot extends InstrumentState {
         private final List<Series<?>> dataSeries = new LinkedList<>();
@@ -110,6 +123,10 @@ public class MetaStrategy implements TradingStrategy {
         @Override
         public boolean isActive() {
             return super.isActive() && getInstrument().isActive();
+        }
+
+        public boolean isActiveSince(long lastTradeTime) {
+            return getInstrument().isActiveSince(lastTradeTime);
         }
 
         void addDataSeries(Series<?> s) {
