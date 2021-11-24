@@ -9,6 +9,16 @@ import java.util.function.DoubleBinaryOperator;
 public abstract class AbstractDoubleSeries<DS extends AbstractDoubleSeries<DS>> implements FluentDoubleSeries {
 
     @Override
+    public double getFirst() {
+        return get(length() - 1);
+    }
+
+    @Override
+    public double getLast() {
+        return get(0);
+    }
+
+    @Override
     public DS mul(double y) {
         return mapThread(DoubleSeriesSupport::multiply, y);
     }

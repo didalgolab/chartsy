@@ -20,9 +20,11 @@ public class PackedSeries<E extends Chronological> implements Series<E>, Timelin
         this.resource = resource;
         this.data = dataset;
 
-        if (!dataset.isEmpty()) {
+        int length = length();
+        if (length > 0) {
+            E first = get(length - 1), last = get(0);
             boolean reversed = getOrder().isReversed();
-            if (reversed && getFirst().isAfter(getLast()) || !reversed && getFirst().isBefore(getLast()))
+            if (reversed && first.isAfter(last) || !reversed && first.isBefore(last))
                 throw new IllegalArgumentException("Given values aren't in " + getOrder() + " order");
         }
     }
@@ -35,6 +37,21 @@ public class PackedSeries<E extends Chronological> implements Series<E>, Timelin
     @Override
     public E get(int index) {
         return data.get(index);
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return data.isEmpty();
+    }
+
+    @Override
+    public E getFirst() {
+        return get(length() - 1);
+    }
+
+    @Override
+    public E getLast() {
+        return get(0);
     }
 
     @Override

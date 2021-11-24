@@ -34,7 +34,7 @@ public class StockSelectionFromStooqFlatFileDataProvider {
         System.out.println("Stocks: " + stocks.size());
         for (SymbolIdentity stock : stocks) {
             DataQuery<Candle> query = DataQuery.resource(SymbolResource.of(stock, TimeFrame.Period.DAILY))
-                    .limit(250)
+                    //.limit(250)
                     //.endTime(LocalDateTime.of(2021, 10, 1, 0, 0))
                     .build();
             CandleSeries series = dataProvider.queryForCandles(query).collect(Batches.toCandleSeries());

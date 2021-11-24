@@ -1,7 +1,6 @@
 package one.chartsy.data;
 
 import one.chartsy.time.Chronological;
-import one.chartsy.time.Timeline;
 
 public interface IndexedSymbolResourceData<E extends Chronological> extends SymbolResourceData<E, Dataset<E>> {
 
@@ -9,11 +8,9 @@ public interface IndexedSymbolResourceData<E extends Chronological> extends Symb
 
     E get(int index);
 
-    default E getFirst() {
-        return get(length() - 1);
-    }
+    E getFirst();
 
-    default E getLast() {
-        return get(0);
-    }
+    E getLast();
+
+    boolean isEmpty();
 }

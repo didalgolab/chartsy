@@ -15,9 +15,9 @@ public interface DoubleSeries extends TimeSeriesAlike {
 
     DoubleDataset values();
 
-    default double getLast() {
-        return get(0);
-    }
+    double getFirst();
+
+    double getLast();
 
     static PackedDoubleSeries of(double[] values, Timeline timeline) {
         return new PackedDoubleSeries(timeline, PackedDoubleDataset.of(values));
