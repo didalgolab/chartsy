@@ -16,12 +16,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-public class StooqFlatFileDataProvider {
+public class StockSelectionFromHourlyStooqFlatFileDataProvider {
 
     public static void main(String[] args) throws IOException {
         // create FlatFileDataProvider for a Stooq historical data file
         FlatFileDataProvider dataProvider = FlatFileFormat.STOOQ
-                .newDataProvider(Path.of("C:/Users/Mariusz/Downloads/h_pl_txt.zip"));
+                .newDataProvider(Path.of("C:/Users/Mariusz/Downloads/h_pl_txt(1).zip"));
 
         // list all stocks contained in a file
         Map<Pair<Double, String>, String> counts = new TreeMap<>();
@@ -56,7 +56,7 @@ public class StooqFlatFileDataProvider {
                 double newLastClose = newSeries.getLast().close();
                 double newWidthLast = newWidth.getLast();
                 double newWidthPercent = newWidth.getLast() / newLastClose;
-                if (newWidthPercent < widthPercent || newHighestSince.getLast() > highestSince.getLast())
+                if (newWidthPercent < widthPercent || newHighestSince.getLast() >= highestSince.getLast())
                     cnt++;
             }
             counts.put(Pair.of((cnt*10_000L/n)/100.0, stock.name()), stock.name());

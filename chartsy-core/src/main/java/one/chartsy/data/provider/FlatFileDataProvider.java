@@ -27,7 +27,7 @@ import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-public class FlatFileDataProvider extends AbstractDataProvider implements SymbolListAccessor, HierarchicalConfiguration {
+public class FlatFileDataProvider extends AbstractDataProvider implements AutoCloseable, SymbolListAccessor, HierarchicalConfiguration {
     private final Lookup lookup = Lookups.singleton(this);
     private final FlatFileFormat fileFormat;
     private final FileSystem fileSystem;
@@ -56,7 +56,7 @@ public class FlatFileDataProvider extends AbstractDataProvider implements Symbol
 
     @Override
     public List<SymbolGroup> getRootGroups() {
-        return asGroups(getFileSystem().getRootDirectories());
+        return asGroups(getBaseDirectories());
     }
 
     @Override
@@ -181,6 +181,15 @@ public class FlatFileDataProvider extends AbstractDataProvider implements Symbol
         return fileFormat;
     }
 
+    public final Iterable<Path> getBaseDirectories() {
+        return baseDirectories;
+    }
+
+    @Override
+    public void close() throws Exception {
+        getFileSystem().close();
+    }
+
     protected SymbolIdentity asIdentifier(Path path) {
         return new SymbolIdentifier(asAssetName(path.getFileName()), asAssetType(path));
     }
@@ -266,7 +275,7 @@ public class FlatFileDataProvider extends AbstractDataProvider implements Symbol
 
     private FileTreeMetadata getFileTreeMetadata() {
         if (metadata == null)
-            metadata = scanFileTree(baseDirectories);
+            metadata = scanFileTree(getBaseDirectories());
         return metadata;
     }
 

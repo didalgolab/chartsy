@@ -1,4 +1,4 @@
-package one.chartsy.data.provider.file;
+package one.chartsy.data.provider.file.stooq.us;
 
 import one.chartsy.*;
 import one.chartsy.core.collections.DoubleMinMaxList;
@@ -6,37 +6,34 @@ import one.chartsy.data.*;
 import one.chartsy.data.batch.Batches;
 import one.chartsy.data.packed.PackedCandleSeries;
 import one.chartsy.data.provider.FlatFileDataProvider;
+import one.chartsy.data.provider.file.FlatFileFormat;
 import one.chartsy.finance.FinancialIndicators;
 import one.chartsy.util.Pair;
-import org.springframework.batch.item.ExecutionContext;
-import org.springframework.batch.item.file.LineMapper;
 
 import java.io.IOException;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.stream.Stream;
 
-public class StooqFlatFileDataProvider {
+public class StockSelectionFromStooqFlatFileDataProvider {
 
     public static void main(String[] args) throws IOException {
+        // create FlatFileDataProvider for a Stooq historical data file
         FlatFileDataProvider dataProvider = FlatFileFormat.STOOQ
-                .newDataProvider(Path.of("C:/Users/Mariusz/Downloads/d_pl_txt(5).zip"));
+                .newDataProvider(Path.of("C:/Users/Mariusz/Downloads/d_us_txt(1).zip"));
 
-        //CandleSeries series = dataProvider.queryForCandles(query).collect(Batches.toCandleSeries());
+        // list all symbol groups containing stock symbols
+        List<SymbolGroup> stockGroups = dataProvider.listSymbolGroups(
+                group -> group.name().contains("stocks") /*&& !group.name().contains("nysemkt")*/);
+        System.out.println("Stock groups: " + stockGroups);
+
+        // list all stocks contained in a file
         Map<Pair<Double, String>, String> counts = new TreeMap<>();
-        List<? extends SymbolIdentity> stocks = dataProvider.listSymbols(new SymbolGroup("/data/daily/pl/wse stocks"));
+        List<? extends SymbolIdentity> stocks = dataProvider.listSymbols(stockGroups);
         System.out.println("Stocks: " + stocks.size());
         for (SymbolIdentity stock : stocks) {
-            DataQuery<Candle> query = DataQuery.resource(SymbolResource.of(stock, TimeFrame.Period.DAILY))
-                    .limit(250)
-                    .endTime(LocalDateTime.of(2021, 10, 1, 0, 0))
-                    .build();
-            CandleSeries series = dataProvider.queryForCandles(query).collect(Batches.toCandleSeries());
+            CandleSeries series = dataProvider.queryForCandles(
+                            DataQuery.resource(SymbolResource.of(stock, TimeFrame.Period.DAILY)).limit(250).build())
+                    .collect(Batches.toCandleSeries());
 
             if (series.length() == 0) {
                 System.out.println("Empty series: " + stock);
@@ -62,7 +59,7 @@ public class StooqFlatFileDataProvider {
                 double newLastClose = newSeries.getLast().close();
                 double newWidthLast = newWidth.getLast();
                 double newWidthPercent = newWidth.getLast() / newLastClose;
-                if (newWidthPercent < widthPercent && newHighestSince.getLast() >= highestSince.getLast())
+                if (/*newWidthPercent < widthPercent ||*/ newHighestSince.getLast() >= highestSince.getLast())
                     cnt++;
             }
             counts.put(Pair.of((cnt*10_000L/n)/100.0, stock.name()), stock.name());

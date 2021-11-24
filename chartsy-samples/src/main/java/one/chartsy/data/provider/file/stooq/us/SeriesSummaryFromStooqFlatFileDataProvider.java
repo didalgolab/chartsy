@@ -1,4 +1,4 @@
-package one.chartsy.data.provider.file.stooq;
+package one.chartsy.data.provider.file.stooq.us;
 
 import one.chartsy.SymbolGroup;
 import one.chartsy.SymbolIdentity;
@@ -14,7 +14,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 
-public class SeriesSummaryUSExample {
+public class SeriesSummaryFromStooqFlatFileDataProvider {
 
     public static void main(String[] args) throws IOException {
         // create FlatFileDataProvider for a Stooq historical data file

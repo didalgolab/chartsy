@@ -1,9 +1,10 @@
-package one.chartsy.data.provider.file;
+package one.chartsy.data.provider.file.stooq.pl;
 
 import one.chartsy.*;
 import one.chartsy.data.*;
 import one.chartsy.data.batch.Batches;
 import one.chartsy.data.provider.FlatFileDataProvider;
+import one.chartsy.data.provider.file.FlatFileFormat;
 
 import java.io.IOException;
 import java.nio.file.Path;
