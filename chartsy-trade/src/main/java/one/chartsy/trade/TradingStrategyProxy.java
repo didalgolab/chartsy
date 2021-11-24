@@ -21,6 +21,11 @@ public class TradingStrategyProxy implements TradingStrategy {
     }
 
     @Override
+    public void onAfterInit() {
+        getTarget().onAfterInit();
+    }
+
+    @Override
     public void onTradingDayStart(LocalDate date) {
         getTarget().onTradingDayStart(date);
     }

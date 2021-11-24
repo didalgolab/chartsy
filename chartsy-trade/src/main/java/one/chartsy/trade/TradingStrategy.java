@@ -11,6 +11,8 @@ public interface TradingStrategy {
 
     void initTradingStrategy(TradingStrategyContext context);
 
+    void onAfterInit();
+
     void onTradingDayStart(LocalDate date);
 
     void onTradingDayEnd(LocalDate date);

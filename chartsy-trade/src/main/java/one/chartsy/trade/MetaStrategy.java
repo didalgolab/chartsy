@@ -157,8 +157,12 @@ public class MetaStrategy implements TradingStrategy {
         this.account = context.tradingService().getAccounts().get(0);
         this.lookup = createLookup(context);
         initSimulation(context.dataSeries(), dataSeriesFilter, childStrategiesProviders);
-        forEachStrategy(strategy -> strategy.initTradingStrategy(context));
+        subStrategies.forEach(strategy -> strategy.initTradingStrategy(context));
+        subStrategies.forEach(TradingStrategy::onAfterInit);
     }
+
+    @Override
+    public void onAfterInit() { }
 
     public void forEachStrategy(Consumer<TradingStrategy> action) {
         symbols.values().forEach(slot -> action.accept(slot.getStrategy()));

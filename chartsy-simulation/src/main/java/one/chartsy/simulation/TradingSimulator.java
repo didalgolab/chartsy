@@ -59,6 +59,7 @@ public class TradingSimulator extends TradingStrategyProxy implements TradingSer
         eventCorrelator.clear();
         initDataSource(context.properties(), context.dataSeries());
         super.initTradingStrategy(context.withTradingService(this));
+        super.onAfterInit();
     }
 
     protected void initDataSource(

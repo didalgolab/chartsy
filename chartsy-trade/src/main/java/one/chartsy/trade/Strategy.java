@@ -103,6 +103,9 @@ public abstract class Strategy<E extends Chronological> implements TradingStrate
         log().info("Strategy {} configured", symbol.name());
     }
 
+    @Override
+    public void onAfterInit() { }
+
     public ConcurrentMap<String, Object> globalVariables() {
         return globalVariables;
     }
