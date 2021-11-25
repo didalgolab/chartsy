@@ -194,8 +194,8 @@ public class MetaStrategy implements TradingStrategy {
     }
 
     @Override
-    public void onExecution(Execution execution, Order order) {
-        TradingStrategy.super.onExecution(execution, order);
+    public void onExecution(Execution execution) {
+        getTargetStrategy(execution.getSymbol()).onExecution(execution);
     }
 
     @Override
@@ -228,13 +228,4 @@ public class MetaStrategy implements TradingStrategy {
         getTargetStrategy(when).adjustRisk(when);
     }
 
-    @Override
-    public void entryOrderFilled(Order order, Execution execution) {
-        getTargetStrategy(execution.getSymbol()).entryOrderFilled(order, execution);
-    }
-
-    @Override
-    public void exitOrderFilled(Order order, Execution execution) {
-        getTargetStrategy(execution.getSymbol()).exitOrderFilled(order, execution);
-    }
 }

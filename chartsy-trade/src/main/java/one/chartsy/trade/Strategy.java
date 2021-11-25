@@ -153,14 +153,16 @@ public abstract class Strategy<E extends Chronological> implements TradingStrate
     }
 
     @Override
-    public void entryOrderFilled(Order order, Execution execution) {
-
+    public void onExecution(Execution execution) {
+        if (execution.getOrder().isEntry())
+            entryOrderFilled(execution.getOrder());
+        else
+            exitOrderFilled(execution.getOrder());
     }
 
-    @Override
-    public void exitOrderFilled(Order order, Execution execution) {
+    public void entryOrderFilled(Order order) { }
 
-    }
+    public void exitOrderFilled(Order order) { }
 
     public boolean isLongOnMarket() {
         return account.isLongOnMarket(symbol);

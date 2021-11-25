@@ -303,11 +303,11 @@ public class Order implements java.io.Serializable, Cloneable, CustomValuesHolde
         this.timeInForce = tif;
     }
     
-    public Order(SymbolIdentity symbol, OrderType type, Side side, double exitStop, double exitLimit, double volume) {
-        this(symbol, type, side, exitStop, exitLimit, volume, null);
+    public Order(SymbolIdentity symbol, OrderType type, Side side, double volume, double exitStop, double exitLimit) {
+        this(symbol, type, side, volume, exitStop, exitLimit, null);
     }
     
-    public Order(SymbolIdentity symbol, OrderType type, Side side, double exitStop, double exitLimit, double volume, TimeInForce tif) {
+    public Order(SymbolIdentity symbol, OrderType type, Side side, double volume, double exitStop, double exitLimit, TimeInForce tif) {
         this.symbol = symbol;
         this.type = type;
         this.side = side;

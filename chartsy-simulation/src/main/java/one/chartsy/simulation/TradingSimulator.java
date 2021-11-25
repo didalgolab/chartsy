@@ -135,17 +135,7 @@ public class TradingSimulator extends TradingStrategyProxy implements TradingSer
     }
 
     @Override
-    public void onExecution(Execution execution, Order order) {
-        // DO NOT propagate Executions from the outer scope
-    }
-
-    @Override
-    public void exitOrderFilled(Order order, Execution execution) {
-        // DO NOT propagate Executions from the outer scope
-    }
-
-    @Override
-    public void entryOrderFilled(Order order, Execution execution) {
+    public void onExecution(Execution execution) {
         // DO NOT propagate Executions from the outer scope
     }
 

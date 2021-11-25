@@ -1,6 +1,7 @@
 package one.chartsy.simulation;
 
 import one.chartsy.When;
+import one.chartsy.data.Series;
 import one.chartsy.simulation.services.SimulationResultBuilderFactory;
 import one.chartsy.time.Chronological;
 import org.openide.util.Lookup;

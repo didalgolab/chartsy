@@ -61,18 +61,8 @@ public class TradingStrategyProxy implements TradingStrategy {
     }
 
     @Override
-    public void onExecution(Execution execution, Order order) {
-        getTarget().onExecution(execution, order);
-    }
-
-    @Override
-    public void entryOrderFilled(Order order, Execution execution) {
-        getTarget().entryOrderFilled(order, execution);
-    }
-
-    @Override
-    public void exitOrderFilled(Order order, Execution execution) {
-        getTarget().exitOrderFilled(order, execution);
+    public void onExecution(Execution execution) {
+        getTarget().onExecution(execution);
     }
 
     public final TradingStrategy getTarget() {

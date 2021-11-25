@@ -28,14 +28,5 @@ public interface TradingStrategy {
     @LookAheadBiasHazard
     default void onData(When when, Chronological next, boolean timeTick) { }
 
-    default void onExecution(Execution execution, Order order) {
-        if (execution.isScaleIn())
-            entryOrderFilled(order, execution);
-        else
-            exitOrderFilled(order, execution);
-    }
-
-    void entryOrderFilled(Order order, Execution execution);
-
-    void exitOrderFilled(Order order, Execution execution);
+    void onExecution(Execution execution);
 }

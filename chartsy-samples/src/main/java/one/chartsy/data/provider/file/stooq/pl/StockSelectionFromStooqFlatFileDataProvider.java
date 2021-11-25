@@ -63,7 +63,7 @@ public class StockSelectionFromStooqFlatFileDataProvider {
                 double newLastClose = newSeries.getLast().close();
                 double newWidthLast = newWidth.getLast();
                 double newWidthPercent = newWidth.getLast() / newLastClose;
-                if (newWidthPercent < widthPercent || newHighestSince.getLast() >= highestSince.getLast())
+                if (/*newWidthPercent < widthPercent ||*/ newHighestSince.getLast() >= highestSince.getLast())
                     cnt++;
             }
             counts.put(Pair.of((cnt*10_000L/n)/100.0, stock.name()), stock.name());

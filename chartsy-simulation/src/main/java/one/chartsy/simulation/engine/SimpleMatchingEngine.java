@@ -71,9 +71,9 @@ public class SimpleMatchingEngine extends OrderStatusUpdater implements OrderBro
         account.removePositionChangeListener(listener);
     }
 
-    protected void fireOrderExecution(Order order, Execution execution) {
+    protected void fireOrderExecution(Execution execution) {
         if (!executionListeners.isEmpty())
-            executionListeners.fire().onExecution(execution, order);
+            executionListeners.fire().onExecution(execution);
     }
 
     private final AtomicInteger orderID = new AtomicInteger();
@@ -117,9 +117,9 @@ public class SimpleMatchingEngine extends OrderStatusUpdater implements OrderBro
             else if (order.getTimeInForce() == TimeInForce.Standard.CLOSE) {
                 if (closeCandle == null)
                     closeCandle = Candle.of(time, closePrice);
-                Execution execution = fillOrder(order, closeCandle, closeCandle.open());
+                SimulatedExecution execution = fillOrder(order, closeCandle, closeCandle.open());
                 if (execution != null)
-                    fireOrderExecution(order, execution);
+                    fireOrderExecution(execution);
                 else
                     toRejected(order);
             } else if (order.getTimeInForce() == TimeInForce.Standard.OPEN || order.getType().isImmediateOrCancelOnly()) {
@@ -150,9 +150,9 @@ public class SimpleMatchingEngine extends OrderStatusUpdater implements OrderBro
             else if (order.getTimeInForce() == TimeInForce.Standard.OPEN || order.getType().isImmediateOrCancelOnly()) {
                 if (openCandle == null)
                     openCandle = Candle.of(time, openPrice);
-                Execution execution = fillOrder(order, openCandle, openCandle.open());
+                SimulatedExecution execution = fillOrder(order, openCandle, openCandle.open());
                 if (execution != null)
-                    fireOrderExecution(order, execution);
+                    fireOrderExecution(execution);
                 else
                     toRejected(order);
             } else
@@ -188,15 +188,15 @@ public class SimpleMatchingEngine extends OrderStatusUpdater implements OrderBro
             if (sl == sl && (type > 0 && ohlc.low() <= sl || type < 0 && ohlc.high() >= sl - spread)) {
                 if ((type > 0) ^ (ohlc.open() > sl))
                     sl = ohlc.open();
-                Execution execution = closePosition(position, ohlc, sl);
+                SimulatedExecution execution = closePosition(position, ohlc, sl);
                 execution.setStopLossHit(true);
-                fireOrderExecution(position.getEntryOrder(), execution);
+                fireOrderExecution(/*position.getEntryOrder(),*/ execution);
             } else if (tp == tp && (type > 0 && ohlc.high() >= tp || type < 0 && ohlc.low() <= tp - spread)) {
                 if ((type < 0) ^ (ohlc.open() > tp) && allowTakeProfitSlippage)
                     tp = ohlc.open();
-                Execution execution = closePosition(position, ohlc, tp);
+                SimulatedExecution execution = closePosition(position, ohlc, tp);
                 execution.setProfitTargetHit(true);
-                fireOrderExecution(position.getEntryOrder(), execution);
+                fireOrderExecution(/*position.getEntryOrder(),*/ execution);
             }
         }
 
@@ -215,18 +215,18 @@ public class SimpleMatchingEngine extends OrderStatusUpdater implements OrderBro
                     orders.remove(i--);
                     orderCount--;
                     if (execution != null) {
-                        fireOrderExecution(order, execution);
+                        fireOrderExecution(execution);
                         if (allowSameBarExit) {
                             int tag = order.getSide().tag;
                             double sl = order.getExitStop(), tp = order.getExitLimit();
                             if (tag < 0 && ohlc.close() > sl || tag > 0 && ohlc.close() < sl) {
-                                Execution execution2 = closePosition(instrument.position(), ohlc, sl);
+                                SimulatedExecution execution2 = closePosition(instrument.position(), ohlc, sl);
                                 execution2.setStopLossHit(true);
-                                fireOrderExecution(order, execution2);
+                                fireOrderExecution(execution2);
                             } else if (tag < 0 && ohlc.close() < tp || tag > 0 && ohlc.close() > tp) {
-                                Execution execution2 = closePosition(instrument.position(), ohlc, tp);
+                                SimulatedExecution execution2 = closePosition(instrument.position(), ohlc, tp);
                                 execution2.setProfitTargetHit(true);
-                                fireOrderExecution(order, execution2);
+                                fireOrderExecution(execution2);
                             }
                         }
                     }
@@ -239,13 +239,13 @@ public class SimpleMatchingEngine extends OrderStatusUpdater implements OrderBro
         account.updateProfit(instrument.getSymbol(), ohlc);
     }
 
-    protected Execution closePosition(Position position, Candle ohlc, double price) {
+    protected SimulatedExecution closePosition(Position position, Candle ohlc, double price) {
         Order.Side exitOrderSide = (position.getDirection() == Direction.LONG)? Order.Side.SELL : Order.Side.BUY_TO_COVER;
         Order exitOrder = new Order(position.getSymbol(), OrderType.MARKET, exitOrderSide, position.getQuantity());
         //
         Direction side = position.getDirection().reverse();
         String executionId = String.valueOf(executionIds.incrementAndGet());
-        Execution execution = new Execution(exitOrder, executionId, ohlc.getTime(), price, position.getQuantity());
+        SimulatedExecution execution = new SimulatedExecution(executionId, exitOrder, ohlc.getTime(), price, position.getQuantity());
         execution.setScaleOut(true);
         execution.setClosingCommission(position.getEntryOrder().getCommission(price, position.getQuantity(), position));
 
@@ -258,14 +258,14 @@ public class SimpleMatchingEngine extends OrderStatusUpdater implements OrderBro
     private final AtomicInteger positionIds = new AtomicInteger();
 
     @Override
-    public Execution fillOrder(Order order, Candle ohlc, double price) {
-        Execution execution = fillAtMarket(order, price, ohlc);
+    public SimulatedExecution fillOrder(Order order, Candle ohlc, double price) {
+        SimulatedExecution execution = fillAtMarket(order, price, ohlc);
         if (execution != null)
             order.fill();
         return execution;
     }
 
-    protected Execution fillAtMarket(Order order, double price, Candle ohlc) {
+    protected SimulatedExecution fillAtMarket(Order order, double price, Candle ohlc) {
         if ((price < ohlc.low() || price > ohlc.high()))
             throw new SimulationException(
                     "Non-transactional " + order.getSymbol() + " order price " + price + " at bar " + ohlc);
@@ -281,7 +281,7 @@ public class SimpleMatchingEngine extends OrderStatusUpdater implements OrderBro
         Direction positionType;
         double positionSize;
         double tradeVolume = volume;
-        Execution execution;
+        SimulatedExecution execution;
         if (position != null) {
             if (position.getDirection().tag == order.getSide().tag) { // scale-in
                 positionType = position.getDirection();
@@ -289,7 +289,7 @@ public class SimpleMatchingEngine extends OrderStatusUpdater implements OrderBro
                 openingCommission = order.getCommission(price, volume, null);
 
                 String executionId = String.valueOf(executionIds.incrementAndGet());
-                execution = new Execution(order, executionId, ohlc.getTime(), price, tradeVolume);
+                execution = new SimulatedExecution(executionId, order, ohlc.getTime(), price, tradeVolume);
                 execution.setScaleIn(true);
                 execution.setOpeningCommission(order.getCommission(price, volume, null));
 
@@ -300,7 +300,7 @@ public class SimpleMatchingEngine extends OrderStatusUpdater implements OrderBro
                 tradeVolume += position.getQuantity();
 
                 String executionId = String.valueOf(executionIds.incrementAndGet());
-                execution = new Execution(order, executionId, ohlc.getTime(), price, tradeVolume);
+                execution = new SimulatedExecution(executionId, order, ohlc.getTime(), price, tradeVolume);
                 execution.setScaleIn(true);
                 execution.setOpeningCommission(order.getCommission(price, volume, null));
                 execution.setClosingCommission(order.getCommission(price, position.getQuantity(), position));
@@ -311,7 +311,7 @@ public class SimpleMatchingEngine extends OrderStatusUpdater implements OrderBro
                 openingCommission = 0.0;
 
                 String executionId = String.valueOf(executionIds.incrementAndGet());
-                execution = new Execution(order, executionId, ohlc.getTime(), price, tradeVolume);
+                execution = new SimulatedExecution(executionId, order, ohlc.getTime(), price, tradeVolume);
                 execution.setScaleOut(true);
                 execution.setClosingCommission(order.getCommission(price, volume, position));
 
@@ -331,7 +331,7 @@ public class SimpleMatchingEngine extends OrderStatusUpdater implements OrderBro
             positionSize = order.getQuantity();
 
             String executionId = String.valueOf(executionIds.incrementAndGet());
-            execution = new Execution(order, executionId, ohlc.getTime(), price, positionSize);
+            execution = new SimulatedExecution(executionId, order, ohlc.getTime(), price, positionSize);
             execution.setScaleIn(true);
             execution.setOpeningCommission(order.getCommission(price, volume, null));
         }
