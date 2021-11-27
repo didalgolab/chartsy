@@ -3,7 +3,9 @@ package one.chartsy.data.batch;
 import one.chartsy.time.Chronological;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Collector;
 import java.util.stream.Stream;
 
@@ -16,6 +18,11 @@ public interface Batch<T extends Chronological> extends Comparable<Batch<T>>, It
     Comparable<?> batchNumber();
 
     Chronological.Order order();
+
+    // TODO: expand
+    default Optional<Supplier<CompletableFuture<Batch<T>>>> next2() {
+        return null;
+    }
 
     @Override
     default boolean hasNext() {

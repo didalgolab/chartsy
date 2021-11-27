@@ -17,7 +17,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <all.clusters>${project.build.directory}/${brandingToken}</all.clusters>
         <netbeans.run.params>
-            --fontsize 12 -J--add-opens=java.base/java.lang=ALL-UNNAMED -J--add-opens=java.base/java.net=ALL-UNNAMED -J--add-opens=java.desktop/javax.swing=ALL-UNNAMED -J--add-opens=java.desktop/sun.awt=ALL-UNNAMED
+            --fontsize 14 -J--add-opens=java.base/java.net=ALL-UNNAMED -J--add-opens=java.desktop/sun.awt=ALL-UNNAMED
         </netbeans.run.params>
     </properties>
 
