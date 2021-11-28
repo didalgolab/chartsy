@@ -12,7 +12,7 @@ import java.awt.geom.Line2D;
 import java.awt.geom.Rectangle2D;
 
 import one.chartsy.Candle;
-import one.chartsy.commons.Range;
+import one.chartsy.core.Range;
 import one.chartsy.data.CandleSeries;
 import one.chartsy.ui.chart.*;
 import one.chartsy.ui.chart.components.ChartPanel;

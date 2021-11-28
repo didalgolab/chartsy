@@ -9,7 +9,7 @@ import java.awt.Rectangle;
 import java.awt.Stroke;
 import java.util.function.IntFunction;
 
-import one.chartsy.commons.Range;
+import one.chartsy.core.Range;
 import one.chartsy.data.DoubleDataset;
 import one.chartsy.ui.chart.ChartContext;
 import one.chartsy.ui.chart.data.VisibleValues;

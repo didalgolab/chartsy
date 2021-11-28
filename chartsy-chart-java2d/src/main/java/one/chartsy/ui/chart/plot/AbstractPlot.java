@@ -7,7 +7,7 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 
-import one.chartsy.commons.Range;
+import one.chartsy.core.Range;
 import one.chartsy.ui.chart.ChartContext;
 import one.chartsy.ui.chart.Plot;
 

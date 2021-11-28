@@ -8,7 +8,7 @@ import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.Stroke;
 
-import one.chartsy.commons.Range;
+import one.chartsy.core.Range;
 import one.chartsy.ui.chart.ChartContext;
 
 public class HorizontalLinePlot extends AbstractPlot {

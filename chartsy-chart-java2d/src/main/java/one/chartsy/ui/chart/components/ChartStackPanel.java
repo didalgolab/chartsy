@@ -34,7 +34,7 @@ import javax.swing.JTable;
 import javax.swing.table.AbstractTableModel;
 
 import one.chartsy.*;
-import one.chartsy.commons.event.ListenerList;
+import one.chartsy.core.event.ListenerList;
 import one.chartsy.data.CandleSeries;
 import one.chartsy.ui.chart.*;
 import one.chartsy.ui.chart.internal.ColorServices;

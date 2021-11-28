@@ -1,6 +1,6 @@
 package one.chartsy.core;
 
-import one.chartsy.commons.AbstractHandleableCloseable;
+import one.chartsy.core.commons.AbstractHandleableCloseable;
 
 public abstract class NamedPlugin<T extends NamedPlugin<T>> extends AbstractHandleableCloseable<T> {
 

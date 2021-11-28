@@ -1,4 +1,4 @@
-package one.chartsy.commons.json;
+package one.chartsy.core.json;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;

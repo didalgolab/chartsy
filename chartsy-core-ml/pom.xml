@@ -35,14 +35,15 @@
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>chartsy-commons</artifactId>
+            <artifactId>chartsy-core</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>chartsy-core</artifactId>
+            <artifactId>chartsy-kernel</artifactId>
             <version>${project.version}</version>
         </dependency>
+
         <dependency>
             <groupId>com.github.haifengl</groupId>
             <artifactId>smile-core</artifactId>

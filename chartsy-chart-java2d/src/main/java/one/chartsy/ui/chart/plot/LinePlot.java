@@ -15,7 +15,7 @@ import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 
-import one.chartsy.commons.Range;
+import one.chartsy.core.Range;
 import one.chartsy.data.DoubleSeries;
 import one.chartsy.ui.chart.ChartContext;
 import one.chartsy.ui.chart.ChartData;

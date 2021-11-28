@@ -12,7 +12,7 @@ import java.io.Serializable;
 
 import javax.swing.JPanel;
 
-import one.chartsy.commons.Range;
+import one.chartsy.core.Range;
 import one.chartsy.ui.chart.ChartContext;
 import one.chartsy.ui.chart.ChartData;
 import one.chartsy.ui.chart.ChartProperties;

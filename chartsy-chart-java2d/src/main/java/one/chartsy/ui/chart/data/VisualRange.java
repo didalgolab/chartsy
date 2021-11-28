@@ -1,6 +1,6 @@
 package one.chartsy.ui.chart.data;
 
-import one.chartsy.commons.Range;
+import one.chartsy.core.Range;
 
 public record VisualRange(Range range, boolean isLogarithmic) {
 

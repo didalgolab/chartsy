@@ -1,4 +1,4 @@
-package one.chartsy.commons.json;
+package one.chartsy.core.json;
 
 public class JsonParseException extends RuntimeException {
 

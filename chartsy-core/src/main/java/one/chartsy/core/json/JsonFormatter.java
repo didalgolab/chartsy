@@ -1,4 +1,4 @@
-package one.chartsy.commons.json;
+package one.chartsy.core.json;
 
 public interface JsonFormatter {
     String toJson(Object src);

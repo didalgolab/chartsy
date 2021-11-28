@@ -1,4 +1,4 @@
-package one.chartsy.commons;
+package one.chartsy.core;
 
 public final class Range {
     public static final Range EMPTY = new Range(0.5, -0.5);

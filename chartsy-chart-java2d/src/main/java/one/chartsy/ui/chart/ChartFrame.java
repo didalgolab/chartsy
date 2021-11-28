@@ -2,7 +2,7 @@ package one.chartsy.ui.chart;
 
 import one.chartsy.SymbolIdentity;
 import one.chartsy.TimeFrame;
-import one.chartsy.commons.event.ListenerList;
+import one.chartsy.core.event.ListenerList;
 import one.chartsy.data.CandleSeries;
 import one.chartsy.ui.chart.components.ChartStackPanel;
 import one.chartsy.ui.chart.components.ChartToolbar;

@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 import one.chartsy.SymbolIdentity;
-import one.chartsy.commons.CustomValuesHolder;
+import one.chartsy.core.CustomValuesHolder;
 import one.chartsy.time.Chronological;
 import one.chartsy.trade.data.Position;
 

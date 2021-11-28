@@ -4,8 +4,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
-import one.chartsy.commons.json.GenericEnum;
-import one.chartsy.commons.json.GsonJsonFormatter;
+import one.chartsy.core.json.GenericEnum;
+import one.chartsy.core.json.GsonJsonFormatter;
 import one.chartsy.time.Chronological;
 import org.openide.util.lookup.ServiceProvider;
 

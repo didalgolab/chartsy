@@ -1,14 +1,10 @@
-/* Copyright 2016 by Mariusz Bernacki. PROPRIETARY and CONFIDENTIAL content.
+/* Copyright 2021 by Mariusz Bernacki. PROPRIETARY and CONFIDENTIAL content.
  * Unauthorized copying of this file, via any medium is strictly prohibited.
  * See the file "LICENSE.txt" for the full license governing this code. */
-package one.chartsy.commons.event;
+package one.chartsy.core.event;
 
 import java.io.*;
-import java.lang.reflect.Array;
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
+import java.lang.reflect.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;

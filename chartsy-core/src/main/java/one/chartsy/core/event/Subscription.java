@@ -1,4 +1,4 @@
-package one.chartsy.commons.event;
+package one.chartsy.core.event;
 
 import java.util.List;
 

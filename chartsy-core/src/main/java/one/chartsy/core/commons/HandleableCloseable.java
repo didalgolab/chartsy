@@ -1,4 +1,4 @@
-package one.chartsy.commons;
+package one.chartsy.core.commons;
 
 /**
  * A resource which can be closed and can have custom close handlers attached.

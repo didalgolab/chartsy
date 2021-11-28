@@ -3,7 +3,7 @@
  * See the file "LICENSE.txt" for the full license governing this code. */
 package one.chartsy.ui.chart;
 
-import one.chartsy.commons.Range;
+import one.chartsy.core.Range;
 
 import java.awt.Color;
 import java.awt.Graphics2D;

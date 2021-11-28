@@ -2,7 +2,7 @@ package one.chartsy.benchmarking;
 
 import one.chartsy.Candle;
 import one.chartsy.collections.PriorityMap;
-import one.chartsy.commons.json.JsonFormatter;
+import one.chartsy.core.json.JsonFormatter;
 import one.chartsy.data.AbstractCandle;
 import one.chartsy.data.CandleSupport;
 import one.chartsy.data.ExtendedCandle;

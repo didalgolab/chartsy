@@ -1,6 +1,6 @@
-package one.chartsy.commons;
+package one.chartsy.core.commons;
 
-import one.chartsy.commons.event.ListenerList;
+import one.chartsy.core.event.ListenerList;
 
 /**
  * The basic implementation of the closeable resource.

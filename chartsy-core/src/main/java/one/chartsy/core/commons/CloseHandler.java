@@ -1,4 +1,4 @@
-package one.chartsy.commons;
+package one.chartsy.core.commons;
 
 /**
  * A handler which is notified when a resource is closed.

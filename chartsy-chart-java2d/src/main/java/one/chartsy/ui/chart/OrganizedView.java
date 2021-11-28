@@ -4,7 +4,7 @@ import java.awt.AWTEvent;
 import java.util.Deque;
 import java.util.LinkedList;
 
-import one.chartsy.commons.event.ListenerList;
+import one.chartsy.core.event.ListenerList;
 
 /**
  * 

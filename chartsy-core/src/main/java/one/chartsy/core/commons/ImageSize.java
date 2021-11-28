@@ -1,4 +1,4 @@
-package one.chartsy.commons;
+package one.chartsy.core.commons;
 
 public enum ImageSize {
     TINY(8),

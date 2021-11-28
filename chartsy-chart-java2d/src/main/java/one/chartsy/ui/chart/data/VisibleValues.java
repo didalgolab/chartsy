@@ -3,7 +3,7 @@
  * See the file "LICENSE.txt" for the full license governing this code. */
 package one.chartsy.ui.chart.data;
 
-import one.chartsy.commons.Range;
+import one.chartsy.core.Range;
 import one.chartsy.data.DoubleDataset;
 
 public class VisibleValues {

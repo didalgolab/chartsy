@@ -23,7 +23,7 @@ import java.util.logging.Logger;
 
 import javax.swing.Painter;
 
-import one.chartsy.commons.NamedProperty;
+import one.chartsy.core.commons.NamedProperty;
 import one.chartsy.ui.chart.ChartPlugin.Parameter;
 import one.chartsy.ui.chart.annotation.GraphicBag;
 import one.chartsy.ui.chart.graphic.GraphicInteractor;

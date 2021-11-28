@@ -65,7 +65,6 @@
         <module>chartsy-chart-indicators</module>
         <module>chartsy-chart-java2d</module>
         <module>chartsy-chart-overlays</module>
-        <module>chartsy-commons</module>
         <module>chartsy-core</module>
         <module>chartsy-core-ml</module>
         <module>chartsy-kernel</module>

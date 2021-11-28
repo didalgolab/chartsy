@@ -18,6 +18,7 @@
                     <codeNameBase>one.chartsy.kernel</codeNameBase>
                     <publicPackages>
                         <publicPackage>one.chartsy.kernel.*</publicPackage>
+                        <publicPackage>org.apache.commons.math3.*</publicPackage>
                     </publicPackages>
                 </configuration>
             </plugin>
@@ -34,10 +35,11 @@
     </build>
     <dependencies>
         <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>chartsy-commons</artifactId>
-            <version>${project.version}</version>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-math3</artifactId>
+            <version>${commons.math.version}</version>
         </dependency>
+
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>chartsy-core</artifactId>

@@ -3,7 +3,7 @@ package one.chartsy.ui.chart;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Point2D;
 
-import one.chartsy.commons.event.ListenerList;
+import one.chartsy.core.event.ListenerList;
 
 /**
  * The global interactor that allows the user to specify a diagonal or a

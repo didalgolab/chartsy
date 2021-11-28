@@ -27,9 +27,9 @@ import javax.swing.JPanel;
 import javax.swing.ToolTipManager;
 
 import one.chartsy.*;
-import one.chartsy.commons.AbstractHandleableCloseable;
-import one.chartsy.commons.HandleableCloseable;
-import one.chartsy.commons.Range;
+import one.chartsy.core.commons.AbstractHandleableCloseable;
+import one.chartsy.core.commons.HandleableCloseable;
+import one.chartsy.core.Range;
 import one.chartsy.data.CandleSeries;
 import one.chartsy.ui.chart.*;
 import one.chartsy.ui.chart.action.ChartActions;

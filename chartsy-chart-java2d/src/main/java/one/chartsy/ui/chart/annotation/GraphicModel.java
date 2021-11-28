@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 
-import one.chartsy.commons.event.ListenerList;
+import one.chartsy.core.event.ListenerList;
 import one.chartsy.ui.chart.*;
 import one.chartsy.util.Pair;
 

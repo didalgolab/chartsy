@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Optional;
 
 import one.chartsy.*;
-import one.chartsy.commons.Range;
+import one.chartsy.core.Range;
 import one.chartsy.data.CandleSeries;
 import one.chartsy.data.provider.DataProvider;
 import one.chartsy.time.Chronological;

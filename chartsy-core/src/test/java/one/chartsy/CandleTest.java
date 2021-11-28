@@ -1,6 +1,6 @@
 package one.chartsy;
 
-import one.chartsy.commons.json.JsonParseException;
+import one.chartsy.core.json.JsonParseException;
 import one.chartsy.data.SimpleCandle;
 import one.chartsy.time.Chronological;
 import org.junit.jupiter.api.Nested;

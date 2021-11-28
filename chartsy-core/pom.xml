@@ -17,6 +17,7 @@
                 <configuration>
                     <codeNameBase>one.chartsy.core</codeNameBase>
                     <publicPackages>
+                        <publicPackage>com.google.gson.*</publicPackage>
                         <publicPackage>one.chartsy.*</publicPackage>
                         <publicPackage>org.apache.commons.lang3.*</publicPackage>
                         <publicPackage>org.apache.commons.logging.*</publicPackage>
@@ -39,11 +40,10 @@
     </build>
     <dependencies>
         <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>chartsy-commons</artifactId>
-            <version>${project.version}</version>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>${gson.version}</version>
         </dependency>
-
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-collections4</artifactId>

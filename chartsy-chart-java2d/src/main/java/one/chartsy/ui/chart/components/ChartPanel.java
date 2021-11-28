@@ -38,7 +38,7 @@ import javax.swing.SwingConstants;
 import javax.swing.border.Border;
 
 import one.chartsy.TimeFrameHelper;
-import one.chartsy.commons.Range;
+import one.chartsy.core.Range;
 import one.chartsy.data.CandleSeries;
 import one.chartsy.ui.chart.*;
 import one.chartsy.ui.chart.action.ChartAction;

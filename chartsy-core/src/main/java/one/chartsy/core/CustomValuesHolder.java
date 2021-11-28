@@ -1,7 +1,7 @@
-/* Copyright 2016 by Mariusz Bernacki. PROPRIETARY and CONFIDENTIAL content.
+/* Copyright 2021 by Mariusz Bernacki. PROPRIETARY and CONFIDENTIAL content.
  * Unauthorized copying of this file, via any medium is strictly prohibited.
  * See the file "LICENSE.txt" for the full license governing this code. */
-package one.chartsy.commons;
+package one.chartsy.core;
 
 import java.util.Collections;
 import java.util.Map;

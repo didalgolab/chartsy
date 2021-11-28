@@ -11,7 +11,7 @@ import javax.swing.Timer;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-import one.chartsy.commons.event.ListenerList;
+import one.chartsy.core.event.ListenerList;
 
 public class LongClickSupport implements ChangeListener, PropertyChangeListener, ActionListener {
     

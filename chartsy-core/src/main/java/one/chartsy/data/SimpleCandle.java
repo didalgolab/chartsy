@@ -1,8 +1,8 @@
 package one.chartsy.data;
 
 import one.chartsy.Candle;
-import one.chartsy.commons.json.JsonFormatter;
-import one.chartsy.commons.json.JsonParseException;
+import one.chartsy.core.json.JsonFormatter;
+import one.chartsy.core.json.JsonParseException;
 import one.chartsy.time.Chronological;
 import org.openide.util.Lookup;
 
@@ -98,8 +98,7 @@ public final class SimpleCandle implements Candle, Serializable {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj instanceof SimpleCandle) {
-            var q = (SimpleCandle) obj;
+        if (obj instanceof SimpleCandle q) {
             return (time == q.time)
                     && eq(close, q.close)
                     && eq(high, q.high)

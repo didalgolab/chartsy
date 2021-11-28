@@ -8,7 +8,7 @@ import java.awt.Insets;
 import java.awt.Rectangle;
 
 import one.chartsy.Candle;
-import one.chartsy.commons.Range;
+import one.chartsy.core.Range;
 import one.chartsy.ui.chart.*;
 import one.chartsy.ui.chart.data.VisibleCandles;
 import org.openide.util.NbBundle;

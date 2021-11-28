@@ -16,7 +16,7 @@ import java.text.DecimalFormat;
 import javax.swing.JPanel;
 
 import one.chartsy.Candle;
-import one.chartsy.commons.Range;
+import one.chartsy.core.Range;
 import one.chartsy.ui.chart.*;
 import one.chartsy.ui.chart.components.ChartPanel;
 import one.chartsy.ui.chart.components.IndicatorPanel;

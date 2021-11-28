@@ -1,6 +1,6 @@
 package one.chartsy.ui.chart.internal;
 
-import one.chartsy.commons.Range;
+import one.chartsy.core.Range;
 import one.chartsy.ui.chart.ChartContext;
 import one.chartsy.ui.chart.ChartData;
 import one.chartsy.ui.chart.data.VisibleValues;

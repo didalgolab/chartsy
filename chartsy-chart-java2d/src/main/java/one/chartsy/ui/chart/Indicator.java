@@ -12,7 +12,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import one.chartsy.commons.Range;
+import one.chartsy.core.Range;
 import one.chartsy.data.CandleSeries;
 import one.chartsy.data.DoubleDataset;
 import one.chartsy.ui.chart.data.VisibleValues;
