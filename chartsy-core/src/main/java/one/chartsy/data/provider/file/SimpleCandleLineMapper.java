@@ -3,9 +3,6 @@ package one.chartsy.data.provider.file;
 import one.chartsy.data.SimpleCandle;
 import one.chartsy.time.Chronological;
 import one.chartsy.util.Pair;
-import org.springframework.batch.item.ExecutionContext;
-import org.springframework.batch.item.file.LineMapper;
-import org.springframework.batch.item.file.transform.FlatFileFormatException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;

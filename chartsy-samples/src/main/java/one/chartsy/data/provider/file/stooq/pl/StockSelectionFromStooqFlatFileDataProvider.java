@@ -9,8 +9,6 @@ import one.chartsy.data.provider.FlatFileDataProvider;
 import one.chartsy.data.provider.file.FlatFileFormat;
 import one.chartsy.finance.FinancialIndicators;
 import one.chartsy.util.Pair;
-import org.springframework.batch.item.ExecutionContext;
-import org.springframework.batch.item.file.LineMapper;
 
 import java.io.IOException;
 import java.nio.file.FileSystem;

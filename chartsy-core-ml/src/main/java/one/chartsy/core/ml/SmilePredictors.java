@@ -69,40 +69,40 @@ public class SmilePredictors {
 //        System.out.println(res);
 //    }
 
-    // 306 us / 9000 elem
-    // 9,38 ms / 100 000 elems
-    public static void main(String[] args) throws IOException {
-        ThreadLocalRandom r = ThreadLocalRandom.current();
-        double[][] x = new double[1000][10];
-        for (int i = 0; i < x.length; i++)
-            for (int j = 0; j < x[i].length; j++)
-                x[i][j] = r.nextInt(100_000);
-        double[] y = new double[1000];
-        for (int i = 0; i < x.length; i++)
-            y[i] = r.nextInt(1000);
-
-        double[] predictx = new double[x[0].length];
-        Arrays.setAll(predictx, i -> i);
-        OLSMultipleLinearRegression olslr = new OLSMultipleLinearRegression();
-        long startTime = System.nanoTime();
-        double res = 0;
-        //System.in.read();
-        for (int i = 0; i < 100_000 + 1_000; i++) {
-            Collections.shuffle(Arrays.asList(x));
-            //DataFrame df = DataFrame.of(x).merge(DoubleVector.of("y", y));
-            //System.out.println(df);
-            res += new RidgeRegression.Trainer(1.0).train(x, y).predict(predictx);
-            //olslr.newSampleData(y, x);
-            //double[] b = olslr.estimateRegressionParameters();
-            //res += b[0];
-            if (i % 10_000 == 0) {
-                System.out.println(i);
-            }
-            if (i == 1_000L)
-                startTime = System.nanoTime();
-        }
-        long elapsedTime = System.nanoTime() - startTime;
-        System.out.println("Elapsed: " + elapsedTime / 100_000L + " ns per iter");
-        System.out.println(res);
-    }
+//    // 306 us / 9000 elem
+//    // 9,38 ms / 100 000 elems
+//    public static void main(String[] args) throws IOException {
+//        ThreadLocalRandom r = ThreadLocalRandom.current();
+//        double[][] x = new double[1000][10];
+//        for (int i = 0; i < x.length; i++)
+//            for (int j = 0; j < x[i].length; j++)
+//                x[i][j] = r.nextInt(100_000);
+//        double[] y = new double[1000];
+//        for (int i = 0; i < x.length; i++)
+//            y[i] = r.nextInt(1000);
+//
+//        double[] predictx = new double[x[0].length];
+//        Arrays.setAll(predictx, i -> i);
+//        OLSMultipleLinearRegression olslr = new OLSMultipleLinearRegression();
+//        long startTime = System.nanoTime();
+//        double res = 0;
+//        //System.in.read();
+//        for (int i = 0; i < 100_000 + 1_000; i++) {
+//            Collections.shuffle(Arrays.asList(x));
+//            //DataFrame df = DataFrame.of(x).merge(DoubleVector.of("y", y));
+//            //System.out.println(df);
+//            res += new RidgeRegression..Trainer(1.0).train(x, y).predict(predictx);
+//            //olslr.newSampleData(y, x);
+//            //double[] b = olslr.estimateRegressionParameters();
+//            //res += b[0];
+//            if (i % 10_000 == 0) {
+//                System.out.println(i);
+//            }
+//            if (i == 1_000L)
+//                startTime = System.nanoTime();
+//        }
+//        long elapsedTime = System.nanoTime() - startTime;
+//        System.out.println("Elapsed: " + elapsedTime / 100_000L + " ns per iter");
+//        System.out.println(res);
+//    }
 }

@@ -8,14 +8,14 @@ import one.chartsy.data.UnsupportedDataQueryException;
 import one.chartsy.data.batch.Batch;
 import one.chartsy.data.batch.Batchers;
 import one.chartsy.data.batch.SimpleBatch;
+import one.chartsy.data.provider.file.ExecutionContext;
 import one.chartsy.data.provider.file.FlatFileFormat;
 import one.chartsy.data.provider.file.FlatFileItemReader;
+import one.chartsy.data.provider.file.LineMapper;
 import one.chartsy.naming.SymbolIdentifier;
 import one.chartsy.time.Chronological;
 import org.openide.util.Lookup;
 import org.openide.util.lookup.Lookups;
-import org.springframework.batch.item.ExecutionContext;
-import org.springframework.batch.item.file.LineMapper;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;

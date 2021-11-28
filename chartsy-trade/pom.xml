@@ -34,6 +34,12 @@
     </build>
     <dependencies>
         <dependency>
+            <!-- Duplicated by chartsy-kernel dependency -->
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>${commons.lang.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.immutables</groupId>
             <artifactId>value</artifactId>
             <version>${immutables.version}</version>

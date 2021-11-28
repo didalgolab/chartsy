@@ -8,8 +8,6 @@ import one.chartsy.data.Dataset;
 import one.chartsy.data.DoubleDataset;
 import one.chartsy.data.SimpleCandle;
 import one.chartsy.util.Pair;
-import org.springframework.batch.item.ExecutionContext;
-import org.springframework.batch.item.file.LineMapper;
 
 import java.io.IOException;
 import java.nio.file.FileSystem;

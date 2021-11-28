@@ -28,7 +28,7 @@
         </Root>
 
         <!-- LOG "one.chartsy*" at TRACE level -->
-        <Logger name="one.chartsy" level="trace"></Logger>
+        <Logger name="one.chartsy" level="trace"/>
     </Loggers>
 
 </Configuration>

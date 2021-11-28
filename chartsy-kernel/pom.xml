@@ -18,7 +18,11 @@
                     <codeNameBase>one.chartsy.kernel</codeNameBase>
                     <publicPackages>
                         <publicPackage>one.chartsy.kernel.*</publicPackage>
+                        <publicPackage>org.apache.commons.lang3.*</publicPackage>
+                        <publicPackage>org.apache.commons.logging.*</publicPackage>
                         <publicPackage>org.apache.commons.math3.*</publicPackage>
+                        <publicPackage>org.slf4j.*</publicPackage>
+                        <publicPackage>org.springframework.*</publicPackage>
                     </publicPackages>
                 </configuration>
             </plugin>
@@ -36,8 +40,43 @@
     <dependencies>
         <dependency>
             <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>${commons.lang.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
             <artifactId>commons-math3</artifactId>
             <version>${commons.math.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>2.0.0-alpha0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter</artifactId>
+            <version>${spring.boot.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.latencyutils</groupId>
+                    <artifactId>LatencyUtils</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-logging</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-log4j2</artifactId>
+            <version>${spring.boot.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <version>${log4j.version}</version>
         </dependency>
 
         <dependency>

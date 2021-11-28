@@ -2,9 +2,7 @@ package one.chartsy.data.provider.file;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.springframework.batch.item.file.FlatFileParseException;
-import org.springframework.batch.item.file.LineMapper;
-import org.springframework.core.io.InputStreamSource;
+import one.chartsy.core.io.InputStreamSource;
 
 import java.io.BufferedReader;
 import java.io.IOException;
