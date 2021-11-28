@@ -61,10 +61,10 @@
         <module>branding</module>
         <module>application</module>
         <module>chartsy-benchmarking</module>
-        <module>chartsy-chart-chartfx</module>
-        <module>chartsy-chart-indicators</module>
-        <module>chartsy-chart-java2d</module>
-        <module>chartsy-chart-overlays</module>
+        <module>chartsy-ui-chartfx</module>
+        <module>chartsy-ui-chart-indicators</module>
+        <module>chartsy-ui-chart</module>
+        <module>chartsy-ui-chart-overlays</module>
         <module>chartsy-core</module>
         <module>chartsy-core-ml</module>
         <module>chartsy-kernel</module>

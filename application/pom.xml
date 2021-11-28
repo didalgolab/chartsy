@@ -649,12 +649,12 @@
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>chartsy-chart-chartfx</artifactId>
+            <artifactId>chartsy-ui-chartfx</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>chartsy-chart-java2d</artifactId>
+            <artifactId>chartsy-ui-chart</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -664,12 +664,12 @@
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>chartsy-chart-overlays</artifactId>
+            <artifactId>chartsy-ui-chart-overlays</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>chartsy-chart-indicators</artifactId>
+            <artifactId>chartsy-ui-chart-indicators</artifactId>
             <version>${project.version}</version>
         </dependency>
     </dependencies>

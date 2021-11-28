@@ -2,8 +2,8 @@ package one.chartsy.samples.charting;
 
 import one.chartsy.SymbolResource;
 import one.chartsy.TimeFrame;
-import one.chartsy.chart.indicators.SforaWidth;
-import one.chartsy.chart.overlays.Sfora;
+import one.chartsy.ui.chart.indicators.SforaWidth;
+import one.chartsy.ui.chart.overlays.Sfora;
 import one.chartsy.data.CandleSeries;
 import one.chartsy.random.RandomWalk;
 import one.chartsy.ui.chart.ChartData;
