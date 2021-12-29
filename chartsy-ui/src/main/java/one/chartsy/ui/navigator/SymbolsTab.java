@@ -1,5 +1,8 @@
 package one.chartsy.ui.navigator;
 
+import one.chartsy.ui.swing.CheckBoxTreeDecorator;
+import one.chartsy.ui.swing.CheckBoxTreeSelectionModel;
+import one.chartsy.ui.swing.JTreeEnhancements;
 import org.openide.explorer.ExplorerManager;
 import org.openide.explorer.ExplorerUtils;
 import org.openide.explorer.view.BeanTreeView;
@@ -13,8 +16,8 @@ import javax.swing.text.DefaultEditorKit;
 import javax.swing.tree.ExpandVetoException;
 
 public class SymbolsTab extends TopComponent implements ExplorerManager.Provider {
-    /** The associated Explorer Manager that manages the Symbol navigator view. */
     private final ExplorerManager explorerManager = new ExplorerManager();
+    private final CheckBoxTreeSelectionModel selectionModel;
 
     public SymbolsTab() {
         initComponents();
@@ -32,8 +35,12 @@ public class SymbolsTab extends TopComponent implements ExplorerManager.Provider
         BeanTreeView view = (BeanTreeView) scrollPane;
 //        Navigator navigator = Lookup.getDefault().lookup(Navigator.class);
 //        SymbolGroupData rootContext = navigator.getRootContext();
-//        if (rootContext != null)
-//            explorerManager.setRootContext(new NavigatorRootNode(explorerManager, view, rootContext));
+//        if (rootContext != null) {
+//            SymbolGroupNode rootNode = SymbolGroupNode.from(rootContext, explorerManager, view);
+//            explorerManager.setRootContext(rootNode);
+//            viewControl = new TreeViewControl(rootNode);
+//            viewControlAdapter = new SymbolsViewListener(viewControl);
+//        }
         
         JTree tree = (JTree) scrollPane.getViewport().getView();
         view.expandNode(explorerManager.getRootContext());
@@ -50,15 +57,15 @@ public class SymbolsTab extends TopComponent implements ExplorerManager.Provider
                     throw new ExpandVetoException(event);
             }
         });
-//        JTreeEnhancements.setSingleChildExpansionPolicy(tree);
-//        CheckBoxTreeDecorator checkBoxTree = CheckBoxTreeDecorator.decorate(tree);
-//        selectionModel = checkBoxTree.getCheckBoxTreeSelectionModel();
+        JTreeEnhancements.setSingleChildExpansionPolicy(tree);
+        selectionModel = CheckBoxTreeDecorator.decorate(tree).getCheckBoxTreeSelectionModel();
     }
     
     public static SymbolsTab findComponent() {
         for (TopComponent comp : TopComponent.getRegistry().getOpened())
             if (comp instanceof SymbolsTab)
                 return (SymbolsTab) comp;
+
         return null;
     }
 
