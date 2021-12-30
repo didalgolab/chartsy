@@ -1,0 +1,9 @@
+spring:
+  datasource:
+    url: "jdbc:h2:file:${workspace.path}/application"
+    driver-class-name: org.h2.Driver
+  h2:
+    console.enabled: true
+  jpa:
+    hibernate:
+      ddl-auto: create-drop

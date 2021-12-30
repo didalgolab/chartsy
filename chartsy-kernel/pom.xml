@@ -23,6 +23,7 @@
                         <publicPackage>org.apache.commons.math3.*</publicPackage>
                         <publicPackage>org.slf4j.*</publicPackage>
                         <publicPackage>org.springframework.*</publicPackage>
+                        <publicPackage>org.yaml.*</publicPackage>
                     </publicPackages>
                 </configuration>
             </plugin>
