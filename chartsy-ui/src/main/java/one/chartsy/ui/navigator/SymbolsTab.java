@@ -1,13 +1,18 @@
 package one.chartsy.ui.navigator;
 
+import one.chartsy.SymbolGroupContent;
+import one.chartsy.kernel.Kernel;
+import one.chartsy.kernel.SymbolGroupHierarchy;
 import one.chartsy.ui.swing.CheckBoxTreeDecorator;
 import one.chartsy.ui.swing.CheckBoxTreeSelectionModel;
 import one.chartsy.ui.swing.JTreeEnhancements;
 import org.openide.explorer.ExplorerManager;
 import org.openide.explorer.ExplorerUtils;
 import org.openide.explorer.view.BeanTreeView;
+import org.openide.util.Lookup;
 import org.openide.util.NbBundle;
 import org.openide.windows.TopComponent;
+import org.springframework.context.ApplicationContext;
 
 import javax.swing.*;
 import javax.swing.event.TreeExpansionEvent;
@@ -18,6 +23,7 @@ import javax.swing.tree.ExpandVetoException;
 public class SymbolsTab extends TopComponent implements ExplorerManager.Provider {
     private final ExplorerManager explorerManager = new ExplorerManager();
     private final CheckBoxTreeSelectionModel selectionModel;
+    private final ApplicationContext context;
 
     public SymbolsTab() {
         initComponents();
@@ -33,14 +39,15 @@ public class SymbolsTab extends TopComponent implements ExplorerManager.Provider
         
         // load root symbol group from the database
         BeanTreeView view = (BeanTreeView) scrollPane;
-//        Navigator navigator = Lookup.getDefault().lookup(Navigator.class);
-//        SymbolGroupData rootContext = navigator.getRootContext();
-//        if (rootContext != null) {
-//            SymbolGroupNode rootNode = SymbolGroupNode.from(rootContext, explorerManager, view);
-//            explorerManager.setRootContext(rootNode);
+        context = Lookup.getDefault().lookup(Kernel.class).getApplicationContext();
+        SymbolGroupHierarchy symbolHierarchy = context.getBean(SymbolGroupHierarchy.class);
+        SymbolGroupContent rootContext = symbolHierarchy.getRootContext();
+        if (rootContext != null) {
+            SymbolGroupNode rootNode = SymbolGroupNode.from(rootContext, explorerManager, view);
+            explorerManager.setRootContext(rootNode);
 //            viewControl = new TreeViewControl(rootNode);
 //            viewControlAdapter = new SymbolsViewListener(viewControl);
-//        }
+        }
         
         JTree tree = (JTree) scrollPane.getViewport().getView();
         view.expandNode(explorerManager.getRootContext());

@@ -25,11 +25,4 @@ public class Kernel {
     public ApplicationContext getApplicationContext() {
         return applicationContext;
     }
-
-    public static void main(String[] args) {
-        Kernel kernel = new Kernel();
-
-        System.out.println("NAME: " + kernel.getApplicationContext().getApplicationName());
-        System.out.println("KERN: " + kernel.getApplicationContext().getBean(Kernel.class));
-    }
 }

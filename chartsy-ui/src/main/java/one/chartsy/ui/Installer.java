@@ -2,6 +2,8 @@ package one.chartsy.ui;
 
 import one.chartsy.kernel.Kernel;
 import org.openide.modules.OnStart;
+import org.openide.util.Lookup;
+import org.openide.util.lookup.ServiceProvider;
 
 @OnStart
 public class Installer implements Runnable {
@@ -13,8 +15,18 @@ public class Installer implements Runnable {
         if (kernel == null) {
             synchronized (Installer.class) {
                 if (kernel == null)
-                    kernel = new Kernel();
+                    kernel = Lookup.getDefault().lookup(Kernel.class);
             }
+        }
+    }
+
+    @ServiceProvider(service = Kernel.class)
+    public static class DefaultKernel extends Kernel {
+
+        public DefaultKernel() { }
+
+        public void close() {
+            // do nothing
         }
     }
 }
