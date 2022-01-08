@@ -1,6 +1,3 @@
-/* Copyright 2016 by Mariusz Bernacki. PROPRIETARY and CONFIDENTIAL content.
- * Unauthorized copying of this file, via any medium is strictly prohibited.
- * See the file "LICENSE.txt" for the full license governing this code. */
 package one.chartsy.ui.navigator;
 
 import java.util.List;
@@ -8,22 +5,29 @@ import java.util.Optional;
 
 import one.chartsy.*;
 import one.chartsy.core.Refreshable;
+import one.chartsy.data.provider.DataProviderLoader;
+import one.chartsy.persistence.domain.model.SymbolGroupRepository;
 import org.openide.nodes.ChildFactory;
 import org.openide.nodes.Node;
 import org.openide.util.Exceptions;
+import org.springframework.context.ApplicationContext;
 
 public class SymbolGroupChildFactory extends ChildFactory<SymbolGroupContent> implements Refreshable {
+    protected final ApplicationContext context;
     protected final SymbolGroupContent group;
 
-    public SymbolGroupChildFactory(SymbolGroupContent group) {
+    public SymbolGroupChildFactory(ApplicationContext context, SymbolGroupContent group) {
+        this.context = context;
         this.group = group;
     }
 
     @Override
     protected boolean createKeys(List<SymbolGroupContent> toPopulate) {
         try {
-            //List<SymbolGroupContent> content = group.getContent(link);
-            //toPopulate.addAll(content);
+            SymbolGroupRepository repository = context.getBean(SymbolGroupRepository.class);
+            DataProviderLoader loader = context.getBean(DataProviderLoader.class);
+            List<SymbolGroupContent> content = group.getContent(repository, loader);
+            toPopulate.addAll(content);
 
         } catch (Exception e) {
             Exceptions.printStackTrace(e);
@@ -42,18 +46,19 @@ public class SymbolGroupChildFactory extends ChildFactory<SymbolGroupContent> im
 //            return new SymbolGroupDataProviderFolderNode(group);
 
         switch (group.getTypeName()) {
-//        case LOCAL_DATA_PROVIDER:
-//            return new SymbolGroupLocalDataProviderNode(group);
-//        case DATA_PROVIDER:
-//            return new SymbolGroupDataProviderNode(group);
-//        case DATA_PROVIDER_FOLDER:
-//            return new SymbolGroupDataProviderFolderNode(group);
+            case "SYMBOL":
+                return new SymbolNode((Symbol) symbol.get());
+        case "DATA_PROVIDER":
+            return new SymbolGroupDataProviderNode(context, group);
+        case "DATA_PROVIDER_FOLDER":
+            return new SymbolGroupDataProviderFolderNode(context, group);
 //        case CLOSED_FOLDER:
 //            return new SymbolGroupClosedFolderNode(group);
         case "FOLDER":
-        default:
-            return SymbolGroupNode.from(group, new SymbolGroupChildFactory(group));
+        //default:
+            return SymbolGroupNode.create(group, new SymbolGroupChildFactory(context, group));
         }
+        return null;
     }
 
     @Override

@@ -24,6 +24,11 @@ public abstract class AbstractDoubleSeries<DS extends AbstractDoubleSeries<DS>> 
     }
 
     @Override
+    public DS div(double y) {
+        return mapThread(DoubleSeriesSupport::divide, y);
+    }
+
+    @Override
     public DS div(DoubleSeries y) {
         return mapThread(DoubleSeriesSupport::divide, y);
     }
@@ -37,8 +42,17 @@ public abstract class AbstractDoubleSeries<DS extends AbstractDoubleSeries<DS>> 
     public abstract DS sma(int periods);
 
     @Override
+    public abstract DS ref(int periods);
+
+    @Override
     public abstract DS wilders(int periods);
 
     @Override
+    public abstract DS hhv(int periods);
+
+    @Override
     public abstract DS highestSince();
+
+    @Override
+    public abstract DS llv(int periods);
 }

@@ -1,22 +1,36 @@
 package one.chartsy.ui.chart;
 
+import one.chartsy.Candle;
 import one.chartsy.SymbolIdentity;
+import one.chartsy.SymbolResource;
 import one.chartsy.TimeFrame;
 import one.chartsy.core.event.ListenerList;
 import one.chartsy.data.CandleSeries;
+import one.chartsy.data.Series;
 import one.chartsy.ui.chart.components.ChartStackPanel;
 import one.chartsy.ui.chart.components.ChartToolbar;
 import one.chartsy.ui.chart.components.MainPanel;
+import one.chartsy.ui.chart.data.SymbolResourceLoaderTask;
 import one.chartsy.ui.chart.internal.ChartFrameDropTarget;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.netbeans.api.progress.ProgressHandle;
+import org.openide.DialogDisplayer;
+import org.openide.NotifyDescriptor;
+import org.openide.util.Exceptions;
 import org.openide.util.NbBundle;
 
 import javax.swing.*;
+import javax.swing.plaf.LayerUI;
 import java.awt.*;
+import java.awt.event.InputEvent;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
+import java.beans.PropertyChangeEvent;
 import java.lang.reflect.InvocationTargetException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class ChartFrame extends JPanel implements ChartContext, MouseWheelListener {
 
@@ -182,6 +196,10 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
 
     @Override
     public void addNotify() {
+        ChartData chartData = getChartData();
+        if (chartData.getDataset() == null)
+            datasetLoading(chartData.getSymbol(), chartData.getTimeFrame());
+
         initComponents();
         super.addNotify();
     }
@@ -317,7 +335,203 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
     }
 
     private void datasetLoading(SymbolIdentity newSymbol, TimeFrame timeFrame) {
-        throw new UnsupportedOperationException();
+        datasetLoading(SymbolResource.of(newSymbol, timeFrame));
+    }
+
+    private volatile ChartHistoryEntry previousChart;
+    private final AtomicReference<CompletableFuture<Series<Candle>>> activeLoader = new AtomicReference<>();
+
+    protected void datasetLoading(SymbolResource<Candle> resource) {
+        // start a parallel data loading task, as soon as possible
+        var provider = getChartData().getDataProvider();
+        var task = new SymbolResourceLoaderTask<>(provider, resource);
+        activeLoader.set(task);
+        ForkJoinPool.commonPool().execute(task);
+
+        // remember currently opened Symbol, TimeFrame and Quotes
+        if (chartData.hasDataset()) {
+            CandleSeries oldQuotes = chartData.getDataset();
+            previousChart = new ChartHistoryEntry(resource.symbol(), resource.timeFrame());
+            //previousData = new SoftReference<>(oldQuotes);
+        }
+        history.actionPerformed(new ChartHistoryEntry(resource.symbol(), resource.timeFrame()));
+
+        // enable the wait layer on the chart frame
+        JLabel loadingLabel = createDatasetLoadingLabel(resource.symbol());
+        chartLayer.setUI(new WaitLayerUI(loadingLabel));
+
+        // start a progress indicator
+        ProgressHandle handle = ProgressHandle.createHandle(loadingLabel.getText());
+        handle.start();
+        handle.switchToIndeterminate();
+
+        task.whenCompleteAsync((quotes, exception) -> {
+            handle.finish();
+            if (activeLoader.get() == task) {
+                if (quotes != null) {
+                    datasetLoaded(quotes);
+                } else {
+                    datasetLoadingFailed(resource.symbol(), exception);
+                }
+                revalidate();
+                repaint();
+            }
+        }, /*using Executor:*/SwingUtilities::invokeLater);
+    }
+
+    static class WaitLayerUI extends LayerUI<JComponent> {
+        private final JLabel label;
+
+        public WaitLayerUI(JLabel label) {
+            this.label = label;
+        }
+
+        @Override
+        public void applyPropertyChange(PropertyChangeEvent event, JLayer<? extends JComponent> layer) {
+            if ("datasetLoading.text".equals(event.getPropertyName()))
+                label.setText((String) event.getNewValue());
+        }
+
+        @Override
+        public void eventDispatched(AWTEvent e, JLayer<? extends JComponent> l) {
+            if (e instanceof InputEvent)
+                ((InputEvent) e).consume();
+        }
+
+        @Override
+        public void installUI(JComponent c) {
+            super.installUI(c);
+
+            @SuppressWarnings("unchecked")
+            JLayer<JComponent> layer = (JLayer<JComponent>) c;
+            layer.setLayerEventMask(~0);
+            if (!(layer.getGlassPane().getLayout() instanceof BorderLayout))
+                layer.getGlassPane().setLayout(new BorderLayout());
+            layer.getGlassPane().add(label);
+            layer.getGlassPane().setVisible(true);
+        }
+
+        @Override
+        public void uninstallUI(JComponent c) {
+            super.uninstallUI(c);
+
+            @SuppressWarnings("unchecked")
+            JLayer<JComponent> layer = (JLayer<JComponent>) c;
+            layer.setLayerEventMask(0);
+            layer.getGlassPane().setVisible(false);
+            layer.getGlassPane().removeAll();
+        }
+    }
+
+    private JLabel createDatasetLoadingLabel(SymbolIdentity symbol) {
+        String text = NbBundle.getMessage(ChartFrame.class, "CF.loading", symbol.name());
+        // TODO
+        Icon icon = null;//ResourcesUtils.getDataManagementIcon();
+
+        @SuppressWarnings("serial")
+        JLabel label = new JLabel(text, icon, SwingConstants.CENTER) {
+
+            @Override
+            public void paint(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, .6f));
+                g2.setPaint(Color.WHITE);
+                g2.fillRect(0, 0, getWidth(), getHeight());
+                g2.dispose();
+                super.paint(g);
+            }
+        };
+        label.setHorizontalTextPosition(SwingConstants.CENTER);
+        label.setVerticalTextPosition(SwingConstants.BOTTOM);
+        label.setForeground(new Color(0x933EC5));
+        label.setBackground(Color.WHITE);
+        label.setFont(new Font("Aller", Font.BOLD, 17));
+        return label;
+    }
+
+    /**
+     * Called when the data for this chart has been successfully loaded.
+     *
+     * @param quotes
+     *            the quotes for the chart
+     */
+    protected void datasetLoaded(Series<Candle> quotes) {
+        SymbolIdentity symbol = quotes.getResource().symbol();
+        try {
+            TimeFrame timeFrame = quotes.getResource().timeFrame();
+            boolean symbolChanged = !symbol.equals(chartData.getSymbol());
+
+            // notify listeners about newly loaded dataset
+            chartFrameListeners.fire().datasetChanged(CandleSeries.from(quotes));
+            //remove(loading);
+            boolean firstLaunch;
+            if (firstLaunch = (mainPanel == null))
+                initComponents();
+            else {
+                setName(NbBundle.getMessage(ChartFrame.class, "ChartFrame.name", symbol.name()));
+                resetHorizontalScrollBar();
+                chartToolbar.updateToolbar();
+            }
+            chartLayer.setUI(new LayerUI<>());
+            if (firstLaunch || previousChart == null || !symbol.equals(previousChart.getSymbol()))
+                fireOnChart();
+
+        } catch (Exception e) {
+            datasetLoadingFailed(symbol, e);
+        }
+    }
+
+    protected void fireOnChart() {
+        ChartCallbackRegistry callbacks = chartData.getChartCallbacks();
+        if (callbacks != null)
+            callbacks.fireOnChart(this);
+    }
+
+    void datasetLoadingFailed(SymbolIdentity symbol, Throwable x) {
+        Exceptions.printStackTrace(x);
+
+        String name = symbol.name();
+        String text = NbBundle.getMessage(ChartFrame.class, "datasetLoadingFailed", name);
+        chartLayer.propertyChange(new PropertyChangeEvent(this, "datasetLoading.text", null, text));
+
+        if (previousChart != null)
+            datasetLoadingFailedQ(symbol);
+    }
+
+    private void datasetLoadingFailedQ(SymbolIdentity symbol) {
+        NotifyDescriptor descriptor = new NotifyDescriptor.Confirmation("");
+        descriptor.setTitle("No Data");
+        descriptor.setMessage(NbBundle.getMessage(ChartFrame.class, "CF.loadingFailedQ", symbol.name()));
+        descriptor.setOptionType(NotifyDescriptor.YES_NO_OPTION);
+
+        Object result = DialogDisplayer.getDefault().notify(descriptor);
+        if (result.equals(NotifyDescriptor.YES_OPTION)) {
+
+            SymbolIdentity oldSymbol = previousChart.getSymbol();
+            if (!oldSymbol.equals(chartData.getSymbol())) {
+                chartData.setSymbol(oldSymbol);
+                chartFrameListeners.fire().symbolChanged(oldSymbol);
+            }
+
+            TimeFrame oldTimeFrame = previousChart.getTimeFrame();
+            if (!oldTimeFrame.equals(chartData.getTimeFrame())) {
+                chartData.setTimeFrame(oldTimeFrame);
+                chartFrameListeners.fire().timeFrameChanged(oldTimeFrame);
+            }
+
+            resetHorizontalScrollBar();
+            chartLayer.setUI(new LayerUI<>());
+        }
+    }
+
+    public void resetHorizontalScrollBar() {
+        chartData.setPeriod(-1);
+        chartData.setLast(-1);
+        chartData.calculate(this);
+        int last = getChartData().getLast();
+        int items = getChartData().getPeriod();
+        scrollBar.setValues(last - items, items, 0, last);
+        scrollBar.setBlockIncrement(Math.max(1, items - 1));
     }
 
     protected static void createAndShowGUI() {

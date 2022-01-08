@@ -12,7 +12,7 @@ import one.chartsy.data.DoubleSeries;
 import one.chartsy.data.packed.PackedCandleSeries;
 import one.chartsy.finance.FinancialIndicators;
 import one.chartsy.finance.FinancialIndicators.Sfora.Properties;
-import one.chartsy.ui.chart.StrokeFactory;
+import one.chartsy.ui.chart.BasicStrokes;
 import org.openide.util.lookup.ServiceProvider;
 
 import one.chartsy.ui.chart.AbstractOverlay;
@@ -50,7 +50,7 @@ public class Sfora extends AbstractOverlay {
     @Parameter(name = "Color")
     public Color color = new Color(175, 238, 238);
     @Parameter(name = "Stroke")
-    public Stroke stroke = StrokeFactory.THIN_SOLID;
+    public Stroke stroke = BasicStrokes.THIN_SOLID;
     @Parameter(name = "Number of Envelops")
     public int numberOfEnvelops = 8;
     @Parameter(name = "Slowdown Period")

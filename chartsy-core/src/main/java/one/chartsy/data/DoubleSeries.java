@@ -54,6 +54,16 @@ public interface DoubleSeries extends TimeSeriesAlike {
     DoubleSeries mul(double y);
 
     /**
+     * Divides the series by the specified constant value.
+     *
+     * @param y
+     *            the divisor
+     * @return the new time series representing result of division {@code this}
+     *         by {@code y}
+     */
+    DoubleSeries div(double y);
+
+    /**
      * Performs an element-wise division of {@code this} and {@code y} series.
      *
      * @param y
@@ -85,6 +95,14 @@ public interface DoubleSeries extends TimeSeriesAlike {
     DoubleSeries sma(int periods);
 
     /**
+     * Gives a new series shifted <i>n-periods</i> backwards.
+     *
+     * @param periods the number of data points to shift by
+     * @return the shifted {@code DoubleSeries}
+     */
+    DoubleSeries ref(int periods);
+
+    /**
      * Computes the <i>Wilders Moving Average</i> of the price series.
      * <p>
      * The Wilders MA was developed by Welles Wilder.<br>
@@ -102,7 +120,51 @@ public interface DoubleSeries extends TimeSeriesAlike {
      */
     DoubleSeries wilders(int periods);
 
+    /**
+     * The moving (aka running) window maximum calculated over the
+     * {@code Series}.
+     * <p>
+     * The method calculates the highest value in the series over the preceding
+     * {@code periods}, {@code periods} includes the current bar. For example
+     * the formula {@code series.hhv(2)} returns the highest values over current
+     * and previous bar; the formula {@code quotes.closes().hhv(5)} returns the
+     * highest closing prices over the preceding 5 bars; {@code series.hhv(1)}
+     * is equivalent to {@code series} itself.
+     * <p>
+     * Relative speed is O(n), where {@code n} is length of the input
+     * {@code Series}.
+     *
+     * @param periods
+     *            width of a moving window, must be a positive integer
+     * @return a moving maximum result
+     * @throws IllegalArgumentException
+     *             when the {@code periods} argument is not positive
+     */
+    DoubleSeries hhv(int periods);
+
     DoubleSeries highestSince();
+
+    /**
+     * The moving (aka running) window minimum calculated over this
+     * {@code Series}.
+     * <p>
+     * The method calculates the lowest value in the series over the preceding
+     * {@code periods}, {@code periods} includes the current bar. For example
+     * the formula {@code series.llv(2)} returns the lowest values over current
+     * and previous bar; the formula {@code quotes.closes().llv(5)} returns the
+     * lowest closing prices over the preceding 5 bars; {@code series.llv(1)}
+     * is equivalent to {@code series} itself.
+     * <p>
+     * Relative speed is O(n), where {@code n} is length of the input
+     * {@code Series}.
+     *
+     * @param periods
+     *            width of a moving window, must be a positive integer
+     * @return a moving minimum result
+     * @throws IllegalArgumentException
+     *             when the {@code periods} argument is not positive
+     */
+    DoubleSeries llv(int periods);
 
     /**
      * Applies the binary function to each element of both this and the other

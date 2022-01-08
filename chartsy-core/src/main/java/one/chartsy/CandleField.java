@@ -2,7 +2,7 @@ package one.chartsy;
 
 import java.util.function.ToDoubleFunction;
 
-public enum CandleField implements FinancialField {
+public enum CandleField implements FinancialField, ToDoubleFunction<Candle> {
     TIME (Candle::getTime),
     OPEN (Candle::open),
     HIGH (Candle::high),
@@ -17,6 +17,11 @@ public enum CandleField implements FinancialField {
     }
 
     private final ToDoubleFunction<Candle> doubleValue;
+
+    @Override
+    public double applyAsDouble(Candle c) {
+        return getFrom(c);
+    }
 
     public double getFrom(Candle c) {
         return doubleValue.applyAsDouble(c);

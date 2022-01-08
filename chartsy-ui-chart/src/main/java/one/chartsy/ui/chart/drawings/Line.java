@@ -35,7 +35,7 @@ public class Line extends Annotation implements PolyPointsAware {
     /** The line color. */
     public @Parameter(name = "color") Color color = Color.RED;
     /** The line style. */
-    public @Parameter(name = "style") Stroke style = StrokeFactory.ULTRATHIN_SOLID;
+    public @Parameter(name = "style") Stroke style = BasicStrokes.ULTRATHIN_SOLID;
     /** The line start anchor. */
     public @Parameter(name = "startAnchor")
     ChartPoint startAnchor = new ChartPoint();

@@ -5,13 +5,16 @@ package one.chartsy.ui.chart;
 
 import java.awt.BasicStroke;
 import java.awt.Stroke;
+import java.lang.reflect.Modifier;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
 /**
  * 
  * @author Mariusz Bernacki
- * @author Mariusz Bernacki
  */
-public final class StrokeFactory {
+public abstract class BasicStrokes {
     
     /** The solid line strokes. */
     public static final Stroke ULTRATHIN_SOLID = new BasicStroke(1f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL);
@@ -62,8 +65,34 @@ public final class StrokeFactory {
             THICK_DOT_DASH,
             ULTRATHICK_DOT_DASH
     };
-    
-    private StrokeFactory() {
+
+    private static Map<BasicStroke, String> strokeNames = new HashMap<>();
+    private static Map<String, BasicStroke> strokeMap = new HashMap<>();
+    static {
+        for (var field : BasicStrokes.class.getFields()) {
+            if (Modifier.isStatic(field.getModifiers()) && Stroke.class.isAssignableFrom(field.getType())) {
+                try {
+                    String strokeName = field.getName();
+                    BasicStroke stroke = (BasicStroke) field.get(null);
+
+                    strokeMap.put(strokeName, stroke);
+                    strokeNames.put(stroke, strokeName);
+                } catch (Exception e) {
+                    throw new InternalError("BasicStrokes init failed", e);
+                }
+            }
+        }
+    }
+
+    public static Optional<String> getStrokeName(Stroke stroke) {
+        return Optional.ofNullable(strokeNames.get(stroke));
+    }
+
+    public static BasicStroke getStroke(String name) {
+        return strokeMap.get(name);
+    }
+
+    private BasicStrokes() {
     }
     
     public static Stroke[] getStrokes() {

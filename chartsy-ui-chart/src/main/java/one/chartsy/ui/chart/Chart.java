@@ -3,6 +3,7 @@
  * See the file "LICENSE.txt" for the full license governing this code. */
 package one.chartsy.ui.chart;
 
+import one.chartsy.core.Named;
 import one.chartsy.data.CandleSeries;
 
 import java.awt.Graphics2D;
@@ -14,13 +15,14 @@ import java.awt.Graphics2D;
  * 
  * @author Mariusz Bernacki
  */
-public interface Chart {
+public interface Chart extends Named {
     
     /**
      * Gives the human-readable name describing this chart type implementation.
      * 
      * @return the chart type name
      */
+    @Override
     String getName();
     
     /**

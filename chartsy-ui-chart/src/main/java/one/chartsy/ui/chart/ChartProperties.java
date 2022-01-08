@@ -107,21 +107,21 @@ public class ChartProperties {
     
     public void setAxisStrokeIndex(int i) 
     {
-        if (!StrokeFactory.isStrokeIndex(i))
+        if (!BasicStrokes.isStrokeIndex(i))
             return;
         axisStrokeIndex = i;
     }
     
     public Stroke getAxisStroke() 
     {
-        return StrokeFactory.getStroke(axisStrokeIndex);
+        return BasicStrokes.getStroke(axisStrokeIndex);
     }
     
     public void setAxisStroke(Stroke s)
     {
         if (s == null)
             return;
-        axisStrokeIndex = StrokeFactory.getStrokeIndex(s);
+        axisStrokeIndex = BasicStrokes.getStrokeIndex(s);
     }
     
     public boolean getAxisLogarithmicFlag() 
@@ -165,21 +165,21 @@ public class ChartProperties {
     
     public void setBarStrokeIndex(int i)
     {
-        if (!StrokeFactory.isStrokeIndex(i))
+        if (!BasicStrokes.isStrokeIndex(i))
             return;
         barStrokeIndex = i;
     }
     
     public Stroke getBarStroke() 
     {
-        return StrokeFactory.getStroke(barStrokeIndex);
+        return BasicStrokes.getStroke(barStrokeIndex);
     }
     
     public void setBarStroke(Stroke s) 
     {
         if (s == null)
             return;
-        barStrokeIndex = StrokeFactory.getStrokeIndex(s);
+        barStrokeIndex = BasicStrokes.getStrokeIndex(s);
     }
     
     public boolean getBarVisibility() 
@@ -255,21 +255,21 @@ public class ChartProperties {
     
     public void setGridHorizontalStrokeIndex(int i)
     {
-        if (!StrokeFactory.isStrokeIndex(i))
+        if (!BasicStrokes.isStrokeIndex(i))
             return;
         gridHorizontalStrokeIndex = i;
     }
     
     public Stroke getGridHorizontalStroke() 
     {
-        return StrokeFactory.getStroke(gridHorizontalStrokeIndex);
+        return BasicStrokes.getStroke(gridHorizontalStrokeIndex);
     }
     
     public void setGridHorizontalStroke(Stroke s) 
     {
         if (s == null)
             return;
-        gridHorizontalStrokeIndex = StrokeFactory.getStrokeIndex(s);
+        gridHorizontalStrokeIndex = BasicStrokes.getStrokeIndex(s);
     }
     
     public boolean getGridHorizontalVisibility() 
@@ -301,20 +301,20 @@ public class ChartProperties {
     
     public void setGridVerticalStrokeIndex(int i)
     {
-        if (!StrokeFactory.isStrokeIndex(i))
+        if (!BasicStrokes.isStrokeIndex(i))
             return;
         gridVerticalStrokeIndex = i;
     }
     
     public Stroke getGridVerticalStroke() {
-        return StrokeFactory.getStroke(gridVerticalStrokeIndex);
+        return BasicStrokes.getStroke(gridVerticalStrokeIndex);
     }
     
     public void setGridVerticalStroke(Stroke s) 
     {
         if (s == null)
             return;
-        gridVerticalStrokeIndex = StrokeFactory.getStrokeIndex(s);
+        gridVerticalStrokeIndex = BasicStrokes.getStrokeIndex(s);
     }
     
     public boolean getGridVerticalVisibility() 

@@ -11,7 +11,6 @@ import one.chartsy.Candle;
 import one.chartsy.core.Range;
 import one.chartsy.ui.chart.*;
 import one.chartsy.ui.chart.data.VisibleCandles;
-import org.openide.util.NbBundle;
 import org.openide.util.lookup.ServiceProvider;
 
 /**
@@ -25,7 +24,7 @@ public class OHLC implements Chart {
     
     @Override
     public String getName() {
-        return NbBundle.getMessage(getClass(), "OHLC");
+        return "OHLC";
     }
     
     @Override

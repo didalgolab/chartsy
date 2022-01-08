@@ -1,4 +1,4 @@
-/* Copyright 2016 by Mariusz Bernacki. PROPRIETARY and CONFIDENTIAL content.
+/* Copyright 2022 by Mariusz Bernacki. PROPRIETARY and CONFIDENTIAL content.
  * Unauthorized copying of this file, via any medium is strictly prohibited.
  * See the file "LICENSE.txt" for the full license governing this code. */
 package one.chartsy.ui.chart.plot;
@@ -10,7 +10,7 @@ import java.awt.geom.GeneralPath;
 import java.awt.geom.Point2D;
 
 import one.chartsy.core.Range;
-import one.chartsy.data.DoubleDataset;
+import one.chartsy.data.DoubleSeries;
 import one.chartsy.ui.chart.ChartContext;
 import one.chartsy.ui.chart.ChartData;
 import one.chartsy.ui.chart.data.VisibleValues;
@@ -21,8 +21,8 @@ public class FillPlot extends AbstractTimeSeriesPlot {
     private final boolean upper;
     
     
-    public FillPlot(DoubleDataset values, double f, double t, boolean upper, Color color) {
-        super(values, color);
+    public FillPlot(DoubleSeries values, double f, double t, boolean upper, Color color) {
+        super(values.values(), color);
         this.f = f;
         this.t = t;
         this.upper = upper;

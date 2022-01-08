@@ -1,9 +1,15 @@
 package one.chartsy.persistence.domain.model;
 
-import one.chartsy.persistence.domain.SymbolGroupData;
-import org.springframework.data.repository.CrudRepository;
+import one.chartsy.SymbolGroupContentRepository;
+import one.chartsy.persistence.domain.SymbolGroupAggregateData;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
-public interface SymbolGroupRepository extends CrudRepository<SymbolGroupData, Long> {
+import java.util.List;
 
-    SymbolGroupData findById(long id);
+@Repository
+public interface SymbolGroupRepository extends JpaRepository<SymbolGroupAggregateData, Long>, SymbolGroupContentRepository {
+
+    @Override
+    List<SymbolGroupAggregateData> findByParentGroupId(Long parentId);
 }

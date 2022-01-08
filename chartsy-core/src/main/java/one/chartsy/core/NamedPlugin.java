@@ -2,7 +2,7 @@ package one.chartsy.core;
 
 import one.chartsy.core.commons.AbstractHandleableCloseable;
 
-public abstract class NamedPlugin<T extends NamedPlugin<T>> extends AbstractHandleableCloseable<T> {
+public abstract class NamedPlugin<T extends NamedPlugin<T>> extends AbstractHandleableCloseable<T> implements Named {
 
     private final String name;
 
@@ -12,6 +12,7 @@ public abstract class NamedPlugin<T extends NamedPlugin<T>> extends AbstractHand
         this.name = name;
     }
 
+    @Override
     public String getName() {
         return name;
     }

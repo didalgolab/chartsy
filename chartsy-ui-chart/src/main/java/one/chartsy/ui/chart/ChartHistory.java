@@ -48,7 +48,7 @@ public class ChartHistory implements java.io.Serializable {
      *            the time symbols time frame to be used when displaying any
      *            symbol from this {@code SymbolStack} on a chart
      */
-    public ChartHistory(List<SymbolIdentity> symbols, TimeFrame timeFrame) {
+    public ChartHistory(List<? extends SymbolIdentity> symbols, TimeFrame timeFrame) {
         tracksHistory = false;
         for (int i = 0; i < symbols.size(); i++)
             elements.add(new ChartHistoryEntry(symbols.get(i), timeFrame));

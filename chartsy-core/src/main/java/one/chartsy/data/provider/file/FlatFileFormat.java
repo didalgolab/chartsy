@@ -35,6 +35,10 @@ public class FlatFileFormat {
             .skipFirstLines(1)
             .build();
 
+    public FlatFileDataProvider newDataProvider(String file) throws IOException {
+        return newDataProvider(Path.of(file));
+    }
+
     public FlatFileDataProvider newDataProvider(Path file) throws IOException {
         return new FlatFileDataProvider(this, file);
     }

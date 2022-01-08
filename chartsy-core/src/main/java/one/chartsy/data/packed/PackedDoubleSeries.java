@@ -2,7 +2,6 @@ package one.chartsy.data.packed;
 
 import one.chartsy.data.DoubleDataset;
 import one.chartsy.data.DoubleSeries;
-import one.chartsy.data.Series;
 import one.chartsy.time.Timeline;
 
 import java.util.function.DoubleBinaryOperator;
@@ -63,6 +62,11 @@ public class PackedDoubleSeries extends AbstractDoubleSeries<PackedDoubleSeries>
         for (int i = r.length-1; i >= 0; i--)
             r[i] = f.applyAsDouble(get(i), other.get(i));
         return DoubleSeries.of(r, getTimeline());
+    }
+
+    @Override
+    public PackedDoubleSeries ref(int periods) {
+        return new PackedDoubleSeries(getTimeline(), values().ref(periods));
     }
 
     private static void requireSameTimeline(DoubleSeries a, DoubleSeries b) {
@@ -131,6 +135,45 @@ public class PackedDoubleSeries extends AbstractDoubleSeries<PackedDoubleSeries>
     }
 
     @Override
+    public PackedDoubleSeries hhv(int periods) {
+        // check if periods argument is valid
+        if (periods <= 0)
+            throw new IllegalArgumentException("The periods argument must be positive, but was " + periods);
+        if (periods == 1)
+            return this;
+
+        int newLength = length() - periods + 1;
+        if (newLength <= 0)
+            return empty(getTimeline());
+
+        // create deque having length = 2^k
+        int mask = Integer.highestOneBit(periods)*2 - 1;
+        int[] window = new int[mask + 1];
+        double[] z = new double[newLength];
+
+        // pre-fill the window array
+        int first = 0, last = 0;
+        int i = length(), j = z.length;
+        while (--i >= j - 1) {
+            while (last > 0 && get(window[last - 1]) <= get(i))
+                last--;
+            window[last++] = i;
+        }
+        z[--j] = get(window[first]);
+
+        // main algorithm loop
+        while (i >= 0) {
+            while (window[first & mask] >= i + periods)
+                first++;
+            while (first != last && get(window[(last - 1) & mask]) <= get(i))
+                last--;
+            window[last++ & mask] = i--;
+            z[--j] = get(window[first & mask]);
+        }
+        return DoubleSeries.of(z, getTimeline());
+    }
+
+    @Override
     public PackedDoubleSeries highestSince() {
         double[] result = new double[length()];
 
@@ -144,6 +187,45 @@ public class PackedDoubleSeries extends AbstractDoubleSeries<PackedDoubleSeries>
             result[barNo] = index - barNo;
         }
         return DoubleSeries.of(result, getTimeline());
+    }
+
+    @Override
+    public PackedDoubleSeries llv(int periods) {
+        // check if periods argument is valid
+        if (periods <= 0)
+            throw new IllegalArgumentException("\"periods\" must be positive");
+        if (periods == 1)
+            return this;
+
+        int length = length();
+        if (length - periods + 1 <= 0)
+            return empty(getTimeline());
+
+        // create deque having length = 2^k
+        int mask = Integer.highestOneBit(periods)*2 - 1;
+        int[] window = new int[mask + 1];
+        double[] z = new double[length - periods + 1];
+
+        // pre-fill the window array
+        int first = 0, last = 0;
+        int i = length, j = z.length;
+        while (--i >= j - 1) {
+            while (last > 0 && get(window[last - 1]) >= get(i))
+                last--;
+            window[last++] = i;
+        }
+        z[--j] = get(window[first]);
+
+        // main algorithm loop
+        while (i >= 0) {
+            while (window[first & mask] >= i + periods)
+                first++;
+            while (first != last && get(window[(last - 1) & mask]) >= get(i))
+                last--;
+            window[last++ & mask] = i--;
+            z[--j] = get(window[first & mask]);
+        }
+        return DoubleSeries.of(z, getTimeline());
     }
 
     @Override

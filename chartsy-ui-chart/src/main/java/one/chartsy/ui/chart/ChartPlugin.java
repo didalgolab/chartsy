@@ -3,7 +3,6 @@
  * See the file "LICENSE.txt" for the full license governing this code. */
 package one.chartsy.ui.chart;
 
-import java.beans.PropertyEditor;
 import java.io.Serial;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -11,9 +10,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import one.chartsy.core.NamedPlugin;
-import one.chartsy.ui.chart.internal.PropertyEditorEnvironment;
+import one.chartsy.core.ObjectInstantiator;
 
-public abstract class ChartPlugin<T extends ChartPlugin<T>> extends NamedPlugin<T> implements ChartFrameListener {
+public abstract class ChartPlugin<T extends ChartPlugin<T>> extends NamedPlugin<T> implements ChartFrameListener, ObjectInstantiator<T> {
 
     @Retention(RetentionPolicy.RUNTIME)
     public @interface Parameter {
@@ -36,8 +35,6 @@ public abstract class ChartPlugin<T extends ChartPlugin<T>> extends NamedPlugin<
 
     public abstract String getLabel();
 
-    public abstract T newInstance();
-    
     protected static Map<String, Plot> createPlotsMap() {
         return new LinkedHashMap<>() {
             @Serial

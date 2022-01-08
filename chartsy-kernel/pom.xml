@@ -18,6 +18,7 @@
                     <codeNameBase>one.chartsy.kernel</codeNameBase>
                     <publicPackages>
                         <publicPackage>one.chartsy.kernel.*</publicPackage>
+                        <publicPackage>one.chartsy.persistence.domain.*</publicPackage>
                         <publicPackage>org.apache.commons.lang3.*</publicPackage>
                         <publicPackage>org.apache.commons.logging.*</publicPackage>
                         <publicPackage>org.apache.commons.math3.*</publicPackage>

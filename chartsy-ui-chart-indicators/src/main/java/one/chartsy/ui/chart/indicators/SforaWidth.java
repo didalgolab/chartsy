@@ -9,7 +9,7 @@ import one.chartsy.finance.FinancialIndicators;
 import one.chartsy.ui.chart.AbstractIndicator;
 import one.chartsy.ui.chart.ChartContext;
 import one.chartsy.ui.chart.Indicator;
-import one.chartsy.ui.chart.StrokeFactory;
+import one.chartsy.ui.chart.BasicStrokes;
 import one.chartsy.ui.chart.data.VisualRange;
 import one.chartsy.ui.chart.plot.LinePlot;
 
@@ -38,7 +38,7 @@ public class SforaWidth extends AbstractIndicator {
     public Color atrColor = Color.red;
     
     @Parameter(name = "Line Style")
-    public Stroke style = StrokeFactory.DEFAULT;
+    public Stroke style = BasicStrokes.DEFAULT;
     
     @Parameter(name = "Number of Envelops")
     public int numberOfEnvelops = 8;
@@ -76,9 +76,9 @@ public class SforaWidth extends AbstractIndicator {
             DoubleSeries atr2 = atr1.mul(1.1);
             addPlot("ATR%60 L", new LinePlot(atr1, atrColor, style));
             addPlot("ATR%60 H", new LinePlot(atr2, atrColor, style));
-            addPlot("ATR%60 /2", new LinePlot(atr1.mul(0.5), atrColor, StrokeFactory.DOTTED));
-            addPlot("ATR%60 *2", new LinePlot(atr1.mul(2.0), atrColor, StrokeFactory.DOTTED));
-            addPlot("ATR%60 2/2", new LinePlot(quotes.closes().wilders(atrPeriods).sma(atrPeriods).mul(0.5), Color.BLACK, StrokeFactory.DOTTED));
+            addPlot("ATR%60 /2", new LinePlot(atr1.mul(0.5), atrColor, BasicStrokes.DOTTED));
+            addPlot("ATR%60 *2", new LinePlot(atr1.mul(2.0), atrColor, BasicStrokes.DOTTED));
+            addPlot("ATR%60 2/2", new LinePlot(quotes.closes().wilders(atrPeriods).sma(atrPeriods).mul(0.5), Color.BLACK, BasicStrokes.DOTTED));
 
             DoubleMinMaxList bands = FinancialIndicators.Sfora.bands(quotes, new FinancialIndicators.Sfora.Properties(framaPeriod, slowdownPeriod, numberOfEnvelops));
             DoubleSeries width = bands.getMaximum().sub(bands.getMinimum());

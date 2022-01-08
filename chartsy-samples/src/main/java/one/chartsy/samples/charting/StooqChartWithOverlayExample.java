@@ -36,7 +36,10 @@ public class StooqChartWithOverlayExample {
         SwingUtilities.invokeAndWait(() -> {
             ChartData chartData = new ChartData();
             chartData.setChart(new CandlestickChart());
-            chartData.setDataset(series);
+            //chartData.setDataset(series);
+            chartData.setDataProvider(dataProvider);
+            chartData.setSymbol(series.getResource().symbol());
+            chartData.setTimeFrame(series.getTimeFrame());
 
             ChartTemplate template = new ChartTemplate("Default");
             template.addOverlay(new Sfora());

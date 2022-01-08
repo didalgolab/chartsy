@@ -1,8 +1,12 @@
 package one.chartsy;
 
 import one.chartsy.data.provider.DataProvider;
+import one.chartsy.data.provider.DataProviderLoader;
 
-public class Symbol implements SymbolIdentity {
+import java.util.List;
+import java.util.Optional;
+
+public class Symbol implements SymbolIdentity, SymbolGroupContent {
     private String name;
     private AssetType type;
     private String exchange;
@@ -64,5 +68,30 @@ public class Symbol implements SymbolIdentity {
 
     public double getSpread() {
         return spread;
+    }
+
+    @Override
+    public Long getId() {
+        return null;
+    }
+
+    @Override
+    public String getName() {
+        return name;
+    }
+
+    @Override
+    public String getTypeName() {
+        return "SYMBOL";
+    }
+
+    @Override
+    public Optional<SymbolIdentity> getSymbol() {
+        return Optional.of(this);
+    }
+
+    @Override
+    public List<SymbolGroupContent> getContent(SymbolGroupContentRepository repo, DataProviderLoader loader) {
+        return List.of();
     }
 }

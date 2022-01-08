@@ -34,7 +34,7 @@ public abstract class AbstractRectangularShape extends Annotation implements Rec
     @Parameter(name = "Inside Alpha", stereotype = ChartPlugin.Stereotype.TRANSPARENCY)
     public int insideAlpha = 25;
     @Parameter(name = "Style")
-    public transient Stroke style = StrokeFactory.ULTRATHIN_SOLID;
+    public transient Stroke style = BasicStrokes.ULTRATHIN_SOLID;
     
     private final Color fillColor = ColorServices.getDefault().getTransparentColor(color, insideAlpha);
     

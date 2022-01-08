@@ -32,7 +32,7 @@ public class PolynomialCurve extends AbstractRectangularShape {
     @Parameter(name = "Inside Alpha", stereotype = ChartPlugin.Stereotype.TRANSPARENCY)
     public int insideAlpha = 25;
     @Parameter(name = "Style")
-    public Stroke style = StrokeFactory.ULTRATHIN_SOLID;
+    public Stroke style = BasicStrokes.ULTRATHIN_SOLID;
     
     /** The polynomial coefficients to be drawn. */
     protected double[] polynomial = new double[0];

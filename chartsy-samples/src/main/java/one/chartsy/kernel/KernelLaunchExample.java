@@ -1,7 +1,9 @@
 package one.chartsy.kernel;
 
 import one.chartsy.persistence.domain.model.SymbolGroupRepository;
-import one.chartsy.persistence.domain.SymbolGroupData;
+import one.chartsy.persistence.domain.SymbolGroupAggregateData;
+import org.springframework.expression.ExpressionParser;
+import org.springframework.scheduling.TaskScheduler;
 
 public class KernelLaunchExample {
 
@@ -10,11 +12,18 @@ public class KernelLaunchExample {
         System.out.println(kernel);
         var repo = kernel.getApplicationContext().getBean(SymbolGroupRepository.class);
         System.out.println("> " + repo);
-        SymbolGroupData book = new SymbolGroupData();
+        SymbolGroupAggregateData book = new SymbolGroupAggregateData();
         book = repo.save(book);
         System.out.println(">ID: " + book.getId());
+        System.out.println(kernel.getApplicationContext().getBean(ExpressionParser.class));
+        System.out.println(kernel.getApplicationContext().getBean(TaskScheduler.class));
 
-        Thread.sleep(1000000000L);
+        System.out.println(kernel.getApplicationContext().getBean("Candlestick Chart"));
+        System.out.println(kernel.getApplicationContext().getBean("candlestickChart"));
+
+
+        System.out.println("\n\n");
+        //Thread.sleep(1000000000L);
         //SpringFactoriesLoader.loadFactories(EnableAutoConfiguration.class, null);
     }
 }
