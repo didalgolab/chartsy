@@ -4,11 +4,15 @@
 package one.chartsy.ui.chart.components;
 
 import java.io.IOException;
+import java.util.List;
 
 import javax.swing.text.JTextComponent;
 
 import one.chartsy.Symbol;
 import one.chartsy.data.provider.DataProvider;
+import one.chartsy.data.provider.SymbolProposalProvider;
+import one.chartsy.ui.chart.SysParams;
+import org.apache.commons.lang3.StringUtils;
 import org.openide.nodes.AbstractNode;
 import org.openide.nodes.Children;
 
@@ -18,7 +22,7 @@ import org.openide.nodes.Children;
  * @author Mariusz Bernacki
  * 
  */
-public class StockAutoCompleter extends AutoCompleter<StockAutoCompleter.Node> {
+public class SymbolAutoCompleter extends AutoCompleter<SymbolAutoCompleter.Node> {
     /** The data provider from which the suggestions are obtained. */
     private DataProvider dataProvider;
     
@@ -29,7 +33,7 @@ public class StockAutoCompleter extends AutoCompleter<StockAutoCompleter.Node> {
      * @param inputBox
      *            the text input box
      */
-    public StockAutoCompleter(JTextComponent inputBox) {
+    public SymbolAutoCompleter(JTextComponent inputBox) {
         super(inputBox);
     }
     
@@ -48,18 +52,19 @@ public class StockAutoCompleter extends AutoCompleter<StockAutoCompleter.Node> {
         String value = component.getText();
         if (!value.isEmpty()) {
             // retrieve symbol proposals from data provider
-            if (true)
-                throw new UnsupportedOperationException("TODO");
-            /*List<GenericSymbol> symbols = dataProvider.getProposals(value);
-            
-            // update model
-            if (symbols != null) {
-                int maxCount = Math.min(symbols.size(), SysParams.Numeric.AUTOCOMPLETE_MAXIMUM_ROW_COUNT.getValue().intValue());
-                Node[] nodes = new Node[maxCount];
-                for (int i = 0; i < nodes.length; i++)
-                    nodes[i] = new Node(symbols.get(i));
-                list.setListData(nodes);
-            }*/
+
+            SymbolProposalProvider proposalProvider = dataProvider.getLookup().lookup(SymbolProposalProvider.class);
+            if (proposalProvider != null) {
+                List<Symbol> symbols = proposalProvider.getProposals(value);
+                // update model
+                if (symbols != null) {
+                    int maxCount = Math.min(symbols.size(), SysParams.AUTOCOMPLETE_MAXIMUM_ROW_COUNT.intValue());
+                    Node[] nodes = new Node[maxCount];
+                    for (int i = 0; i < nodes.length; i++)
+                        nodes[i] = new Node(symbols.get(i));
+                    list.setListData(nodes);
+                }
+            }
         } else {
             list.setListData(new Node[0]);
         }
@@ -74,9 +79,11 @@ public class StockAutoCompleter extends AutoCompleter<StockAutoCompleter.Node> {
         }
     }
     
-    public static class Node extends AbstractNode {
+    public static class Node extends AbstractNode implements SelectionStateTransformable<Node> {
         /** The symbol information data associated with this node. */
         private final Symbol symbolInfo;
+        /** The flag indicating if the node is currently selected. */
+        private final boolean selected;
         
         
         /**
@@ -86,42 +93,60 @@ public class StockAutoCompleter extends AutoCompleter<StockAutoCompleter.Node> {
          *            the symbol information data
          */
         public Node(Symbol symbolInfo) {
+            this(symbolInfo, false);
+        }
+
+        protected Node(Symbol symbolInfo, boolean selected) {
             super(Children.LEAF);
             this.symbolInfo = symbolInfo;
+            this.selected = selected;
             setName(symbolInfo.name());
+        }
+
+        @Override
+        public Node getAsSelected() {
+            if (selected)
+                return this;
+            return new Node(symbolInfo, true);
+        }
+
+        protected void getRight(StringBuilder out) {
+            String displayName = symbolInfo.getDisplayName();
+            if (StringUtils.isEmpty(displayName))
+                return;
+
+            out.append(" - ");
+            if (!selected)
+                out.append("<font color='#4e9a06'>");
+            out.append(displayName);
+            if (!selected)
+                out.append("</font>");
         }
         
         protected void getLeft(StringBuilder out) {
-            String displayName = symbolInfo.getDisplayName();
-            if (displayName == null)
-                displayName = "";
-            
-            out.append("<font color='#4e9a06'>")
-            .append(displayName)
-            .append("</font>");
-        }
-        
-        protected void getRight(StringBuilder out) {
             String exchange = symbolInfo.getExchange();
             if (exchange == null)
                 exchange = "";
             
-            out.append("<font color='#000000'><b>")
-            .append(symbolInfo.name())
-            .append("</b></font>");
-            if (!exchange.isEmpty())
-                out.append(" <font color='#aaaaaa' size='-2'><i>@")
-                .append(exchange)
-                .append("</i></font>");
+            //out.append("<font color='#000000'><b>");
+            out.append("<b>");
+            out.append(symbolInfo.name());
+            //out.append("</b></font>");
+            out.append("</b>");
+            if (!exchange.isEmpty()) {
+                out.append(selected? " <font size='-2'>": " <font color='#aaaaaa' size='-2'>");
+                out.append("<i>@");
+            }
+            out.append(exchange);
+            out.append("</i></font>");
         }
         
         public @Override
         String toString() {
             StringBuilder sb = new StringBuilder();
             sb.append("<html>");
-            getRight(sb);
-            sb.append(" - ");
             getLeft(sb);
+            getRight(sb);
             sb.append("</html>");
             return sb.toString();
         }

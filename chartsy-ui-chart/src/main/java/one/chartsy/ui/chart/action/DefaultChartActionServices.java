@@ -81,4 +81,19 @@ public class DefaultChartActionServices implements ChartActionServices {
             chart.zoomOut();
         }
     }
+
+    public static class ComponentPopupMenuShow extends AbstractChartAction {
+        public ComponentPopupMenuShow() {
+            super();
+        }
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            if (e.getSource() instanceof JComponent source) {
+                JPopupMenu popup = source.getComponentPopupMenu();
+                if (popup != null)
+                    popup.show(source, 0, source.getHeight());
+            }
+        }
+    }
 }

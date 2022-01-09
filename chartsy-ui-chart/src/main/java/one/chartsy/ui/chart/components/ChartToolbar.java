@@ -62,20 +62,20 @@ public class ChartToolbar extends JToolBar implements Serializable {
         addSeparator();
         add(createButton(ChartActions.zoomIn(chartFrame)));
         add(createButton(ChartActions.zoomOut(chartFrame)));
-        add(createButton(ChartActions.intervalPopup(chartFrame)));
-        add(createButton(ChartActions.chartPopup(chartFrame)));
-        add(createButton(ChartActions.openOverlays(chartFrame)));
-        add(createButton(ChartActions.openIndicators(chartFrame)));
-        add(annotationButton = createButton(ChartActions.annotationPopup(chartFrame)));
-        JToggleButton markerButton = createToggleButton(ChartActions.toggleMarker(chartFrame));
+//        add(createButton(ChartActions.intervalPopup(chartFrame)));
+//        add(createButton(ChartActions.chartPopup(chartFrame)));
+//        add(createButton(ChartActions.openOverlays(chartFrame)));
+//        add(createButton(ChartActions.openIndicators(chartFrame)));
+//        add(annotationButton = createButton(ChartActions.annotationPopup(chartFrame)));
+//        JToggleButton markerButton = createToggleButton(ChartActions.toggleMarker(chartFrame));
         //add(markerButton);
-        add(createButton(ChartActions.exportImage(chartFrame)));
-        add(createButton(ChartActions.printChart(chartFrame)));
-        add(createButton(ChartActions.chartProperties(chartFrame)));
-        addSeparator();
-        add(createButton(favoriteAction = ChartActions.addToFavorites(chartFrame)));
-        
-        markerButton.setSelected(false);
+//        add(createButton(ChartActions.exportImage(chartFrame)));
+//        add(createButton(ChartActions.printChart(chartFrame)));
+//        add(createButton(ChartActions.chartProperties(chartFrame)));
+//        addSeparator();
+//        add(createButton(favoriteAction = ChartActions.addToFavorites(chartFrame)));
+//
+//        markerButton.setSelected(false);
         chartFrame.addChartFrameListener(new ChartFrameListener() {
             @Override
             public void datasetChanged(CandleSeries quotes) {

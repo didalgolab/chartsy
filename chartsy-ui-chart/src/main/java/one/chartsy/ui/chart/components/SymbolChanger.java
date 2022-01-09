@@ -147,7 +147,7 @@ public class SymbolChanger extends JToolBar implements Serializable {
         getActionMap().put("next", new ButtonAction(btnForward));
         
         dataProvider = chartFrame.getChartData().getDataProvider();
-        StockAutoCompleter completer = new StockAutoCompleter(txtSymbol);
+        SymbolAutoCompleter completer = new SymbolAutoCompleter(txtSymbol);
         completer.setDataProvider(dataProvider);
     }
     
@@ -204,7 +204,7 @@ public class SymbolChanger extends JToolBar implements Serializable {
     public class ChangeStock extends SymbolChangerAction {
         
         public ChangeStock() {
-            super("Submit", "Submit Symbol", "dialog-ok");
+            super("Submit", "Submit Symbol", "one/chartsy/ui/chart/icons/accept.png");
             // remove large icon from the action
             putValue(LARGE_ICON_KEY, null);
         }
@@ -237,7 +237,7 @@ public class SymbolChanger extends JToolBar implements Serializable {
     public class BackAction extends SymbolChangerAction {
 
         public BackAction() {
-            super("Go Back", "Click to go back, hold to see history", "go-previous");
+            super("Go Back", "Click to go back, hold to see history", "one/chartsy/ui/chart/icons/go-back");
         }
         
         @Override
@@ -262,7 +262,7 @@ public class SymbolChanger extends JToolBar implements Serializable {
     public class ForwardAction extends SymbolChangerAction {
 
         public ForwardAction() {
-            super("Go Forward", "Go Forward", "go-next");
+            super("Go Forward", "Go Forward", "one/chartsy/ui/chart/icons/go-forward.png");
         }
         
         @Override

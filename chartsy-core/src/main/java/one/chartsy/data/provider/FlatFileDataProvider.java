@@ -14,6 +14,7 @@ import one.chartsy.data.provider.file.FlatFileItemReader;
 import one.chartsy.data.provider.file.LineMapper;
 import one.chartsy.naming.SymbolIdentifier;
 import one.chartsy.time.Chronological;
+import org.apache.commons.lang3.StringUtils;
 import org.openide.util.Lookup;
 import org.openide.util.lookup.Lookups;
 
@@ -27,7 +28,7 @@ import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-public class FlatFileDataProvider extends AbstractDataProvider implements AutoCloseable, SymbolListAccessor, HierarchicalConfiguration {
+public class FlatFileDataProvider extends AbstractDataProvider implements AutoCloseable, SymbolListAccessor, SymbolProposalProvider, HierarchicalConfiguration {
     private final Lookup lookup = Lookups.singleton(this);
     private final FlatFileFormat fileFormat;
     private final FileSystem fileSystem;
@@ -316,5 +317,55 @@ public class FlatFileDataProvider extends AbstractDataProvider implements AutoCl
             availableSymbols.put(new SymbolIdentifier(symbol), file);
             return super.visitFile(file, attrs);
         }
+    }
+
+    private boolean nonNumericProposalExchange = true;
+
+    public void setNonNumericProposalExchange(boolean flag) {
+        this.nonNumericProposalExchange = flag;
+    }
+
+    @Override
+    public List<Symbol> getProposals(String keyword) {
+        if (keyword.length() <= 1)
+            return List.of();
+
+        // convert text to upper case
+        String text = keyword.toUpperCase();
+        List<Symbol> list = new ArrayList<>();
+        getFileTreeMetadata().availableSymbols.forEach((symbol, path) -> {
+            if (symbol.name().contains(text)) {
+                Symbol match = new Symbol(symbol, this);
+
+                Path parent = path.getParent();
+                if (parent != null)
+                    match.setExchange(getProposalExchangeName(parent));
+
+                list.add(match);
+            }
+        });
+
+        list.sort((o1, o2) -> {
+            int p1 = o1.getName().indexOf(text);
+            int p2 = o2.getName().indexOf(text);
+            if (p1 != p2)
+                return p1 - p2;
+            return o1.getName().compareTo(o2.getName());
+        });
+        return list;
+    }
+
+    protected String getProposalExchangeName(Path inFolder) {
+        SymbolGroup symbolGroup = asGroup(inFolder);
+        if (symbolGroup == null)
+            return "";
+
+        String symbolGroupName = getSimpleName(symbolGroup);
+        if (nonNumericProposalExchange
+                && StringUtils.isNumeric(symbolGroupName)
+                && (inFolder = inFolder.getParent()) != null) {
+            symbolGroupName = getProposalExchangeName(inFolder) + '/' + symbolGroupName;
+        }
+        return symbolGroupName;
     }
 }

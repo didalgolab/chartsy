@@ -58,6 +58,10 @@ public class Symbol implements SymbolIdentity, SymbolGroupContent {
         return exchange;
     }
 
+    public void setExchange(String exchange) {
+        this.exchange = exchange;
+    }
+
     public DataProvider getProvider() {
         return provider;
     }

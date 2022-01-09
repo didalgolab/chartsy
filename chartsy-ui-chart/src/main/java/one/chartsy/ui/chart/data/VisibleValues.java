@@ -62,7 +62,7 @@ public class VisibleValues {
             rv = new Range.Builder();
 
         var startIndex = offset;
-        var endIndex = offset + length;
+        var endIndex = Math.min(offset + length, values.length());
         for (var i = startIndex; i < endIndex; i++)
             rv.add(values.get(i));
         return rv;

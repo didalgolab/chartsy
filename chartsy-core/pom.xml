@@ -21,6 +21,7 @@
                         <publicPackage>one.chartsy.*</publicPackage>
                         <publicPackage>javax.annotation.*</publicPackage>
                         <publicPackage>org.apache.commons.collections4.*</publicPackage>
+                        <publicPackage>org.apache.commons.lang3.*</publicPackage>
                         <publicPackage>org.apache.logging.log4j.*</publicPackage>
                     </publicPackages>
                 </configuration>
@@ -51,6 +52,11 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-collections4</artifactId>
             <version>${commons.collections.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>${commons.lang.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>

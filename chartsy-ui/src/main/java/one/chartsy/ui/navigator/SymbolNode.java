@@ -55,6 +55,7 @@ public class SymbolNode extends AbstractNode {
     public Action[] getActions(boolean popup) {
         return new Action[] {
                 SystemAction.get(Actions.OpenSymbolChart.class),
+                SystemAction.get(Actions.ChartAllInFolder.class),
                 //SystemAction.get(Actions.AddTo.class),
                 org.openide.awt.Actions.forID("Import", "one.chartsy.actions.AsciiImportAction"),
                 null,

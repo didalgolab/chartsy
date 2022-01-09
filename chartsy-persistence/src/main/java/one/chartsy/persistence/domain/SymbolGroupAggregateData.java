@@ -42,6 +42,8 @@ public class SymbolGroupAggregateData implements SymbolGroupContent {
     public boolean equals(Object obj) {
         if (obj == this)
             return true;
+        if (id == null)
+            return super.equals(obj);
 
         if (obj instanceof SymbolGroupAggregateData that)
             return Objects.equals(id, that.id) && Objects.equals(auditMD, that.auditMD);

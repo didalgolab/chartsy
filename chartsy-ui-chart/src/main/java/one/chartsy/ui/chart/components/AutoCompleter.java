@@ -14,15 +14,7 @@ import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.swing.AbstractAction;
-import javax.swing.Action;
-import javax.swing.JComponent;
-import javax.swing.JList;
-import javax.swing.JPopupMenu;
-import javax.swing.JScrollPane;
-import javax.swing.JTextField;
-import javax.swing.KeyStroke;
-import javax.swing.Timer;
+import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.event.PopupMenuEvent;
@@ -144,8 +136,37 @@ public abstract class AutoCompleter<T> {
             }
         });
         list.setRequestFocusEnabled(false);
+        SelectionAwareListCellRenderer.decorate(list);
     }
-    
+
+    public interface SelectionStateTransformable<T> {
+
+        T getAsSelected();
+    }
+
+    private static final class SelectionAwareListCellRenderer<E> implements ListCellRenderer<E> {
+
+        public static <E> void decorate(JList<E> list) {
+            ListCellRenderer<? super E> origin = list.getCellRenderer();
+            list.setCellRenderer(new SelectionAwareListCellRenderer<>(origin));
+        }
+
+        private final ListCellRenderer<E> origin;
+
+        private SelectionAwareListCellRenderer(ListCellRenderer<E> origin) {
+            this.origin = origin;
+        }
+
+        @SuppressWarnings("unchecked")
+        @Override
+        public Component getListCellRendererComponent(JList<? extends E> list, E value, int index, boolean isSelected, boolean cellHasFocus) {
+            if (isSelected && value instanceof SelectionStateTransformable)
+                value = ((SelectionStateTransformable<E>) value).getAsSelected();
+
+            return origin.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+        }
+    }
+
     /**
      * If the direct parent of the text {@code component} is an instance of {@link SymbolChanger}
      * returns that instance. Otherwise {@code null} is returned.
@@ -215,6 +236,7 @@ public abstract class AutoCompleter<T> {
                     JComponent.WHEN_FOCUSED);
             int size = list.getModel().getSize();
             list.setVisibleRowCount(Math.min(size, visibleRowCount));
+            list.ensureIndexIsVisible(0);
             
             int x = 0;
             try {

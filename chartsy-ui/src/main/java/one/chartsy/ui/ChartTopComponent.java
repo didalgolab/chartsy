@@ -25,6 +25,12 @@ public class ChartTopComponent extends TopComponent implements TopComponent.Clon
         this.chart = chart;
 
         add(chart);
+        addListeners(chart);
+    }
+
+    private void addListeners(ChartFrame chart) {
+        chart.addPropertyChangeListener("name", evt -> setName(evt.getNewValue().toString()));
+        setName(chart.getName());
     }
 
     public ChartData getChartData() {

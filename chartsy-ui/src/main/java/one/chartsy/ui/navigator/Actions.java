@@ -1,6 +1,7 @@
 package one.chartsy.ui.navigator;
 
 import one.chartsy.Symbol;
+import one.chartsy.SymbolGroup;
 import one.chartsy.SymbolGroupContent;
 import one.chartsy.TimeFrame;
 import one.chartsy.data.provider.DataProvider;
@@ -91,6 +92,7 @@ public abstract class Actions {
             NotifyDescriptor.InputLine msg = new NotifyDescriptor.InputLine(label, getName());
             if (DialogDisplayer.getDefault().notify(msg) == NotifyDescriptor.OK_OPTION) {
                 String expr = msg.getInputText();
+                expr = cleanupDescriptor(expr);
                 if (expr.isEmpty())
                     return;
 
@@ -120,6 +122,14 @@ public abstract class Actions {
                     return false;
             }
             return (nodes.length > 0);
+        }
+
+        private static String cleanupDescriptor(String expr) {
+            expr = expr.strip();
+            if (expr.startsWith("\"") && expr.endsWith("\"") && expr.length() >= 2)
+                expr = expr.substring(1, expr.length() - 1);
+
+            return expr;
         }
     }
 
@@ -171,39 +181,50 @@ public abstract class Actions {
                 openChart(symbolList);
         }
 
-        protected void openChart(List<Symbol> symbolList) {
-            openChart(symbolList, TimeFrame.Period.DAILY);
-        }
-
-        protected void openChart(List<Symbol> symbolList, TimeFrame timeFrame) {
-            FrontEnd frontEnd = Lookup.getDefault().lookup(FrontEnd.class);
-            ChartTemplate template = frontEnd.getApplicationContext().getBean(ChartTemplate.class);
-
-            Symbol first = symbolList.get(0);
-            ChartData chartData = new ChartData();
-            chartData.setSymbol(first);
-            chartData.setDataProvider(first.getProvider());
-            chartData.setTimeFrame(timeFrame);
-            chartData.setChart(frontEnd.getApplicationContext().getBean("Candle Stick", Chart.class));
-
-            ChartFrame chartFrame = new ChartFrame();
-            chartFrame.setChartData(chartData);
-            chartFrame.setChartTemplate(template);
-            if (symbolList.size() > 1) {
-                //symbolList.remove(0); // remove the first/current symbol from the stack
-                chartFrame.setHistory(new ChartHistory(symbolList, timeFrame));
-            }
-            ChartTopComponent chartTC = new ChartTopComponent(chartFrame);
-            chartTC.open();
-            chartTC.requestActive();
-        }
-
         @Override
         protected boolean enable(Node[] nodes) {
             for (Node node : nodes)
                 if (!(node instanceof SymbolNode))
                     return false;
             return true;
+        }
+    }
+
+    /**
+     * The action opens multiple selected symbols in a single chart frame.
+     *
+     * @author Mariusz Bernacki
+     *
+     */
+    public static class ChartAllInFolder extends BaseNodeAction {
+
+        @Override
+        protected void performAction(List<Node> nodes) {
+            Set<Symbol> symbolList = new HashSet<>();
+            LinkedList<Node> worklist = new LinkedList<>(nodes);
+            worklist.replaceAll(node -> {
+                Symbol symbol = node.getLookup().lookup(Symbol.class);
+                return (symbol != null) ? node.getParentNode() : node;
+            });
+            while (!worklist.isEmpty()) {
+                Node node = worklist.removeFirst();
+
+                SymbolGroupContent symbolGroup = node.getLookup().lookup(SymbolGroupContent.class);
+                if (symbolGroup != null)
+                    worklist.addAll(Arrays.asList(node.getChildren().getNodes()));
+
+                Symbol symbol = node.getLookup().lookup(Symbol.class);
+                if (symbol != null)
+                    symbolList.add(symbol);
+            }
+
+            if (!symbolList.isEmpty())
+                openChart(List.copyOf(symbolList));
+        }
+
+        @Override
+        protected boolean enable(Node[] nodes) {
+            return nodes.length > 0;
         }
     }
 
@@ -259,5 +280,32 @@ public abstract class Actions {
                 }
             }
         }
+    }
+
+    public static void openChart(List<Symbol> symbolList) {
+        openChart(symbolList, TimeFrame.Period.DAILY);
+    }
+
+    public static void openChart(List<Symbol> symbolList, TimeFrame timeFrame) {
+        FrontEnd frontEnd = Lookup.getDefault().lookup(FrontEnd.class);
+        ChartTemplate template = frontEnd.getApplicationContext().getBean(ChartTemplate.class);
+
+        Symbol first = symbolList.get(0);
+        ChartData chartData = new ChartData();
+        chartData.setSymbol(first);
+        chartData.setDataProvider(first.getProvider());
+        chartData.setTimeFrame(timeFrame);
+        chartData.setChart(frontEnd.getApplicationContext().getBean("Candle Stick", Chart.class));
+
+        ChartFrame chartFrame = new ChartFrame();
+        chartFrame.setChartData(chartData);
+        chartFrame.setChartTemplate(template);
+        if (symbolList.size() > 1) {
+            //symbolList.remove(0); // remove the first/current symbol from the stack
+            chartFrame.setHistory(new ChartHistory(symbolList, timeFrame));
+        }
+        ChartTopComponent chartTC = new ChartTopComponent(chartFrame);
+        chartTC.open();
+        chartTC.requestActive();
     }
 }
