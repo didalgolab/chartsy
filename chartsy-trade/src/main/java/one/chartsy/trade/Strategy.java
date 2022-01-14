@@ -2,6 +2,7 @@ package one.chartsy.trade;
 
 import one.chartsy.When;
 import one.chartsy.collections.ImmutableCollections;
+import one.chartsy.core.LaunchableTarget;
 import one.chartsy.core.ThreadContext;
 import one.chartsy.data.Series;
 import one.chartsy.naming.SymbolIdentifier;
@@ -19,7 +20,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Supplier;
 
-public abstract class Strategy<E extends Chronological> implements TradingStrategy {
+public abstract class Strategy<E extends Chronological> implements TradingStrategy, LaunchableTarget<Object> {
     /** The unique identifier of the strategy. */
     private final UUID strategyUUID = UUID.randomUUID();
     /** The external lookup associated with the strategy. */
