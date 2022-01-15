@@ -66,6 +66,7 @@
         <module>chartsy-desktop</module>
         <module>chartsy-kernel</module>
         <module>chartsy-persistence</module>
+        <module>chartsy-rest</module>
         <module>chartsy-samples</module>
         <module>chartsy-simulation</module>
         <module>chartsy-trade</module>
