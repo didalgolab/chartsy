@@ -64,11 +64,6 @@
             <version>${log4j.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-jpl</artifactId>
-            <version>${log4j.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.netbeans.api</groupId>
             <artifactId>org-openide-util-lookup</artifactId>
             <version>${netbeans.version}</version>

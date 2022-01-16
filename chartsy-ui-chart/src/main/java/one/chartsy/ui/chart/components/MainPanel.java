@@ -72,7 +72,7 @@ public class MainPanel extends JLayeredPane {
                 dateAxis.setBounds(insets.left, insets.top + h /* + bottom */,
                         w, bottom);
                 priceAxis.setBounds(insets.left + insets.right + w, insets.top,
-                        right, insets.top + insets.bottom + h);
+                        right, /*insets.top + insets.bottom +*/ h);
                 sPane.setBounds(insets.left, insets.top, w, h);
             }
         });
@@ -131,8 +131,7 @@ public class MainPanel extends JLayeredPane {
     
     public void deselectAll() {
         getChartPanel().getAnnotationPanel().deselectAll();
-        for (IndicatorPanel ip : getStackPanel()
-                .getIndicatorPanels()) {
+        for (IndicatorPanel ip : getStackPanel().getIndicatorPanels()) {
             ip.getAnnotationPanel().deselectAll();
         }
     }
