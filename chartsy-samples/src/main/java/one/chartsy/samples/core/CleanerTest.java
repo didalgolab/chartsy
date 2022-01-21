@@ -27,31 +27,34 @@ public class CleanerTest {
     }
 
     private static Cleaner.Cleanable test() throws IOException {
-        List<Object> objs = new LinkedList<>();
-        for (int i = 0; i < 200; i++) {
-            FlatFileDataProvider dataProvider = FlatFileFormat.STOOQ
-                    .newDataProvider(Path.of("C:/Users/Mariusz/Downloads/d_pl_txt(4).zip"));
-
-            objs.add(dataProvider);
-            System.out.println(i + ".");
-        }
-        try {
-            synchronized (objs) {
-                objs.wait();
-            }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-//        FileSystem fileSystem = dataProvider.getFileSystem();
+//        List<Object> objs = new LinkedList<>();
+//        for (int i = 0; i < 200; i++) {
+//            FlatFileDataProvider dataProvider = FlatFileFormat.STOOQ
+//                    .newDataProvider(Path.of("C:/Users/Mariusz/Downloads/d_pl_txt(4).zip"));
 //
-//        return cleaner.register(dataProvider, () -> {
-//            try {
-//                fileSystem.close();
-//                System.out.println("*** CLEANDED ***");
-//            } catch (IOException e) {
-//                e.printStackTrace();
+//            objs.add(dataProvider);
+//            System.out.println(i + ".");
+//        }
+//        try {
+//            synchronized (objs) {
+//                objs.wait();
 //            }
-//        });
-        return null;
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        }
+
+        FlatFileDataProvider dataProvider = FlatFileFormat.STOOQ
+                .newDataProvider(Path.of("C:/Users/Mariusz/Downloads/d_pl_txt(4).zip"));
+        FileSystem fileSystem = dataProvider.getFileSystem();
+
+        return cleaner.register(dataProvider, () -> {
+            try {
+                fileSystem.close();
+                System.out.println("*** CLEANDED ***");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
+//        return null;
     }
 }

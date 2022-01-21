@@ -1,5 +1,6 @@
 package one.chartsy.persistence.domain.services;
 
+import one.chartsy.SymbolGroupContent;
 import one.chartsy.kernel.SymbolGroupHierarchy;
 import one.chartsy.persistence.domain.SymbolGroupAggregateData;
 import org.openide.util.NbBundle;
@@ -26,7 +27,7 @@ public class PersistentSymbolGroupHierarchy implements SymbolGroupHierarchy {
     protected SymbolGroupAggregateData createRootContext() {
         SymbolGroupAggregateData root = new SymbolGroupAggregateData();
         root.setName(NbBundle.getMessage(getClass(), "SG.root.name"));
-        root.setTypeName("FOLDER");
+        root.setContentType(SymbolGroupContent.Type.FOLDER);
         return root;
     }
 }

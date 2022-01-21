@@ -28,7 +28,7 @@ class FlatFileDataProviderTest {
         FlatFileFormat fileFormat = FlatFileFormat.builder().build();
         FileSystem fileSystem = FileSystems.newFileSystem(Paths.get(getClass().getResource("/FileSystemDataProvider.zip").toURI()), Map.of());
 
-        provider = new FlatFileDataProvider(fileFormat, fileSystem);
+        provider = new FlatFileDataProvider("FileSystemDataProvider.zip", fileFormat, fileSystem);
     }
 
     @Test

@@ -1,7 +1,6 @@
 package one.chartsy.ui.navigator;
 
 import one.chartsy.Symbol;
-import one.chartsy.SymbolGroup;
 import one.chartsy.SymbolGroupContent;
 import one.chartsy.TimeFrame;
 import one.chartsy.data.provider.DataProvider;
@@ -12,6 +11,7 @@ import one.chartsy.ui.FrontEnd;
 import one.chartsy.ui.chart.*;
 import one.chartsy.ui.nodes.BaseNodeAction;
 import one.chartsy.ui.nodes.NodeSelection;
+import org.apache.logging.log4j.LogManager;
 import org.openide.DialogDisplayer;
 import org.openide.ErrorManager;
 import org.openide.NotifyDescriptor;
@@ -50,7 +50,7 @@ public abstract class Actions {
                 for (Node parent : parents) {
                     SymbolGroupAggregateData group = new SymbolGroupAggregateData();
                     group.setName(name);
-                    group.setTypeName("FOLDER");
+                    group.setContentType(SymbolGroupContent.Type.FOLDER);
                     group.setParentGroupId(asSymbolGroup(parent).getId());
 
                     SymbolGroupRepository repo = getApplicationContext(parent).map(ctx -> ctx.getBean(SymbolGroupRepository.class)).orElseThrow();
@@ -101,14 +101,23 @@ public abstract class Actions {
                     var appContext = getApplicationContext(parent).orElseThrow();
                     var exprParser = appContext.getBean(ExpressionParser.class);
                     var dataProvider = exprParser.parseExpression(expr).getValue(DataProvider.class);
+                    try {
+                        var symbolGroup = new SymbolGroupAggregateData();
+                        symbolGroup.setName(dataProvider.getName());
+                        symbolGroup.setContentType(SymbolGroupContent.Type.DATA_PROVIDER);
+                        symbolGroup.setParentGroupId(asSymbolGroup(parent).getId());
+                        symbolGroup.setDataProviderDescriptor(expr);
 
-                    var symbolGroup = new SymbolGroupAggregateData();
-                    symbolGroup.setName("Data Provider");
-                    symbolGroup.setTypeName("DATA_PROVIDER");
-                    symbolGroup.setParentGroupId(asSymbolGroup(parent).getId());
-                    symbolGroup.setDataProviderDescriptor(expr);
-
-                    appContext.getBean(SymbolGroupRepository.class).saveAndFlush(symbolGroup);
+                        appContext.getBean(SymbolGroupRepository.class).saveAndFlush(symbolGroup);
+                    } finally {
+                        if (dataProvider instanceof AutoCloseable c) {
+                            try {
+                                c.close();
+                            } catch (Exception e) {
+                                LogManager.getLogger(getClass()).warn("Error closing {}", dataProvider.getName(), e);
+                            }
+                        }
+                    }
                 }
                 NodeSelection.selectAllAdded(parents);
             }

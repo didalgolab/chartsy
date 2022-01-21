@@ -11,9 +11,16 @@ public interface SymbolGroupContent {
 
     String getName();
 
-    String getTypeName();
+    Type getContentType();
 
     Optional<SymbolIdentity> getSymbol();
 
     List<SymbolGroupContent> getContent(SymbolGroupContentRepository repo, DataProviderLoader loader);
+
+    enum Type {
+        DATA_PROVIDER,
+        DATA_PROVIDER_FOLDER,
+        FOLDER,
+        SYMBOL
+    }
 }

@@ -85,8 +85,8 @@ public class Symbol implements SymbolIdentity, SymbolGroupContent {
     }
 
     @Override
-    public String getTypeName() {
-        return "SYMBOL";
+    public Type getContentType() {
+        return Type.SYMBOL;
     }
 
     @Override

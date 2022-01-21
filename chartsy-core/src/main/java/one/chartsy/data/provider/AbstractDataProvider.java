@@ -16,20 +16,27 @@ public abstract class AbstractDataProvider implements DataProvider {
 
     protected final InstanceContent lookupContent;
     private final Lookup lookup;
+    private final String name;
 
 
-    protected AbstractDataProvider() {
-        this(new InstanceContent());
+    protected AbstractDataProvider(String name) {
+        this(name, new InstanceContent());
     }
 
-    protected AbstractDataProvider(InstanceContent lookupContent) {
+    protected AbstractDataProvider(String name, InstanceContent lookupContent) {
         this.lookupContent = lookupContent;
         this.lookup = new AbstractLookup(lookupContent);
+        this.name = name;
     }
 
     @Override
     public Lookup getLookup() {
         return lookup;
+    }
+
+    @Override
+    public String getName() {
+        return name;
     }
 
     @Override

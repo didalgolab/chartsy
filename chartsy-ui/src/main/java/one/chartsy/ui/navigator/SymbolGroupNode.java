@@ -48,7 +48,7 @@ public class SymbolGroupNode extends AbstractNode implements EntityNode<SymbolGr
         this.childFactory = childFactory;
         setName(symbolGroup.getName());
         setIconBaseWithExtension(SYMBOL_GROUP_ICON_BASE);
-        String typeName = symbolGroup.getTypeName();
+        SymbolGroupContent.Type contentType = symbolGroup.getContentType();
         //if (symbolGroup.getStereotype() == Stereotype.FAVORITES)
         //    setIconBaseWithExtension("one/chartsy/resources/star.green.16.png");
         //else

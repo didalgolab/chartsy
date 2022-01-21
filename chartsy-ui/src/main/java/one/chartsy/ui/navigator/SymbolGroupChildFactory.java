@@ -45,18 +45,18 @@ public class SymbolGroupChildFactory extends ChildFactory<SymbolGroupContent> im
 //        if (group.getId() == 0)
 //            return new SymbolGroupDataProviderFolderNode(group);
 
-        switch (group.getTypeName()) {
-            case "SYMBOL":
+        switch (group.getContentType()) {
+            case SYMBOL:
                 return new SymbolNode((Symbol) symbol.get());
-        case "DATA_PROVIDER":
-            return new SymbolGroupDataProviderNode(context, group);
-        case "DATA_PROVIDER_FOLDER":
-            return new SymbolGroupDataProviderFolderNode(context, group);
-//        case CLOSED_FOLDER:
-//            return new SymbolGroupClosedFolderNode(group);
-        case "FOLDER":
-        //default:
-            return SymbolGroupNode.create(group, new SymbolGroupChildFactory(context, group));
+            case DATA_PROVIDER:
+                return new SymbolGroupDataProviderNode(context, group);
+            case DATA_PROVIDER_FOLDER:
+                return new SymbolGroupDataProviderFolderNode(context, group);
+    //        case CLOSED_FOLDER:
+    //            return new SymbolGroupClosedFolderNode(group);
+            case FOLDER:
+            //default:
+                return SymbolGroupNode.create(group, new SymbolGroupChildFactory(context, group));
         }
         return null;
     }

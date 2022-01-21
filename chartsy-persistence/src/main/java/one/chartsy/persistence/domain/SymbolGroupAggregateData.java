@@ -8,7 +8,12 @@ import one.chartsy.data.provider.DataProviderLoader;
 import one.chartsy.data.provider.HierarchicalConfiguration;
 
 import javax.persistence.*;
+import java.time.LocalDateTime;
 import java.util.*;
+
+import static javax.persistence.GenerationType.SEQUENCE;
+import static one.chartsy.SymbolGroupContent.Type.DATA_PROVIDER_FOLDER;
+import static one.chartsy.SymbolGroupContent.Type.FOLDER;
 
 @Getter
 @Setter
@@ -16,26 +21,33 @@ import java.util.*;
 @Table(name = "ONE_SYMBOL_GROUPS")
 public class SymbolGroupAggregateData implements SymbolGroupContent {
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = SEQUENCE, generator = "ONE_SYMBOL_GROUP_IDS")
+    @SequenceGenerator(name = "ONE_SYMBOL_GROUP_IDS", sequenceName = "ONE_SYMBOL_GROUP_IDS")
     private Long id;
     private Long parentGroupId;
     private String name;
-    private String typeName;
+    private Type contentType;
     private String dataProviderDescriptor;
-    private Date auditMD;
+    private LocalDateTime created;
+    private LocalDateTime lastModified;
 
     @Transient
-    private Date auditRD;
+    private LocalDateTime removed;
+
+    @PrePersist
+    public void markNewlyCreated() {
+        created = LocalDateTime.now();
+    }
 
     @PreUpdate
     public void markModified() {
-        auditMD = new Date();
+        lastModified = LocalDateTime.now();
     }
 
     @PreRemove
     public void markRemoved() {
-        if (auditRD == null)
-            auditRD = new Date();
+        if (removed == null)
+            removed = LocalDateTime.now();
     }
 
     @Override
@@ -46,7 +58,7 @@ public class SymbolGroupAggregateData implements SymbolGroupContent {
             return super.equals(obj);
 
         if (obj instanceof SymbolGroupAggregateData that)
-            return Objects.equals(id, that.id) && Objects.equals(auditMD, that.auditMD);
+            return Objects.equals(id, that.id) && Objects.equals(lastModified, that.lastModified);
 
         return false;
     }
@@ -57,8 +69,8 @@ public class SymbolGroupAggregateData implements SymbolGroupContent {
             return super.hashCode();
 
         int hash = id.hashCode();
-        if (auditMD != null)
-            hash ^= (int) auditMD.getTime();
+        if (lastModified != null)
+            hash ^= lastModified.hashCode();
         return hash;
     }
 
@@ -83,12 +95,12 @@ public class SymbolGroupAggregateData implements SymbolGroupContent {
     @Override
     public List<SymbolGroupContent> getContent(SymbolGroupContentRepository repo, DataProviderLoader loader) {
         List<SymbolGroupContent> content = new ArrayList<>();
-        if (id != null || "FOLDER".equals(getTypeName()))
+        if (id != null || FOLDER.equals(getContentType()))
             content.addAll(repo.findByParentGroupId(id));
 
-        switch (getTypeName()) {
-            case "DATA_PROVIDER" -> loadDataProviderContent(loader, content);
-            case "DATA_PROVIDER_FOLDER" -> loadDataProviderFolderContent(loader, content);
+        switch (getContentType()) {
+            case DATA_PROVIDER -> loadDataProviderContent(loader, content);
+            case DATA_PROVIDER_FOLDER -> loadDataProviderFolderContent(loader, content);
         }
         return content;
     }
@@ -125,7 +137,7 @@ public class SymbolGroupAggregateData implements SymbolGroupContent {
     protected SymbolGroupAggregateData asSymbolGroup(SymbolGroup group, HierarchicalConfiguration config) {
         var symbolGroup = new SymbolGroupAggregateData();
         symbolGroup.setName(config.getSimpleName(group));
-        symbolGroup.setTypeName("DATA_PROVIDER_FOLDER");
+        symbolGroup.setContentType(DATA_PROVIDER_FOLDER);
         symbolGroup.setDataProvider(dataProvider);
         symbolGroup.setSymbolGroup(group);
 

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:pro="http://www.liquibase.org/xml/ns/pro" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.1.xsd http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibase-pro-4.1.xsd">
+    <changeSet id="1" author="chartsy">
+        <createTable tableName="ONE_SYMBOL_GROUPS">
+            <column name="id" type="INTEGER">
+                <constraints nullable="false" primaryKey="true" unique="true" />
+            </column>
+            <column name="created" type="TIMESTAMP" />
+            <column name="last_modified" type="TIMESTAMP" />
+            <column name="name" type="VARCHAR(255)" />
+            <column name="content_type" type="VARCHAR(50)" />
+            <column name="data_provider_descriptor" type="VARCHAR(4096)" />
+            <column name="parent_group_id" type="INTEGER" />
+        </createTable>
+        <createSequence sequenceName="ONE_SYMBOL_GROUP_IDS" incrementBy="50" />
+    </changeSet>
+</databaseChangeLog>

@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.spi.FileSystemProvider;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -36,18 +37,23 @@ public class FlatFileDataProvider extends AbstractDataProvider implements AutoCl
     private final ExecutionContext context;
 
     public FlatFileDataProvider(FlatFileFormat fileFormat, Path archiveFile) throws IOException {
-        this(fileFormat, FileSystems.newFileSystem(archiveFile));
+        this(fileName(archiveFile), fileFormat, FileSystems.newFileSystem(archiveFile));
     }
 
-    public FlatFileDataProvider(FlatFileFormat fileFormat, FileSystem fileSystem) throws IOException {
-        this(fileFormat, fileSystem, fileSystem.getRootDirectories());
+    public FlatFileDataProvider(String name, FlatFileFormat fileFormat, FileSystem fileSystem) throws IOException {
+        this(name, fileFormat, fileSystem, fileSystem.getRootDirectories());
     }
 
-    public FlatFileDataProvider(FlatFileFormat fileFormat, FileSystem fileSystem, Iterable<Path> baseDirectories) throws IOException {
+    public FlatFileDataProvider(String name, FlatFileFormat fileFormat, FileSystem fileSystem, Iterable<Path> baseDirectories) throws IOException {
+        super(Objects.requireNonNull(name, "name"));
         this.fileFormat = Objects.requireNonNull(fileFormat, "fileFormat");
         this.fileSystem = Objects.requireNonNull(fileSystem, "fileSystem");
         this.baseDirectories = Objects.requireNonNull(baseDirectories, "baseDirectories");
         this.context = new ExecutionContext();
+    }
+
+    private static String fileName(Path file) {
+        return file.getFileName().toString();
     }
 
     @Override
@@ -187,8 +193,10 @@ public class FlatFileDataProvider extends AbstractDataProvider implements AutoCl
     }
 
     @Override
-    public void close() throws Exception {
-        getFileSystem().close();
+    public void close() throws IOException {
+        var fileSystem = getFileSystem();
+        if (fileSystem != FileSystems.getDefault())
+            fileSystem.close();
     }
 
     protected SymbolIdentity asIdentifier(Path path) {
