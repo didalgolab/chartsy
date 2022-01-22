@@ -27,6 +27,7 @@ public class SymbolGroupAggregateData implements SymbolGroupContent {
     private Long parentGroupId;
     private String name;
     private Type contentType;
+    private String stereotype;
     private String dataProviderDescriptor;
     private LocalDateTime created;
     private LocalDateTime lastModified;

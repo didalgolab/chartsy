@@ -3,9 +3,16 @@ package one.chartsy.persistence.domain.services;
 import one.chartsy.SymbolGroupContent;
 import one.chartsy.kernel.SymbolGroupHierarchy;
 import one.chartsy.persistence.domain.SymbolGroupAggregateData;
+import one.chartsy.persistence.domain.model.SymbolGroupRepository;
 import org.openide.util.NbBundle;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import java.util.List;
 
 public class PersistentSymbolGroupHierarchy implements SymbolGroupHierarchy {
+
+    @Autowired
+    private SymbolGroupRepository repository;
 
     /**
      * The default root context (top-most symbol group node) that is used by the
@@ -25,9 +32,14 @@ public class PersistentSymbolGroupHierarchy implements SymbolGroupHierarchy {
     }
 
     protected SymbolGroupAggregateData createRootContext() {
+        List<SymbolGroupAggregateData> roots = repository.findByParentGroupId(null);
+        if (!roots.isEmpty())
+            return roots.get(0);
+
         SymbolGroupAggregateData root = new SymbolGroupAggregateData();
         root.setName(NbBundle.getMessage(getClass(), "SG.root.name"));
         root.setContentType(SymbolGroupContent.Type.FOLDER);
+        root = repository.save(root);
         return root;
     }
 }

@@ -5,10 +5,15 @@
             <column name="id" type="INTEGER">
                 <constraints nullable="false" primaryKey="true" unique="true" />
             </column>
-            <column name="created" type="TIMESTAMP" />
+            <column name="created" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP" />
             <column name="last_modified" type="TIMESTAMP" />
-            <column name="name" type="VARCHAR(255)" />
-            <column name="content_type" type="VARCHAR(50)" />
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false" />
+            </column>
+            <column name="content_type" type="VARCHAR(50)">
+                <constraints nullable="false" />
+            </column>
+            <column name="stereotype" type="VARCHAR(50)" />
             <column name="data_provider_descriptor" type="VARCHAR(4096)" />
             <column name="parent_group_id" type="INTEGER" />
         </createTable>

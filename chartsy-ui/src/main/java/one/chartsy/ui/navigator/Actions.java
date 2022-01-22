@@ -2,6 +2,7 @@ package one.chartsy.ui.navigator;
 
 import one.chartsy.Symbol;
 import one.chartsy.SymbolGroupContent;
+import one.chartsy.SymbolIdentity;
 import one.chartsy.TimeFrame;
 import one.chartsy.data.provider.DataProvider;
 import one.chartsy.persistence.domain.SymbolGroupAggregateData;
@@ -227,8 +228,11 @@ public abstract class Actions {
                     symbolList.add(symbol);
             }
 
-            if (!symbolList.isEmpty())
-                openChart(List.copyOf(symbolList));
+            if (!symbolList.isEmpty()) {
+                var sortedList = new ArrayList<>(symbolList);
+                sortedList.sort(SymbolIdentity.comparator());
+                openChart(sortedList);
+            }
         }
 
         @Override
