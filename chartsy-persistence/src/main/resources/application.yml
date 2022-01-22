@@ -1,7 +1,7 @@
 spring:
   datasource:
     driver-class-name: org.h2.Driver
-    url: "jdbc:h2:file:${workspace.path}/application"
+    url: "jdbc:h2:file:${workspace.path}/application;COMPRESS=true"
     username: chartsy
     password: chartsy
   h2:
