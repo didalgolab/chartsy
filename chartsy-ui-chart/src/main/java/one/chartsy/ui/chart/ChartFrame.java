@@ -54,52 +54,54 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
         add(chartLayer);
     }
 
-    protected void initComponents() {
-        chartToolbar = new ChartToolbar(this);
-        chartToolbar = new ChartToolbar(this);
-        mainPanel = new MainPanel(this);
-        ChartFrameDropTarget.decorate(this);
-        scrollBar = new JScrollBar(JScrollBar.HORIZONTAL);
-        scrollBar.setAlignmentX(java.awt.Component.RIGHT_ALIGNMENT);
+    protected void initComponents(boolean force) {
+        if (chartLayer.getView() == null || force) {
+            chartToolbar = new ChartToolbar(this);
+            mainPanel = new MainPanel(this);
+            ChartFrameDropTarget.decorate(this);
+            scrollBar = new JScrollBar(JScrollBar.HORIZONTAL);
+            scrollBar.setAlignmentX(java.awt.Component.RIGHT_ALIGNMENT);
 
-        JPanel chartLayerView = new JPanel(new BorderLayout());
-        chartLayerView.add(chartToolbar, BorderLayout.NORTH);
-        chartLayerView.add(new JLayer<>(mainPanel, new XORCrosshairActiveRendererLayer()), BorderLayout.CENTER);
-        //		chartLayerView.add(mainPanel, BorderLayout.CENTER);
-        chartLayerView.add(scrollBar, BorderLayout.SOUTH);
-        chartLayer.setView(chartLayerView);
+            JPanel chartLayerView = new JPanel(new BorderLayout());
+            chartLayerView.add(chartToolbar, BorderLayout.NORTH);
+            chartLayerView.add(new JLayer<>(mainPanel, new XORCrosshairActiveRendererLayer()), BorderLayout.CENTER);
+            //		chartLayerView.add(mainPanel, BorderLayout.CENTER);
+            chartLayerView.add(scrollBar, BorderLayout.SOUTH);
+            chartLayer.setView(chartLayerView);
 
-        // add chart JLayer as a direct child of this frame
-        add(chartLayer);
+            // add chart JLayer as a direct child of this frame
+            add(chartLayer);
 
-        validate();
+            validate();
 
-        if (chartTemplate != null) {
-            for (Overlay overlay : chartTemplate.getOverlays())
-                fireOverlayAdded(overlay);
-            for (Indicator indicator : chartTemplate.getIndicators())
-                fireIndicatorAdded(indicator);
-        }
-        if (chartData.getAnnotations() != null)
-            restoreAnnotations();
-
-        addMouseWheelListener(this);
-        scrollBar.getModel().addChangeListener(e -> {
-            ChartData chartData = getChartData();
-            int items = chartData.getPeriod();
-            int itemsCount = chartData.getDatasetLength();
-            int end = scrollBar.getModel().getValue() + items;
-
-            end = end > itemsCount ? itemsCount : (end < items ? items : end);
-
-            if (chartData.getLast() != end) {
-                chartData.setLast(end);
-                chartData.calculate(ChartFrame.this);
+            if (chartTemplate != null) {
+                for (Overlay overlay : chartTemplate.getOverlays())
+                    fireOverlayAdded(overlay);
+                for (Indicator indicator : chartTemplate.getIndicators())
+                    fireIndicatorAdded(indicator);
             }
-            repaint();
-        });
+            if (chartData.getAnnotations() != null)
+                restoreAnnotations();
+
+            addMouseWheelListener(this);
+            scrollBar.getModel().addChangeListener(e -> {
+                ChartData chartData = getChartData();
+                int items = chartData.getPeriod();
+                int itemsCount = chartData.getDatasetLength();
+                int end = scrollBar.getModel().getValue() + items;
+
+                end = end > itemsCount ? itemsCount : (end < items ? items : end);
+
+                if (chartData.getLast() != end) {
+                    chartData.setLast(end);
+                    chartData.calculate(ChartFrame.this);
+                }
+                repaint();
+            });
+        }
     }
 
+    @Override
     public Logger log() {
         return log;
     }
@@ -200,7 +202,7 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
         if (chartData.getDataset() == null)
             datasetLoading(chartData.getSymbol(), chartData.getTimeFrame());
 
-        initComponents();
+        initComponents(false);
         super.addNotify();
     }
 
@@ -466,7 +468,7 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
             //remove(loading);
             boolean firstLaunch;
             if (firstLaunch = (mainPanel == null))
-                initComponents();
+                initComponents(false);
             else {
                 setName(NbBundle.getMessage(ChartFrame.class, "ChartFrame.name", symbol.name()));
                 resetHorizontalScrollBar();
