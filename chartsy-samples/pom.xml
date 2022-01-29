@@ -47,7 +47,12 @@
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>chartsy-rest</artifactId>
+            <artifactId>chartsy-frontend</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>chartsy-simulation</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -73,11 +78,6 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>chartsy-ui-chart-overlays</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>chartsy-simulation</artifactId>
             <version>${project.version}</version>
         </dependency>
 

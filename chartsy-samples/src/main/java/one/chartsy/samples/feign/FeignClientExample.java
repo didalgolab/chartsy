@@ -3,9 +3,7 @@ package one.chartsy.samples.feign;
 import feign.Feign;
 import feign.Headers;
 import feign.RequestLine;
-import feign.jackson.JacksonDecoder;
 import feign.jackson.JacksonEncoder;
-import one.chartsy.rest.controllers.SystemController;
 
 import java.util.concurrent.ThreadLocalRandom;
 

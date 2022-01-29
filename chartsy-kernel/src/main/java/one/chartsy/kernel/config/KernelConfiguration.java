@@ -2,12 +2,15 @@ package one.chartsy.kernel.config;
 
 import one.chartsy.Workspace;
 import one.chartsy.kernel.DataProviderRegistry;
+import org.openide.util.Lookup;
 import org.openide.util.lookup.ServiceProvider;
 import org.springframework.boot.Banner;
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
@@ -44,7 +47,8 @@ public class KernelConfiguration {
         app.setBannerMode(Banner.Mode.OFF);
         app.setAllowBeanDefinitionOverriding(true);
         app.setDefaultProperties(createDefaultProperties());
-        //app.setResourceLoader(new DefaultResourceLoader(Lookup.getDefault().lookup(ClassLoader.class)));
+        app.setWebApplicationType(WebApplicationType.NONE);
+        app.setResourceLoader(new DefaultResourceLoader(Lookup.getDefault().lookup(ClassLoader.class)));
         return app;
     }
 

@@ -8,7 +8,7 @@ import one.chartsy.data.provider.DataProvider;
 import one.chartsy.persistence.domain.SymbolGroupAggregateData;
 import one.chartsy.persistence.domain.model.SymbolGroupRepository;
 import one.chartsy.ui.ChartTopComponent;
-import one.chartsy.ui.FrontEnd;
+import one.chartsy.frontend.FrontEnd;
 import one.chartsy.ui.chart.*;
 import one.chartsy.ui.nodes.BaseNodeAction;
 import one.chartsy.ui.nodes.NodeSelection;

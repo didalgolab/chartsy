@@ -1,4 +1,0 @@
-Manifest-Version: 1.0
-AutoUpdate-Essential-Module: false
-OpenIDE-Module-Fragment-Host: one.chartsy.kernel
-OpenIDE-Module-Localizing-Bundle: one/chartsy/rest/Bundle.properties
