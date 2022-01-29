@@ -2,15 +2,13 @@ package one.chartsy.kernel.config;
 
 import one.chartsy.Workspace;
 import one.chartsy.kernel.DataProviderRegistry;
-import org.openide.util.Lookup;
+import one.chartsy.kernel.starter.AbstractSpringApplicationBuilderFactory;
 import org.openide.util.lookup.ServiceProvider;
-import org.springframework.boot.Banner;
-import org.springframework.boot.SpringApplication;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
@@ -21,7 +19,7 @@ import java.util.Map;
 @Configuration
 @EnableAutoConfiguration
 @ServiceProvider(service = KernelConfiguration.class)
-public class KernelConfiguration {
+public class KernelConfiguration extends AbstractSpringApplicationBuilderFactory {
 
     @Bean
     public ExpressionParser expressionParser() {
@@ -41,15 +39,11 @@ public class KernelConfiguration {
         return taskScheduler;
     }
 
-    public SpringApplication createApplication() {
-        SpringApplication app = new SpringApplication(getClass());
-        app.setLazyInitialization(true);
-        app.setBannerMode(Banner.Mode.OFF);
-        app.setAllowBeanDefinitionOverriding(true);
-        app.setDefaultProperties(createDefaultProperties());
-        app.setWebApplicationType(WebApplicationType.NONE);
-        app.setResourceLoader(new DefaultResourceLoader(Lookup.getDefault().lookup(ClassLoader.class)));
-        return app;
+    @Override
+    public SpringApplicationBuilder createSpringApplicationBuilder() {
+        return super.createSpringApplicationBuilder()
+                .web(WebApplicationType.NONE)
+                .properties(createDefaultProperties());
     }
 
     protected Map<String, Object> createDefaultProperties() {
