@@ -1,13 +1,14 @@
 package one.chartsy.frontend.rest.controllers;
 
+import one.chartsy.simulation.ImmutableSimulationResult;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/backtest")
 public class BacktestController {
 
-    @GetMapping("/result")
-    public String addBacktestResult() {
+    @PostMapping("/result")
+    public String addBacktestResult(@RequestBody ImmutableSimulationResult result) {
         return "{\"Hello\":\"World\",\"cnt\"}";
     }
 

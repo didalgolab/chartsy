@@ -1,12 +1,19 @@
 package one.chartsy.core.services;
 
+import com.google.gson.GsonBuilder;
 import feign.Feign;
+import feign.Logger;
+import feign.RequestTemplate;
 import feign.Target;
 import feign.gson.GsonDecoder;
 import feign.gson.GsonEncoder;
 import feign.http2client.Http2Client;
+import one.chartsy.core.json.GsonTypeAdapters;
 import org.openide.util.lookup.ServiceProvider;
 import org.openide.util.lookup.ServiceProviders;
+
+import java.lang.reflect.Modifier;
+import java.lang.reflect.Type;
 
 @ServiceProviders({
         @ServiceProvider(service = Feign.class),
@@ -27,8 +34,17 @@ public class FeignClient extends Feign {
 
     public Feign.Builder toBuilder() {
         return Feign.builder()
-                .encoder(new GsonEncoder())
+                .encoder(new GsonEncoder(GsonTypeAdapters.installOn(new GsonBuilder()).create()) {
+                    @Override
+                    public void encode(Object object, Type bodyType, RequestTemplate template) {
+                        if (bodyType instanceof Class bodyClass && (bodyClass.isInterface() || Modifier.isAbstract(bodyClass.getModifiers())))
+                            bodyType = object.getClass();
+                        super.encode(object, bodyType, template);
+                    }
+                })
                 .decoder(new GsonDecoder())
-                .client(new Http2Client());
+                .client(new Http2Client())
+                .logger(new Log4j2Logger(getClass()))
+                .logLevel(Logger.Level.FULL);
     }
 }

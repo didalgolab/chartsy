@@ -17,6 +17,7 @@
                 <configuration>
                     <codeNameBase>one.chartsy.core</codeNameBase>
                     <publicPackages>
+                        <publicPackage>com.fasterxml.jackson.annotation.*</publicPackage>
                         <publicPackage>com.google.gson.*</publicPackage>
                         <publicPackage>feign.*</publicPackage>
                         <publicPackage>javax.annotation.*</publicPackage>
@@ -40,6 +41,11 @@
     </build>
     <dependencies>
         <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
             <version>${gson.version}</version>
@@ -48,19 +54,19 @@
             <groupId>io.github.openfeign</groupId>
             <artifactId>feign-core</artifactId>
             <version>${feign.version}</version>
-            <optional>true</optional>
+            <!--optional>true</optional-->
         </dependency>
         <dependency>
             <groupId>io.github.openfeign</groupId>
             <artifactId>feign-gson</artifactId>
             <version>${feign.version}</version>
-            <optional>true</optional>
+            <!--optional>true</optional-->
         </dependency>
         <dependency>
             <groupId>io.github.openfeign</groupId>
             <artifactId>feign-java11</artifactId>
             <version>${feign.version}</version>
-            <optional>true</optional>
+            <!--optional>true</optional-->
         </dependency>
         <dependency>
             <groupId>jakarta.annotation</groupId>

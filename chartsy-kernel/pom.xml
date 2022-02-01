@@ -17,6 +17,7 @@
                 <configuration>
                     <codeNameBase>one.chartsy.kernel</codeNameBase>
                     <publicPackages>
+                        <publicPackage>com.fasterxml.jackson.*</publicPackage>
                         <publicPackage>one.chartsy.kernel.*</publicPackage>
                         <publicPackage>one.chartsy.persistence.domain.*</publicPackage>
                         <publicPackage>org.apache.commons.logging.*</publicPackage>
@@ -41,6 +42,17 @@
         </plugins>
     </build>
     <dependencies>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>chartsy-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-math3</artifactId>
@@ -102,12 +114,6 @@
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-core</artifactId>
             <version>${log4j.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>chartsy-core</artifactId>
-            <version>${project.version}</version>
         </dependency>
     </dependencies>
 </project>

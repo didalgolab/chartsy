@@ -1,6 +1,7 @@
 package one.chartsy.core.json;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.openide.util.lookup.ServiceProvider;
@@ -8,14 +9,13 @@ import org.openide.util.lookup.ServiceProviders;
 
 @ServiceProviders({
         @ServiceProvider(service = JsonFormatter.class),
-        @ServiceProvider(service = GsonJsonFormatter.class)
-})
+        @ServiceProvider(service = GsonJsonFormatter.class)})
 public class GsonJsonFormatter implements JsonFormatter {
 
     private final Gson gson;
 
     public GsonJsonFormatter() {
-        this(new Gson());
+        this(GsonTypeAdapters.installOn(new GsonBuilder()).create());
     }
 
     public GsonJsonFormatter(Gson gson) {

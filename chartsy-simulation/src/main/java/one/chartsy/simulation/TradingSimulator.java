@@ -189,7 +189,7 @@ public class TradingSimulator extends TradingStrategyProxy implements TradingSer
         var endTime = LocalDateTime.now();
         var result = model.getResult();
         var remainedOrders = model.getAccount().getPendingOrders();
-        result.remainingOrders(model.getAccount().getPendingOrders());
+        //result.remainingOrders(model.getAccount().getPendingOrders());
         result.remainingOrderCount(remainedOrders
                 .values().stream()
                 .mapToInt(List::size)
