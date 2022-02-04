@@ -4,6 +4,7 @@ import com.google.gson.GsonBuilder;
 import one.chartsy.frontend.config.FrontEndConfiguration;
 import one.chartsy.kernel.ServiceManager;
 import one.chartsy.kernel.ServiceManagerTypeAdapter;
+import one.chartsy.simulation.SimulationResult;
 import one.chartsy.ui.chart.Chart;
 import one.chartsy.ui.chart.ChartTemplate;
 import one.chartsy.ui.chart.Indicator;
@@ -12,6 +13,8 @@ import one.chartsy.ui.chart.type.CandlestickChart;
 import one.chartsy.ui.json.gson.BasicStrokeTypeAdapter;
 import one.chartsy.ui.json.gson.ColorTypeAdapter;
 import one.chartsy.ui.json.gson.FontTypeAdapter;
+import one.chartsy.ui.reports.Report;
+import one.chartsy.ui.simulation.reports.ReportableSimulationResult;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.context.annotation.*;
@@ -45,4 +48,8 @@ public class GuiFrontEndConfiguration {
         return new CandlestickChart();
     }
 
+    @Bean
+    public Report simulationResultReport(SimulationResult result) {
+        return new ReportableSimulationResult(result);
+    }
 }

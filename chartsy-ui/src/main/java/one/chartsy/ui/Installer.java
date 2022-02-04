@@ -20,7 +20,7 @@ public class Installer implements Runnable {
         if (kernel == null) {
             synchronized (Installer.class) {
                 if (kernel == null)
-                    kernel = Lookup.getDefault().lookup(Kernel.class);
+                    kernel = Kernel.getDefault();
             }
         }
 //        ForkJoinPool.commonPool().execute(() -> {

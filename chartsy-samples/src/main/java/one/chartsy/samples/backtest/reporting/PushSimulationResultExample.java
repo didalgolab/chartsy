@@ -115,6 +115,7 @@ public class PushSimulationResultExample {
 //        System.out.println(json);
 //        System.out.println(mapper.readValue(json, ImmutableSimulationResult.class));
 
-        restClient.updateSimulationResult(simulationResult);
+        for (int i = 0; i < 100_000; i++)
+            restClient.updateSimulationResult(simulationResult);
     }
 }

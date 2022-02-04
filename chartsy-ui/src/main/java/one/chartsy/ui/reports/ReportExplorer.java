@@ -1,5 +1,6 @@
 package one.chartsy.ui.reports;
 
+import one.chartsy.frontend.FrontEnd;
 import one.chartsy.kernel.Kernel;
 import one.chartsy.ui.swing.CheckBoxTreeDecorator;
 import one.chartsy.ui.swing.CheckBoxTreeSelectionModel;
@@ -50,10 +51,11 @@ public class ReportExplorer extends TopComponent implements ExplorerManager.Prov
         
         // load root symbol group from the database
         BeanTreeView view = (BeanTreeView) scrollPane;
-        context = Lookup.getDefault().lookup(Kernel.class).getApplicationContext();
+        FrontEnd frontEnd = Lookup.getDefault().lookup(FrontEnd.class);
+        context = Kernel.getDefault().getApplicationContext();
         explorerManager.setRootContext(rootContext);
         viewControl = new TreeViewControl(rootContext);
-        viewControlAdapter = new ReportViewListener(viewControl);
+        viewControlAdapter = new ReportViewListener(frontEnd, topReport, viewControl);
 
         JTree tree = (JTree) scrollPane.getViewport().getView();
         view.expandNode(explorerManager.getRootContext());

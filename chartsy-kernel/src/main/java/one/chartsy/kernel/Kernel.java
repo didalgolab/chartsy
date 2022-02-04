@@ -24,7 +24,15 @@ public class Kernel {
                 .registerBean("kernel", Kernel.class, () -> this);
     }
 
+    public static Kernel getDefault() {
+        return Lookup.getDefault().lookup(Kernel.class);
+    }
+
     public ApplicationContext getApplicationContext() {
         return current.context();
+    }
+
+    public void publishEvent(Object event) {
+        getApplicationContext().publishEvent(event);
     }
 }

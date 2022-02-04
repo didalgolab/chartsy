@@ -13,19 +13,19 @@ public class FrontEndObject implements FrontEnd {
 
     private final SpringApplicationBuilder current;
 
-
     public FrontEndObject() {
-        this(Lookup.getDefault().lookup(FrontEndConfiguration.class), null);
+        this(Kernel.getDefault());
     }
 
     public FrontEndObject(Kernel kernel) {
-        this(Lookup.getDefault().lookup(FrontEndConfiguration.class), kernel.getApplicationContext());
+        this(Lookup.getDefault().lookup(FrontEndConfiguration.class), kernel);
     }
 
-    public FrontEndObject(FrontEndConfiguration configuration, ApplicationContext parent) {
+    public FrontEndObject(FrontEndConfiguration configuration, Kernel kernel) {
         current = configuration.createSpringApplicationBuilder();
-        ((GenericApplicationContext) current.run())
-                .registerBean("frontEnd", FrontEnd.class, () -> this);
+        var ctx = (GenericApplicationContext) current.run();
+        ctx.registerBean("frontEnd", FrontEnd.class, () -> this);
+        ctx.registerBean("kernel", Kernel.class, () -> kernel);
     }
 
     @Override

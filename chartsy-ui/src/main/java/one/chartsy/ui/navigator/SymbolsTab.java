@@ -44,7 +44,7 @@ public class SymbolsTab extends TopComponent implements ExplorerManager.Provider
         
         // load root symbol group from the database
         BeanTreeView view = (BeanTreeView) scrollPane;
-        context = Lookup.getDefault().lookup(Kernel.class).getApplicationContext();
+        context = Kernel.getDefault().getApplicationContext();
         SymbolGroupHierarchy symbolHierarchy = context.getBean(SymbolGroupHierarchy.class);
         SymbolGroupContent rootContext = symbolHierarchy.getRootContext();
         if (rootContext != null) {
