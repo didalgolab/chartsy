@@ -1,9 +1,11 @@
 package one.chartsy.ui.reports;
 
 import one.chartsy.core.Refreshable;
+import one.chartsy.time.TimeLock;
 import org.openide.nodes.ChildFactory;
 import org.openide.nodes.Node;
 
+import java.time.Duration;
 import java.util.List;
 
 public class ReportChildFactory extends ChildFactory<ReportHolder> implements Refreshable {
