@@ -1,13 +1,18 @@
-package one.chartsy;
+package one.chartsy.money;
+
+import one.chartsy.Currency;
 
 import java.util.*;
 
-public class StandardCurrencyRegistry implements CurrencyRegistry {
+public abstract class AbstractCurrencyRegistry implements CurrencyRegistry {
 
-    private final Map<String, Currency> currencies;
-    private final List<Currency> currencyList;
+    protected final Map<String, Currency> currencies;
 
-    public StandardCurrencyRegistry(List<Currency> currencyList) {
+    protected AbstractCurrencyRegistry(Map<String, Currency> currencies) {
+        this.currencies = currencies;
+    }
+
+    public AbstractCurrencyRegistry(List<Currency> currencyList) {
         var currencies = new HashMap<String, Currency>();
         for (Currency currency : loadAllCurrencies(currencyList))
             currencies.put(currency.currencyCode(), currency);
@@ -16,7 +21,6 @@ public class StandardCurrencyRegistry implements CurrencyRegistry {
             throw new IllegalArgumentException("currency list is empty");
 
         this.currencies = currencies;
-        this.currencyList = List.copyOf(currencyList);
     }
 
     protected List<Currency> loadAllCurrencies(List<Currency> candidates) {
@@ -24,16 +28,16 @@ public class StandardCurrencyRegistry implements CurrencyRegistry {
     }
 
     @Override
-    public Currency getCurrency(String currencyCode) {
-        return currencies.get(currencyCode);
+    public Optional<Currency> getCurrency(String currencyCode) {
+        return Optional.ofNullable(currencies.get(currencyCode));
     }
 
     @Override
     public List<Currency> getCurrencies() {
-        return currencyList;
+        return List.copyOf(currencies.values());
     }
 
-    public static abstract class EnumEnclosed extends StandardCurrencyRegistry {
+    public static abstract class EnumEnclosed extends AbstractCurrencyRegistry {
 
         protected EnumEnclosed() {
             super(new ArrayList<>());

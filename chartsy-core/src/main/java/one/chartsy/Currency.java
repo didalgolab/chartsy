@@ -1,6 +1,7 @@
 package one.chartsy;
 
-import one.chartsy.StandardCurrencyRegistry.EnumEnclosed;
+import one.chartsy.money.AbstractCurrencyRegistry.EnumEnclosed;
+import one.chartsy.money.CurrencyRegistry;
 import org.openide.util.lookup.ServiceProvider;
 
 /**
@@ -15,14 +16,30 @@ public interface Currency {
 
     int numericCode();
 
+    int defaultFractionDigits();
+
     static Currency of(String currencyCode) {
         return Currencies.getCurrency(currencyCode);
     }
 
-    Currency GBP = ISO4217.GBP;
+    Currency AUD = ISO4217.AUD;
+    Currency CAD = ISO4217.CAD;
+    Currency CHF = ISO4217.CHF;
     Currency EUR = ISO4217.EUR;
+    Currency GBP = ISO4217.GBP;
     Currency USD = ISO4217.USD;
     Currency BTC = Crypto.BTC;
+
+    default String numericCodeAsString() {
+        int numericCode = numericCode();
+        if (numericCode < 0 || numericCode > 999)
+            return "";
+
+        StringBuilder buf = new StringBuilder();
+        if (numericCode < 100)  buf.append('0');
+        if (numericCode < 10)   buf.append('0');
+        return buf.append(numericCode).toString();
+    }
 
     enum ISO4217 implements Currency {
         AED("UAE Dirham", 784, 2),
@@ -208,16 +225,16 @@ public interface Currency {
 
         private final String name;
         private final int numericCode;
-        private final Integer minorUnit;
+        private final Integer defaultFractionDigits;
 
         ISO4217(String name, int numericCode) {
-            this(name, numericCode, null);
+            this(name, numericCode, -1);
         }
 
-        ISO4217(String name, int numericCode, Integer minorUnit) {
+        ISO4217(String name, int numericCode, int defaultFractionDigits) {
             this.name = name;
             this.numericCode = numericCode;
-            this.minorUnit = minorUnit;
+            this.defaultFractionDigits = defaultFractionDigits;
         }
 
         @Override
@@ -235,12 +252,17 @@ public interface Currency {
             return numericCode;
         }
 
+        @Override
+        public int defaultFractionDigits() {
+            return defaultFractionDigits;
+        }
+
         @ServiceProvider(service = CurrencyRegistry.class)
         public static class Registry extends EnumEnclosed { }
     }
 
     enum Crypto implements Currency {
-        BTC("Bitcoin");
+        BTC("Bitcoin", 8);
 
         @Override
         public String currencyCode() {
@@ -257,16 +279,26 @@ public interface Currency {
             return 0;
         }
 
-        Crypto(String name) {
+        @Override
+        public int defaultFractionDigits() {
+            return defaultFractionDigits;
+        }
+
+        Crypto(String name, int defaultFractionDigits) {
             this.name = name;
+            this.defaultFractionDigits = defaultFractionDigits;
         }
 
         private final String name;
+        private final int defaultFractionDigits;
 
         @ServiceProvider(service = CurrencyRegistry.class)
         public static class Registry extends EnumEnclosed { }
     }
 
-    record Unit(String currencyCode, String currencyName, int numericCode) implements Currency {
+    record Unit(String currencyCode, String currencyName, int numericCode, int defaultFractionDigits) implements Currency {
+        public Unit(String currencyCode, String currencyName) {
+            this(currencyCode, currencyName, -1, -1);
+        }
     }
 }
