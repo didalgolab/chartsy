@@ -9,7 +9,7 @@ import java.util.Optional;
 
 public class CurrencyLookup implements CurrencyRegistry {
 
-    protected final MutableCurrencyRegistry otherCurrencies = new MutableCurrencyRegistry();
+    private final MutableCurrencyRegistry fallbackRegistry = new MutableCurrencyRegistry();
 
     @Override
     public List<Currency> getCurrencies() {
@@ -28,12 +28,16 @@ public class CurrencyLookup implements CurrencyRegistry {
             if (registry != this && (candidate = registry.getCurrency(currencyCode)).isPresent())
                 return candidate;
 
-        return Optional.of(createOtherCurrency(currencyCode));
+        return Optional.of(createFallbackCurrency(currencyCode));
     }
 
-    protected Currency createOtherCurrency(String currencyCode) {
+    public MutableCurrencyRegistry getFallbackRegistry() {
+        return fallbackRegistry;
+    }
+
+    protected Currency createFallbackCurrency(String currencyCode) {
         var newCurrency = new Currency.Unit(currencyCode, currencyCode);
-        return otherCurrencies.registerIfNotExists(newCurrency);
+        return getFallbackRegistry().registerIfNotExists(newCurrency);
     }
 
     public static CurrencyLookup getDefault() {

@@ -22,11 +22,14 @@ public interface Currency {
         return Currencies.getCurrency(currencyCode);
     }
 
+    /* The selection of commonly-used stable currencies. */
     Currency AUD = ISO4217.AUD;
     Currency CAD = ISO4217.CAD;
     Currency CHF = ISO4217.CHF;
     Currency EUR = ISO4217.EUR;
     Currency GBP = ISO4217.GBP;
+    Currency JPY = ISO4217.JPY;
+    Currency NZD = ISO4217.NZD;
     Currency USD = ISO4217.USD;
     Currency BTC = Crypto.BTC;
 

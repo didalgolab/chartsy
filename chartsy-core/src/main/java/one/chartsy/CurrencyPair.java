@@ -33,15 +33,6 @@ public final class CurrencyPair implements Comparable<CurrencyPair>, Serializabl
     }
 
     /**
-     * Checks if the currency pair is an identity pair.
-     *
-     * @return {@code true} if base and quote currencies in the pair are the same
-     */
-    public boolean isIdentity() {
-        return baseCurrency.equals(currency);
-    }
-
-    /**
      * Checks if the current currency pair is the inverse of the specified one.
      *
      * @param other the currency pair to test
@@ -49,6 +40,15 @@ public final class CurrencyPair implements Comparable<CurrencyPair>, Serializabl
      */
     public boolean isInverse(CurrencyPair other) {
         return inverse().equals(other);
+    }
+
+    /**
+     * Checks if the currency pair is an identity pair.
+     *
+     * @return {@code true} if base and quote currencies in the pair are the same
+     */
+    public boolean isIdentity() {
+        return baseCurrency.equals(currency);
     }
 
     /**
