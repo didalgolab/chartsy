@@ -24,7 +24,7 @@ public class StooqHourlyChartWithOverlayExample {
 
     public static void main(String[] args) throws IOException, InterruptedException, InvocationTargetException {
         FlatFileDataProvider dataProvider = FlatFileFormat.STOOQ
-                .newDataProvider(Path.of("C:/Users/Mariusz/Downloads/h_pl_txt.zip"));
+                .newDataProvider(Path.of("C:/Downloads/h_pl_txt.zip"));
 
         DataQuery<Candle> query = DataQuery.of(SymbolResource.of("BDX", TimeFrame.Period.H1));
         CandleSeries series = dataProvider.queryForCandles(query).collect(Batches.toCandleSeries());

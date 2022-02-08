@@ -24,7 +24,7 @@ import java.util.stream.Stream;
 public class StooqFlatFileItemReader {
 
     public static void main(String[] args) throws IOException {
-        FileSystem fs = FileSystems.newFileSystem(Path.of("C:/Users/Mariusz/Downloads/d_pl_txt(2).zip"));
+        FileSystem fs = FileSystems.newFileSystem(Path.of("C:/Downloads/d_pl_txt(2).zip"));
 
         Stream<Path> files = Files.list(fs.getPath("data/daily/pl/wse stocks"));
         for (Path file : files.toList()) {

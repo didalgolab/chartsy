@@ -24,7 +24,7 @@ public class StockSelectionFromStooqFlatFileDataProvider {
 
     public static void main(String[] args) throws IOException {
         FlatFileDataProvider dataProvider = FlatFileFormat.STOOQ
-                .newDataProvider(Path.of("C:/Users/Mariusz/Downloads/d_pl_txt(6).zip"));
+                .newDataProvider(Path.of("C:/Downloads/d_pl_txt(6).zip"));
 
         //CandleSeries series = dataProvider.queryForCandles(query).collect(Batches.toCandleSeries());
         Map<Pair<Double, String>, String> counts = new TreeMap<>();

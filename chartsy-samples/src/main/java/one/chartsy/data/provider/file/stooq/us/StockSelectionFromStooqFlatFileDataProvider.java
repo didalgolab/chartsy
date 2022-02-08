@@ -19,7 +19,7 @@ public class StockSelectionFromStooqFlatFileDataProvider {
     public static void main(String[] args) throws IOException {
         // create FlatFileDataProvider for a Stooq historical data file
         FlatFileDataProvider dataProvider = FlatFileFormat.STOOQ
-                .newDataProvider(Path.of("C:/Users/Mariusz/Downloads/d_us_txt(1).zip"));
+                .newDataProvider(Path.of("C:/Downloads/d_us_txt(1).zip"));
 
         // list all symbol groups containing stock symbols
         List<SymbolGroup> stockGroups = dataProvider.listSymbolGroups(

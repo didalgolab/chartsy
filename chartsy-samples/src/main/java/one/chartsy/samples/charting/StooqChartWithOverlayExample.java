@@ -24,7 +24,7 @@ public class StooqChartWithOverlayExample {
 
     public static void main(String[] args) throws IOException, InterruptedException, InvocationTargetException {
         FlatFileDataProvider dataProvider = FlatFileFormat.STOOQ
-                .newDataProvider(Path.of("C:/Users/Mariusz/Downloads/d_pl_txt(3).zip"));
+                .newDataProvider(Path.of("C:/Downloads/d_pl_txt(3).zip"));
 
         DataQuery<Candle> query = DataQuery.resource(
                 SymbolResource.of("BDX", TimeFrame.Period.DAILY))

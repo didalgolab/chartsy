@@ -21,7 +21,7 @@ public class StockSelectionFromHourlyStooqFlatFileDataProvider {
     public static void main(String[] args) throws IOException {
         // create FlatFileDataProvider for a Stooq historical data file
         FlatFileDataProvider dataProvider = FlatFileFormat.STOOQ
-                .newDataProvider(Path.of("C:/Users/Mariusz/Downloads/h_pl_txt(1).zip"));
+                .newDataProvider(Path.of("C:/Downloads/h_pl_txt(1).zip"));
 
         // list all stocks contained in a file
         Map<Pair<Double, String>, String> counts = new TreeMap<>();

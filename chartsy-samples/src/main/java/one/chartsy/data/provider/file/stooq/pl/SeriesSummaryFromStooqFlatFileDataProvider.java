@@ -15,7 +15,7 @@ public class SeriesSummaryFromStooqFlatFileDataProvider {
     public static void main(String[] args) throws IOException {
         // create FlatFileDataProvider for a Stooq-based historical data file
         FlatFileDataProvider dataProvider = FlatFileFormat.STOOQ
-                .newDataProvider(Path.of("C:/Users/Mariusz/Downloads/d_pl_txt(4).zip"));
+                .newDataProvider(Path.of("C:/Downloads/d_pl_txt(4).zip"));
 
         // list all stocks contained in a file
         List<? extends SymbolIdentity> stocks = dataProvider.listSymbols(new SymbolGroup("/data/daily/pl/wse stocks"));

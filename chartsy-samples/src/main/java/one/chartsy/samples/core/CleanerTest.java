@@ -30,7 +30,7 @@ public class CleanerTest {
 //        List<Object> objs = new LinkedList<>();
 //        for (int i = 0; i < 200; i++) {
 //            FlatFileDataProvider dataProvider = FlatFileFormat.STOOQ
-//                    .newDataProvider(Path.of("C:/Users/Mariusz/Downloads/d_pl_txt(4).zip"));
+//                    .newDataProvider(Path.of("C:/Downloads/d_pl_txt(4).zip"));
 //
 //            objs.add(dataProvider);
 //            System.out.println(i + ".");
@@ -44,7 +44,7 @@ public class CleanerTest {
 //        }
 
         FlatFileDataProvider dataProvider = FlatFileFormat.STOOQ
-                .newDataProvider(Path.of("C:/Users/Mariusz/Downloads/d_pl_txt(4).zip"));
+                .newDataProvider(Path.of("C:/Downloads/d_pl_txt(4).zip"));
         FileSystem fileSystem = dataProvider.getFileSystem();
 
         return cleaner.register(dataProvider, () -> {
