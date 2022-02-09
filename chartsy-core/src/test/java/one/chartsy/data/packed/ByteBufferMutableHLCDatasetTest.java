@@ -1,7 +1,13 @@
 package one.chartsy.data.packed;
 
 import one.chartsy.HLC;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import java.nio.ByteBuffer;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -50,8 +56,9 @@ class ByteBufferMutableHLCDatasetTest {
         assertEquals(new HLC(10L, 3, -2, 1), downsampling.get(1));
     }
 
-    @Test
-    void can_grow_in_length_freely() {
+    @ParameterizedTest
+    @MethodSource("datasets")
+    void can_grow_in_length_freely(ByteBufferMutableHLCDataset dataset) {
         final int LIMIT = 1_000_000;
         for (int time = 0, val = LIMIT-1; time < LIMIT; time++, val--)
             dataset.add(time, val);
@@ -60,5 +67,12 @@ class ByteBufferMutableHLCDatasetTest {
         for (int i = 0; i < dataset.length(); i++) {
             assertEquals(i, dataset.get(i).close());
         }
+    }
+
+    private static List<Named<ByteBufferMutableHLCDataset>> datasets() {
+        return List.of(
+                Named.of("non-direct", new ByteBufferMutableHLCDataset(ByteBuffer.allocate(256))),
+                Named.of("direct", new ByteBufferMutableHLCDataset(ByteBuffer.allocateDirect(256)))
+        );
     }
 }

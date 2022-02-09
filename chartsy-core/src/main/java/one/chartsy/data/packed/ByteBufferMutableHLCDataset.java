@@ -71,16 +71,22 @@ public class ByteBufferMutableHLCDataset extends AbstractDataset<HLC> implements
     }
 
     protected ByteBuffer expandBuffer(ByteBuffer buffer, int newProposedCapacity) {
-        byte[] oldArray = buffer.array();
-        byte[] newArray = new byte[newProposedCapacity];
-        System.arraycopy(oldArray, 0, newArray, 0, oldArray.length);
-        return ByteBuffer.wrap(newArray, buffer.position(), newArray.length - buffer.position());
+        ByteBuffer newBuffer = buffer.isDirect()?
+                ByteBuffer.allocateDirect(newProposedCapacity)
+                : ByteBuffer.allocate(newProposedCapacity);
+        buffer.position(0);
+        newBuffer.put(buffer);
+        return newBuffer;
+//        byte[] oldArray = buffer.array();
+//        byte[] newArray = new byte[newProposedCapacity];
+//        System.arraycopy(oldArray, 0, newArray, 0, oldArray.length);
+//        return ByteBuffer.wrap(newArray, buffer.position(), newArray.length - buffer.position());
     }
 
     public void add(long time, double value) {
         // check if buffer limit has been reached
         if (buffer.remaining() == 0)
-            buffer = expandBuffer(buffer, buffer.array().length * 2);
+            buffer = expandBuffer(buffer, buffer.capacity() * 2);
 
         // optional downsampling
         if (downsampleMicros != 1L)
