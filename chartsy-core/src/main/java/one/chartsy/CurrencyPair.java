@@ -76,12 +76,19 @@ public final class CurrencyPair implements Comparable<CurrencyPair>, Serializabl
             }
         }
 
-        if (delimPos > 0 && delimPos < currencyPairCode.length() - 1)
-            return of(currencyPairCode.substring(0, delimPos), currencyPairCode.substring(1 + delimPos));
-        else if (delimPos < 0 && currencyPairCode.length() == 6)
-            return of(currencyPairCode.substring(0, 3), currencyPairCode.substring(3));
+        String base, counter;
+        if (delimPos > 0 && delimPos < currencyPairCode.length() - 1) {
+            base = currencyPairCode.substring(0, delimPos);
+            counter = currencyPairCode.substring(1 + delimPos);
+        }
+        else if (delimPos < 0 && currencyPairCode.length() == 6) {
+            base = currencyPairCode.substring(0, 3);
+            counter = currencyPairCode.substring(3);
+        }
         else
             throw new ParseException(currencyPairCode, 0);
+
+        return of(base.intern(), counter.intern());
     }
 
     /**

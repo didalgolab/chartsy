@@ -70,6 +70,15 @@ class CurrencyPairTest {
     }
 
     @Test
+    void parse_gives_all_currency_codes_interned() throws ParseException {
+        CurrencyPair pair1 = CurrencyPair.parse("EUR/USD");
+        CurrencyPair pair2 = CurrencyPair.parse("EUR/USD");
+
+        assertSame(pair1.baseCurrency(), pair2.baseCurrency());
+        assertSame(pair1.currency(), pair2.currency());
+    }
+
+    @Test
     void toString_gives_parseable_text_representation() throws ParseException {
         String currencyPairCode = EUR_USD.toString();
         assertEquals(EUR_USD, CurrencyPair.parse(currencyPairCode));
