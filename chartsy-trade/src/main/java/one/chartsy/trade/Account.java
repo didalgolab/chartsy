@@ -4,6 +4,7 @@ import one.chartsy.Candle;
 import one.chartsy.SymbolIdentity;
 import one.chartsy.trade.data.Position;
 import one.chartsy.trade.event.PositionChangeListener;
+import one.chartsy.trade.event.PositionValueChangeListener;
 
 import java.util.List;
 import java.util.Map;
@@ -83,4 +84,8 @@ public interface Account {
     void addPositionChangeListener(PositionChangeListener listener);
 
     void removePositionChangeListener(PositionChangeListener listener);
+
+    void addPositionValueChangeListener(PositionValueChangeListener listener);
+
+    void removePositionValueChangeListener(PositionValueChangeListener listener);
 }

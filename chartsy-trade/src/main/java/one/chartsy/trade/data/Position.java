@@ -24,8 +24,10 @@ public class Position implements Cloneable {
     private final Order entryOrder;
     /** The entry risk on the day of position entry. */
     private final double entryRisk;
-    /** Current currPrice of the position symbol in points. */
+    /** Current price of the position symbol in points. */
     private double currPrice;
+    /** The time of last current price update. */
+    private long currTime;
     /** The commission costs paid so far for this position. */
     private double commission;
     /** The additional custom commission. */
@@ -77,12 +79,13 @@ public class Position implements Cloneable {
      * 
      * @param price
      *            the current price
-     * @param epochMicros
-     *            the bar time
+     * @param marketTime
+     *            the current time
      */
-    public double updateProfit(double price, long epochMicros) {
+    public double updateProfit(double price, long marketTime) {
         double delta = -profit - swap;
         currPrice = price;
+        currTime = marketTime;
         profit = (price - entryPrice) * quantity * direction.tag;
         maxFavorableExcursion = Math.max(profit, maxFavorableExcursion);
         maxAdverseExcursion = Math.min(profit, maxAdverseExcursion);
@@ -154,20 +157,14 @@ public class Position implements Cloneable {
         return entryOrder.getExitLimit();
     }
     
-    /**
-     * @return the currPrice
-     */
     public double getCurrPrice() {
         return currPrice;
     }
-    
-    /**
-     * @param currPrice the currPrice to set
-     */
-    public void setCurrPrice(double currPrice) {
-        this.currPrice = currPrice;
+
+    public long getCurrTime() {
+        return currTime;
     }
-    
+
     /**
      * @return the commission
      */

@@ -10,6 +10,8 @@ import one.chartsy.trade.Order;
 import one.chartsy.trade.data.Position;
 import one.chartsy.trade.data.TransactionData;
 import one.chartsy.trade.event.PositionChangeListener;
+import one.chartsy.trade.event.PositionValueChangeEvent;
+import one.chartsy.trade.event.PositionValueChangeListener;
 
 import java.util.*;
 
@@ -151,11 +153,19 @@ public class SimulationAccount implements Account {
     @Override
     public void updateProfit(SymbolIdentity symbol, Candle ohlc) {
         Position position = getInstrument(symbol).position();
-        if (position != null)
+        if (position != null) {
             profit += position.updateProfit(ohlc.close(), ohlc.getTime());
-        // TODO
-        //if (!equityChangeListeners.isEmpty())
-        //    equityChangeListeners.fire().equityChanged(this, bar.time);
+
+            if (!positionValueChangeListeners.isEmpty())
+                firePositionValueChanged(position);
+        }
+    }
+
+    private void firePositionValueChanged(Position position) {
+        if (positionValueChangeEvent == null)
+            positionValueChangeEvent = new PositionValueChangeEvent(this);
+        positionValueChangeEvent.setState(position);
+        positionValueChangeListeners.fire().positionValueChanged(positionValueChangeEvent);
     }
 
     private void firePositionOpened(Position position) {
@@ -170,6 +180,10 @@ public class SimulationAccount implements Account {
 
     /** The list of registered position change listeners. */
     private final ListenerList<PositionChangeListener> positionChangeListeners = ListenerList.of(PositionChangeListener.class);
+    /** The list of registered position value change listeners. */
+    private final ListenerList<PositionValueChangeListener> positionValueChangeListeners = ListenerList.of(PositionValueChangeListener.class);
+    /** The lazily-created, shared and stateful instance of PositionValueChangeEvent. */
+    private PositionValueChangeEvent positionValueChangeEvent;
 
     @Override
     public void addPositionChangeListener(PositionChangeListener listener) {
@@ -179,5 +193,15 @@ public class SimulationAccount implements Account {
     @Override
     public void removePositionChangeListener(PositionChangeListener listener) {
         positionChangeListeners.removeListener(listener);
+    }
+
+    @Override
+    public void addPositionValueChangeListener(PositionValueChangeListener listener) {
+        positionValueChangeListeners.addListener(listener);
+    }
+
+    @Override
+    public void removePositionValueChangeListener(PositionValueChangeListener listener) {
+        positionValueChangeListeners.removeListener(listener);
     }
 }
