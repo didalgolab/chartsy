@@ -6,6 +6,7 @@ import one.chartsy.TimeFrame;
 import one.chartsy.data.CandleSeries;
 import one.chartsy.data.Series;
 import one.chartsy.simulation.engine.SimpleSimulationRunner;
+import one.chartsy.trade.strategy.ExitState;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
@@ -39,7 +40,7 @@ class SimulationRunnerTest {
         runner.run(List.of(series), myStrategy);
         var order = inOrder(myStrategy);
         order.verify(myStrategy).initSimulation(any());
-        order.verify(myStrategy).postSimulation();
+        order.verify(myStrategy).postSimulation(ExitState.COMPLETED);
     }
 
     @ParameterizedTest
@@ -56,7 +57,7 @@ class SimulationRunnerTest {
         order.verify(simDriver).onTradingDayStart(dataPointDate);
         order.verify(simDriver).onData(any(), same(dataPoint));
         order.verify(simDriver).onTradingDayEnd(dataPointDate);
-        order.verify(simDriver).postSimulation();
+        order.verify(simDriver).postSimulation(ExitState.COMPLETED);
         Mockito.verifyNoMoreInteractions(simDriver);
     }
 

@@ -8,6 +8,7 @@ import one.chartsy.simulation.time.SimulationClock;
 import one.chartsy.time.Chronological;
 import one.chartsy.trade.*;
 import one.chartsy.trade.data.Position;
+import one.chartsy.trade.strategy.ExitState;
 import one.chartsy.trade.strategy.SimulatorOptions;
 import one.chartsy.trade.strategy.TradingAgent;
 import one.chartsy.trade.strategy.TradingAgentAdapter;
@@ -184,11 +185,12 @@ public class TradingSimulator extends TradingAgentAdapter implements TradingServ
     }
 
     @Override
-    public SimulationResult postSimulation() {
+    public SimulationResult postSimulation(ExitState state) {
         SimpleMatchingEngine model = this.matchingEngine;
         if (model == null)
             throw new SimulationException("Simulation not started");
 
+        onExit(state);
         var endTime = LocalDateTime.now();
         var result = model.getResult();
         var remainedOrders = model.getAccount().getPendingOrders();

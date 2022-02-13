@@ -9,9 +9,9 @@ import one.chartsy.simulation.SimulationResult;
 import one.chartsy.simulation.SimulationRunner;
 import one.chartsy.simulation.data.TradingData;
 import one.chartsy.time.Chronological;
+import one.chartsy.trade.strategy.ExitState;
 
 import java.time.LocalDate;
-import java.util.Collection;
 import java.util.List;
 
 public class SimpleSimulationRunner implements SimulationRunner {
@@ -63,6 +63,6 @@ public class SimpleSimulationRunner implements SimulationRunner {
             // Generate the last end-of-day event
             strategy.onTradingDayEnd(currDate);
         }
-        return strategy.postSimulation();
+        return strategy.postSimulation(ExitState.COMPLETED);
     }
 }
