@@ -62,7 +62,7 @@ public class ByteBufferMutableHLCDatasetBenchmarkTest {
 //                .map(FileChannel.MapMode.READ_WRITE, 0, 320_000);
 //        this.dataset = new ByteBufferMutableHLCDataset(mappedByteBuffer);
         //this.dataset = new ByteBufferMutableHLCDataset(ByteBuffer.allocateDirect(320_000));
-        this.dataset = new ByteBufferMutableHLCDataset(1L, ByteBuffer.allocate(256));
+        this.dataset = new ByteBufferMutableHLCDataset(ByteBuffer.allocate(256), 1L);
         this.list.clear();
         this.time = 0;
     }

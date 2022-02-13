@@ -26,14 +26,14 @@ public class ByteBufferMutableHLCDataset extends AbstractDataset<HLC> implements
     }
 
     public ByteBufferMutableHLCDataset(long downsampleMicros) {
-        this(downsampleMicros, ByteBuffer.wrap(new byte[RAW_BYTES * DEFAULT_CAPACITY]));
+        this(ByteBuffer.wrap(new byte[RAW_BYTES * DEFAULT_CAPACITY]), downsampleMicros);
     }
 
     public ByteBufferMutableHLCDataset(ByteBuffer buffer) {
-        this(1L, buffer);
+        this(buffer, 1L);
     }
 
-    public ByteBufferMutableHLCDataset(long downsampleMicros, ByteBuffer buffer) {
+    public ByteBufferMutableHLCDataset(ByteBuffer buffer, long downsampleMicros) {
         this.downsampleMicros = downsampleMicros;
         this.buffer = buffer;
     }

@@ -11,5 +11,5 @@ import one.chartsy.trade.data.Position;
  */
 public interface PositionValueChangeListener {
 
-    void positionValueChanged(PositionValueChangeEvent e);
+    void positionValueChanged(Account account, Position position);
 }

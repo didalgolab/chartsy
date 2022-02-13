@@ -10,7 +10,6 @@ import one.chartsy.trade.Order;
 import one.chartsy.trade.data.Position;
 import one.chartsy.trade.data.TransactionData;
 import one.chartsy.trade.event.PositionChangeListener;
-import one.chartsy.trade.event.PositionValueChangeEvent;
 import one.chartsy.trade.event.PositionValueChangeListener;
 
 import java.util.*;
@@ -157,15 +156,12 @@ public class SimulationAccount implements Account {
             profit += position.updateProfit(ohlc.close(), ohlc.getTime());
 
             if (!positionValueChangeListeners.isEmpty())
-                firePositionValueChanged(position);
+                firePositionValueChanged(this, position);
         }
     }
 
-    private void firePositionValueChanged(Position position) {
-        if (positionValueChangeEvent == null)
-            positionValueChangeEvent = new PositionValueChangeEvent(this);
-        positionValueChangeEvent.setState(position);
-        positionValueChangeListeners.fire().positionValueChanged(positionValueChangeEvent);
+    private void firePositionValueChanged(Account account, Position position) {
+        positionValueChangeListeners.fire().positionValueChanged(account, position);
     }
 
     private void firePositionOpened(Position position) {
@@ -182,8 +178,6 @@ public class SimulationAccount implements Account {
     private final ListenerList<PositionChangeListener> positionChangeListeners = ListenerList.of(PositionChangeListener.class);
     /** The list of registered position value change listeners. */
     private final ListenerList<PositionValueChangeListener> positionValueChangeListeners = ListenerList.of(PositionValueChangeListener.class);
-    /** The lazily-created, shared and stateful instance of PositionValueChangeEvent. */
-    private PositionValueChangeEvent positionValueChangeEvent;
 
     @Override
     public void addPositionChangeListener(PositionChangeListener listener) {

@@ -19,6 +19,7 @@
                     <publicPackages>
                         <publicPackage>com.fasterxml.jackson.annotation.*</publicPackage>
                         <publicPackage>com.google.gson.*</publicPackage>
+                        <publicPackage>edu.umd.cs.findbugs.annotations</publicPackage>
                         <publicPackage>feign.*</publicPackage>
                         <publicPackage>javax.annotation.*</publicPackage>
                         <publicPackage>one.chartsy.*</publicPackage>
@@ -44,6 +45,11 @@
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
             <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.spotbugs</groupId>
+            <artifactId>spotbugs-annotations</artifactId>
+            <version>${spotbugs.version}</version>
         </dependency>
         <dependency>
             <groupId>com.google.code.gson</groupId>

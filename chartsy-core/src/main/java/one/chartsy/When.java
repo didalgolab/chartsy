@@ -1,8 +1,9 @@
 package one.chartsy;
 
+import one.chartsy.misc.Ephemeral;
 import one.chartsy.time.Chronological;
 
-public interface When {
+public interface When extends Ephemeral {
 
     SymbolResource<?> getResource();
 
