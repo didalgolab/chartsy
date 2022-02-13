@@ -6,8 +6,6 @@ import one.chartsy.scheduling.EventScheduler;
 import one.chartsy.simulation.time.SimulationClock;
 import one.chartsy.time.Chronological;
 
-import java.util.function.Consumer;
-
 class EventCorrelator implements EventScheduler {
 
     private final PriorityMap<Chronological, EventHandler> timedEvents = new PriorityMap<>();

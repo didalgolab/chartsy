@@ -2,21 +2,20 @@ package one.chartsy.simulation.services;
 
 import one.chartsy.data.Series;
 import one.chartsy.simulation.ImmutableSimulationContext;
-import one.chartsy.simulation.ImmutableSimulationProperties;
 import one.chartsy.simulation.SimulationContext;
-import one.chartsy.simulation.SimulationProperties;
+import one.chartsy.simulation.BacktestConfiguration;
 import one.chartsy.trade.Account;
 import one.chartsy.trade.OrderBroker;
 import one.chartsy.trade.TradingService;
-import one.chartsy.trade.TradingStrategyContext;
+import one.chartsy.trade.strategy.HostTradingAgentRuntime;
 import org.openide.util.Lookup;
 import org.openide.util.lookup.ServiceProvider;
 
-import java.util.Collection;
 import java.util.List;
 
+@Deprecated
 @ServiceProvider(service = SimulationContext.class)
-public class HostSimulationContext implements SimulationContext {
+public class HostSimulationContext extends HostTradingAgentRuntime implements SimulationContext {
 
     @Override
     public Lookup getLookup() {
@@ -24,8 +23,8 @@ public class HostSimulationContext implements SimulationContext {
     }
 
     @Override
-    public SimulationProperties properties() {
-        return ImmutableSimulationProperties.builder().build();
+    public BacktestConfiguration configuration() {
+        return BacktestConfiguration.builder().build();
     }
 
     @Override
@@ -39,7 +38,7 @@ public class HostSimulationContext implements SimulationContext {
     }
 
     @Override
-    public TradingStrategyContext withTradingService(TradingService service) {
+    public SimulationContext withTradingService(TradingService service) {
         return ImmutableSimulationContext.builder()
                 .from(this)
                 .tradingService(service)

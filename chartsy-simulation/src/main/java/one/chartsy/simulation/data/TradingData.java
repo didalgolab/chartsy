@@ -3,17 +3,16 @@ package one.chartsy.simulation.data;
 import one.chartsy.collections.PriorityMap;
 import one.chartsy.data.ChronologicalIterator;
 import one.chartsy.data.ChronologicalIteratorContext;
-import one.chartsy.data.IndexedSymbolResourceData;
 import one.chartsy.data.Series;
 import one.chartsy.time.Chronological;
-import one.chartsy.trade.TradingStrategyContext;
+import one.chartsy.trade.strategy.TradingAgentRuntime;
 
 import java.util.Collection;
 
 public class TradingData {
 
     public static PriorityMap<Chronological, ChronologicalIterator<?>> priorityMap(
-            TradingStrategyContext context,
+            TradingAgentRuntime runtime,
             Collection<? extends Series<?>> datasets)
     {
         PriorityMap<Chronological, ChronologicalIterator<?>> map = new PriorityMap<>(datasets.size());

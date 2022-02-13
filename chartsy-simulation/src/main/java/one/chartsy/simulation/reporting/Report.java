@@ -2,7 +2,7 @@ package one.chartsy.simulation.reporting;
 
 import one.chartsy.HLC;
 import one.chartsy.data.Dataset;
-import one.chartsy.simulation.incubator.ReportOptions;
+import one.chartsy.trade.strategy.ReportOptions;
 
 import java.util.Optional;
 

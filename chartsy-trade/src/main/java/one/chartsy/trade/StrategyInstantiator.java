@@ -3,15 +3,17 @@ package one.chartsy.trade;
 import one.chartsy.core.ThreadContext;
 import one.chartsy.time.Chronological;
 
+import one.chartsy.trade.strategy.TradingAgent;
+import one.chartsy.trade.strategy.TradingAgentFactory;
 import org.apache.commons.lang3.reflect.TypeUtils;
 
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.Map;
 
-public class StrategyInitializer {
+public class StrategyInstantiator {
 
-    public TradingStrategy newInstance(TradingStrategyProvider provider, StrategyConfigData config) {
+    public TradingAgent newInstance(TradingAgentFactory provider, StrategyConfigData config) {
         return ThreadContext.of(Map.of("config", config)).execute(provider::createInstance);
     }
 

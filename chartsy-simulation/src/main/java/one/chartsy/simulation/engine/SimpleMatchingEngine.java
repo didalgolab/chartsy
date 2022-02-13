@@ -9,6 +9,7 @@ import one.chartsy.trade.*;
 import one.chartsy.trade.data.Position;
 import one.chartsy.trade.event.ExecutionListener;
 import one.chartsy.trade.event.PositionChangeListener;
+import one.chartsy.trade.strategy.SimulatorOptions;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -17,19 +18,19 @@ import java.util.concurrent.atomic.AtomicLong;
 public class SimpleMatchingEngine extends OrderStatusUpdater implements OrderBroker, OrderFiller {
     //private final SimulationContext context;
     private final SimulationAccount account;
-    private final SimulationProperties properties;
+    private final SimulatorOptions properties;
     private final SimulationResult.Builder result;
     private final double spread;
     private final boolean allowSameBarExit;
     private final boolean allowTakeProfitSlippage;
 
-    public SimpleMatchingEngine(SimulationProperties properties, SimulationResult.Builder result) {
+    public SimpleMatchingEngine(SimulatorOptions properties, SimulationResult.Builder result) {
         this.result = result;
         this.account = new SimulationAccount(properties);
         this.properties = properties;
-        this.spread = properties.getSpread();
-        this.allowSameBarExit = properties.isAllowSameBarExit();
-        this.allowTakeProfitSlippage = properties.isAllowTakeProfitSlippage();
+        this.spread = properties.spread();
+        this.allowSameBarExit = properties.allowSameBarExit();
+        this.allowTakeProfitSlippage = properties.allowTakeProfitSlippage();
     }
 
     private final ListenerList<OrderStatusListener> orderStatusListeners = ListenerList.of(OrderStatusListener.class);
@@ -358,7 +359,7 @@ public class SimpleMatchingEngine extends OrderStatusUpdater implements OrderBro
     }
 
     public void afterLast(SymbolIdentity symbol, Candle ohlc) {
-        if (properties.isCloseAllPositionsAfterSimulation())
+        if (properties.closeAllPositionsAfterSimulation())
             closeAllPositionsAfterSimulation(symbol, ohlc);
     }
 

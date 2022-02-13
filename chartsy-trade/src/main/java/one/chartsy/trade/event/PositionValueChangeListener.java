@@ -9,6 +9,7 @@ import one.chartsy.trade.data.Position;
  *
  * @author Mariusz Bernacki
  */
+@FunctionalInterface
 public interface PositionValueChangeListener {
 
     void positionValueChanged(Account account, Position position);

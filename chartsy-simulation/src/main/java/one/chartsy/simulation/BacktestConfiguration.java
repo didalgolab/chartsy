@@ -1,14 +1,18 @@
-package one.chartsy.simulation.incubator;
+package one.chartsy.simulation;
 
 import edu.umd.cs.findbugs.annotations.Nullable;
 import lombok.Getter;
 import one.chartsy.TimeFrame;
+import one.chartsy.trade.strategy.ReportOptions;
+import one.chartsy.trade.strategy.SimulatorOptions;
+import one.chartsy.trade.strategy.StrategyConfiguration;
 import org.immutables.builder.Builder.AccessibleFields;
 import org.immutables.value.Value;
 
 import java.time.LocalDateTime;
 import java.util.function.Consumer;
 
+@Value.Style(depluralize = true, depluralizeDictionary = "series:series")
 @Value.Immutable
 public interface BacktestConfiguration extends StrategyConfiguration {
 
@@ -16,10 +20,16 @@ public interface BacktestConfiguration extends StrategyConfiguration {
 
     @Nullable LocalDateTime endTime();
 
+    static Builder builder() {
+        return new BacktestConfiguration.Builder();
+    }
+
+
     @AccessibleFields
     @Getter
     class Builder extends ImmutableBacktestConfiguration.Builder {
         private ReportOptions.OptionsBuilder<Builder> reportOptions = new ReportOptions.OptionsBuilder<>(this);
+        private SimulatorOptions.Builder simulatorOptions = SimulatorOptions.builder();
 
         public Builder() {
             timeFrame(TimeFrame.Period.DAILY);
@@ -30,9 +40,15 @@ public interface BacktestConfiguration extends StrategyConfiguration {
             return this;
         }
 
+        public Builder simulatorOptions(Consumer<SimulatorOptions.Builder> opt) {
+            opt.accept(simulatorOptions);
+            return this;
+        }
+
         @Override
         public ImmutableBacktestConfiguration build() {
             reportOptions(reportOptions.build());
+            simulatorOptions(simulatorOptions.build());
             return super.build();
         }
     }

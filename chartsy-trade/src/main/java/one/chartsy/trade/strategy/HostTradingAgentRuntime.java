@@ -1,11 +1,9 @@
 package one.chartsy.trade.strategy;
 
+import one.chartsy.data.Series;
 import one.chartsy.scheduling.EventScheduler;
 import one.chartsy.time.Clock;
-import one.chartsy.trade.Account;
-import one.chartsy.trade.OrderBroker;
-import one.chartsy.trade.TradingOptions;
-import one.chartsy.trade.TradingService;
+import one.chartsy.trade.*;
 import org.openide.util.Lookup;
 import org.openide.util.lookup.ServiceProvider;
 
@@ -36,8 +34,26 @@ public class HostTradingAgentRuntime implements TradingAgentRuntime {
     }
 
     @Override
+    public TradingAgentRuntime withTradingService(TradingService service) {
+        return ImmutableTradingAgentRuntime.builder()
+                .from(this)
+                .tradingService(service)
+                .build();
+    }
+
+    @Override
     public TradingOptions options() {
         return TradingOptions.getDefault();
+    }
+
+    @Override
+    public StrategyConfiguration configuration() {
+        return StrategyConfiguration.builder().build();
+    }
+
+    @Override
+    public List<? extends Series<?>> dataSeries() {
+        return List.of();
     }
 
     @Override

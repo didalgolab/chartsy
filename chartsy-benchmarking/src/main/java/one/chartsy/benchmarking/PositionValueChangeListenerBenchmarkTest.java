@@ -2,7 +2,6 @@ package one.chartsy.benchmarking;
 
 import one.chartsy.SymbolIdentity;
 import one.chartsy.core.event.ListenerList;
-import one.chartsy.simulation.ImmutableSimulationProperties;
 import one.chartsy.simulation.engine.SimulationAccount;
 import one.chartsy.simulation.reporting.EquityInformation;
 import one.chartsy.trade.Account;
@@ -11,6 +10,7 @@ import one.chartsy.trade.Order;
 import one.chartsy.trade.OrderType;
 import one.chartsy.trade.data.Position;
 import one.chartsy.trade.event.PositionValueChangeListener;
+import one.chartsy.trade.strategy.SimulatorOptions;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
@@ -28,7 +28,7 @@ public class PositionValueChangeListenerBenchmarkTest {
 
     ThreadLocalRandom rnd = ThreadLocalRandom.current();
     long time = 0;
-    Account account = new SimulationAccount(ImmutableSimulationProperties.builder().build());
+    Account account = new SimulationAccount(SimulatorOptions.builder().build());
     Position[] positions = new Position[10];
     ListenerList<PositionValueChangeListener> listeners = ListenerList.of(PositionValueChangeListener.class);
 

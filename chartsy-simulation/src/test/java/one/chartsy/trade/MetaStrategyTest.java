@@ -23,7 +23,7 @@ import java.util.*;
 import java.util.stream.Stream;
 
 import static one.chartsy.time.Chronological.toEpochMicros;
-import static one.chartsy.trade.StrategyInitializer.probeDataType;
+import static one.chartsy.trade.StrategyInstantiator.probeDataType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class MetaStrategyTest {

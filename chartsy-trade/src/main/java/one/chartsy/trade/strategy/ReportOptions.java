@@ -1,4 +1,4 @@
-package one.chartsy.simulation.incubator;
+package one.chartsy.trade.strategy;
 
 import one.chartsy.AttributeKey;
 import org.immutables.value.Value;

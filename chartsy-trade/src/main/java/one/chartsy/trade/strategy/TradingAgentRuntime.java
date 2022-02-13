@@ -1,5 +1,6 @@
 package one.chartsy.trade.strategy;
 
+import one.chartsy.data.Series;
 import one.chartsy.scheduling.EventScheduler;
 import one.chartsy.time.Clock;
 import one.chartsy.trade.TradingOptions;
@@ -8,6 +9,7 @@ import org.immutables.value.Value;
 import org.openide.util.Lookup;
 
 import java.time.ZoneId;
+import java.util.List;
 
 @Value.Immutable
 public interface TradingAgentRuntime extends Lookup.Provider {
@@ -20,6 +22,10 @@ public interface TradingAgentRuntime extends Lookup.Provider {
 
     TradingOptions options();
 
+    List<? extends Series<?>> dataSeries();
+
+    StrategyConfiguration configuration();
+
 
     TradingAgentRuntime withClock(Clock clock);
 
@@ -29,4 +35,5 @@ public interface TradingAgentRuntime extends Lookup.Provider {
 
     TradingAgentRuntime withScheduler(EventScheduler scheduler);
 
+    TradingAgentRuntime withTradingService(TradingService service);
 }

@@ -3,7 +3,7 @@ package one.chartsy.simulation.platform;
 import one.chartsy.HLC;
 import one.chartsy.data.Dataset;
 import one.chartsy.data.packed.ByteBufferMutableHLCDataset;
-import one.chartsy.simulation.incubator.ReportOptions;
+import one.chartsy.trade.strategy.ReportOptions;
 import one.chartsy.simulation.reporting.AbstractReportEngine;
 import one.chartsy.simulation.reporting.EquityInformation;
 import one.chartsy.simulation.reporting.Report;

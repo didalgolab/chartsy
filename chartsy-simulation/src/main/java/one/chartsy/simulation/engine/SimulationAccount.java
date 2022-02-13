@@ -3,7 +3,7 @@ package one.chartsy.simulation.engine;
 import one.chartsy.*;
 import one.chartsy.core.event.ListenerList;
 import one.chartsy.naming.SymbolIdentifier;
-import one.chartsy.simulation.SimulationProperties;
+import one.chartsy.trade.strategy.SimulatorOptions;
 import one.chartsy.trade.Account;
 import one.chartsy.trade.Execution;
 import one.chartsy.trade.Order;
@@ -16,7 +16,7 @@ import java.util.*;
 
 public class SimulationAccount implements Account {
     /** The strategy properties currently in use. */
-    private final SimulationProperties properties;
+    private final SimulatorOptions properties;
     /** The current account balance. */
     private double balance;
     /** The current profit of the account. */
@@ -45,9 +45,9 @@ public class SimulationAccount implements Account {
         }
     };
 
-    public SimulationAccount(SimulationProperties properties) {
+    public SimulationAccount(SimulatorOptions properties) {
         this.properties = properties;
-        this.balance = properties.getInitialBalance();
+        this.balance = properties.initialBalance();
     }
 
     @Override

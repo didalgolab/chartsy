@@ -1,6 +1,6 @@
 package one.chartsy.simulation.reporting;
 
-import one.chartsy.simulation.incubator.ReportOptions;
+import one.chartsy.trade.strategy.ReportOptions;
 
 public abstract class AbstractReportEngine implements ReportEngine {
     private final ReportOptions options;

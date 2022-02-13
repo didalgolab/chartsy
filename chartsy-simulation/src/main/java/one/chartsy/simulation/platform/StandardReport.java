@@ -5,7 +5,7 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 import one.chartsy.HLC;
 import one.chartsy.data.Dataset;
-import one.chartsy.simulation.incubator.ReportOptions;
+import one.chartsy.trade.strategy.ReportOptions;
 import one.chartsy.simulation.reporting.EquityInformation;
 import one.chartsy.simulation.reporting.Report;
 import one.chartsy.simulation.reporting.ReportEngine;

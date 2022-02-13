@@ -1,28 +1,34 @@
-package one.chartsy.trade;
+package one.chartsy.trade.strategy;
 
 import one.chartsy.When;
 import one.chartsy.time.Chronological;
+import one.chartsy.trade.Execution;
 import one.chartsy.trade.data.Position;
 
 import java.time.LocalDate;
 
-public class TradingStrategyProxy implements TradingStrategy {
+public class TradingAgentAdapter implements TradingAgent {
 
-    private TradingStrategy target;
+    private TradingAgent target;
 
-    public TradingStrategyProxy(TradingStrategy target) {
+    public TradingAgentAdapter(TradingAgent target) {
         setTarget(target);
     }
 
 
     @Override
-    public void initTradingStrategy(TradingStrategyContext context) {
-        getTarget().initTradingStrategy(context);
+    public void onInit(TradingAgentRuntime runtime) {
+        getTarget().onInit(runtime);
     }
 
     @Override
     public void onAfterInit() {
         getTarget().onAfterInit();
+    }
+
+    @Override
+    public void onExit(ExitState state) {
+        getTarget().onExit(state);
     }
 
     @Override
@@ -65,11 +71,11 @@ public class TradingStrategyProxy implements TradingStrategy {
         getTarget().onExecution(execution);
     }
 
-    public final TradingStrategy getTarget() {
+    public final TradingAgent getTarget() {
         return target;
     }
 
-    public void setTarget(TradingStrategy target) {
+    public void setTarget(TradingAgent target) {
         if (target == null)
             throw new IllegalArgumentException("target is NULL");
 

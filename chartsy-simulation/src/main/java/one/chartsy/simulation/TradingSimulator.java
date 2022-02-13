@@ -8,6 +8,9 @@ import one.chartsy.simulation.time.SimulationClock;
 import one.chartsy.time.Chronological;
 import one.chartsy.trade.*;
 import one.chartsy.trade.data.Position;
+import one.chartsy.trade.strategy.SimulatorOptions;
+import one.chartsy.trade.strategy.TradingAgent;
+import one.chartsy.trade.strategy.TradingAgentAdapter;
 import org.openide.util.Lookup;
 
 import java.time.*;
@@ -16,7 +19,7 @@ import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-public class TradingSimulator extends TradingStrategyProxy implements TradingService, SimulationDriver {
+public class TradingSimulator extends TradingAgentAdapter implements TradingService, SimulationDriver {
 
     private final SimulationClock clock = new SimulationClock(ZoneId.systemDefault(), 0);
     private final EventCorrelator eventCorrelator = new EventCorrelator();
@@ -24,11 +27,11 @@ public class TradingSimulator extends TradingStrategyProxy implements TradingSer
 
     protected SimpleMatchingEngine matchingEngine;
 
-    public TradingSimulator(TradingStrategy strategy) {
-        super(strategy);
+    public TradingSimulator(TradingAgent agent) {
+        super(agent);
     }
 
-    protected SimpleMatchingEngine createMatchingEngine(SimulationProperties properties, SimulationResult.Builder result) {
+    protected SimpleMatchingEngine createMatchingEngine(SimulatorOptions properties, SimulationResult.Builder result) {
         SimpleMatchingEngine model = new SimpleMatchingEngine(properties, result);
         model.addExecutionListener((getTarget()::onExecution));
         return model;
@@ -57,13 +60,13 @@ public class TradingSimulator extends TradingStrategyProxy implements TradingSer
     public void initSimulation(SimulationContext context) {
         currentDayNumber = 0;
         eventCorrelator.clear();
-        initDataSource(context.properties(), context.dataSeries());
-        super.initTradingStrategy(context.withTradingService(this));
+        initDataSource(context.configuration().simulatorOptions(), context.dataSeries());
+        super.onInit(context.withTradingService(this).withClock(clock).withScheduler(eventCorrelator));
         super.onAfterInit();
     }
 
     protected void initDataSource(
-            SimulationProperties properties,
+            SimulatorOptions properties,
             Collection<? extends Series<?>> datasets)
     {
         if (matchingEngine != null)

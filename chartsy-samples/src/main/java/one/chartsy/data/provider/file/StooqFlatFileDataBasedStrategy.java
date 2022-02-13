@@ -66,7 +66,7 @@ public class StooqFlatFileDataBasedStrategy {
                 super.onTradingDayStart(date);
                 if (!flag.get() && dates.add(date) && metaStrategy.activeSymbolCount() >= metaStrategy.totalSymbolCount()/3) {
                     //System.out.println(date + " " + metaStrategy.activeSymbolCount() + " of " + metaStrategy.totalSymbolCount());
-                    for (Series<?> series : tradingStrategyContext.dataSeries())
+                    for (Series<?> series : runtime.dataSeries())
                         if (!series.isEmpty() && series.getFirst().getDate().equals(date.minusDays(1))) {
                             System.out.println(">> " + series.getResource());
                             submitOrder(new Order(series.getResource().symbol(), OrderType.MARKET, Order.Side.BUY, 1.0));

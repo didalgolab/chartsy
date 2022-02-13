@@ -1,4 +1,4 @@
-package one.chartsy.trade.annotations;
+package one.chartsy.trade.strategy.annotation;
 
 public @interface LookAheadBiasHazard {
 
