@@ -28,7 +28,42 @@ class FlatFileDataProviderTest {
         FlatFileFormat fileFormat = FlatFileFormat.builder().build();
         FileSystem fileSystem = FileSystems.newFileSystem(Paths.get(getClass().getResource("/FileSystemDataProvider.zip").toURI()), Map.of());
 
-        provider = new FlatFileDataProvider("FileSystemDataProvider.zip", fileFormat, fileSystem);
+        provider = new FlatFileDataProvider(fileFormat, fileSystem, "FileSystemDataProvider.zip");
+    }
+
+    @Test
+    void is_closed_when_GCed() throws URISyntaxException, IOException, InterruptedException {
+        var provider = FlatFileFormat.builder().build()
+                .newDataProvider(Paths.get(getClass().getResource("/FileSystemDataProvider.zip").toURI()));
+        var fileSystem = provider.getFileSystem();
+
+        System.gc();
+        Thread.sleep(1);
+        assertTrue(fileSystem.isOpen(), "while reachable");
+
+        //noinspection UnusedAssignment
+        provider = null;
+        System.gc();
+        Thread.sleep(1);
+        assertFalse(fileSystem.isOpen(), "when unreachable and GCed");
+    }
+
+    @Test
+    void is_not_closed_on_GC_when_cached() throws URISyntaxException, IOException, InterruptedException {
+        var provider1 = FlatFileFormat.builder().build()
+                .newDataProvider(Paths.get(getClass().getResource("/FileSystemDataProvider.zip").toURI()));
+        var provider2 = FlatFileFormat.builder().build()
+                .newDataProvider(Paths.get(getClass().getResource("/FileSystemDataProvider.zip").toURI()));
+
+        var fileSystem = provider1.getFileSystem();
+        assertSame(fileSystem, provider2.getFileSystem());
+
+        //noinspection UnusedAssignment
+        provider2 = null;
+        System.gc();
+        Thread.sleep(1);
+        assertTrue(fileSystem.isOpen(), "when cached and still in use");
+        assertTrue(provider1.getFileSystem().isOpen(), "when cached and still in use");
     }
 
     @Test

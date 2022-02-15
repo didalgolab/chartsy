@@ -2,16 +2,16 @@ package one.chartsy.data.provider;
 
 import one.chartsy.*;
 import one.chartsy.concurrent.AbstractCompletableRunnable;
+import one.chartsy.core.ResourceHandle;
+import one.chartsy.core.ThrowingRunnable;
 import one.chartsy.data.DataQuery;
 import one.chartsy.data.SimpleCandle;
 import one.chartsy.data.UnsupportedDataQueryException;
 import one.chartsy.data.batch.Batch;
 import one.chartsy.data.batch.Batchers;
 import one.chartsy.data.batch.SimpleBatch;
-import one.chartsy.data.provider.file.ExecutionContext;
-import one.chartsy.data.provider.file.FlatFileFormat;
-import one.chartsy.data.provider.file.FlatFileItemReader;
-import one.chartsy.data.provider.file.LineMapper;
+import one.chartsy.data.provider.file.*;
+import one.chartsy.misc.ManagedReference;
 import one.chartsy.naming.SymbolIdentifier;
 import one.chartsy.time.Chronological;
 import org.apache.commons.lang3.StringUtils;
@@ -20,9 +20,9 @@ import org.openide.util.lookup.Lookups;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.ref.Cleaner;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.nio.file.spi.FileSystemProvider;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -32,24 +32,40 @@ import java.util.function.Predicate;
 public class FlatFileDataProvider extends AbstractDataProvider implements AutoCloseable, SymbolListAccessor, SymbolProposalProvider, HierarchicalConfiguration {
     private final Lookup lookup = Lookups.singleton(this);
     private final FlatFileFormat fileFormat;
-    private final FileSystem fileSystem;
+    private final ResourceHandle<FileSystem> fileSystem;
     private final Iterable<Path> baseDirectories;
     private final ExecutionContext context;
 
     public FlatFileDataProvider(FlatFileFormat fileFormat, Path archiveFile) throws IOException {
-        this(fileName(archiveFile), fileFormat, FileSystems.newFileSystem(archiveFile));
+        this(fileFormat, FileSystemCache.getGlobal().getFileSystem(archiveFile, Map.of()), fileName(archiveFile));
     }
 
-    public FlatFileDataProvider(String name, FlatFileFormat fileFormat, FileSystem fileSystem) throws IOException {
-        this(name, fileFormat, fileSystem, fileSystem.getRootDirectories());
+    public FlatFileDataProvider(FlatFileFormat fileFormat, FileSystem fileSystem, String name) throws IOException {
+        this(fileFormat, ResourceHandle.of(fileSystem), name);
     }
 
-    public FlatFileDataProvider(String name, FlatFileFormat fileFormat, FileSystem fileSystem, Iterable<Path> baseDirectories) throws IOException {
+    public FlatFileDataProvider(FlatFileFormat fileFormat, ResourceHandle<FileSystem> fileSystem, String name) throws IOException {
+        this(fileFormat, fileSystem, name, fileSystem.get().getRootDirectories());
+    }
+
+    public FlatFileDataProvider(FlatFileFormat fileFormat, ResourceHandle<FileSystem> fileSystem, String name, Iterable<Path> baseDirectories) throws IOException {
         super(Objects.requireNonNull(name, "name"));
         this.fileFormat = Objects.requireNonNull(fileFormat, "fileFormat");
         this.fileSystem = Objects.requireNonNull(fileSystem, "fileSystem");
         this.baseDirectories = Objects.requireNonNull(baseDirectories, "baseDirectories");
         this.context = new ExecutionContext();
+        registerCleaner();
+    }
+
+    protected void registerCleaner() {
+        if (isCloseable(fileSystem)) {
+            var fsObj = fileSystem.get();
+            Cached.get(Cleaner.class, Cleaner::create).register(this, ThrowingRunnable.unchecked(fsObj::close));
+        }
+    }
+
+    protected static boolean isCloseable(ResourceHandle<FileSystem> ref) {
+        return !(ref instanceof ManagedReference<FileSystem>) && ref.get() != FileSystems.getDefault();
     }
 
     private static String fileName(Path file) {
@@ -181,7 +197,7 @@ public class FlatFileDataProvider extends AbstractDataProvider implements AutoCl
     }
 
     public final FileSystem getFileSystem() {
-        return fileSystem;
+        return fileSystem.get();
     }
 
     public final FlatFileFormat getFileFormat() {
@@ -194,9 +210,8 @@ public class FlatFileDataProvider extends AbstractDataProvider implements AutoCl
 
     @Override
     public void close() throws IOException {
-        var fileSystem = getFileSystem();
-        if (fileSystem != FileSystems.getDefault())
-            fileSystem.close();
+        if (isCloseable(fileSystem))
+            getFileSystem().close();
     }
 
     protected SymbolIdentity asIdentifier(Path path) {
