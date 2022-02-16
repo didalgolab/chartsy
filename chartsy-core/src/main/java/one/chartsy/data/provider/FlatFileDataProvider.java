@@ -3,7 +3,6 @@ package one.chartsy.data.provider;
 import one.chartsy.*;
 import one.chartsy.concurrent.AbstractCompletableRunnable;
 import one.chartsy.core.ResourceHandle;
-import one.chartsy.core.ThrowingRunnable;
 import one.chartsy.data.DataQuery;
 import one.chartsy.data.SimpleCandle;
 import one.chartsy.data.UnsupportedDataQueryException;
@@ -20,7 +19,6 @@ import org.openide.util.lookup.Lookups;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.lang.ref.Cleaner;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
@@ -54,14 +52,6 @@ public class FlatFileDataProvider extends AbstractDataProvider implements AutoCl
         this.fileSystem = Objects.requireNonNull(fileSystem, "fileSystem");
         this.baseDirectories = Objects.requireNonNull(baseDirectories, "baseDirectories");
         this.context = new ExecutionContext();
-        registerCleaner();
-    }
-
-    protected void registerCleaner() {
-        if (isCloseable(fileSystem)) {
-            var fsObj = fileSystem.get();
-            Cached.get(Cleaner.class, Cleaner::create).register(this, ThrowingRunnable.unchecked(fsObj::close));
-        }
     }
 
     protected static boolean isCloseable(ResourceHandle<FileSystem> ref) {
