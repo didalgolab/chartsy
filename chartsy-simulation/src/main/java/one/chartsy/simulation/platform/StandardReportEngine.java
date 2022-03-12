@@ -3,10 +3,10 @@ package one.chartsy.simulation.platform;
 import one.chartsy.HLC;
 import one.chartsy.data.Dataset;
 import one.chartsy.data.packed.ByteBufferMutableHLCDataset;
-import one.chartsy.trade.strategy.ReportOptions;
 import one.chartsy.simulation.reporting.AbstractReportEngine;
 import one.chartsy.simulation.reporting.EquityInformation;
 import one.chartsy.simulation.reporting.Report;
+import one.chartsy.trade.strategy.ReportOptions;
 import one.chartsy.trade.Account;
 import one.chartsy.trade.data.Position;
 import one.chartsy.trade.event.PositionValueChangeListener;
@@ -41,7 +41,7 @@ public class StandardReportEngine extends AbstractReportEngine {
     protected void installListeners(ReportOptions options) {
         var enabledOpts = options.getEnabled();
         if (enabledOpts.contains(ReportOptions.EQUITY))
-            account.addPositionValueChangeListener(equity = new EquityInformation.Builder());
+            account.addPositionValueChangeListener(equity = EquityInformation.builder());
 
         if (enabledOpts.contains(ReportOptions.EQUITY_CHART)) {
             equityEvolution = new ByteBufferMutableHLCDataset();
@@ -84,7 +84,7 @@ public class StandardReportEngine extends AbstractReportEngine {
         private Handler(ReportOptions options) {
             var enabledOpts = options.getEnabled();
             if (enabledOpts.contains(ReportOptions.EQUITY))
-                equitySummary = new EquityInformation.Builder();
+                equitySummary = EquityInformation.builder();
             if (enabledOpts.contains(ReportOptions.EQUITY_CHART))
                 equityEvolution = new ByteBufferMutableHLCDataset();
         }

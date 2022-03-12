@@ -34,7 +34,7 @@ public class PositionValueChangeListenerBenchmarkTest {
 
     double positionResult = 0;
 
-    private EquityInformation.Builder equityBuilder = new EquityInformation.Builder();
+    private EquityInformation.Builder equityBuilder = EquityInformation.builder();
 
     @Benchmark
     @Warmup(time = 3)

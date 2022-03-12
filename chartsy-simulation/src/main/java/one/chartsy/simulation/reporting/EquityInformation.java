@@ -1,57 +1,132 @@
 package one.chartsy.simulation.reporting;
 
-import lombok.Getter;
-import lombok.experimental.Accessors;
 import one.chartsy.trade.Account;
 import one.chartsy.trade.data.Position;
 import one.chartsy.trade.event.PositionValueChangeListener;
 
-@Accessors(fluent = true)
-@Getter
-public class EquityInformation {
+import java.time.ZoneId;
 
-    private final double totalEquityHigh;
-    private final double totalEquityLow;
-    private final double maxDrawDown;
-    private final long totalEquityHighTime;
-    private final long maxDrawDownTime;
+public interface EquityInformation {
 
-    public static class Builder implements PositionValueChangeListener {
+    double startingEquity();
+
+    double totalEquityHigh();
+
+    double totalEquityLow();
+
+    double endingEquity();
+
+    double maxDrawdown();
+
+    double maxDrawdownPercent();
+
+    double avgDrawdown();
+
+    double avgDrawdownPercent();
+
+    long totalEquityHighTime();
+
+    long maxDrawdownTime();
+
+    long maxDrawdownPercentTime();
+
+    long longestDrawdownDuration();
+
+    long startTime();
+
+    long endTime();
+
+    double years();
+
+    double years(ZoneId zone);
+
+    static Builder builder() {
+        return new StandardBuilder();
+    }
+
+    interface Builder extends PositionValueChangeListener {
+
+        void add(long time, double equity);
+
+        EquityInformation build();
+    }
+
+    class StandardBuilder implements Builder {
+        private double startingEquity;
         private double totalEquityHigh;
         private double totalEquityLow;
-        private double maxDrawDown;
+        private double currentEquity;
+        private double maxDrawdown;
+        private double maxDrawdownPercent;
+        private double drawdownTotal;
+        private double drawdownPercentTotal;
+        private long longestDrawdownDuration;
+        private long currentDrawdownStartTime;
         private long totalEquityHighTime;
-        private long maxDrawDownTime;
+        private long maxDrawdownTime;
+        private long maxDrawdownPercentTime;
+        private long startingTime;
+        private long currentTime;
+        private long dataPoints;
+
+        public final boolean isEmpty() {
+            return (dataPoints == 0);
+        }
 
         @Override
         public void positionValueChanged(Account account, Position position) {
             add(position.getMarketTime(), account.getEquity());
         }
 
+        @Override
         public void add(long time, double equity) {
-            // recalc drawdown related statistics
+            if (dataPoints++ == 0) {
+                startingEquity = equity;
+                startingTime = time;
+            }
+            currentEquity = equity;
+            currentTime = time;
             if (equity > totalEquityHigh) {
                 totalEquityHigh = equity;
                 totalEquityHighTime = time;
             }
             totalEquityLow = Math.min(totalEquityLow, equity);
-            double drawDown = totalEquityHigh - equity;
-            if (drawDown > maxDrawDown) {
-                maxDrawDown = drawDown;
-                maxDrawDownTime = time;
+            double drawdown = totalEquityHigh - equity;
+            if (drawdown > maxDrawdown) {
+                maxDrawdown = drawdown;
+                maxDrawdownTime = time;
             }
+            double drawdownPercent = 100.0*drawdown/totalEquityHigh;
+            if (drawdownPercent > maxDrawdownPercent) {
+                maxDrawdownPercent = drawdownPercent;
+                maxDrawdownPercentTime = time;
+            }
+            if (drawdown >= 0.0)
+                currentDrawdownStartTime = time;
+            longestDrawdownDuration = Math.max(longestDrawdownDuration, time - currentDrawdownStartTime);
+            drawdownTotal += drawdown;
+            drawdownPercentTotal += drawdownPercent;
         }
 
-        public EquityInformation build() {
-            return new EquityInformation(this);
+        @Override
+        public StandardEquityInformation build() {
+            boolean empty = isEmpty();
+            return new StandardEquityInformation(
+                    startingEquity,
+                    totalEquityHigh,
+                    totalEquityLow,
+                    currentEquity,
+                    maxDrawdown,
+                    maxDrawdownPercent,
+                    empty? 0: drawdownTotal/dataPoints,
+                    empty? 0: drawdownPercentTotal/dataPoints,
+                    totalEquityHighTime,
+                    maxDrawdownTime,
+                    maxDrawdownPercentTime,
+                    longestDrawdownDuration,
+                    startingTime,
+                    currentTime
+            );
         }
-    }
-
-    protected EquityInformation(Builder builder) {
-        this.totalEquityHigh = builder.totalEquityHigh;
-        this.totalEquityLow = builder.totalEquityLow;
-        this.maxDrawDown = builder.maxDrawDown;
-        this.totalEquityHighTime = builder.totalEquityHighTime;
-        this.maxDrawDownTime = builder.maxDrawDownTime;
     }
 }
