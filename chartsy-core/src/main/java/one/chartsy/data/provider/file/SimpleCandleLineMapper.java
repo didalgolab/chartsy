@@ -1,9 +1,11 @@
 package one.chartsy.data.provider.file;
 
+import one.chartsy.TimeFrame;
 import one.chartsy.data.SimpleCandle;
 import one.chartsy.time.Chronological;
 import one.chartsy.util.Pair;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -18,7 +20,7 @@ public class SimpleCandleLineMapper implements LineMapper<SimpleCandle> {
     public static class Type implements LineMapperType<SimpleCandle> {
         private final char delimiter;
         private final List<String> fields;
-        private final boolean hasOpen, hasHighAndLow;
+        private final boolean hasOpen, hasHighAndLow, hasTimeAtOpen;
         private final DateTimeFormatter dateFormat;
         private final DateTimeFormatter timeFormat;
         private final DateTimeFormatter dateTimeFormat;
@@ -43,8 +45,9 @@ public class SimpleCandleLineMapper implements LineMapper<SimpleCandle> {
             this.dateFormat = dateFormat;
             this.timeFormat = timeFormat;
             this.dateTimeFormat = dateTimeFormat;
-            this.hasOpen = this.fields.contains("OPEN");
-            this.hasHighAndLow = this.fields.contains("HIGH");
+            this.hasOpen = fields.contains("OPEN");
+            this.hasHighAndLow = fields.contains("HIGH");
+            this.hasTimeAtOpen = fields.contains("OPEN_TIME") || fields.contains("OPEN_DATE_TIME");
             checkRequiredFieldsPresence(this.fields);
         }
 
@@ -65,8 +68,8 @@ public class SimpleCandleLineMapper implements LineMapper<SimpleCandle> {
         }
 
         private static void checkRequiredFieldsPresence(List<String> fields) {
-            if (!fields.contains("DATE") && !fields.contains("DATE_TIME"))
-                throw new FlatFileFormatException("Required fields missing: DATE or DATE_TIME");
+            if (!fields.contains("DATE") && !fields.contains("DATE_TIME") && !fields.contains("OPEN_DATE_TIME"))
+                throw new FlatFileFormatException("Required fields missing: DATE, DATE_TIME or OPEN_DATE_TIME");
             if (!fields.contains("CLOSE"))
                 throw new FlatFileFormatException("Required fields missing: CLOSE");
             if (fields.contains("HIGH") != fields.contains("LOW"))
@@ -75,16 +78,29 @@ public class SimpleCandleLineMapper implements LineMapper<SimpleCandle> {
 
         @Override
         public LineMapper<SimpleCandle> createLineMapper(ExecutionContext context) {
-            return new SimpleCandleLineMapper(this);
+            return new SimpleCandleLineMapper(this, context);
         }
     }
 
     private final Type type;
+    private final long timeShift;
     private Pair<String, LocalDate> cachedLastDateParsed;
 
 
-    public SimpleCandleLineMapper(Type type) {
+    public SimpleCandleLineMapper(Type type, ExecutionContext context) {
         this.type = type;
+        this.timeShift = type.hasTimeAtOpen ? getCandleTimeShift((TimeFrame)context.get("TimeFrame")) : 0;
+    }
+
+    protected static long getCandleTimeShift(TimeFrame timeFrame) {
+        if (!(timeFrame instanceof TimeFrame.TemporallyRegular t))
+            throw new UnsupportedOperationException(String.format("TimeFrame `%s` is not temporally regular", timeFrame));
+
+        long nanosShift = Duration.from(t.getRegularity()).toNanos();
+        if (nanosShift % 1000 != 0)
+            throw new UnsupportedOperationException(String.format("TimeFrame `%s` has not supported duration: %s nanos", timeFrame, nanosShift));
+
+        return nanosShift / 1000L;
     }
 
     public final Type getType() {
@@ -113,13 +129,32 @@ public class SimpleCandleLineMapper implements LineMapper<SimpleCandle> {
         LocalDate date = null;
         LocalTime time = LocalTime.MIN;
         LocalDateTime dateTime = null;
+        long timeShift = 0;
         for (int i = 0, fieldCount = type.fields.size(); i < fieldCount; i++) {
             String field = type.fields.get(i);
             String token = tokens[i];
             switch (field) {
                 case "DATE" -> date = readDate(token);
-                case "DATE_TIME" -> dateTime = readDateTime(token);
-                case "TIME" -> time = readTime(token);
+                case "DATE_TIME" -> {
+                    dateTime = readDateTime(token);
+                    timeShift = 0;
+                }
+                case "OPEN_DATE_TIME" -> {
+                    if (dateTime == null) {
+                        dateTime = readDateTime(token);
+                        timeShift = this.timeShift;
+                    }
+                }
+                case "TIME" -> {
+                    time = readTime(token);
+                    timeShift = 0;
+                }
+                case "OPEN_TIME" -> {
+                    if (time == LocalTime.MIN) {
+                        time = readTime(token);
+                        timeShift = this.timeShift;
+                    }
+                }
                 case "OPEN" -> open = readDouble(token);
                 case "HIGH" -> high = readDouble(token);
                 case "LOW" -> low = readDouble(token);
@@ -138,7 +173,7 @@ public class SimpleCandleLineMapper implements LineMapper<SimpleCandle> {
         if (!type.hasHighAndLow)
             high = low = close;
 
-        return SimpleCandle.of(Chronological.toEpochMicros(dateTime), open, high, low, close, volume, count);
+        return SimpleCandle.of(Chronological.toEpochMicros(dateTime) + timeShift, open, high, low, close, volume, count);
     }
 
     protected LocalDate readDate(String token) {

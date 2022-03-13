@@ -160,6 +160,9 @@ public class FlatFileDataProvider extends AbstractDataProvider implements AutoCl
         if (file == null)
             throw new DataProviderException(String.format("Symbol '%s' not found", identifier));
 
+        ExecutionContext context = new ExecutionContext(this.context);
+        context.put("TimeFrame", request.resource().timeFrame());
+
         FlatFileItemReader<T> itemReader = new FlatFileItemReader<>();
         itemReader.setLineMapper((LineMapper<T>) fileFormat.getLineMapper().createLineMapper(context));
         itemReader.setLinesToSkip(fileFormat.getSkipFirstLines());
