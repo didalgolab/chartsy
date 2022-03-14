@@ -89,7 +89,7 @@ public class FlatFileItemReader<T> {
     }
 
     public T read() throws IOException {
-        String line = input.readLine();
+        String line = readLine();
         if (line == null)
             return null;
 

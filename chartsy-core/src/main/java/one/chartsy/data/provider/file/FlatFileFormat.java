@@ -27,6 +27,13 @@ public class FlatFileFormat {
         String encoding = "ISO-8859-2";
     }
 
+    public static final FlatFileFormat HISTDATA_ASCII = builder()
+            .fileNamePattern("*\\.zip")
+            .lineMapper(
+                    new SimpleCandleLineMapper.Type(
+                            ';', Arrays.asList("OPEN_DATE_TIME","OPEN","HIGH","LOW","CLOSE","VOLUME"), DateTimeFormatter.ofPattern("yyyyMMdd HHmmss")))
+            .build();
+
     public static final FlatFileFormat STOOQ = builder()
             .fileNamePattern("*\\.zip")
             .lineMapper(

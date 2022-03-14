@@ -1,5 +1,6 @@
 package one.chartsy.data.provider.file;
 
+import one.chartsy.Candle;
 import one.chartsy.TimeFrame;
 import one.chartsy.data.SimpleCandle;
 import one.chartsy.time.Chronological;
@@ -29,8 +30,8 @@ public class SimpleCandleLineMapper implements LineMapper<SimpleCandle> {
             this(delimiter, fields, ISO_LOCAL_DATE);
         }
 
-        public Type(char delimiter, List<String> fields, DateTimeFormatter dateFormat) {
-            this(delimiter, fields, dateFormat, ISO_LOCAL_TIME, ISO_LOCAL_DATE_TIME);
+        public Type(char delimiter, List<String> fields, DateTimeFormatter dateOrDatetimeFormat) {
+            this(delimiter, fields, dateOrDatetimeFormat, ISO_LOCAL_TIME, dateOrDatetimeFormat);
         }
 
         public Type(char delimiter, List<String> fields, DateTimeFormatter dateFormat, DateTimeFormatter timeFormat) {
@@ -85,6 +86,7 @@ public class SimpleCandleLineMapper implements LineMapper<SimpleCandle> {
     private final Type type;
     private final long timeShift;
     private Pair<String, LocalDate> cachedLastDateParsed;
+    private Candle last;
 
 
     public SimpleCandleLineMapper(Type type, ExecutionContext context) {
@@ -113,9 +115,10 @@ public class SimpleCandleLineMapper implements LineMapper<SimpleCandle> {
             tokenCount++;
 
         String[] tokens = new String[tokenCount];
-        int index = 0;
-        for (int i = 0, j; (j = line.indexOf(delimiter, i)) >= 0; i = j+1)
+        int index = 0, i = 0;
+        for (int j; (j = line.indexOf(delimiter, i)) >= 0; i = j+1)
             tokens[index++] = line.substring(i, j);
+        tokens[index] = line.substring(i);
 
         return tokens;
     }
@@ -173,7 +176,11 @@ public class SimpleCandleLineMapper implements LineMapper<SimpleCandle> {
         if (!type.hasHighAndLow)
             high = low = close;
 
-        return SimpleCandle.of(Chronological.toEpochMicros(dateTime) + timeShift, open, high, low, close, volume, count);
+        SimpleCandle candle = SimpleCandle.of(Chronological.toEpochMicros(dateTime) + timeShift, open, high, low, close, volume, count);
+        if (last != null && !candle.isAfter(last))
+            throw new FlatFileParseException(String.format("Invalid candle order at line %s following candle %s", lineNumber, last), line);
+        last = candle;
+        return candle;
     }
 
     protected LocalDate readDate(String token) {
