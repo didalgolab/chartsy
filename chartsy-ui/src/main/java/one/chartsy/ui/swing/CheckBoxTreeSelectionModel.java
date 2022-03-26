@@ -194,7 +194,7 @@ public class CheckBoxTreeSelectionModel extends DefaultTreeSelectionModel implem
         Object node = path.getLastPathComponent();
         if (node instanceof Node || node.getClass().getName().equals("org.openide.explorer.view.VisualizerNode")) {
             Node n = Visualizer.findNode(node);
-            if (!NodeSupport.areInitialized(n.getChildren()))
+            if (!NodeSupport.isInitialized(n.getChildren()))
                 return false;
         }
         int childrenCount = getChildrenCount(node);

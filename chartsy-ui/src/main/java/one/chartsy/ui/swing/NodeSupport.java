@@ -1,6 +1,7 @@
 package one.chartsy.ui.swing;
 
 import org.openide.nodes.Children;
+import org.openide.nodes.Node;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -8,7 +9,7 @@ import java.lang.reflect.Method;
 
 public class NodeSupport {
 
-    public static boolean areInitialized(Children children) {
+    public static boolean isInitialized(Children children) {
         try {
             return (boolean) childrenInitializedCheck.invokeExact(children);
         } catch (Throwable e) {
@@ -26,5 +27,13 @@ public class NodeSupport {
             e.printStackTrace();
             throw new InternalError(e);
         }
+    }
+
+    public static boolean isVisualizerNode(Object node) {
+        return node.getClass().getName().equals("org.openide.explorer.view.VisualizerNode");
+    }
+
+    public static boolean isWaitNode(Node node) {
+        return node.getClass().getName().equals("org.openide.nodes.ChildFactory$WaitFilterNode");
     }
 }
