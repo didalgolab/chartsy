@@ -25,7 +25,6 @@
                         <publicPackage>org.apache.commons.math3.*</publicPackage>
                         <publicPackage>org.apache.logging.log4j.core.*</publicPackage>
                         <publicPackage>org.immutables.value.*</publicPackage>
-                        <publicPackage>org.slf4j.*</publicPackage>
                         <publicPackage>org.springframework.*</publicPackage>
                         <publicPackage>org.yaml.*</publicPackage>
                     </publicPackages>
@@ -46,6 +45,11 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>chartsy-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>slf4j-api</artifactId>
             <version>${project.version}</version>
         </dependency>
 
@@ -74,11 +78,6 @@
             <groupId>org.netbeans.api</groupId>
             <artifactId>org-openide-filesystems</artifactId>
             <version>${netbeans.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>2.0.0-alpha0</version>
         </dependency>
         <dependency>
             <groupId>org.springframework</groupId>
