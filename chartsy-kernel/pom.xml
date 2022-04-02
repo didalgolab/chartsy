@@ -27,6 +27,7 @@
                         <publicPackage>org.immutables.value.*</publicPackage>
                         <publicPackage>org.springframework.*</publicPackage>
                         <publicPackage>org.yaml.*</publicPackage>
+                        <publicPackage>reactor.core.*</publicPackage>
                     </publicPackages>
                 </configuration>
             </plugin>

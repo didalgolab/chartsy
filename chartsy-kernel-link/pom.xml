@@ -19,6 +19,7 @@
                     <publicPackages>
                         <publicPackage>one.chartsy.kernel.link.*</publicPackage>
                         <publicPackage>org.springframework.*</publicPackage>
+                        <publicPackage>reactor.core.*</publicPackage>
                     </publicPackages>
                 </configuration>
             </plugin>
@@ -57,23 +58,14 @@
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
             <version>${spring.boot.version}</version>
             <exclusions>
-                <exclusion>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-starter-tomcat</artifactId>
-                </exclusion>
                 <exclusion>
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-starter-logging</artifactId>
                 </exclusion>
             </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-jetty</artifactId>
-            <version>${spring.boot.version}</version>
         </dependency>
     </dependencies>
 </project>

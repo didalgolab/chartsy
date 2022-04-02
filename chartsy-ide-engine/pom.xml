@@ -6,7 +6,7 @@
         <artifactId>chartsy-repository</artifactId>
         <version>0.1-SNAPSHOT</version>
     </parent>
-    <artifactId>chartsy-desktop</artifactId>
+    <artifactId>chartsy-ide-engine</artifactId>
     <packaging>nbm</packaging>
     <build>
         <plugins>
@@ -15,9 +15,9 @@
                 <artifactId>nbm-maven-plugin</artifactId>
                 <extensions>true</extensions>
                 <configuration>
-                    <codeNameBase>one.chartsy.desktop</codeNameBase>
+                    <codeNameBase>one.chartsy.ide.engine</codeNameBase>
                     <publicPackages>
-                        <publicPackage>one.chartsy.desktop.*</publicPackage>
+                        <publicPackage>one.chartsy.ide.engine.*</publicPackage>
                     </publicPackages>
                 </configuration>
             </plugin>
@@ -40,99 +40,65 @@
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>chartsy-frontend-rest</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>chartsy-ide-engine</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
             <artifactId>chartsy-kernel</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>chartsy-ui</artifactId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>slf4j-jdk14</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.netbeans.api</groupId>
-            <artifactId>org-netbeans-api-java-classpath</artifactId>
+            <artifactId>org-netbeans-modules-java-project-ui</artifactId>
             <version>${netbeans.version}</version>
         </dependency>
         <dependency>
             <groupId>org.netbeans.api</groupId>
-            <artifactId>org-netbeans-modules-java-j2seplatform</artifactId>
+            <artifactId>org-netbeans-modules-netbinox</artifactId>
             <version>${netbeans.version}</version>
         </dependency>
         <dependency>
             <groupId>org.netbeans.api</groupId>
-            <artifactId>org-netbeans-modules-libs-gradle</artifactId>
+            <artifactId>org-netbeans-modules-xml-xdm</artifactId>
+            <version>${netbeans.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.netbeans.api</groupId>
+            <artifactId>org-openide-execution</artifactId>
             <version>${netbeans.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.netbeans.modules</groupId>
-            <artifactId>org-netbeans-modules-java-editor</artifactId>
+            <artifactId>org-netbeans-libs-freemarker</artifactId>
             <version>${netbeans.version}</version>
         </dependency>
         <dependency>
             <groupId>org.netbeans.modules</groupId>
-            <artifactId>org-netbeans-modules-java-hints-declarative</artifactId>
+            <artifactId>org-netbeans-modules-gradle-kit</artifactId>
+            <version>${netbeans.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>log4j</groupId>
+                    <artifactId>log4j</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.netbeans.modules</groupId>
+            <artifactId>org-netbeans-modules-parsing-nb</artifactId>
             <version>${netbeans.version}</version>
         </dependency>
         <dependency>
             <groupId>org.netbeans.modules</groupId>
-            <artifactId>org-netbeans-modules-java-hints-ui</artifactId>
-            <version>${netbeans.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.netbeans.modules</groupId>
-            <artifactId>org-netbeans-modules-java-j2seprofiles</artifactId>
-            <version>${netbeans.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.netbeans.modules</groupId>
-            <artifactId>org-netbeans-modules-java-module-graph</artifactId>
-            <version>${netbeans.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.netbeans.modules</groupId>
-            <artifactId>org-netbeans-modules-java-navigation</artifactId>
-            <version>${netbeans.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.netbeans.modules</groupId>
-            <artifactId>org-netbeans-modules-javadoc</artifactId>
-            <version>${netbeans.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.netbeans.modules</groupId>
-            <artifactId>org-netbeans-modules-lexer-nbbridge</artifactId>
-            <version>${netbeans.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.netbeans.modules</groupId>
-            <artifactId>org-netbeans-modules-localhistory</artifactId>
-            <version>${netbeans.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.netbeans.api</groupId>
-            <artifactId>org-netbeans-modules-refactoring-java</artifactId>
-            <version>${netbeans.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.netbeans.modules</groupId>
-            <artifactId>org-netbeans-modules-spellchecker-bindings-java</artifactId>
-            <version>${netbeans.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.netbeans.modules</groupId>
-            <artifactId>org-netbeans-modules-versioning-masterfs</artifactId>
+            <artifactId>org-netbeans-modules-projectapi-nb</artifactId>
             <version>${netbeans.version}</version>
         </dependency>
     </dependencies>

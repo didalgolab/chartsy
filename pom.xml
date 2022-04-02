@@ -69,7 +69,10 @@
         <module>chartsy-persistence</module>
         <module>chartsy-frontend</module>
         <module>chartsy-frontend-rest</module>
+        <module>chartsy-ide-engine</module>
         <module>chartsy-libs</module>
+        <!--module>chartsy-libs/com-jcraft-jsch</module>
+        <module>chartsy-libs/org-apache-commons-logging</module-->
         <module>chartsy-libs/slf4j-api</module>
         <module>chartsy-libs/slf4j-jdk14</module>
         <module>chartsy-samples</module>
@@ -123,6 +126,7 @@
         <jackson.version>2.13.1</jackson.version>
         <jakarta.annotation.version>1.3.5</jakarta.annotation.version>
         <jaxb.api.version>2.3.1</jaxb.api.version>
+        <jsch.version>0.1.55</jsch.version>
         <junit5.version>5.8.2</junit5.version>
         <liquibase.version>4.7.1</liquibase.version>
         <log4j.version>2.17.1</log4j.version><!-- Synchronize with 'spring-boot-starter-log4j2'-injected version -->

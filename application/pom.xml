@@ -40,12 +40,7 @@
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>slf4j-jdk14</artifactId>
+            <artifactId>chartsy-ide-engine</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -56,6 +51,16 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>chartsy-ui</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>slf4j-jdk14</artifactId>
             <version>${project.version}</version>
         </dependency>
 

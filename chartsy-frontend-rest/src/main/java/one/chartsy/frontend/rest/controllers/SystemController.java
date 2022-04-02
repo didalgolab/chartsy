@@ -1,35 +1,26 @@
 package one.chartsy.frontend.rest.controllers;
 
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Mono;
 
 @RestController
-@RequestMapping("/system")
+@RequestMapping("/chartsy")
 public class SystemController {
 
-    @PostMapping("/ping")
-    public String ping(@RequestBody Data data) {
-        return "{\"Hello\":\"World\",\"cnt\":"+data.getText().length()+"}";
+    @GetMapping("/status")
+    public Mono<SystemStatusData> getStatus() {
+        return Mono.just(new SystemStatusData());
     }
 
-    public static class Data {
-        private String text;
+    public static class SystemStatusData {
+        private String status = "OK";
 
-        public Data() {
+        public String getStatus() {
+            return status;
         }
 
-        public Data(String text) {
-            this.text = text;
-        }
-
-        public String getText() {
-            return text;
-        }
-
-        public void setText(String text) {
-            this.text = text;
+        public void setStatus(String status) {
+            this.status = status;
         }
     }
 }
