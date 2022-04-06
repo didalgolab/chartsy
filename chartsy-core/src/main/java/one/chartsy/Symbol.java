@@ -90,7 +90,7 @@ public class Symbol implements SymbolIdentity, SymbolGroupContent {
     }
 
     @Override
-    public Optional<SymbolIdentity> getSymbol() {
+    public Optional<Symbol> getAsSymbol() {
         return Optional.of(this);
     }
 

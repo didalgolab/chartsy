@@ -1,7 +1,6 @@
 package one.chartsy.ui.navigator;
 
-import org.openide.awt.ActionID;
-import org.openide.awt.ActionReference;
+import one.chartsy.kernel.GlobalSymbolSelection;
 import org.openide.util.Lookup;
 import org.openide.util.lookup.ServiceProvider;
 import org.openide.util.lookup.ServiceProviders;
@@ -24,9 +23,10 @@ import org.openide.windows.TopComponent;
  */
 @TopComponent.Description(preferredID = "GlobalSymbolsTab", iconBase = "one/chartsy/desktop/resources/symbol-group (16 px).png", persistenceType = TopComponent.PERSISTENCE_ALWAYS)
 @ServiceProviders({
-    @ServiceProvider(service = GlobalSymbolsTab.class)
+    @ServiceProvider(service = GlobalSymbolsTab.class),
+    @ServiceProvider(service = GlobalSymbolSelection.class)
 })
-public class GlobalSymbolsTab extends SymbolsTab {
+public class GlobalSymbolsTab extends SymbolsTab implements GlobalSymbolSelection {
 
     public static GlobalSymbolsTab getDefault() {
         return Lookup.getDefault().lookup(GlobalSymbolsTab.class);

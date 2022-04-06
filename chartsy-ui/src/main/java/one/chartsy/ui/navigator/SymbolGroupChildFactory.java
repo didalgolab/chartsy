@@ -37,7 +37,7 @@ public class SymbolGroupChildFactory extends ChildFactory<SymbolGroupContent> im
     
     @Override
     protected Node createNodeForKey(SymbolGroupContent group) {
-        Optional<SymbolIdentity> symbol = group.getSymbol();
+        Optional<Symbol> symbol = group.getAsSymbol();
 //        if (symbol.isPresent() && symbol.get() instanceof Symbol)
 //            return new SymbolNode((Symbol)symbol.get());
         

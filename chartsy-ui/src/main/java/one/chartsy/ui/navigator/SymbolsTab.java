@@ -1,6 +1,9 @@
 package one.chartsy.ui.navigator;
 
+import one.chartsy.Symbol;
 import one.chartsy.SymbolGroupContent;
+import one.chartsy.SymbolGroupContentRepository;
+import one.chartsy.data.provider.DataProviderLoader;
 import one.chartsy.kernel.Kernel;
 import one.chartsy.kernel.SymbolGroupHierarchy;
 import one.chartsy.ui.swing.CheckBoxTreeDecorator;
@@ -10,7 +13,8 @@ import one.chartsy.ui.tree.TreeViewControl;
 import org.openide.explorer.ExplorerManager;
 import org.openide.explorer.ExplorerUtils;
 import org.openide.explorer.view.BeanTreeView;
-import org.openide.util.Lookup;
+import org.openide.explorer.view.Visualizer;
+import org.openide.nodes.Node;
 import org.openide.util.NbBundle;
 import org.openide.windows.TopComponent;
 import org.springframework.context.ApplicationContext;
@@ -22,6 +26,9 @@ import javax.swing.event.TreeExpansionEvent;
 import javax.swing.event.TreeWillExpandListener;
 import javax.swing.text.DefaultEditorKit;
 import javax.swing.tree.ExpandVetoException;
+import javax.swing.tree.TreePath;
+import javax.swing.tree.TreeSelectionModel;
+import java.util.*;
 
 public class SymbolsTab extends TopComponent implements ExplorerManager.Provider {
     private final ExplorerManager explorerManager = new ExplorerManager();
@@ -93,6 +100,49 @@ public class SymbolsTab extends TopComponent implements ExplorerManager.Provider
     @Override
     public ExplorerManager getExplorerManager() {
         return explorerManager;
+    }
+
+    public TreeSelectionModel getSelectionModel() {
+        return selectionModel;
+    }
+
+    public List<Symbol> getSelectedSymbols() {
+        var paths = getSelectionModel().getSelectionPaths();
+        if (paths.length == 0)
+            return List.of();
+        return getSymbolsAtPaths(paths);
+    }
+
+    public List<Symbol> getSymbolsAtPaths(TreePath... paths) {
+        var universe = new LinkedHashSet<Symbol>();
+        var worklist = new ArrayDeque<SymbolGroupContent>(paths.length);
+        for (TreePath path : paths) {
+            // convert path to node
+            Node node = Visualizer.findNode(path.getLastPathComponent());
+
+            // check if node associates a symbol
+            var symbol = node.getLookup().lookup(Symbol.class);
+            if (symbol != null)
+                universe.add(symbol);
+
+            // check if node associates a symbol group
+            SymbolGroupContent group = node.getLookup().lookup(SymbolGroupContent.class);
+            if (group != null)
+                worklist.add(group);
+
+        }
+
+        // flatten out symbol group's worklist
+        var repository = context.getBean(SymbolGroupContentRepository.class);
+        var dataLoader = context.getBean(DataProviderLoader.class);
+        while (!worklist.isEmpty()) {
+            SymbolGroupContent group = worklist.remove();
+            for (SymbolGroupContent child : group.getContent(repository, dataLoader)) {
+                child.getAsSymbol().ifPresent(universe::add);
+                worklist.add(child);
+            }
+        }
+        return new ArrayList<>(universe);
     }
 
     @Override

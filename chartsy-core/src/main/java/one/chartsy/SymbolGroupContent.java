@@ -13,7 +13,7 @@ public interface SymbolGroupContent {
 
     Type getContentType();
 
-    Optional<SymbolIdentity> getSymbol();
+    Optional<Symbol> getAsSymbol();
 
     List<SymbolGroupContent> getContent(SymbolGroupContentRepository repo, DataProviderLoader loader);
 
