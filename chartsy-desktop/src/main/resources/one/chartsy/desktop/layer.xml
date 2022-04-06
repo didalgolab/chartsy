@@ -1,0 +1,12 @@
+<!DOCTYPE filesystem PUBLIC "-//NetBeans//DTD Filesystem 1.2//EN" "http://www.netbeans.org/dtds/filesystem-1_2.dtd">
+<filesystem>
+    <folder name="Preferences">
+        <folder name="org">
+            <folder name="netbeans">
+                <folder name="core">
+                    <file name="output2.properties" url="output2.properties"/>
+                </folder>
+            </folder>
+        </folder>
+    </folder>
+</filesystem>
