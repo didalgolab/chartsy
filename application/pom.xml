@@ -40,6 +40,11 @@
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
+            <artifactId>chartsy-exploration</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
             <artifactId>chartsy-ide-engine</artifactId>
             <version>${project.version}</version>
         </dependency>

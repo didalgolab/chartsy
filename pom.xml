@@ -64,6 +64,7 @@
         <module>chartsy-core</module>
         <module>chartsy-core-ml</module>
         <module>chartsy-desktop</module>
+        <module>chartsy-exploration</module>
         <module>chartsy-kernel-link</module>
         <module>chartsy-kernel</module>
         <module>chartsy-persistence</module>
