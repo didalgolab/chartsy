@@ -1,5 +1,6 @@
 package one.chartsy.exploration.ui;
 
+import org.openide.util.lookup.Lookups;
 import org.openide.windows.TopComponent;
 
 import javax.swing.*;
@@ -18,9 +19,7 @@ import java.awt.*;
 )
 public class ExplorationResultTab extends TopComponent {
     /** The master table where the exploration result list is displayed. */
-    private final ExplorationResultTable resultTable;
-    /** The summary table where the summary rows are displayed. */
-    private final JLabel summaryTextLabel;
+    private final ExplorationResultTable resultTable = new ExplorationResultTable();
 
 
     /**
@@ -30,13 +29,12 @@ public class ExplorationResultTab extends TopComponent {
     public ExplorationResultTab(String name) {
         initComponents();
         setName(name);
-        resultTable = new ExplorationResultTable();
         resultTable.setName(name);
         scrollPane.setViewportView(resultTable);
         scrollPane.setBorder(null);
         scrollPane.setViewportBorder(null);
 
-        summaryTextLabel = new JLabel();
+        associateLookup(Lookups.fixed(resultTable));
     }
 
     public ExplorationResultTable getResultTable() {

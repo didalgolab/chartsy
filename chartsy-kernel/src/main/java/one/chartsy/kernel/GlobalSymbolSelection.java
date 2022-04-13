@@ -1,6 +1,7 @@
 package one.chartsy.kernel;
 
 import one.chartsy.Symbol;
+import org.openide.util.Lookup;
 
 import java.util.List;
 
@@ -14,5 +15,9 @@ import java.util.List;
  */
 public interface GlobalSymbolSelection {
 
-    List<Symbol> getSelectedSymbols();
+    List<Symbol> selectedSymbols();
+
+    static GlobalSymbolSelection get() {
+        return Lookup.getDefault().lookup(GlobalSymbolSelection.class);
+    }
 }

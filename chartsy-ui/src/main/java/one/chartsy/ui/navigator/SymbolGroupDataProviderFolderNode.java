@@ -30,7 +30,7 @@ public class SymbolGroupDataProviderFolderNode extends AbstractNode implements E
     
     private SymbolGroupDataProviderFolderNode(SymbolGroupContent symbolGroup, SymbolGroupChildFactory childFactory) {
         super(Children.create(childFactory, true), Lookups.fixed(symbolGroup, childFactory));
-        setDisplayName(symbolGroup.getName());
+        setName(symbolGroup.getName());
         setIconBaseWithExtension(SYMBOL_GROUP_DATA_PROVIDER_FOLDER_ICON_BASE);
         this.data = Objects.requireNonNull(symbolGroup, "symbolGroup");
         this.childFactory = childFactory;

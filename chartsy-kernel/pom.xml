@@ -25,9 +25,11 @@
                         <publicPackage>org.apache.commons.math3.*</publicPackage>
                         <publicPackage>org.apache.logging.log4j.core.*</publicPackage>
                         <publicPackage>org.immutables.value.*</publicPackage>
+                        <publicPackage>org.reactivestreams.*</publicPackage>
                         <publicPackage>org.springframework.*</publicPackage>
                         <publicPackage>org.yaml.*</publicPackage>
                         <publicPackage>reactor.core.*</publicPackage>
+                        <publicPackage>reactor.util.*</publicPackage>
                     </publicPackages>
                 </configuration>
             </plugin>
@@ -60,6 +62,11 @@
             <version>${jackson.version}</version>
         </dependency>
         <dependency>
+            <groupId>io.projectreactor</groupId>
+            <artifactId>reactor-core</artifactId>
+            <version>${reactor.core.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-math3</artifactId>
             <version>${commons.math.version}</version>
@@ -69,6 +76,16 @@
             <artifactId>value</artifactId>
             <version>${immutables.version}</version>
             <!--scope>provided</scope-->
+        </dependency>
+        <dependency>
+            <groupId>org.netbeans.api</groupId>
+            <artifactId>org-netbeans-modules-libs-gradle</artifactId>
+            <version>${netbeans.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.netbeans.api</groupId>
+            <artifactId>org-openide-util</artifactId>
+            <version>${netbeans.version}</version>
         </dependency>
         <dependency>
             <groupId>org.netbeans.api</groupId>

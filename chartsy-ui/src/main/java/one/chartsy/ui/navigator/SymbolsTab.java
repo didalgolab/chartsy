@@ -28,7 +28,9 @@ import javax.swing.text.DefaultEditorKit;
 import javax.swing.tree.ExpandVetoException;
 import javax.swing.tree.TreePath;
 import javax.swing.tree.TreeSelectionModel;
+import java.awt.*;
 import java.util.*;
+import java.util.List;
 
 public class SymbolsTab extends TopComponent implements ExplorerManager.Provider {
     private final ExplorerManager explorerManager = new ExplorerManager();
@@ -78,6 +80,7 @@ public class SymbolsTab extends TopComponent implements ExplorerManager.Provider
         });
         JTreeEnhancements.setSingleChildExpansionPolicy(tree);
         selectionModel = CheckBoxTreeDecorator.decorate(tree).getCheckBoxTreeSelectionModel();
+        setForeground(Color.yellow);
     }
     
     public static SymbolsTab findComponent() {
@@ -106,7 +109,7 @@ public class SymbolsTab extends TopComponent implements ExplorerManager.Provider
         return selectionModel;
     }
 
-    public List<Symbol> getSelectedSymbols() {
+    public List<Symbol> selectedSymbols() {
         var paths = getSelectionModel().getSelectionPaths();
         if (paths.length == 0)
             return List.of();

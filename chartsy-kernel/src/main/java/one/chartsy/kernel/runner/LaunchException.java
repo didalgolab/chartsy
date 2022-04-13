@@ -1,4 +1,4 @@
-package one.chartsy.ide.engine.launch;
+package one.chartsy.kernel.runner;
 
 public class LaunchException extends Exception {
 

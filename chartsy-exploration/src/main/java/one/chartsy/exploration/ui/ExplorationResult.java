@@ -1,10 +1,13 @@
 package one.chartsy.exploration.ui;
 
+import one.chartsy.kernel.ExplorationFragment;
+
 import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
 import java.awt.*;
 import java.io.Serial;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -13,15 +16,19 @@ public class ExplorationResult extends AbstractTableModel {
     @Serial
     private static final long serialVersionUID = 3757051960318859399L;
 
-    private final List<String> columnNames = new ArrayList<>();
+    private final List<String> columnNames = Collections.synchronizedList(new ArrayList<>());
 
-    private final List<ExplorationFragment> rows = new ArrayList<>();
+    private final List<ExplorationFragment> rows = Collections.synchronizedList(new ArrayList<>());
 
 
     public void addExplorationFragment(ExplorationFragment fragment) {
         rows.add(fragment);
 
-        boolean newColumn = columnNames.addAll(fragment.columnValues().keySet());
+        boolean newColumn = false;
+        for (String columnName : fragment.columnValues().keySet())
+            if (!columnNames.contains(columnName))
+                newColumn |= columnNames.add(columnName);
+
         if (newColumn)
             EventQueue.invokeLater(this::fireTableStructureChanged);
         else if (!notifyTimer.isRunning() || nextRowToNotify == rows.size())

@@ -24,7 +24,7 @@ public class SymbolGroupDataProviderNode extends SymbolGroupNode {
     
     protected SymbolGroupDataProviderNode(SymbolGroupContent symbolGroup, SymbolGroupChildFactory childFactory, Lookup lookup) {
         super(symbolGroup, childFactory, lookup);
-        setDisplayName(symbolGroup.getName());
+        setName(symbolGroup.getName());
         setIconBaseWithExtension(SYMBOL_GROUP_DATA_PROVIDER_ICON_BASE);
     }
     

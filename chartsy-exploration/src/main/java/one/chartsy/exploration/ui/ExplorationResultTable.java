@@ -1,5 +1,7 @@
 package one.chartsy.exploration.ui;
 
+import one.chartsy.kernel.ExplorationFragment;
+import one.chartsy.kernel.ExplorationListener;
 import one.chartsy.misc.StyleOption;
 import one.chartsy.misc.StyledValue;
 import org.netbeans.swing.etable.ETable;
@@ -11,10 +13,17 @@ import javax.swing.table.TableCellRenderer;
 import java.awt.*;
 import java.io.Serial;
 
-public class ExplorationResultTable extends ETable {
+public class ExplorationResultTable extends ETable implements ExplorationListener {
+
+    private final ExplorationResult result;
 
     public ExplorationResultTable() {
-        super(new ExplorationResult());
+        this(new ExplorationResult());
+    }
+
+    protected ExplorationResultTable(ExplorationResult result) {
+        super(result);
+        this.result = result;
         setFullyNonEditable(true);
         setColumnHidingAllowed(true);
         setBorder(null);
@@ -30,7 +39,7 @@ public class ExplorationResultTable extends ETable {
         Font font = getFont();
         setFont(font.deriveFont(2.0f + font.getSize2D()));
         FontMetrics fm = getFontMetrics(getFont());
-        setRowHeight(fm.getHeight() + 4);
+        setRowHeight(fm.getHeight() + 3);
     }
 
     /** The custom cell renderer associated with the table component. */
@@ -95,4 +104,13 @@ public class ExplorationResultTable extends ETable {
         return cellRenderer;
     }
 
+    @Override
+    public void explorationFragmentCreated(ExplorationFragment next) {
+        result.addExplorationFragment(next);
+    }
+
+    @Override
+    public void explorationFinished() {
+
+    }
 }

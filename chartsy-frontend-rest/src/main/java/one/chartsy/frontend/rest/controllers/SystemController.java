@@ -2,7 +2,6 @@ package one.chartsy.frontend.rest.controllers;
 
 import one.chartsy.Symbol;
 import one.chartsy.kernel.GlobalSymbolSelection;
-import org.openide.util.Lookup;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -18,8 +17,8 @@ public class SystemController {
 
     @GetMapping("/selected-symbols")
     public Flux<Symbol> getSelectedSymbols() {
-        var selection = Lookup.getDefault().lookup(GlobalSymbolSelection.class);
-        return Flux.fromIterable(selection.getSelectedSymbols());
+        var selection = GlobalSymbolSelection.get();
+        return Flux.fromIterable(selection.selectedSymbols());
     }
 
     public static class SystemStatusData {

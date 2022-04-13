@@ -7,9 +7,7 @@ import one.chartsy.TimeFrame;
 import one.chartsy.data.provider.DataProvider;
 import one.chartsy.persistence.domain.SymbolGroupAggregateData;
 import one.chartsy.persistence.domain.model.SymbolGroupRepository;
-import one.chartsy.ui.ChartTopComponent;
-import one.chartsy.frontend.FrontEnd;
-import one.chartsy.ui.chart.*;
+import one.chartsy.ui.ChartManager;
 import one.chartsy.ui.nodes.BaseNodeAction;
 import one.chartsy.ui.nodes.NodeSelection;
 import org.apache.logging.log4j.LogManager;
@@ -300,25 +298,7 @@ public abstract class Actions {
     }
 
     public static void openChart(List<Symbol> symbolList, TimeFrame timeFrame) {
-        FrontEnd frontEnd = Lookup.getDefault().lookup(FrontEnd.class);
-        ChartTemplate template = frontEnd.getApplicationContext().getBean(ChartTemplate.class);
-
-        Symbol first = symbolList.get(0);
-        ChartData chartData = new ChartData();
-        chartData.setSymbol(first);
-        chartData.setDataProvider(first.getProvider());
-        chartData.setTimeFrame(timeFrame);
-        chartData.setChart(frontEnd.getApplicationContext().getBean("Candle Stick", Chart.class));
-
-        ChartFrame chartFrame = new ChartFrame();
-        chartFrame.setChartData(chartData);
-        chartFrame.setChartTemplate(template);
-        if (symbolList.size() > 1) {
-            //symbolList.remove(0); // remove the first/current symbol from the stack
-            chartFrame.setHistory(new ChartHistory(symbolList, timeFrame));
-        }
-        ChartTopComponent chartTC = new ChartTopComponent(chartFrame);
-        chartTC.open();
-        chartTC.requestActive();
+        Lookup.getDefault().lookup(ChartManager.class)
+                .open(symbolList, timeFrame);
     }
 }

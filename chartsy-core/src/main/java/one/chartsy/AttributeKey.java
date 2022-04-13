@@ -2,6 +2,10 @@ package one.chartsy;
 
 public record AttributeKey<T>(Class<T> type, String name) implements Comparable<AttributeKey<?>> {
 
+    public AttributeKey(Class<T> type) {
+        this(type, type.getSimpleName());
+    }
+
     @Override
     public int compareTo(AttributeKey<?> o) {
         int cmp = name.compareTo(o.name);

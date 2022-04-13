@@ -1,9 +1,23 @@
 package one.chartsy.ide.engine.actions;
 
+import one.chartsy.core.ThrowingRunnable;
+import one.chartsy.ide.engine.AutomaticRunner;
+import one.chartsy.kernel.runner.EmbeddedLauncher;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.netbeans.api.project.Project;
+import org.netbeans.api.project.ProjectManager;
+import org.netbeans.modules.gradle.java.api.GradleJavaProject;
+import org.netbeans.modules.gradle.java.api.GradleJavaSourceSet;
+import org.openide.LifecycleManager;
 import org.openide.awt.DropDownButtonFactory;
+import org.openide.filesystems.FileObject;
+import org.openide.filesystems.FileUtil;
+import org.openide.util.Exceptions;
 import org.openide.util.Lookup;
 import org.openide.util.RequestProcessor;
 import org.openide.util.actions.Presenter;
+import reactor.core.scheduler.Schedulers;
 
 import javax.swing.*;
 import javax.swing.event.PopupMenuEvent;
@@ -11,9 +25,12 @@ import javax.swing.event.PopupMenuListener;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.util.List;
 
 public class LauncherAction extends AbstractAction implements Presenter.Toolbar, PopupMenuListener {
+
+    private final Logger log = LogManager.getLogger(getClass());
 
     private final String command;
     private final Lookup lookup;
@@ -33,11 +50,67 @@ public class LauncherAction extends AbstractAction implements Presenter.Toolbar,
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        for (Object o : lookup.lookupAll(Object.class)) {
-            System.out.println(" ---> " + o.getClass() + ": " + o);
+        LifecycleManager.getDefault().saveAll();
+        FileObject fileObject = this.lookup.lookup(FileObject.class);
+
+        if (fileObject == null) {
+            Toolkit.getDefaultToolkit().beep();
+            log.warn("Can't run LauncherAction due to missing FileObject in global lookup");
+            return;
         }
 
-        new Exception("STACK_TRACE").printStackTrace();
+        var projectManager = ProjectManager.getDefault();
+        var projectDir = findProjectDirectory(fileObject, projectManager);
+        if (projectDir == null) return;
+
+        try {
+            Project project = projectManager.findProject(projectDir);
+            String className = evaluateClassName(GradleJavaProject.get(project), fileObject);
+
+            EmbeddedLauncher launcher = new EmbeddedLauncher(new AutomaticRunner(LastActivatedWindowLookup.INSTANCE));
+
+            Schedulers.boundedElastic().schedule(
+                    ThrowingRunnable.unchecked(
+                            () -> launcher.launch(FileUtil.toFile(projectDir).toPath(), className)));
+
+        } catch (ThrowingRunnable.UncheckedException x) {
+            Exceptions.printStackTrace(x.getCause());
+        } catch (Exception x) {
+            Exceptions.printStackTrace(x);
+        }
+    }
+
+    private FileObject findProjectDirectory(FileObject fileObject, ProjectManager projectManager) {
+        var projectDir = fileObject.isFolder()? fileObject : fileObject.getParent();
+        while (projectDir != null && !projectManager.isProject(projectDir))
+            projectDir = projectDir.getParent();
+
+        if (projectDir == null) {
+            Toolkit.getDefaultToolkit().beep();
+            log.warn("No project found containing the file `{}`", fileObject);
+            return null;
+        }
+        return projectDir;
+    }
+
+    private String evaluateClassName(GradleJavaProject gjp, FileObject fo) {
+        String ret = null;
+        if ((gjp != null) && (fo != null)) {
+            File f = FileUtil.toFile(fo);
+            GradleJavaSourceSet sourceSet = gjp.containingSourceSet(f);
+            if (sourceSet != null) {
+                String relPath = sourceSet.relativePath(f);
+                if (relPath != null) {
+                    ret = (relPath.lastIndexOf('.') > 0 ?
+                            relPath.substring(0, relPath.lastIndexOf('.')) :
+                            relPath).replace('/', '.');
+                    if (fo.isFolder()) {
+                        ret = ret + '*';
+                    }
+                }
+            }
+        }
+        return ret;
     }
 
     @Override
