@@ -96,28 +96,9 @@ public abstract class Actions {
                     return;
 
                 // create child symbol group for each parent
-                for (Node parent : parents) {
-                    var appContext = getApplicationContext(parent).orElseThrow();
-                    var exprParser = appContext.getBean(ExpressionParser.class);
-                    var dataProvider = exprParser.parseExpression(expr).getValue(DataProvider.class);
-                    try {
-                        var symbolGroup = new SymbolGroupAggregateData();
-                        symbolGroup.setName(dataProvider.getName());
-                        symbolGroup.setContentType(SymbolGroupContent.Type.DATA_PROVIDER);
-                        symbolGroup.setParentGroupId(asSymbolGroup(parent).getId());
-                        symbolGroup.setDataProviderDescriptor(expr);
+                for (Node parent : parents)
+                    createDataProviderFromDescriptor(parent, expr);
 
-                        appContext.getBean(SymbolGroupRepository.class).saveAndFlush(symbolGroup);
-                    } finally {
-                        if (dataProvider instanceof AutoCloseable c) {
-                            try {
-                                c.close();
-                            } catch (Exception e) {
-                                LogManager.getLogger(getClass()).warn("Error closing {}", dataProvider.getName(), e);
-                            }
-                        }
-                    }
-                }
                 NodeSelection.selectAllAdded(parents);
             }
         }
@@ -138,6 +119,29 @@ public abstract class Actions {
                 expr = expr.substring(1, expr.length() - 1);
 
             return expr;
+        }
+    }
+
+    public static void createDataProviderFromDescriptor(Node node, String expr) {
+        var appContext = BaseNodeAction.getApplicationContext(node).orElseThrow();
+        var exprParser = appContext.getBean(ExpressionParser.class);
+        var dataProvider = exprParser.parseExpression(expr).getValue(DataProvider.class);
+        try {
+            var symbolGroup = new SymbolGroupAggregateData();
+            symbolGroup.setName(dataProvider.getName());
+            symbolGroup.setContentType(SymbolGroupContent.Type.DATA_PROVIDER);
+            symbolGroup.setParentGroupId(asSymbolGroup(node).getId());
+            symbolGroup.setDataProviderDescriptor(expr);
+
+            appContext.getBean(SymbolGroupRepository.class).saveAndFlush(symbolGroup);
+        } finally {
+            if (dataProvider instanceof AutoCloseable c) {
+                try {
+                    c.close();
+                } catch (Exception e) {
+                    LogManager.getLogger(Actions.class).warn("Error closing {}", dataProvider.getName(), e);
+                }
+            }
         }
     }
 

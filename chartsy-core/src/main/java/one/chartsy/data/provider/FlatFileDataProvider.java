@@ -10,7 +10,6 @@ import one.chartsy.data.batch.Batch;
 import one.chartsy.data.batch.Batchers;
 import one.chartsy.data.batch.SimpleBatch;
 import one.chartsy.data.provider.file.*;
-import one.chartsy.misc.ManagedReference;
 import one.chartsy.naming.SymbolIdentifier;
 import one.chartsy.time.Chronological;
 import org.apache.commons.lang3.StringUtils;
@@ -55,7 +54,7 @@ public class FlatFileDataProvider extends AbstractDataProvider implements AutoCl
     }
 
     protected static boolean isCloseable(ResourceHandle<FileSystem> ref) {
-        return !(ref instanceof ManagedReference<FileSystem>) && ref.get() != FileSystems.getDefault();
+        return ref.isCloseable() && ref.get() != FileSystems.getDefault();
     }
 
     private static String fileName(Path file) {

@@ -29,7 +29,7 @@ public class FileSystemCache {
                 freeWeakReferences(cachedFileSystems);
 
                 var fileSystem = FileSystems.newFileSystem(key.path(), key.env());
-                fileSystemRef = ResourceHandle.of(fileSystem);
+                fileSystemRef = ResourceHandle.of(fileSystem, false);
                 cachedFileSystems.put(key, new WeakReference<>(fileSystemRef));
             }
             return fileSystemRef;

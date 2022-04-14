@@ -67,6 +67,18 @@ class FlatFileDataProviderTest {
     }
 
     @Test
+    void is_not_closable_manually_when_cached() throws URISyntaxException, IOException, InterruptedException {
+        var provider1 = FlatFileFormat.builder().build()
+                .newDataProvider(Paths.get(getClass().getResource("/FileSystemDataProvider.zip").toURI()));
+        var provider2 = FlatFileFormat.builder().build()
+                .newDataProvider(Paths.get(getClass().getResource("/FileSystemDataProvider.zip").toURI()));
+
+        provider1.close();
+        assertTrue(provider1.getFileSystem().isOpen(), "when cached and still in use");
+        assertTrue(provider2.getFileSystem().isOpen(), "when cached and still in use");
+    }
+
+    @Test
     void provides_HierarchicalConfiguration() {
         HierarchicalConfiguration conf = provider.getLookup().lookup(HierarchicalConfiguration.class);
 

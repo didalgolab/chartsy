@@ -13,14 +13,25 @@ import org.openide.explorer.view.BeanTreeView;
 import org.openide.nodes.AbstractNode;
 import org.openide.nodes.ChildFactory;
 import org.openide.nodes.Children;
+import org.openide.nodes.Node;
 import org.openide.util.Lookup;
 import org.openide.util.actions.SystemAction;
 import org.openide.util.datatransfer.NewType;
+import org.openide.util.datatransfer.PasteType;
 import org.openide.util.lookup.Lookups;
 import org.springframework.context.ApplicationContext;
 
 import javax.swing.*;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.Transferable;
+import java.awt.datatransfer.UnsupportedFlavorException;
+import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Path;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 public class SymbolGroupNode extends AbstractNode implements EntityNode<SymbolGroupContent> {
 
@@ -110,5 +121,43 @@ public class SymbolGroupNode extends AbstractNode implements EntityNode<SymbolGr
     public void destroy() {
         BaseNodeAction.getApplicationContext(this).orElseThrow()
                 .getBean(SymbolGroupRepository.class).delete((SymbolGroupAggregateData) getEntity());
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    protected void createPasteTypes(Transferable t, List<PasteType> s) {
+        try {
+            if (t.isDataFlavorSupported(DataFlavor.javaFileListFlavor))
+                s.add(PasteTypes.createFileListPasteType(this, (List<File>) t.getTransferData(DataFlavor.javaFileListFlavor)));
+
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        } catch (UnsupportedFlavorException e) {
+            throw new InternalError("Shouldn't happen", e);
+        }
+        super.createPasteTypes(t, s);
+    }
+
+    public static class PasteTypes {
+        private static final Pattern STOOQ_FILE_NAME_PATTERN = Pattern
+                .compile("[dh5]_(hk|hu|jp|macro|pl|uk|us|world)_txt(\\s?\\([0-9]+\\))?\\.zip");
+
+        public static PasteType createFileListPasteType(Node node, List<File> files) {
+            List<Path> paths = new LinkedList<>();
+            for (File file : files)
+                if (STOOQ_FILE_NAME_PATTERN.matcher(file.getName()).matches())
+                    paths.add(file.toPath());
+
+            return new PasteType() {
+                @Override
+                public Transferable paste() {
+                    for (Path path : paths) {
+                        String expr = "T(one.chartsy.data.provider.file.FlatFileFormat).STOOQ.newDataProvider('"+path.toAbsolutePath().toString().replace('\\','/')+"')";
+                        Actions.createDataProviderFromDescriptor(node, expr);
+                    }
+                    return null;
+                }
+            };
+        }
     }
 }
