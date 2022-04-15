@@ -4,10 +4,10 @@ The project is an ongoing work in progress... help or support of any kind is muc
 
 ### Prerequisites
 * Java 17+
-* Maven 3.8+
+* Maven 3.8.3+
 
 ## Build from sources
-1. Clone source code repository from GitHub:
+1. Clone source code repository:
 ```shell
 git clone https://github.com/chartsyone/chartsy.git
 ```
@@ -22,21 +22,21 @@ mvn nbm:cluster-app nbm:run-platform -f application/pom.xml
 ```
 
 ## Troubleshooting build problems
-Problem 1: I'm getting the following error when building project with Maven.
+Problem 1: I'm getting the following error while building project.
 ```
 [ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.8.1:compile (default-compile) on project chartsy-core:
   Fatal error compiling: error: invalid target release: 17 -> [Help 1]
 ```
-Solution: Ensure that proper java version is installed and used by your Maven builds. To check used java version type `mvn -version`. **Java 17 or later** is required to compile and run the project.
+Solution: Ensure that proper java version is installed and used by your Maven builds. To check java version used by your Maven installation type `mvn -version`. **Java 17 or later** is required to compile and run the project.
 ___
-Problem 2: I'm getting the following error when trying to compile project using Maven.
+Problem 2: I'm getting the following error while building project.
 ```
 [ERROR] Error executing Maven.
 [ERROR] java.lang.IllegalStateException: Unable to load cache item
 [ERROR] Caused by: Unable to load cache item
 [ERROR] Caused by: Could not initialize class com.google.inject.internal.cglib.core.$MethodWrapper
 ```
-Solution: Please ensure that Maven 3.8 or later is used. For example when on Linux the below command can install Maven 3.8.5 distribution:
+Solution: Please ensure that **Maven 3.8.3 or newer** is used. For example on Linux the below command can install Maven 3.8.5 distribution:
 ```shell
 sudo wget https://archive.apache.org/dist/maven/maven-3/3.8.5/binaries/apache-maven-3.8.5-bin.tar.gz -P /tmp \
   && sudo tar xf /tmp/apache-maven-*.tar.gz -C /opt \
