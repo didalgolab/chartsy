@@ -170,6 +170,23 @@ public class FinancialIndicators {
         return DoubleSeries.of(result, series.getTimeline());
     }
 
+    public static DoubleMinMaxList sentimentBands(CandleSeries quotes) {
+        DoubleMinMaxList bands = new DoubleMinMaxList();
+        computeSentimentBands(quotes, bands);
+        return bands;
+    }
+
+    private static void computeSentimentBands(CandleSeries quotes, List<DoubleSeries> resultList) {
+        Frama.calculateSmudges(quotes, resultList);
+        for (int i = 0; i < 5; i++) {
+            int periods1 = 21*3 + 15*i;//FIXME: MB: CHANGED: 25 + 10*i;
+            resultList.add(frama(quotes, 13, periods1).ref(-40).hhv(60));
+        }
+
+        DoubleSeries frama = frama(quotes, 10, quotes.length() - 1, Double.NaN, 90, 10.0);
+        resultList.add(frama.add(quotes.atr(15)));
+        resultList.add(frama);
+    }
 
     public static final class Sfora {
 
