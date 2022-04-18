@@ -141,10 +141,10 @@
         <lombok.version>1.18.22</lombok.version>
         <mockito.version>4.3.1</mockito.version>
         <netbeans.version>RELEASE130</netbeans.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <reactor.core.version>3.4.16</reactor.core.version>
         <spotbugs.version>4.6.0</spotbugs.version>
         <spring.boot.version>2.6.6</spring.boot.version>
         <spring.version>5.3.18</spring.version>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <reactor.core.version>3.4.16</reactor.core.version>
     </properties>
 </project>

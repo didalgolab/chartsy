@@ -11,7 +11,9 @@ import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.TableCellRenderer;
 import java.awt.*;
+import java.awt.font.TextAttribute;
 import java.io.Serial;
+import java.util.Map;
 
 public class ExplorationResultTable extends ETable implements ExplorationListener {
 
@@ -37,7 +39,11 @@ public class ExplorationResultTable extends ETable implements ExplorationListene
 
         // adjust data grid's font to make it slightly bigger
         Font font = getFont();
-        setFont(font.deriveFont(2.0f + font.getSize2D()));
+        Map<TextAttribute, Object> attributes = Map.of(
+                TextAttribute.TRACKING, -0.05,
+                TextAttribute.SIZE, 2.0 + font.getSize2D()
+        );
+        setFont(font.deriveFont(attributes));
         FontMetrics fm = getFontMetrics(getFont());
         setRowHeight(fm.getHeight() + 3);
     }
