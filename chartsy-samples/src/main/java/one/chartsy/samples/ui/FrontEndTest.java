@@ -1,6 +1,6 @@
 package one.chartsy.samples.ui;
 
-import one.chartsy.frontend.FrontEnd;
+import one.chartsy.kernel.boot.FrontEnd;
 import org.openide.util.Lookup;
 
 public class FrontEndTest {

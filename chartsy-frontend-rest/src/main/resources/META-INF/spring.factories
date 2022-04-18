@@ -1,2 +1,2 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-one.chartsy.frontend.rest.RestConfiguration
+one.chartsy.kernel.frontend.rest.RestConfiguration

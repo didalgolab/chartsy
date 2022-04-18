@@ -40,12 +40,12 @@
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>chartsy-frontend</artifactId>
+            <artifactId>chartsy-kernel</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>chartsy-kernel</artifactId>
+            <artifactId>chartsy-kernel-boot</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -61,6 +61,11 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>chartsy-ui-chart</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>slf4j-api</artifactId>
             <version>${project.version}</version>
         </dependency>
 

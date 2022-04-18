@@ -7,7 +7,7 @@
         <version>0.1-SNAPSHOT</version>
     </parent>
     <artifactId>chartsy-core-ml</artifactId>
-    <packaging>nbm</packaging>
+    <packaging>jar</packaging>
     <build>
         <plugins>
             <plugin>
@@ -20,6 +20,22 @@
                         <publicPackage>one.chartsy.core.ml.*</publicPackage>
                     </publicPackages>
                 </configuration>
+                <executions>
+                    <execution>
+                        <id>nbm-manifest</id>
+                        <phase>process-classes</phase>
+                        <goals>
+                            <goal>manifest</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>nbm-package</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>nbm</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -53,6 +69,11 @@
             <groupId>com.github.haifengl</groupId>
             <artifactId>smile-core</artifactId>
             <version>2.6.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.netbeans.api</groupId>
+            <artifactId>org-openide-util-lookup</artifactId>
+            <version>${netbeans.version}</version>
         </dependency>
         <!--dependency>
             <groupId>com.github.haifengl</groupId>

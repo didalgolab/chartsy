@@ -7,32 +7,9 @@
         <version>0.1-SNAPSHOT</version>
     </parent>
     <artifactId>chartsy-kernel</artifactId>
-    <packaging>nbm</packaging>
+    <packaging>jar</packaging>
     <build>
         <plugins>
-            <plugin>
-                <groupId>org.apache.netbeans.utilities</groupId>
-                <artifactId>nbm-maven-plugin</artifactId>
-                <extensions>true</extensions>
-                <configuration>
-                    <codeNameBase>one.chartsy.kernel</codeNameBase>
-                    <publicPackages>
-                        <publicPackage>com.fasterxml.jackson.*</publicPackage>
-                        <publicPackage>one.chartsy.kernel.*</publicPackage>
-                        <publicPackage>one.chartsy.persistence.domain.*</publicPackage>
-                        <publicPackage>org.aopalliance.*</publicPackage>
-                        <publicPackage>org.apache.commons.logging.*</publicPackage>
-                        <publicPackage>org.apache.commons.math3.*</publicPackage>
-                        <publicPackage>org.apache.logging.log4j.core.*</publicPackage>
-                        <publicPackage>org.immutables.value.*</publicPackage>
-                        <publicPackage>org.reactivestreams.*</publicPackage>
-                        <publicPackage>org.springframework.*</publicPackage>
-                        <publicPackage>org.yaml.*</publicPackage>
-                        <publicPackage>reactor.core.*</publicPackage>
-                        <publicPackage>reactor.util.*</publicPackage>
-                    </publicPackages>
-                </configuration>
-            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
@@ -41,6 +18,50 @@
                         <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
                     </archive>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.netbeans.utilities</groupId>
+                <artifactId>nbm-maven-plugin</artifactId>
+                <extensions>true</extensions>
+                <configuration>
+                    <codeNameBase>one.chartsy.kernel</codeNameBase>
+                    <publicPackages>
+                        <publicPackage>com.fasterxml.jackson.*</publicPackage>
+                        <publicPackage>com.google.gson.*</publicPackage>
+                        <publicPackage>com.zaxxer.hikari.*</publicPackage>
+                        <publicPackage>edu.umd.cs.findbugs.*</publicPackage>
+                        <publicPackage>feign.*</publicPackage>
+                        <publicPackage>io.netty.*</publicPackage>
+                        <publicPackage>javax.annotation.*</publicPackage>
+                        <publicPackage>javax.persistence.*</publicPackage>
+                        <publicPackage>javax.xml.*</publicPackage>
+                        <publicPackage>one.chartsy.*</publicPackage>
+                        <publicPackage>org.aopalliance.*</publicPackage>
+                        <publicPackage>org.apache.*</publicPackage>
+                        <publicPackage>org.hibernate.*</publicPackage>
+                        <publicPackage>org.immutables.*</publicPackage>
+                        <publicPackage>org.reactivestreams.*</publicPackage>
+                        <publicPackage>org.springframework.*</publicPackage>
+                        <publicPackage>org.yaml.*</publicPackage>
+                        <publicPackage>reactor.*</publicPackage>
+                    </publicPackages>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>nbm-manifest</id>
+                        <phase>process-classes</phase>
+                        <goals>
+                            <goal>manifest</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>nbm-package</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>nbm</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
@@ -59,7 +80,7 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>${jackson.version}</version>
+            <version>${jackson.version}.2</version>
         </dependency>
         <dependency>
             <groupId>io.projectreactor</groupId>
@@ -84,17 +105,17 @@
         </dependency>
         <dependency>
             <groupId>org.netbeans.api</groupId>
+            <artifactId>org-openide-filesystems</artifactId>
+            <version>${netbeans.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.netbeans.api</groupId>
             <artifactId>org-openide-util</artifactId>
             <version>${netbeans.version}</version>
         </dependency>
         <dependency>
             <groupId>org.netbeans.api</groupId>
             <artifactId>org-openide-util-lookup</artifactId>
-            <version>${netbeans.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.netbeans.api</groupId>
-            <artifactId>org-openide-filesystems</artifactId>
             <version>${netbeans.version}</version>
         </dependency>
         <dependency>

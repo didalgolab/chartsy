@@ -1,7 +1,7 @@
 package one.chartsy.ui.config;
 
 import com.google.gson.GsonBuilder;
-import one.chartsy.frontend.config.FrontEndConfiguration;
+import one.chartsy.kernel.boot.config.FrontEndConfiguration;
 import one.chartsy.kernel.ServiceManager;
 import one.chartsy.kernel.ServiceManagerTypeAdapter;
 import one.chartsy.simulation.SimulationResult;

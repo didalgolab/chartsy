@@ -1,6 +1,6 @@
 package one.chartsy.ui.reports;
 
-import one.chartsy.frontend.FrontEnd;
+import one.chartsy.kernel.boot.FrontEnd;
 import one.chartsy.simulation.SimulationResult;
 import one.chartsy.time.TimeLock;
 import one.chartsy.ui.tree.TreeViewControl;

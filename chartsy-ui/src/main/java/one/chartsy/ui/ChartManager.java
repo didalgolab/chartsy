@@ -6,7 +6,7 @@ import one.chartsy.Symbol;
 import one.chartsy.SymbolResource;
 import one.chartsy.TimeFrame;
 import one.chartsy.data.provider.DataProvider;
-import one.chartsy.frontend.FrontEnd;
+import one.chartsy.kernel.boot.FrontEnd;
 import one.chartsy.ui.chart.*;
 import org.openide.util.Lookup;
 import org.openide.util.lookup.ServiceProvider;

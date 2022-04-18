@@ -1,6 +1,6 @@
 package one.chartsy.ui.chart;
 
-import one.chartsy.frontend.config.FrontEndConfiguration;
+import one.chartsy.kernel.boot.config.FrontEndConfiguration;
 import one.chartsy.ui.chart.type.CandlestickChart;
 import one.chartsy.ui.chart.type.OHLC;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;

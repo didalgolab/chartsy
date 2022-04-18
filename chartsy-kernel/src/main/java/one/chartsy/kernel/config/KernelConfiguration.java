@@ -3,12 +3,14 @@ package one.chartsy.kernel.config;
 import one.chartsy.Workspace;
 import one.chartsy.kernel.DataProviderRegistry;
 import one.chartsy.kernel.starter.AbstractSpringApplicationBuilderFactory;
+import org.openide.util.Lookup;
 import org.openide.util.lookup.ServiceProvider;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
@@ -43,6 +45,7 @@ public class KernelConfiguration extends AbstractSpringApplicationBuilderFactory
     public SpringApplicationBuilder createSpringApplicationBuilder() {
         return super.createSpringApplicationBuilder()
                 .web(WebApplicationType.NONE)
+                .resourceLoader(new DefaultResourceLoader(Lookup.getDefault().lookup(ClassLoader.class)))
                 .properties(createDefaultProperties());
     }
 

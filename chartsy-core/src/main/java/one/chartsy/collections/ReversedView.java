@@ -30,6 +30,7 @@ public class ReversedView<E> extends AbstractList<E> {
             return new ReversedView<>(list);
     }
     
+    @SafeVarargs
     public static <E> List<E> of(E... e) {
         return new RandomAccessView<>(Arrays.asList(e));
     }

@@ -6,7 +6,7 @@
         <artifactId>chartsy-repository</artifactId>
         <version>0.1-SNAPSHOT</version>
     </parent>
-    <artifactId>chartsy-exploration</artifactId>
+    <artifactId>chartsy-kernel-boot</artifactId>
     <packaging>nbm</packaging>
     <build>
         <plugins>
@@ -15,9 +15,9 @@
                 <artifactId>nbm-maven-plugin</artifactId>
                 <extensions>true</extensions>
                 <configuration>
-                    <codeNameBase>one.chartsy.exploration</codeNameBase>
+                    <codeNameBase>one.chartsy.kernel.boot</codeNameBase>
                     <publicPackages>
-                        <publicPackage>one.chartsy.exploration.*</publicPackage>
+                        <publicPackage>one.chartsy.kernel.boot.*</publicPackage>
                     </publicPackages>
                 </configuration>
             </plugin>
@@ -45,11 +45,6 @@
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>chartsy-kernel-boot</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
             <artifactId>chartsy-persistence</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -61,7 +56,7 @@
 
         <dependency>
             <groupId>org.netbeans.api</groupId>
-            <artifactId>org-netbeans-swing-outline</artifactId>
+            <artifactId>org-netbeans-modules-libs-gradle</artifactId>
             <version>${netbeans.version}</version>
         </dependency>
         <dependency>
@@ -78,18 +73,6 @@
             <groupId>org.netbeans.api</groupId>
             <artifactId>org-openide-util-lookup</artifactId>
             <version>${netbeans.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.netbeans.api</groupId>
-            <artifactId>org-openide-windows</artifactId>
-            <version>${netbeans.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>${lombok.version}</version>
-            <scope>provided</scope>
         </dependency>
     </dependencies>
 </project>

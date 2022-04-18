@@ -1,6 +1,6 @@
 # **Chartsy|One** Open Source
 
-The project is an ongoing work in progress... help or support of any kind is muchly appreciated and welcomed.
+The project is an ongoing work in progress... help or support of any kind is appreciated and welcomed.
 
 ### Prerequisites
 * Java 17+
@@ -50,6 +50,13 @@ sudo wget https://archive.apache.org/dist/maven/maven-3/3.8.5/binaries/apache-ma
   && source /etc/profile.d/maven.sh \
   && mvn -version
 ```
+---
+Problem 3: I'm getting the following error when starting the application from the NetBeans IDE:
+```
+INFO [org.netbeans.core.netigso.Netigso]: Can't process ..\..\..\chartsy-ui-chart-indicators\target\classes
+java.io.FileNotFoundException: ..\..\..\chartsy-ui-chart-indicators\target\classes (Access denied)
+```
+Solution: Disable "Compile on Save" feature in the NetBeans IDE.
 ___
 ## License
 To be established.

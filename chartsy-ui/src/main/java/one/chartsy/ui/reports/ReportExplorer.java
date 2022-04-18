@@ -1,6 +1,6 @@
 package one.chartsy.ui.reports;
 
-import one.chartsy.frontend.FrontEnd;
+import one.chartsy.kernel.boot.FrontEnd;
 import one.chartsy.kernel.Kernel;
 import one.chartsy.ui.swing.CheckBoxTreeDecorator;
 import one.chartsy.ui.swing.CheckBoxTreeSelectionModel;

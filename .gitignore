@@ -1,4 +1,6 @@
 *.iml
+.gradle
 .idea
+build
 logs
 target
