@@ -14,18 +14,18 @@ public interface Incomplete<T> {
         return get() != null;
     }
 
+
     static <T> Incomplete<T> empty() {
+        final class Empty implements Incomplete<Object> {
+            private static final Empty INSTANCE = new Empty();
+
+            @Override
+            public Object get() {
+                return null;
+            }
+        }
         @SuppressWarnings("unchecked")
-        Incomplete<T> ic = (Incomplete<T>) EmptyIncomplete.instance;
-        return ic;
-    }
-}
-
-final class EmptyIncomplete implements Incomplete<Object> {
-    static final EmptyIncomplete instance = new EmptyIncomplete();
-
-    @Override
-    public Object get() {
-        return null;
+        var empty = (Incomplete<T>) Empty.INSTANCE;
+        return empty;
     }
 }

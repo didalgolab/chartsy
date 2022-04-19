@@ -298,12 +298,12 @@ public interface TimeFrame {
                 var exactDuration = Duration.from(duration);
                 var seconds = exactDuration.getSeconds();
                 if (SECS_IN_DAY % seconds == 0)
-                    return (TimeFrameAggregator) services.createTimeCandleAggregator(exactDuration, new SimpleCandleBuilder(), new TimeCandleAlignment(getTimeZone(), getDailyAlignment()));
+                    return (TimeFrameAggregator) services.createTimeCandleAggregator(exactDuration, SimpleCandleBuilder.fromCandles(), new TimeCandleAlignment(getTimeZone(), getDailyAlignment()));
 
             } catch (DateTimeException ignored) {
                 // ignored, fallback to generic-period aggregator
             }
-            return (TimeFrameAggregator) services.createPeriodCandleAggregator(duration, new SimpleCandleBuilder(), new DateCandleAlignment(getTimeZone(), getDailyAlignment(), getCandleAlignment().orElse(null)));
+            return (TimeFrameAggregator) services.createPeriodCandleAggregator(duration, SimpleCandleBuilder.fromCandles(), new DateCandleAlignment(getTimeZone(), getDailyAlignment(), getCandleAlignment().orElse(null)));
         }
 
         @Override

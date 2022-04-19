@@ -1,33 +1,30 @@
 package one.chartsy.data;
 
 import one.chartsy.Candle;
-import one.chartsy.CandleBuilder;
+import one.chartsy.data.market.Tick;
 
-public class SimpleCandleBuilder extends CandleBuilder.From<Candle> {
+public abstract class SimpleCandleBuilder<P> extends AbstractCandleBuilder<Candle, P> {
 
     @Override
-    public void put(Candle c) {
-        time = c.getTime();
-        open = c.open();
-        high = c.high();
-        low = c.low();
-        close = c.close();
-        volume = c.volume();
-        count = c.count();
-        setPresent();
+    public SimpleCandle get() {
+        return getAsSimpleCandle();
     }
 
-    @Override
-    public void merge(Candle c) {
-        if (!isPresent()) {
-            put(c);
-        } else {
-            time = c.getTime();
-            high = Math.max(high, c.high());
-            low = Math.min(low, c.low());
-            close = c.close();
-            volume += c.volume();
-            count += c.count();
-        }
+    public static SimpleCandleBuilder<Candle> fromCandles() {
+        return new SimpleCandleBuilder<>() {
+            @Override
+            public void add(Candle c) {
+                addCandle(c);
+            }
+        };
+    }
+
+    public static SimpleCandleBuilder<Tick> fromTicks() {
+        return new SimpleCandleBuilder<>() {
+            @Override
+            public void add(Tick t) {
+                addTick(t);
+            }
+        };
     }
 }

@@ -22,10 +22,9 @@ public abstract class AbstractCandleAggregator<T extends Candle, E> implements T
     public Incomplete<T> add(E element, Consumer<T> completedItemConsumer) {
         if (isCompletedBy(element) && candle.isPresent()) {
             completedItemConsumer.accept(candle.get());
-            candle.put(element);
-        } else {
-            candle.merge(element);
+            candle.clear();
         }
+        candle.add(element);
         return candle;
     }
 }
