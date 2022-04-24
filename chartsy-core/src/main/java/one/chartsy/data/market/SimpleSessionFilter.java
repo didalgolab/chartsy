@@ -1,5 +1,6 @@
 package one.chartsy.data.market;
 
+import one.chartsy.Candle;
 import one.chartsy.FilteredTimeFrameAggregator;
 import one.chartsy.TimeFrameAggregator;
 import one.chartsy.time.Chronological;
@@ -15,7 +16,7 @@ public record SimpleSessionFilter(
         ZoneId timezone
 ) {
 
-    public <T, E extends Chronological> TimeFrameAggregator<T, E> wrap(TimeFrameAggregator<T, E> aggregator) {
+    public <C extends Candle, T extends Tick> TimeFrameAggregator<C, T> wrap(TimeFrameAggregator<C, T> aggregator) {
         return new FilteredTimeFrameAggregator<>(new FilterState<>(), aggregator);
     }
 

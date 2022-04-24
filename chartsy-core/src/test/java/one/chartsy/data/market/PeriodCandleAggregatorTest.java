@@ -18,14 +18,14 @@ class PeriodCandleAggregatorTest {
     static final Period DAILY = Period.ofDays(1), WEEKLY = Period.ofWeeks(1), MONTHLY = Period.ofMonths(1);
     static final DateCandleAlignment BREAK_AT_MIDNIGHT_UTC = new DateCandleAlignment(ZoneOffset.UTC, LocalTime.MIDNIGHT);
     static final DateCandleAlignment BREAK_AT_MIDNIGHT_CET = new DateCandleAlignment(ZoneId.of("Europe/Paris"), LocalTime.MIDNIGHT);
-    static final Supplier<SimpleCandleBuilder<Candle>> candleBuilder = SimpleCandleBuilder::fromCandles;
+    static final Supplier<SimpleCandleBuilder> candleBuilder = SimpleCandleBuilder::create;
 
     LinkedList<Candle> emitted = new LinkedList<>();
 
     @Test
     void does_NOT_emit_incomplete_Candles() {
         var agg = new PeriodCandleAggregator<>(candleBuilder.get(), DAILY, BREAK_AT_MIDNIGHT_UTC);
-        agg.add(Candle.of(Chronological.now(), 1.0), emitted::add);
+        agg.addCandle(Candle.of(Chronological.now(), 1.0), emitted::add);
 
         assertEquals(0, emitted.size(), "emitted count");
     }
@@ -35,8 +35,8 @@ class PeriodCandleAggregatorTest {
         var agg = new PeriodCandleAggregator<>(candleBuilder.get(), DAILY, BREAK_AT_MIDNIGHT_UTC);
         var now = Chronological.now();
         var incompleteCandleHandle =
-                agg.add(Candle.of(now, 1.0), emitted::add);
-                agg.add(Candle.of(now, 2.0), emitted::add);
+                agg.addCandle(Candle.of(now, 1.0), emitted::add);
+                agg.addCandle(Candle.of(now, 2.0), emitted::add);
 
         assertEquals(0, emitted.size(), "emitted count");
         assertEquals(Candle.of(now, 1, 2, 1, 2), incompleteCandleHandle.get(), "incomplete candle");
@@ -46,11 +46,11 @@ class PeriodCandleAggregatorTest {
     void aggregates_and_emits_completed_Candles() {
         var agg = new PeriodCandleAggregator<>(candleBuilder.get(), DAILY, BREAK_AT_MIDNIGHT_UTC);
         // first hour candles
-        agg.add(newCandle(LocalDateTime.of(2021, 10, 10, 0, 1), 1.0), emitted::add);
-        agg.add(newCandle(LocalDateTime.of(2021, 10, 10, 23, 59, 59), 2.0), emitted::add);
-        agg.add(newCandle(LocalDateTime.of(2021, 10, 11, 0, 0), 3.0), emitted::add);
+        agg.addCandle(newCandle(LocalDateTime.of(2021, 10, 10, 0, 1), 1.0), emitted::add);
+        agg.addCandle(newCandle(LocalDateTime.of(2021, 10, 10, 23, 59, 59), 2.0), emitted::add);
+        agg.addCandle(newCandle(LocalDateTime.of(2021, 10, 11, 0, 0), 3.0), emitted::add);
         // next hour candle
-        agg.add(newCandle(LocalDateTime.of(2021, 10, 11, 0, 1), 4.0), emitted::add);
+        agg.addCandle(newCandle(LocalDateTime.of(2021, 10, 11, 0, 1), 4.0), emitted::add);
 
         assertEquals(1, emitted.size(), "first hour candle");
         assertEquals(
@@ -62,11 +62,11 @@ class PeriodCandleAggregatorTest {
     void breaks_daily_Candles_at_specified_daily_alignment_time_and_zone() {
         var agg = new PeriodCandleAggregator<>(candleBuilder.get(), DAILY, BREAK_AT_MIDNIGHT_CET);
         // candles before midnight CET
-        agg.add(newCandle(LocalDateTime.of(2021, 10, 10, 22, 1), 1.0), emitted::add);
-        agg.add(newCandle(LocalDateTime.of(2021, 10, 11,  0, 0), 2.0), emitted::add);
-        agg.add(newCandle(LocalDateTime.of(2021, 10, 11, 22, 0), 3.0), emitted::add);
+        agg.addCandle(newCandle(LocalDateTime.of(2021, 10, 10, 22, 1), 1.0), emitted::add);
+        agg.addCandle(newCandle(LocalDateTime.of(2021, 10, 11,  0, 0), 2.0), emitted::add);
+        agg.addCandle(newCandle(LocalDateTime.of(2021, 10, 11, 22, 0), 3.0), emitted::add);
         // candle after midnight CET
-        agg.add(newCandle(LocalDateTime.of(2021, 10, 11, 22, 1), 4.0), emitted::add);
+        agg.addCandle(newCandle(LocalDateTime.of(2021, 10, 11, 22, 1), 4.0), emitted::add);
 
         assertEquals(1, emitted.size(), "first hour candle");
         assertEquals(
@@ -79,11 +79,11 @@ class PeriodCandleAggregatorTest {
         var BREAK_BEFORE_SUNDAY_CET = new DateCandleAlignment(ZoneId.of("Europe/Paris"), LocalTime.MIDNIGHT, DayOfWeek.SUNDAY);
         var agg = new PeriodCandleAggregator<>(candleBuilder.get(), WEEKLY, BREAK_BEFORE_SUNDAY_CET);
         // candles before Sunday midnight CET
-        agg.add(newCandle(LocalDateTime.of(2021, 10,  9, 22, 1), 1.0), emitted::add);
-        agg.add(newCandle(LocalDateTime.of(2021, 10, 14,  0, 0), 2.0), emitted::add);
-        agg.add(newCandle(LocalDateTime.of(2021, 10, 16, 22, 0), 3.0), emitted::add);
+        agg.addCandle(newCandle(LocalDateTime.of(2021, 10,  9, 22, 1), 1.0), emitted::add);
+        agg.addCandle(newCandle(LocalDateTime.of(2021, 10, 14,  0, 0), 2.0), emitted::add);
+        agg.addCandle(newCandle(LocalDateTime.of(2021, 10, 16, 22, 0), 3.0), emitted::add);
         // candle after Sunday
-        agg.add(newCandle(LocalDateTime.of(2021, 10, 16, 22, 1), 4.0), emitted::add);
+        agg.addCandle(newCandle(LocalDateTime.of(2021, 10, 16, 22, 1), 4.0), emitted::add);
 
         assertEquals(1, emitted.size(), "first hour candle");
         assertEquals(
@@ -96,11 +96,11 @@ class PeriodCandleAggregatorTest {
         var BREAK_BEFORE_MONDAY_CET = new DateCandleAlignment(ZoneId.of("Europe/Paris"), LocalTime.MIDNIGHT, DayOfWeek.MONDAY);
         var agg = new PeriodCandleAggregator<>(candleBuilder.get(), WEEKLY, BREAK_BEFORE_MONDAY_CET);
         // candles before midnight CET
-        agg.add(newCandle(LocalDateTime.of(2021, 10, 10, 22, 1), 1.0), emitted::add);
-        agg.add(newCandle(LocalDateTime.of(2021, 10, 11,  0, 0), 2.0), emitted::add);
-        agg.add(newCandle(LocalDateTime.of(2021, 10, 17, 22, 0), 3.0), emitted::add);
+        agg.addCandle(newCandle(LocalDateTime.of(2021, 10, 10, 22, 1), 1.0), emitted::add);
+        agg.addCandle(newCandle(LocalDateTime.of(2021, 10, 11,  0, 0), 2.0), emitted::add);
+        agg.addCandle(newCandle(LocalDateTime.of(2021, 10, 17, 22, 0), 3.0), emitted::add);
         // candle after midnight CET
-        agg.add(newCandle(LocalDateTime.of(2021, 10, 17, 22, 1), 4.0), emitted::add);
+        agg.addCandle(newCandle(LocalDateTime.of(2021, 10, 17, 22, 1), 4.0), emitted::add);
 
         assertEquals(1, emitted.size(), "first hour candle");
         assertEquals(
@@ -113,11 +113,11 @@ class PeriodCandleAggregatorTest {
         var BREAK_ON_EACH_NEW_MONTH_MIDNIGHT_UTC = new DateCandleAlignment(ZoneOffset.UTC, LocalTime.MIDNIGHT, DayOfMonth.of(1));
         var agg = new PeriodCandleAggregator<>(candleBuilder.get(), MONTHLY, BREAK_ON_EACH_NEW_MONTH_MIDNIGHT_UTC);
         // candles before midnight CET
-        agg.add(newCandle(LocalDateTime.of(2021, 10, 1, 0, 0).plusNanos(MICROSECOND), 1.0), emitted::add);
-        agg.add(newCandle(LocalDateTime.of(2021, 10, 31,23, 59, 59), 2.0), emitted::add);
-        agg.add(newCandle(LocalDateTime.of(2021, 11, 1, 0, 0), 3.0), emitted::add);
+        agg.addCandle(newCandle(LocalDateTime.of(2021, 10, 1, 0, 0).plusNanos(MICROSECOND), 1.0), emitted::add);
+        agg.addCandle(newCandle(LocalDateTime.of(2021, 10, 31,23, 59, 59), 2.0), emitted::add);
+        agg.addCandle(newCandle(LocalDateTime.of(2021, 11, 1, 0, 0), 3.0), emitted::add);
         // candle after midnight CET
-        agg.add(newCandle(LocalDateTime.of(2021, 11, 1, 0, 0).plusNanos(MICROSECOND), 4.0), emitted::add);
+        agg.addCandle(newCandle(LocalDateTime.of(2021, 11, 1, 0, 0).plusNanos(MICROSECOND), 4.0), emitted::add);
 
         assertEquals(1, emitted.size(), "first hour candle");
         assertEquals(

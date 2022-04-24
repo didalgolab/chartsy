@@ -1,22 +1,26 @@
 package one.chartsy;
 
+import one.chartsy.data.market.Tick;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
-public interface TimeFrameAggregator<T, E> {
+public interface TimeFrameAggregator<C extends Candle, T extends Tick> {
 
-    Incomplete<T> add(E element, Consumer<T> completedItemConsumer);
+    Incomplete<C> addCandle(C candle, Consumer<C> completedItemConsumer);
 
-    default List<T> aggregate(List<? extends E> elements) {
+    Incomplete<C> addTick(T tick, Consumer<C> completedItemConsumer);
+
+    default List<C> aggregate(List<? extends C> elements) {
         return aggregate(elements, true);
     }
 
-    default List<T> aggregate(List<? extends E> elements, boolean emitLast) {
-        List<T> aggregated = new ArrayList<>();
-        Incomplete<T> last = null;
-        for (E element : elements)
-            last = add(element, aggregated::add);
+    default List<C> aggregate(List<? extends C> elements, boolean emitLast) {
+        List<C> aggregated = new ArrayList<>();
+        Incomplete<C> last = null;
+        for (C element : elements)
+            last = addCandle(element, aggregated::add);
 
         if (emitLast && last != null)
             aggregated.add(last.get());

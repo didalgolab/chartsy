@@ -4,7 +4,6 @@ import one.chartsy.Candle;
 import one.chartsy.CandleBuilder;
 import one.chartsy.TimeFrameAggregator;
 import one.chartsy.data.market.*;
-import one.chartsy.time.Chronological;
 import org.openide.util.Lookup;
 
 import java.time.Duration;
@@ -18,14 +17,14 @@ public interface TimeFrameServices {
 
     TimeFrameAggregator<Candle, Tick> createTickOnlyAggregator();
 
-    <E extends Chronological> TimeCandleAggregator<E> createTimeCandleAggregator(
+    <C extends Candle, T extends Tick> TimeCandleAggregator<C,T> createTimeCandleAggregator(
             Duration granularity,
-            CandleBuilder<Candle, E> builder,
+            CandleBuilder<C,T> builder,
             TimeCandleAlignment alignment);
 
-    <E extends Chronological> PeriodCandleAggregator<E> createPeriodCandleAggregator(
+    <C extends Candle, T extends Tick> PeriodCandleAggregator<C,T> createPeriodCandleAggregator(
             TemporalAmount periodicity,
-            CandleBuilder<Candle, E> builder,
+            CandleBuilder<C,T> builder,
             DateCandleAlignment alignment);
 
     //<E> TimeCandleAggregator<E> createTimeCandleAggregator(CandleBuilder<Candle,E> cb, Duration dur, TimeCandleAlignment align);

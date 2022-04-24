@@ -5,6 +5,7 @@ import one.chartsy.core.services.DefaultTimeFrameServices;
 import one.chartsy.data.CandleSeries;
 import one.chartsy.data.SimpleCandle;
 import one.chartsy.data.file.SymbolResourceFiles;
+import one.chartsy.data.market.Tick;
 import one.chartsy.time.Chronological;
 
 import java.io.IOException;
@@ -35,7 +36,7 @@ public class TimeFrameAggregationVerificationSample {
 
             startTime = System.nanoTime();
             TimeFrame.TemporallyRegular tbf = (TimeFrame.TemporallyRegular) timeFrame;
-            TimeFrameAggregator<Candle, Chronological> aggregator = tbf.getAggregator(new DefaultTimeFrameServices());
+            TimeFrameAggregator<Candle, Tick> aggregator = tbf.getAggregator(new DefaultTimeFrameServices());
 //            if (tbf.getDuration() instanceof Period)
 //                aggregator = new PeriodCandleAggregator<>(new SimpleCandleBuilder(), (Period)tbf.getDuration(), new PeriodCandleAlignment(tbf.getDailyAlignmentTimeZone(), tbf.getDailyAlignment(), (TemporalAdjuster) tbf.getCandleAlignment().orElse(null)));
 //            else if (tbf.getDuration() instanceof Months)
@@ -44,7 +45,7 @@ public class TimeFrameAggregationVerificationSample {
 //                aggregator = new TimeCandleAggregator<>(new SimpleCandleBuilder(), (Duration) ((TimeBasedTimeFrame) timeFrame).getDuration(), new TimeCandleAlignment(timeFrame.getDailyAlignmentTimeZone(), timeFrame.getDailyAlignment()));
             Incomplete<Candle> last = null;
             for (int i = series.length() - 1; i >= 0; i--)
-                last = aggregator.add(series.get(i), candles::add);
+                last = aggregator.addCandle(series.get(i), candles::add);
             if (last.isPresent())
                 candles.add(last.get());
             long elapsedTime2 = System.nanoTime() - startTime;

@@ -1,8 +1,12 @@
 package one.chartsy;
 
-public interface CandleBuilder<T extends Candle, P> extends Incomplete<T> {
+import one.chartsy.data.market.Tick;
+
+public interface CandleBuilder<C extends Candle, T extends Tick> extends Incomplete<C> {
 
     void clear();
 
-    void add(P part);
+    void addCandle(C candle);
+
+    void addTick(T tick);
 }

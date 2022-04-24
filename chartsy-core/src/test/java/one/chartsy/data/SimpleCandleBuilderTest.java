@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class SimpleCandleBuilderTest {
 
     @Test void isEmpty_when_newly_created() {
-        SimpleCandleBuilder<Candle> newlyCreated = SimpleCandleBuilder.fromCandles();
+        SimpleCandleBuilder newlyCreated = SimpleCandleBuilder.create();
 
         assertFalse(newlyCreated.isPresent(), "isPresent");
         assertNull(newlyCreated.get(), "get");
@@ -20,10 +20,10 @@ class SimpleCandleBuilderTest {
 
     @ParameterizedTest
     @MethodSource("builders")
-    void get_gives_aggregated_Candle(SimpleCandleBuilder<Candle> builder) {
-        builder.add(Candle.of(1L, 1));
-        builder.add(Candle.of(2L, 2));
-        builder.add(Candle.of(3L, 3));
+    void get_gives_aggregated_Candle(SimpleCandleBuilder builder) {
+        builder.addCandle(Candle.of(1L, 1));
+        builder.addCandle(Candle.of(2L, 2));
+        builder.addCandle(Candle.of(3L, 3));
 
         assertTrue(builder.isPresent(), "formed candle isPresent");
         assertEquals(Candle.of(3L, 1, 3, 1, 3), builder.get(), "aggregated Candle");
@@ -31,15 +31,15 @@ class SimpleCandleBuilderTest {
 
     @ParameterizedTest
     @MethodSource("builders")
-    void put_discards_previously_aggregated_Candles(SimpleCandleBuilder<Candle> builder) {
+    void put_discards_previously_aggregated_Candles(SimpleCandleBuilder builder) {
         get_gives_aggregated_Candle(builder); //merge some random Candles before actual put
-        builder.put(Candle.of(10L, 10));
+        builder.putCandle(Candle.of(10L, 10));
 
         assertTrue(builder.isPresent(), "formed candle isPresent");
         assertEquals(Candle.of(10L, 10), builder.get(), "Candle after put()");
     }
 
-    private static Stream<SimpleCandleBuilder<Candle>> builders() {
-        return Stream.of(SimpleCandleBuilder.fromCandles());
+    private static Stream<SimpleCandleBuilder> builders() {
+        return Stream.of(SimpleCandleBuilder.create());
     }
 }

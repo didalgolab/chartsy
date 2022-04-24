@@ -3,8 +3,8 @@ package one.chartsy;
 import one.chartsy.core.TimeFrameServices;
 import one.chartsy.data.SimpleCandleBuilder;
 import one.chartsy.data.market.DateCandleAlignment;
+import one.chartsy.data.market.Tick;
 import one.chartsy.data.market.TimeCandleAlignment;
-import one.chartsy.time.Chronological;
 import one.chartsy.time.DayOfMonth;
 import one.chartsy.time.Months;
 import one.chartsy.time.Seconds;
@@ -41,9 +41,9 @@ public interface TimeFrame {
     @Override
     String toString();
 
-    TimeFrameAggregator<Candle, Chronological> getAggregator(TimeFrameServices services);
+    TimeFrameAggregator<Candle, Tick> getAggregator(TimeFrameServices services);
 
-    default TimeFrameAggregator<Candle, Chronological> getAggregator() {
+    default TimeFrameAggregator<Candle, Tick> getAggregator() {
         return getAggregator(TimeFrameServices.getDefault());
     }
 
@@ -177,7 +177,7 @@ public interface TimeFrame {
         }
 
         @Override
-        public TimeFrameAggregator<Candle, Chronological> getAggregator(TimeFrameServices services) {
+        public TimeFrameAggregator<Candle, Tick> getAggregator(TimeFrameServices services) {
             return timeFrame.getAggregator(services);
         }
 
@@ -292,18 +292,18 @@ public interface TimeFrame {
 
         @SuppressWarnings({"rawtypes", "unchecked"})
         @Override
-        public TimeFrameAggregator<Candle, Chronological> getAggregator(TimeFrameServices services) {
+        public TimeFrameAggregator<Candle, Tick> getAggregator(TimeFrameServices services) {
             try {
                 final var SECS_IN_DAY = Duration.ofDays(1).getSeconds();
                 var exactDuration = Duration.from(duration);
                 var seconds = exactDuration.getSeconds();
                 if (SECS_IN_DAY % seconds == 0)
-                    return (TimeFrameAggregator) services.createTimeCandleAggregator(exactDuration, SimpleCandleBuilder.fromCandles(), new TimeCandleAlignment(getTimeZone(), getDailyAlignment()));
+                    return (TimeFrameAggregator) services.createTimeCandleAggregator(exactDuration, SimpleCandleBuilder.create(), new TimeCandleAlignment(getTimeZone(), getDailyAlignment()));
 
             } catch (DateTimeException ignored) {
                 // ignored, fallback to generic-period aggregator
             }
-            return (TimeFrameAggregator) services.createPeriodCandleAggregator(duration, SimpleCandleBuilder.fromCandles(), new DateCandleAlignment(getTimeZone(), getDailyAlignment(), getCandleAlignment().orElse(null)));
+            return (TimeFrameAggregator) services.createPeriodCandleAggregator(duration, SimpleCandleBuilder.create(), new DateCandleAlignment(getTimeZone(), getDailyAlignment(), getCandleAlignment().orElse(null)));
         }
 
         @Override
@@ -340,7 +340,7 @@ public interface TimeFrame {
 
         @SuppressWarnings("unchecked")
         @Override
-        public TimeFrameAggregator<Candle, Chronological> getAggregator(TimeFrameServices services) {
+        public TimeFrameAggregator<Candle, Tick> getAggregator(TimeFrameServices services) {
             return (TimeFrameAggregator) services.createTickOnlyAggregator();
         }
 
@@ -363,7 +363,7 @@ public interface TimeFrame {
         }
 
         @Override
-        public TimeFrameAggregator<Candle, Chronological> getAggregator(TimeFrameServices services) {
+        public TimeFrameAggregator<Candle, Tick> getAggregator(TimeFrameServices services) {
             throw new UnsupportedOperationException("TimeFrame is IRREGULAR");
         }
 

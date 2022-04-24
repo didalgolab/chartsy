@@ -41,11 +41,13 @@ public final class SimpleCandle implements Candle, Serializable {
     }
 
     public static SimpleCandle from(Candle c) {
-        if (c instanceof SimpleCandle) {
-            return (SimpleCandle) c;
+        if (c instanceof SimpleCandle sc) {
+            return sc;
         }
-        if (c instanceof AbstractCandle) {
-            return ((AbstractCandle) c).baseCandle();
+        if (c instanceof AbstractCandle ac) {
+            Candle bc = ac.baseCandle();
+            if (bc != c)
+                return from(bc);
         }
         return new SimpleCandle(c.getTime(), c.open(), c.high(), c.low(), c.close(), c.volume(), c.count());
     }

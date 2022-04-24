@@ -3,11 +3,10 @@ package one.chartsy.data.market;
 import one.chartsy.Candle;
 import one.chartsy.CandleBuilder;
 import one.chartsy.TradingDay;
-import one.chartsy.time.Chronological;
 
 import java.time.Duration;
 
-public class TimeCandleAggregator<E extends Chronological> extends AbstractCandleAggregator<Candle, E> {
+public class TimeCandleAggregator<C extends Candle, T extends Tick> extends TimePeriodCandleAggregator<C, T> {
 
     protected final Duration granularity;
     protected final TimeCandleAlignment alignment;
@@ -15,15 +14,14 @@ public class TimeCandleAggregator<E extends Chronological> extends AbstractCandl
     protected long candleCloseTime = Long.MIN_VALUE;
 
 
-    public TimeCandleAggregator(CandleBuilder<Candle, E> builder, Duration granularity, TimeCandleAlignment alignment) {
+    public TimeCandleAggregator(CandleBuilder<C, T> builder, Duration granularity, TimeCandleAlignment alignment) {
         super(builder);
         this.granularity = granularity;
         this.alignment = alignment;
     }
 
     @Override
-    protected boolean isCompletedBy(E candle) {
-        long time = candle.getTime();
+    protected boolean isCompletedOn(long time) {
         if (time <= candleCloseTime)
             return false;
 

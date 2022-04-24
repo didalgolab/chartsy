@@ -2,50 +2,50 @@ package one.chartsy.data;
 
 import one.chartsy.Candle;
 
-public abstract class AbstractCandle implements Candle {
+public abstract class AbstractCandle<C extends Candle> implements Candle {
 
-    private final SimpleCandle baseCandle;
+    private final C baseCandle;
 
-    protected AbstractCandle(Candle c) {
-        this.baseCandle = SimpleCandle.from(c);
+    protected AbstractCandle(C c) {
+        this.baseCandle = c;
     }
 
-    public final SimpleCandle baseCandle() {
+    public final C baseCandle() {
         return baseCandle;
     }
 
     @Override
-    public final long getTime() {
+    public long getTime() {
         return baseCandle().getTime();
     }
 
     @Override
-    public final double open() {
+    public double open() {
         return baseCandle().open();
     }
 
     @Override
-    public final double high() {
+    public double high() {
         return baseCandle().high();
     }
 
     @Override
-    public final double low() {
+    public double low() {
         return baseCandle().low();
     }
 
     @Override
-    public final double close() {
+    public double close() {
         return baseCandle().close();
     }
 
     @Override
-    public final double volume() {
+    public double volume() {
         return baseCandle().volume();
     }
 
     @Override
-    public final int count() {
+    public int count() {
         return baseCandle().count();
     }
 }
