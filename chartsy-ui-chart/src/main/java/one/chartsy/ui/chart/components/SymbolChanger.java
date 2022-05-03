@@ -4,6 +4,7 @@
 package one.chartsy.ui.chart.components;
 
 import one.chartsy.Symbol;
+import one.chartsy.core.text.StringSplitters;
 import one.chartsy.data.provider.DataProvider;
 import one.chartsy.ui.chart.ChartFrame;
 import one.chartsy.ui.chart.ChartHistoryEntry;
@@ -63,7 +64,7 @@ public class SymbolChanger extends JToolBar implements Serializable {
     private void initComponents() {
         // symbol text field
         txtSymbol = new JTextField(11);
-        ((AbstractDocument) txtSymbol.getDocument()).setDocumentFilter(new UpperCaseDocumentFilter());
+        UpperCaseDocumentFilter.decorate(txtSymbol);
         txtSymbol.setMargin(new Insets(0, 2, 0, 2));
         txtSymbol.setText(chartFrame.getChartData().getSymbol().name());
         Dimension d1 = new Dimension(90, 20);
@@ -147,7 +148,7 @@ public class SymbolChanger extends JToolBar implements Serializable {
         getActionMap().put("next", new ButtonAction(btnForward));
         
         dataProvider = chartFrame.getChartData().getDataProvider();
-        SymbolAutoCompleter completer = new SymbolAutoCompleter(txtSymbol);
+        SymbolAutoCompleter completer = new SymbolAutoCompleter(txtSymbol, StringSplitters.create());
         completer.setDataProvider(dataProvider);
     }
     

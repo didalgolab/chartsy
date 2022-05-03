@@ -466,8 +466,8 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
             // notify listeners about newly loaded dataset
             chartFrameListeners.fire().datasetChanged(CandleSeries.from(quotes));
             //remove(loading);
-            boolean firstLaunch;
-            if (firstLaunch = (mainPanel == null))
+            boolean firstLaunch = (mainPanel == null);
+            if (firstLaunch)
                 initComponents(false);
             else {
                 setName(NbBundle.getMessage(ChartFrame.class, "ChartFrame.name", symbol.name()));

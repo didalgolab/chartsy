@@ -60,4 +60,9 @@ public abstract class AbstractDataProvider implements DataProvider {
 
         return List.copyOf(symbols);
     }
+
+    @Override
+    public String toString() {
+        return getName();
+    }
 }

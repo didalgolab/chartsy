@@ -7,7 +7,6 @@ import one.chartsy.TimeFrame;
 import one.chartsy.data.CandleSeries;
 import one.chartsy.data.DataQuery;
 import one.chartsy.data.Series;
-import one.chartsy.data.batch.Batches;
 import one.chartsy.time.Chronological;
 import org.openide.util.Lookup;
 import org.openide.util.lookup.ServiceProvider;
@@ -55,12 +54,16 @@ public class DataProviders {
 
         protected CandleSeries getHistoricalCandles(DataProvider provider, SymbolResource<Candle> resource) {
             DataQuery<Candle> query = DataQuery.of(resource);
-            return provider.queryForBatches(Candle.class, query).collect(Batches.toCandleSeries());
+            return provider.query(Candle.class, query)
+                    .collectSortedList()
+                    .as(CandleSeries.of(resource));
         }
 
         protected <E extends Chronological> Series<E> getSeries(DataProvider provider, Class<E> type, SymbolResource<E> resource) {
             DataQuery<E> query = DataQuery.of(resource);
-            return provider.queryForBatches(type, query).collect(Batches.toSeries());
+            return provider.query(type, query)
+                    .collectSortedList()
+                    .as(Series.of(resource));
         }
     }
 }

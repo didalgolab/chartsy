@@ -3,7 +3,6 @@ package one.chartsy.data.provider.file.stooq.pl;
 import one.chartsy.*;
 import one.chartsy.core.collections.DoubleMinMaxList;
 import one.chartsy.data.*;
-import one.chartsy.data.batch.Batches;
 import one.chartsy.data.packed.PackedCandleSeries;
 import one.chartsy.data.provider.FlatFileDataProvider;
 import one.chartsy.data.provider.file.FlatFileFormat;
@@ -28,9 +27,11 @@ public class StockSelectionFromHourlyStooqFlatFileDataProvider {
         List<? extends SymbolIdentity> stocks = dataProvider.listSymbols("/data/hourly/pl/wse stocks");
         System.out.println("Stocks: " + stocks.size());
         for (SymbolIdentity stock : stocks) {
-            CandleSeries series = dataProvider.queryForCandles(
-                            DataQuery.of(SymbolResource.of(stock, TimeFrame.Period.H1)))
-                    .collect(Batches.toCandleSeries());
+            var resource = SymbolResource.of(stock, TimeFrame.Period.H1);
+            var series = dataProvider.queryForCandles(
+                            DataQuery.of(resource))
+                    .collectSortedList()
+                    .as(CandleSeries.of(resource));
 
             if (series.length() == 0) {
                 System.out.println("Empty series: " + stock);

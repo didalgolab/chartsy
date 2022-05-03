@@ -35,6 +35,11 @@
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
+            <artifactId>chartsy-connectors-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
             <artifactId>chartsy-desktop</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -46,6 +51,11 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>chartsy-ide-engine</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>chartsy-incubator</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

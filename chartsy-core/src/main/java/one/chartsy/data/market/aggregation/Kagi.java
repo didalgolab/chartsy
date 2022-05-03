@@ -64,6 +64,9 @@ public class Kagi<C extends Candle> extends AbstractCandle<C> {
         return close;
     }
 
+    /**
+     * The number of ticks or candles which were used to form the current bar.
+     */
     public int formedElementsCount() {
         return formedElementsCount;
     }

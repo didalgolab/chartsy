@@ -5,8 +5,10 @@ import one.chartsy.collections.ReversedView;
 import one.chartsy.data.packed.PackedDataset;
 import one.chartsy.data.packed.PackedSeries;
 import one.chartsy.time.Chronological;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
+import java.util.function.Function;
 import java.util.function.ToDoubleFunction;
 
 /**
@@ -35,6 +37,16 @@ public interface Series<E extends Chronological> extends IndexedSymbolResourceDa
     /*-------------------------------------------- STATIC FACTORY METHODS --------------------------------------------*/
     static <E extends Chronological> Series<E> empty(SymbolResource<E> resource) {
         return new PackedSeries<>(resource, Dataset.empty());
+    }
+
+    /**
+     * Gives a transformer capable of transforming a mono list of into the {@code Series} of the given resource.
+     *
+     * @param resource the target series symbol resource
+     * @return the transformer
+     */
+    static <E extends Chronological> Function<? super Mono<List<E>>, Series<E>> of(SymbolResource<E> resource) {
+        return mono -> of(resource, mono.block());
     }
 
     static <E extends Chronological> Series<E> of(SymbolResource<E> resource, List<E> data) {

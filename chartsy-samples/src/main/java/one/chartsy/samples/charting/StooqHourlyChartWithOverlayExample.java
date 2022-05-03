@@ -7,7 +7,6 @@ import one.chartsy.ui.chart.indicators.SforaWidth;
 import one.chartsy.ui.chart.overlays.Sfora;
 import one.chartsy.data.CandleSeries;
 import one.chartsy.data.DataQuery;
-import one.chartsy.data.batch.Batches;
 import one.chartsy.data.provider.FlatFileDataProvider;
 import one.chartsy.data.provider.file.FlatFileFormat;
 import one.chartsy.ui.chart.ChartData;
@@ -27,7 +26,9 @@ public class StooqHourlyChartWithOverlayExample {
                 .newDataProvider(Path.of("C:/Downloads/h_pl_txt.zip"));
 
         DataQuery<Candle> query = DataQuery.of(SymbolResource.of("BDX", TimeFrame.Period.H1));
-        CandleSeries series = dataProvider.queryForCandles(query).collect(Batches.toCandleSeries());
+        CandleSeries series = dataProvider.queryForCandles(query)
+                .collectSortedList()
+                .as(CandleSeries.of(query.resource()));
 
         SwingUtilities.invokeAndWait(() -> {
             ChartData chartData = new ChartData();

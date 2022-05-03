@@ -35,6 +35,8 @@
                         <publicPackage>org.apache.commons.collections4.*</publicPackage>
                         <publicPackage>org.apache.commons.lang3.*</publicPackage>
                         <publicPackage>org.apache.logging.log4j.*</publicPackage>
+                        <publicPackage>org.reactivestreams.*</publicPackage>
+                        <publicPackage>reactor.*</publicPackage>
                     </publicPackages>
                 </configuration>
                 <executions>
@@ -89,6 +91,11 @@
             <artifactId>feign-java11</artifactId>
             <version>${feign.version}</version>
             <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>io.projectreactor</groupId>
+            <artifactId>reactor-core</artifactId>
+            <version>${reactor.core.version}</version>
         </dependency>
         <dependency>
             <groupId>jakarta.annotation</groupId>

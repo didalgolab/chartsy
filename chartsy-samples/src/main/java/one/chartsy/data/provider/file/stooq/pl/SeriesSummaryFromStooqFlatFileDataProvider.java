@@ -2,7 +2,6 @@ package one.chartsy.data.provider.file.stooq.pl;
 
 import one.chartsy.*;
 import one.chartsy.data.*;
-import one.chartsy.data.batch.Batches;
 import one.chartsy.data.provider.FlatFileDataProvider;
 import one.chartsy.data.provider.file.FlatFileFormat;
 
@@ -26,9 +25,11 @@ public class SeriesSummaryFromStooqFlatFileDataProvider {
         // list summary of each stock data series
         int candleCount = 0;
         for (SymbolIdentity stock : stocks) {
+            var resource = SymbolResource.of(stock, TimeFrame.Period.DAILY);
             var summary = dataProvider.queryForCandles(
-                            DataQuery.of(SymbolResource.of(stock, TimeFrame.Period.DAILY)))
-                    .collect(Batches.toCandleSeries())
+                            DataQuery.of(resource))
+                    .collectSortedList()
+                    .as(CandleSeries.of(resource))
                     .query(SeriesSummary::new);
             candleCount += summary.getCount();
             System.out.println(summary);

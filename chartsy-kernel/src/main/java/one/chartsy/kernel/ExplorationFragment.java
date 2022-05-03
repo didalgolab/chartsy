@@ -4,6 +4,7 @@ import one.chartsy.Symbol;
 import one.chartsy.misc.StyledValue;
 
 import java.text.Format;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
@@ -18,7 +19,7 @@ public record ExplorationFragment(
 
     public static class Builder {
         private final Symbol symbol;
-        private final Map<String, StyledValue> columnValues = new TreeMap<>();
+        private final Map<String, StyledValue> columnValues = new LinkedHashMap<>();
 
         protected Builder(Symbol symbol) {
             this.symbol = Objects.requireNonNull(symbol, "symbol");

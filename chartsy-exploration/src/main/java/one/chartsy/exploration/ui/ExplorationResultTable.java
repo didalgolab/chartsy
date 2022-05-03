@@ -1,16 +1,21 @@
 package one.chartsy.exploration.ui;
 
+import one.chartsy.TimeFrame;
 import one.chartsy.kernel.ExplorationFragment;
 import one.chartsy.kernel.ExplorationListener;
 import one.chartsy.misc.StyleOption;
 import one.chartsy.misc.StyledValue;
+import one.chartsy.ui.ChartManager;
 import org.netbeans.swing.etable.ETable;
+import org.openide.util.Lookup;
 
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.TableCellRenderer;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.font.TextAttribute;
 import java.io.Serial;
 import java.util.Map;
@@ -31,6 +36,7 @@ public class ExplorationResultTable extends ETable implements ExplorationListene
         setBorder(null);
         setShowGrid(true);
         setGridColor(new Color(160, 160, 160));
+        installEventListeners();
     }
 
     @Override
@@ -118,5 +124,41 @@ public class ExplorationResultTable extends ETable implements ExplorationListene
     @Override
     public void explorationFinished() {
 
+    }
+
+    protected void installEventListeners() {
+        this.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2) {
+                    int rowIndex = rowAtPoint(e.getPoint());
+                    if (rowIndex >= 0) {
+                        rowIndex = convertRowIndexToModel(rowIndex);
+
+                        ExplorationFragment row = result.getRowAt(rowIndex);
+                        Lookup.getDefault().lookup(ChartManager.class)
+                                .open(row.symbol(), TimeFrame.Period.DAILY, null);
+                    }
+                }
+            }
+
+            @Override
+            public void mousePressed(MouseEvent e) {
+                maybeShowPopup(e);
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                maybeShowPopup(e);
+            }
+
+            private void maybeShowPopup(MouseEvent e) {
+                if (e.isPopupTrigger()) {
+                    JPopupMenu popupMenu = getComponentPopupMenu();
+                    if (popupMenu != null)
+                        popupMenu.show(ExplorationResultTable.this, e.getX(), e.getY());
+                }
+            }
+        });
     }
 }

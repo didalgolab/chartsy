@@ -4,9 +4,9 @@ import one.chartsy.FinancialService;
 import one.chartsy.SymbolGroup;
 import one.chartsy.SymbolIdentity;
 import one.chartsy.data.DataQuery;
-import one.chartsy.data.batch.Batch;
 import one.chartsy.time.Chronological;
 import org.openide.util.Lookup;
+import reactor.core.publisher.Flux;
 
 import java.util.List;
 
@@ -26,7 +26,7 @@ public interface DataProvider extends FinancialService {
 
     List<? extends SymbolIdentity> listSymbols(SymbolGroup group);
 
-    <T extends Chronological> Batch<T> queryForBatches(Class<T> type, DataQuery<T> request);
+    <T extends Chronological> Flux<T> query(Class<T> type, DataQuery<T> request);
 
     // TODO - to be continued...
 }

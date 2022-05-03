@@ -15,6 +15,8 @@ public class Symbol implements SymbolIdentity, SymbolGroupContent {
     private double spread;
     private double bigPointValue = 1.0;
     private double roundLot;
+    private Double lastPrice;
+    private Double dailyChangePercentage;
 
     public Symbol(String name, DataProvider provider) {
         this(SymbolIdentity.of(name), provider);
@@ -30,6 +32,54 @@ public class Symbol implements SymbolIdentity, SymbolGroupContent {
         this.provider = provider;
     }
 
+    public Symbol(Builder builder) {
+        this.name = builder.symbol.name();
+        this.type = builder.symbol.type();
+        this.provider = builder.provider;
+        this.displayName = builder.displayName;
+        this.exchange = builder.exchange;
+        this.lastPrice = builder.lastPrice;
+        this.dailyChangePercentage = builder.dailyChangePercentage;
+    }
+
+    public static class Builder {
+        private final SymbolIdentity symbol;
+        private final DataProvider provider;
+        private String displayName;
+        private String exchange;
+        private Double lastPrice;
+        private Double dailyChangePercentage;
+
+        public Builder(SymbolIdentity symbol, DataProvider provider) {
+            this.symbol = symbol;
+            this.provider = provider;
+        }
+
+        public Builder displayName(String displayName) {
+            this.displayName = displayName;
+            return this;
+        }
+
+        public Builder exchange(String exchange) {
+            this.exchange = exchange;
+            return this;
+        }
+
+        public Builder lastPrice(double lastPrice) {
+            this.lastPrice = lastPrice;
+            return this;
+        }
+
+        public Builder dailyChangePercentage(double dailyChangePercentage) {
+            this.dailyChangePercentage = dailyChangePercentage;
+            return this;
+        }
+
+        public Symbol build() {
+            return new Symbol(this);
+        }
+    }
+
     /**
      * Gives a standard minimum trading size for a security or asset.
      */
@@ -42,6 +92,18 @@ public class Symbol implements SymbolIdentity, SymbolGroupContent {
      */
     public double bigPointValue() {
         return bigPointValue;
+    }
+
+    public String exchange() {
+        return exchange;
+    }
+
+    public Double lastPrice() {
+        return lastPrice;
+    }
+
+    public Double dailyChangePercentage() {
+        return dailyChangePercentage;
     }
 
     @Override

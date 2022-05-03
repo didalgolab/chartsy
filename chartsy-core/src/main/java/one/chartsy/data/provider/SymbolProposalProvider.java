@@ -17,6 +17,6 @@ public interface SymbolProposalProvider {
      * @throws IOException
      *             if an IO error occurred while executing the method
      */
-    List<Symbol> getProposals(String keyword) throws IOException;
+    List<Symbol> getProposals(String keyword) throws IOException, InterruptedException;
 
 }

@@ -2,7 +2,6 @@ package one.chartsy.data.provider.file.stooq.pl;
 
 import one.chartsy.*;
 import one.chartsy.data.*;
-import one.chartsy.data.batch.Batches;
 import one.chartsy.data.provider.FlatFileDataProvider;
 import one.chartsy.data.provider.file.FlatFileFormat;
 import one.chartsy.util.Pair;
@@ -27,7 +26,9 @@ public class CandleSeriesResampleTestOnStooqFlatFileDataProvider {
             DataQuery<Candle> query = DataQuery.resource(SymbolResource.of(stock, TimeFrame.Period.DAILY))
                     .limit(500)
                     .build();
-            CandleSeries series = dataProvider.queryForCandles(query).collect(Batches.toCandleSeries());
+            CandleSeries series = dataProvider.queryForCandles(query)
+                    .collectSortedList()
+                    .as(CandleSeries.of(query.resource()));
 
             if (series.length() == 0) {
                 System.out.println("Empty series: " + stock);

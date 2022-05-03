@@ -3,9 +3,7 @@
  * See the file "LICENSE.txt" for the full license governing this code. */
 package one.chartsy.ui.chart.internal;
 
-import javax.swing.text.AttributeSet;
-import javax.swing.text.BadLocationException;
-import javax.swing.text.DocumentFilter;
+import javax.swing.text.*;
 
 /**
  * The {@code DocumentFilter} that converts all characters to upper case before
@@ -16,14 +14,16 @@ import javax.swing.text.DocumentFilter;
 public class UpperCaseDocumentFilter extends DocumentFilter {
     
     @Override
-    public void insertString(FilterBypass fb, int offset, String text, AttributeSet attrs)
-            throws BadLocationException {
+    public void insertString(FilterBypass fb, int offset, String text, AttributeSet attrs) throws BadLocationException {
         super.insertString(fb, offset, text.toUpperCase(), attrs);
     }
     
     @Override
-    public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs)
-            throws BadLocationException {
+    public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs) throws BadLocationException {
         super.replace(fb, offset, length, text.toUpperCase(), attrs);
+    }
+
+    public static void decorate(JTextComponent component) {
+        ((AbstractDocument) component.getDocument()).setDocumentFilter(new UpperCaseDocumentFilter());
     }
 }

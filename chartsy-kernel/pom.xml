@@ -40,10 +40,8 @@
                         <publicPackage>org.apache.*</publicPackage>
                         <publicPackage>org.hibernate.*</publicPackage>
                         <publicPackage>org.immutables.*</publicPackage>
-                        <publicPackage>org.reactivestreams.*</publicPackage>
                         <publicPackage>org.springframework.*</publicPackage>
                         <publicPackage>org.yaml.*</publicPackage>
-                        <publicPackage>reactor.*</publicPackage>
                     </publicPackages>
                 </configuration>
                 <executions>
@@ -81,11 +79,6 @@
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <version>${jackson.version}.2</version>
-        </dependency>
-        <dependency>
-            <groupId>io.projectreactor</groupId>
-            <artifactId>reactor-core</artifactId>
-            <version>${reactor.core.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>

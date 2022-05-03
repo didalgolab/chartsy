@@ -10,8 +10,6 @@
           </option>
           <option name="goals">
             <list>
-              <option value="clean" />
-              <option value="install" />
               <option value="nbm:cluster-app" />
               <option value="nbm:run-platform" />
             </list>
@@ -25,6 +23,8 @@
         </MavenRunnerParameters>
       </option>
     </MavenSettings>
-    <method v="2" />
+    <method v="2">
+      <option name="Maven.BeforeRunTask" enabled="true" file="$PROJECT_DIR$/pom.xml" goal="clean install" />
+    </method>
   </configuration>
 </component>

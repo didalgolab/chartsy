@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="16" height="16" version="1.1" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+ <title>collapse-all</title>
+ <g transform="translate(0 -604.4)">
+  <text x="473.24872" y="853.56891" fill="#000000" font-family="Calibri" font-weight="400" letter-spacing="0px" word-spacing="0px" style="line-height:0%" xml:space="preserve"><tspan x="473.24872" y="853.56891" font-size="13.81px" style="line-height:1.25"> <tspan dx="0" dy="0" fill="#000000" font-family="Calibri" font-size="13.81px" font-weight="400"/></tspan></text>
+  <g transform="matrix(.875 0 0 .875 1 76.55)">
+   <path d="m2.286 612.4 3.429 1e-5v-3.429h2.286v3.429l3.429-1e-5v2.286h-3.429v3.429h-2.286v-3.429h-3.429zm0-8v1.143h12.57v12.57h1.143v-13.71zm-2.286 2.286v13.71h13.71v-13.71zm1.143 1.143h11.43v11.43h-11.43z" fill="#7f7f7f"/>
+  </g>
+ </g>
+</svg>

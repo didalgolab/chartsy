@@ -13,7 +13,7 @@ import java.awt.*;
  *
  * @author Mariusz Bernacki
  */
-@TopComponent.Description(preferredID = "Chart", persistenceType = TopComponent.PERSISTENCE_NEVER)
+@TopComponent.Description(preferredID = "Chart", iconBase = "one/chartsy/ui/resources/bar-chart.png", persistenceType = TopComponent.PERSISTENCE_NEVER)
 public class ChartTopComponent extends TopComponent implements TopComponent.Cloneable {
 
     private final ChartFrame chart;

@@ -1,3 +1,4 @@
 Manifest-Version: 1.0
-OpenIDE-Module-Localizing-Bundle: one/chartsy/ui/Bundle.properties
 AutoUpdate-Essential-Module: true
+OpenIDE-Module-Layer: one/chartsy/ui/resources/layer.xml
+OpenIDE-Module-Localizing-Bundle: one/chartsy/ui/Bundle.properties

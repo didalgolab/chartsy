@@ -6,11 +6,25 @@ import one.chartsy.TimeFrame;
 import one.chartsy.data.packed.PackedCandleSeries;
 import one.chartsy.data.packed.PackedDataset;
 import one.chartsy.random.RandomWalk;
+import reactor.core.publisher.Mono;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Function;
 
 public interface CandleSeries extends Series<Candle> {
+
+    /**
+     * Gives a transformer capable of transforming a mono list of candles into the {@code CandleSeries}
+     * of the given resource.
+     *
+     * @param resource the target series symbol resource
+     * @return the transformer
+     */
+    static Function<? super Mono<List<Candle>>, CandleSeries> of(SymbolResource<Candle> resource) {
+        return mono -> of(resource, mono.block());
+    }
 
     static CandleSeries of(SymbolResource<Candle> resource, Collection<? extends Candle> values) {
         return new PackedCandleSeries(resource, PackedDataset.of(values));

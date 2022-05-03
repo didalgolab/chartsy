@@ -2,6 +2,7 @@ package one.chartsy.data.packed;
 
 import one.chartsy.data.AbstractDataset;
 import one.chartsy.data.Dataset;
+import reactor.core.publisher.Flux;
 
 import java.util.Arrays;
 import java.util.Collection;

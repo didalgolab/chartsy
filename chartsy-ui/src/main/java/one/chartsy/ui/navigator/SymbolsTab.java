@@ -6,10 +6,13 @@ import one.chartsy.SymbolGroupContentRepository;
 import one.chartsy.data.provider.DataProviderLoader;
 import one.chartsy.kernel.Kernel;
 import one.chartsy.kernel.SymbolGroupHierarchy;
+import one.chartsy.ui.actions.CollapseAllAction;
+import one.chartsy.ui.actions.ExpandAllAction;
 import one.chartsy.ui.swing.CheckBoxTreeDecorator;
 import one.chartsy.ui.swing.CheckBoxTreeSelectionModel;
 import one.chartsy.ui.swing.JTreeEnhancements;
 import one.chartsy.ui.tree.TreeViewControl;
+import org.openide.awt.ToolbarWithOverflow;
 import org.openide.explorer.ExplorerManager;
 import org.openide.explorer.ExplorerUtils;
 import org.openide.explorer.view.BeanTreeView;
@@ -64,6 +67,7 @@ public class SymbolsTab extends TopComponent implements ExplorerManager.Provider
         }
         
         JTree tree = (JTree) scrollPane.getViewport().getView();
+        toolbar.putClientProperty(JTree.class, tree);
         view.expandNode(explorerManager.getRootContext());
         tree.addTreeWillExpandListener(new TreeWillExpandListener() {
             
@@ -82,7 +86,11 @@ public class SymbolsTab extends TopComponent implements ExplorerManager.Provider
         selectionModel = CheckBoxTreeDecorator.decorate(tree).getCheckBoxTreeSelectionModel();
         setForeground(Color.yellow);
     }
-    
+
+    public JTree getTree() {
+        return (JTree) scrollPane.getViewport().getView();
+    }
+
     public static SymbolsTab findComponent() {
         for (TopComponent comp : TopComponent.getRegistry().getOpened())
             if (comp instanceof SymbolsTab)
@@ -92,12 +100,25 @@ public class SymbolsTab extends TopComponent implements ExplorerManager.Provider
     }
 
     private JScrollPane scrollPane;
-    
-    private void initComponents() {
+    private JToolBar toolbar;
+
+    public JToolBar getToolbar() {
+        return toolbar;
+    }
+
+    protected void initComponents() {
         scrollPane = new BeanTreeView();
-        
-        setLayout(new java.awt.BorderLayout());
-        add(scrollPane, java.awt.BorderLayout.CENTER);
+
+        var toolbar = new ToolbarWithOverflow();
+        toolbar.setDisplayOverflowOnHover(true);
+        toolbar.putClientProperty("PreferredIconSize", 24);
+        toolbar.add(new ExpandAllAction());
+        toolbar.add(new CollapseAllAction());
+        this.toolbar = toolbar;
+
+        setLayout(new BorderLayout());
+        add(scrollPane, BorderLayout.CENTER);
+        add(toolbar, BorderLayout.NORTH);
     }
     
     @Override

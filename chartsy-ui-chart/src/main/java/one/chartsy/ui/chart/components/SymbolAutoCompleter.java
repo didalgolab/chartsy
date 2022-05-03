@@ -4,14 +4,25 @@
 package one.chartsy.ui.chart.components;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
+import javax.swing.*;
+import javax.swing.event.TableModelEvent;
+import javax.swing.table.AbstractTableModel;
+import javax.swing.table.TableModel;
+import javax.swing.text.AbstractDocument;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.Document;
 import javax.swing.text.JTextComponent;
 
 import one.chartsy.Symbol;
+import one.chartsy.core.text.SplittedString.Fragment;
+import one.chartsy.core.text.StringSplitter;
 import one.chartsy.data.provider.DataProvider;
 import one.chartsy.data.provider.SymbolProposalProvider;
-import one.chartsy.ui.chart.SysParams;
 import org.apache.commons.lang3.StringUtils;
 import org.openide.nodes.AbstractNode;
 import org.openide.nodes.Children;
@@ -25,7 +36,9 @@ import org.openide.nodes.Children;
 public class SymbolAutoCompleter extends AutoCompleter<SymbolAutoCompleter.Node> {
     /** The data provider from which the suggestions are obtained. */
     private DataProvider dataProvider;
-    
+    /** The splitter used to process entered multiple symbols in the search box. */
+    private final StringSplitter splitter;
+
     /**
      * Constructs the {@code StockAutoCompleter} associated with the given text
      * {@code inputBox}.
@@ -33,10 +46,20 @@ public class SymbolAutoCompleter extends AutoCompleter<SymbolAutoCompleter.Node>
      * @param inputBox
      *            the text input box
      */
-    public SymbolAutoCompleter(JTextComponent inputBox) {
+    public SymbolAutoCompleter(JTextComponent inputBox, StringSplitter splitter) {
         super(inputBox);
+        this.splitter = splitter;
     }
-    
+
+    /**
+     * Gives a splitter used while processing multiple symbols entered in the search box.
+     *
+     * @return the string splitter currently in use
+     */
+    public StringSplitter getSplitter() {
+        return splitter;
+    }
+
     /**
      * Changes suggestions data provider associated with the autocompleter.
      * 
@@ -46,39 +69,119 @@ public class SymbolAutoCompleter extends AutoCompleter<SymbolAutoCompleter.Node>
     public void setDataProvider(DataProvider dataProvider) {
         this.dataProvider = dataProvider;
     }
-    
+
+    public DataProvider getDataProvider() {
+        return dataProvider;
+    }
+
+    public Optional<Fragment> getCurrentTextFragment() {
+        return getSplitter().split(component.getText()).getFragmentAt(component.getCaretPosition());
+    }
+
     @Override
-    protected boolean updateListData() throws IOException {
-        String value = component.getText();
-        if (!value.isEmpty()) {
+    protected boolean updateListData() throws IOException, InterruptedException {
+        Optional<Fragment> fragment = getCurrentTextFragment();
+        if (fragment.isPresent()) {
             // retrieve symbol proposals from data provider
 
             SymbolProposalProvider proposalProvider = dataProvider.getLookup().lookup(SymbolProposalProvider.class);
             if (proposalProvider != null) {
-                List<Symbol> symbols = proposalProvider.getProposals(value);
+                List<Symbol> symbols = proposalProvider.getProposals(fragment.get().toString());
                 // update model
                 if (symbols != null) {
-                    int maxCount = Math.min(symbols.size(), SysParams.AUTOCOMPLETE_MAXIMUM_ROW_COUNT.intValue());
-                    Node[] nodes = new Node[maxCount];
-                    for (int i = 0; i < nodes.length; i++)
-                        nodes[i] = new Node(symbols.get(i));
-                    list.setListData(nodes);
+                    int maxCount = Math.min(symbols.size(), getProperties().getMaximumRowCount());
+                    List<Node> nodes = new ArrayList<>(maxCount);
+                    for (int i = 0; i < maxCount; i++)
+                        nodes.add(new Node(symbols.get(i)));
+                    setListValues(nodes);
                 }
             }
         } else {
-            list.setListData(new Node[0]);
+            setListValues(List.of());
         }
         return true;
     }
-    
+
+    protected void setListValues(Collection<Node> values) {
+        list.clear();
+        list.addAll(values);
+        table.tableChanged(new TableModelEvent(table.getModel(), TableModelEvent.HEADER_ROW));
+    }
+
     @Override
     protected void acceptedListItem(Object selected) {
         if (selected instanceof Node) {
-            component.setText(((Node) selected).getName());
+            var newContent = ((Node) selected).getName();
+
+            Optional<Fragment> fragment = getCurrentTextFragment();
+            if (fragment.isPresent())
+                replaceText(fragment.get(), newContent);
+            else
+                component.setText(newContent);
             popupMenu.setVisible(false);
         }
     }
-    
+
+    protected void replaceText(Fragment fragment, String content) {
+        replaceText(fragment.positionStart(), fragment.positionEnd(), content);
+    }
+
+    protected void replaceText(int p0, int p1, String content) {
+        Document doc = component.getDocument();
+        if (doc != null) {
+            try {
+                if (doc instanceof AbstractDocument)
+                    ((AbstractDocument)doc).replace(p0, p1 - p0, content,null);
+                else {
+                    if (p0 != p1)
+                        doc.remove(p0, p1 - p0);
+                    if (content != null && content.length() > 0)
+                        doc.insertString(p0, content, null);
+                }
+            } catch (BadLocationException e) {
+                UIManager.getLookAndFeel().provideErrorFeedback(component);
+            }
+        }
+    }
+
+    @Override
+    protected TableModel createTableModel(List<Node> values) {
+        return new AbstractTableModel() {
+            private final List<String> columns = List.of("name","description","exchange","lastPrice","lastPriceChange");
+
+            @Override
+            public int getRowCount() {
+                return values.size();
+            }
+
+            @Override
+            public int getColumnCount() {
+                return columns.size();
+            }
+
+            @Override
+            public Class<?> getColumnClass(int columnIndex) {
+                return switch (columnIndex) {
+                    case 3,4 -> Double.class;
+                    default -> String.class;
+                };
+            }
+
+            @Override
+            public Object getValueAt(int rowIndex, int columnIndex) {
+                var sym = values.get(rowIndex).symbolInfo;
+                return switch (columnIndex) {
+                    case 0 -> sym.getName();
+                    case 1 -> sym.getDisplayName();
+                    case 2 -> sym.exchange();
+                    case 3 -> sym.lastPrice();
+                    case 4 -> sym.dailyChangePercentage();
+                    default -> null;
+                };
+            }
+        };
+    }
+
     public static class Node extends AbstractNode implements SelectionStateTransformable<Node> {
         /** The symbol information data associated with this node. */
         private final Symbol symbolInfo;
