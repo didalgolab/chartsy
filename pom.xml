@@ -30,19 +30,11 @@
                         <brandingToken>${brandingToken}</brandingToken>
                         <cluster>${brandingToken}</cluster>
                     </configuration>
-                    <dependencies>
-                        <!-- Temporary (or not) workaround for maven-dependency-analyser not supporting Java 17 yet -->
-                        <dependency>
-                            <groupId>org.ow2.asm</groupId>
-                            <artifactId>asm</artifactId>
-                            <version>9.2</version>
-                        </dependency>
-                    </dependencies>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.8.1</version>
+                    <version>3.9.0</version>
                     <configuration>
                         <source>17</source>
                         <target>17</target>
@@ -51,7 +43,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-jar-plugin</artifactId>
-                    <version>3.2.0</version>
+                    <version>3.2.2</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -136,6 +128,7 @@
         <jaxb.api.version>2.3.1</jaxb.api.version>
         <jsch.version>0.1.55</jsch.version>
         <junit5.version>5.8.2</junit5.version>
+        <lightbend.config.version>1.4.2</lightbend.config.version>
         <liquibase.version>4.7.1</liquibase.version>
         <log4j.version>2.17.2</log4j.version><!-- Synchronize with 'spring-boot-starter-log4j2'-injected version -->
         <lombok.version>1.18.22</lombok.version>
