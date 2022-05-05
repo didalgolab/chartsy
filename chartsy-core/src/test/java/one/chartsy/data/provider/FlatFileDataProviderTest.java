@@ -45,6 +45,8 @@ class FlatFileDataProviderTest {
         provider = null;
         System.gc();
         Thread.sleep(1);
+        System.gc();
+        Thread.sleep(1);
         assertFalse(fileSystem.isOpen(), "when unreachable and GCed");
     }
 
