@@ -1,0 +1,15 @@
+name: Build
+on: [push]
+jobs:
+  Build-and-Test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'adopt'
+      - name: Build with Maven
+        run: mvn -B install
+      - run: mvn nbm:cluster-app -f application/pom.xml

@@ -1,4 +1,5 @@
 # **Chartsy|One** Open Source
+[![build](https://github.com/chartsyone/chartsy/actions/workflows/github-actions-build.yaml/badge.svg)](https://github.com/chartsyone/chartsy/actions/workflows/github-actions-build.yaml)
 
 The project is an ongoing work in progress... help or support of any kind is appreciated and welcomed.
 
