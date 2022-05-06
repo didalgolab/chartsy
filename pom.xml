@@ -149,6 +149,9 @@
 
     <properties>
         <brandingToken>chartsy</brandingToken>
+        <sonar.coverage.jacoco.xmlReportPaths>
+            ${project.basedir}/**/jacoco.xml
+        </sonar.coverage.jacoco.xmlReportPaths>
         <sonar.organization>chartsy</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <!-- Dependency versions -->
