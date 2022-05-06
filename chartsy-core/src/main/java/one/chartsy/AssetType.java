@@ -1,16 +1,39 @@
 package one.chartsy;
 
 /**
- * The type of a financial instrument.
+ * The common types of financial assets.
+ *
+ * @author Mariusz Bernacki
+ *
  */
-public interface AssetType {
-    /**
-     * The financial asset type identifier.
-     */
-    String name();
+public enum AssetType implements InstrumentType {
+    BOND(true),
+    CASH(true), // ie: Forex, no leverage
+    CFD(true),
+    COMBINATION(true),
+    COMMODITY(true),
+    CONTINUOUS_FUTURE(true),
+    CRYPTOCURRENCY(true),
+    ETF(true),
+    EXCHANGE_TRADED_SYNTHETIC(true),
+    FOREX(true),
+    FUND(true),
+    FUTURE(true),
+    FUTURE_OPTION(true),
+    GENERIC(true),
+    INDEX(false),
+    INDICATOR(false),
+    INTEREST_RATE(true),
+    OPTION(true),
+    STOCK(true);
 
-    /**
-     * Yields {@code true} if the referred instrument type is tradable, and yields {@code false} otherwise.
-     */
-    boolean isTradable();
+    @Override
+    public boolean isTradable() {
+        return tradable;
+    }
+
+    AssetType(boolean tradable) {
+        this.tradable = tradable;
+    }
+    private final boolean tradable;
 }

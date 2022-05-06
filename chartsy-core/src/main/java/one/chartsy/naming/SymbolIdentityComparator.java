@@ -1,5 +1,6 @@
 package one.chartsy.naming;
 
+import one.chartsy.InstrumentType;
 import one.chartsy.SymbolIdentity;
 import org.openide.util.lookup.ServiceProvider;
 
@@ -11,8 +12,11 @@ public class SymbolIdentityComparator implements Comparator<SymbolIdentity> {
     @Override
     public int compare(SymbolIdentity o1, SymbolIdentity o2) {
         int cmp = o1.name().compareTo(o2.name());
-        if (cmp == 0)
-            cmp = o1.type().name().compareTo(o2.type().name());
+        if (cmp == 0) {
+            String typeName1 = o1.type().map(InstrumentType::name).orElse("");
+            String typeName2 = o2.type().map(InstrumentType::name).orElse("");
+            return typeName1.compareTo(typeName2);
+        }
         return cmp;
     }
 

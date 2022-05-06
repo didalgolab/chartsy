@@ -7,11 +7,10 @@ import java.util.List;
 import java.util.Optional;
 
 public class Symbol implements SymbolIdentity, SymbolGroupContent {
-    private String name;
-    private AssetType type;
+    private final SymbolIdentity identifier;
     private String exchange;
     private String displayName;
-    private DataProvider provider;
+    private final DataProvider provider;
     private double spread;
     private double bigPointValue = 1.0;
     private double roundLot;
@@ -22,19 +21,17 @@ public class Symbol implements SymbolIdentity, SymbolGroupContent {
         this(SymbolIdentity.of(name), provider);
     }
 
-    public Symbol(SymbolIdentity symbol) {
-        this(symbol, null);
+    public Symbol(SymbolIdentity ident) {
+        this(ident, null);
     }
 
-    public Symbol(SymbolIdentity symbol, DataProvider provider) {
-        this.name = symbol.name();
-        this.type = symbol.type();
+    public Symbol(SymbolIdentity ident, DataProvider provider) {
+        this.identifier = ident;
         this.provider = provider;
     }
 
     public Symbol(Builder builder) {
-        this.name = builder.symbol.name();
-        this.type = builder.symbol.type();
+        this.identifier = builder.symbol;
         this.provider = builder.provider;
         this.displayName = builder.displayName;
         this.exchange = builder.exchange;
@@ -108,12 +105,12 @@ public class Symbol implements SymbolIdentity, SymbolGroupContent {
 
     @Override
     public String name() {
-        return name;
+        return identifier.name();
     }
 
     @Override
-    public AssetType type() {
-        return type;
+    public Optional<InstrumentType> type() {
+        return identifier.type();
     }
 
     public String getExchange() {
@@ -142,8 +139,8 @@ public class Symbol implements SymbolIdentity, SymbolGroupContent {
     }
 
     @Override
-    public String getName() {
-        return name;
+    public final String getName() {
+        return identifier.name();
     }
 
     @Override

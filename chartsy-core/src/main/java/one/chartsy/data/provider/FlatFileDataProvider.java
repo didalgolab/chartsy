@@ -163,8 +163,8 @@ public class FlatFileDataProvider extends AbstractDataProvider implements AutoCl
         return getFileFormat().isCaseSensitiveSymbols()? name : name.toUpperCase();
     }
 
-    protected AssetType asAssetType(Path path) {
-        return AssetTypes.GENERIC;
+    protected Optional<InstrumentType> asAssetType(Path path) {
+        return Optional.empty();
     }
 
     protected List<SymbolIdentity> asIdentifiers(Iterable<Path> paths) {
@@ -201,6 +201,7 @@ public class FlatFileDataProvider extends AbstractDataProvider implements AutoCl
         return getFileTreeMetadata().availableGroupsList(filter);
     }
 
+    @Override
     public List<? extends SymbolIdentity> listSymbols() {
         return getFileTreeMetadata().getAvailableSymbolsList();
     }

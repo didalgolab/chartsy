@@ -1,12 +1,28 @@
 package one.chartsy.naming;
 
-import one.chartsy.AssetType;
+import one.chartsy.IdentifierType;
+import one.chartsy.InstrumentType;
 import one.chartsy.SymbolIdentity;
 
-public record SymbolIdentifier(String name, AssetType type) implements SymbolIdentity, Comparable<SymbolIdentifier> {
+import java.util.Optional;
+
+public record SymbolIdentifier(
+        String name,
+        Optional<InstrumentType> type,
+        IdentifierType identifierType)
+        implements SymbolIdentity, Comparable<SymbolIdentifier>
+{
 
     public SymbolIdentifier(SymbolIdentity symbol) {
-        this(symbol.name(), symbol.type());
+        this(symbol, IdentifierType.Standard.TICKER);
+    }
+
+    public SymbolIdentifier(SymbolIdentity symbol, IdentifierType identifierType) {
+        this(symbol.name(), symbol.type(), identifierType);
+    }
+
+    public SymbolIdentifier(String name, Optional<InstrumentType> type) {
+        this(name, type, IdentifierType.Standard.TICKER);
     }
 
     @Override

@@ -3,10 +3,8 @@ package one.chartsy;
 import one.chartsy.data.SimpleCandle;
 import one.chartsy.data.SymbolResourceFactory;
 import org.openide.util.Lookup;
-import reactor.core.publisher.Mono;
 
 import java.util.Map;
-import java.util.function.Function;
 
 public interface SymbolResource<E> {
     SymbolIdentity symbol();
@@ -25,7 +23,7 @@ public interface SymbolResource<E> {
         return of(SymbolIdentity.of(name), timeFrame);
     }
 
-    static SymbolResource<Candle> of(String name, TimeFrame timeFrame, AssetType type) {
+    static SymbolResource<Candle> of(String name, TimeFrame timeFrame, InstrumentType type) {
         return of(SymbolIdentity.of(name, type), timeFrame);
     }
 

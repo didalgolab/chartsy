@@ -30,7 +30,9 @@ public class RandomWalk {
 
     public static Candle candle(long time, double referencePrice, RandomCandleSpecification spec, RandomGenerator rnd) {
         double open = referencePrice + rnd.nextGaussian(spec.drift(), spec.stddev()) * spec.gappiness();
-        double curr = open, min = curr, max = curr;
+        double curr = open;
+        double min = curr;
+        double max = curr;
         for (int i = 0; i < 4; i++) {
             curr += rnd.nextGaussian(spec.drift(), spec.stddev());
             min = Math.min(min, curr);
@@ -159,7 +161,7 @@ public class RandomWalk {
         }
         var resource = series.getResource();
         var symbol = resource.symbol();
-        return new PackedCandleSeries(resource.withSymbol(SymbolIdentity.of("~" + symbol.name(), symbol.type())), PackedDataset.of(result));
+        return new PackedCandleSeries(resource.withSymbol(SymbolIdentity.of("~" + symbol.name(), symbol.type().orElse(null))), PackedDataset.of(result));
     }
 
     private RandomWalk() { }

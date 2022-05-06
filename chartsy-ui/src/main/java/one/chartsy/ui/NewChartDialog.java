@@ -1,6 +1,5 @@
 package one.chartsy.ui;
 
-import one.chartsy.AssetTypes;
 import one.chartsy.Symbol;
 import one.chartsy.data.provider.DataProvider;
 import one.chartsy.ui.chart.components.SymbolSelectorArea;
@@ -17,7 +16,7 @@ import java.util.List;
 
 public class NewChartDialog extends JDialog {
 
-    private final ResourceBundle rb = NbBundle.getBundle(UI.class);
+    private final transient ResourceBundle rb = NbBundle.getBundle(UI.class);
 
     private SymbolSelectorArea symbolSelector;
     private List<Symbol> selectedSymbols;
@@ -240,7 +239,7 @@ public class NewChartDialog extends JDialog {
     protected void onAccepted(ActionEvent e) {
         symbolSelector.getAutocompleter().disableTimer();
         dataProvider = (DataProvider) dataProviderChoice.getSelectedItem();
-        selectedSymbols = symbolSelector.getSelectedSymbols(AssetTypes.GENERIC)
+        selectedSymbols = symbolSelector.getSelectedSymbols(null)
                 .stream()
                 .map(symb -> new Symbol(symb, dataProvider))
                 .toList();
