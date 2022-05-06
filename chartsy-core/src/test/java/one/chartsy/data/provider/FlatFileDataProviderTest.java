@@ -3,6 +3,8 @@ package one.chartsy.data.provider;
 import one.chartsy.SymbolGroup;
 import one.chartsy.SymbolIdentity;
 import one.chartsy.data.provider.file.FlatFileFormat;
+import org.awaitility.core.ConditionTimeoutException;
+import org.awaitility.core.ThrowingRunnable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -16,7 +18,10 @@ import java.util.List;
 import java.util.Map;
 
 import static java.util.Collections.emptyList;
+import static java.util.concurrent.TimeUnit.MICROSECONDS;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toList;
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.*;
 
 class FlatFileDataProviderTest {
@@ -32,26 +37,22 @@ class FlatFileDataProviderTest {
     }
 
     @Test
-    void is_closed_when_GCed() throws URISyntaxException, IOException, InterruptedException {
+    void is_closed_when_GCed() throws Throwable {
         var provider = FlatFileFormat.builder().build()
                 .newDataProvider(Paths.get(getClass().getResource("/FileSystemDataProvider.zip").toURI()));
         var fileSystem = provider.getFileSystem();
 
-        System.gc();
-        Thread.sleep(1);
-        assertTrue(fileSystem.isOpen(), "while reachable");
+        afterFullGC(
+                () -> assertTrue(fileSystem.isOpen(), "while reachable"));
 
         //noinspection UnusedAssignment
         provider = null;
-        System.gc();
-        Thread.sleep(1);
-        System.gc();
-        Thread.sleep(1);
-        assertFalse(fileSystem.isOpen(), "when unreachable and GCed");
+        afterFullGC(
+                () -> assertFalse(fileSystem.isOpen(), "when unreachable and GCed"));
     }
 
     @Test
-    void is_not_closed_on_GC_when_cached() throws URISyntaxException, IOException, InterruptedException {
+    void is_not_closed_on_GC_when_cached() throws Throwable {
         var provider1 = FlatFileFormat.builder().build()
                 .newDataProvider(Paths.get(getClass().getResource("/FileSystemDataProvider.zip").toURI()));
         var provider2 = FlatFileFormat.builder().build()
@@ -62,8 +63,7 @@ class FlatFileDataProviderTest {
 
         //noinspection UnusedAssignment
         provider2 = null;
-        System.gc();
-        Thread.sleep(1);
+        afterFullGC(() -> { });
         assertTrue(fileSystem.isOpen(), "when cached and still in use");
         assertTrue(provider1.getFileSystem().isOpen(), "when cached and still in use");
     }
@@ -118,5 +118,20 @@ class FlatFileDataProviderTest {
 
     private static List<String> names(List<? extends SymbolIdentity> list) {
         return list.stream().map(SymbolIdentity::name).collect(toList());
+    }
+
+    private static void afterFullGC(ThrowingRunnable assertion) throws Throwable {
+        int numberOfTries = 10;
+        for (int i = 1; i <= numberOfTries; i++) {
+            System.gc();
+            try {
+                await().with().pollInterval(100, MICROSECONDS).atMost(i, MILLISECONDS).untilAsserted(assertion);
+                return;
+            } catch (ConditionTimeoutException e) {
+                // retry GC
+            }
+        }
+        // last try after exhausting all retries
+        assertion.run();
     }
 }
