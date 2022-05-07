@@ -4,12 +4,16 @@ import one.chartsy.*;
 import one.chartsy.data.*;
 import one.chartsy.data.provider.FlatFileDataProvider;
 import one.chartsy.data.provider.file.FlatFileFormat;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
 
 public class SeriesSummaryFromStooqFlatFileDataProvider {
+
+    private static final Logger log = LogManager.getLogger(SeriesSummaryFromStooqFlatFileDataProvider.class);
 
     public static void main(String[] args) throws IOException {
         // create FlatFileDataProvider for a Stooq-based historical data file
@@ -19,8 +23,8 @@ public class SeriesSummaryFromStooqFlatFileDataProvider {
         // list all stocks contained in a file
         List<? extends SymbolIdentity> stocks = dataProvider.listSymbols(new SymbolGroup("/data/daily/pl/wse stocks"));
         int stockCount = stocks.size();
-        System.out.printf("Found %d stock(s)".replace("(s)", stockCount==1?"":"s"), stockCount);
-        System.out.println();
+        log.info("Found {} stock(s)".replace("(s)", stockCount==1?"":"s"), stockCount);
+        log.info("");
 
         // list summary of each stock data series
         int candleCount = 0;
@@ -32,8 +36,8 @@ public class SeriesSummaryFromStooqFlatFileDataProvider {
                     .as(CandleSeries.of(resource))
                     .query(SeriesSummary::new);
             candleCount += summary.getCount();
-            System.out.println(summary);
+            log.info(summary);
         }
-        System.out.printf("Total %d candle(s)".replace("(s)", candleCount==1?"":"s"), candleCount);
+        log.info("Total {} candle(s)".replace("(s)", candleCount==1?"":"s"), candleCount);
     }
 }

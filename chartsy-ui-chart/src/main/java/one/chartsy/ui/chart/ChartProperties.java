@@ -6,12 +6,13 @@ package one.chartsy.ui.chart;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Stroke;
+import java.io.Serializable;
 
 /**
  *
  * @author Mariusz Bernacki
  */
-public class ChartProperties {
+public class ChartProperties implements Serializable {
 
     public static final double AXIS_TICK = 6;
     public static final double AXIS_DATE_STICK = 10;
@@ -37,7 +38,7 @@ public class ChartProperties {
     public static final boolean GRID_VERTICAL_VISIBILITY = true;
     
     public static final Color BACKGROUND_COLOR = new Color(0xffffff);
-    public static final Font FONT = new Font("Dialog", Font.PLAIN, 12);
+    public static final Font MAIN_FONT = new Font("Dialog", Font.PLAIN, 12);
     public static final Color FONT_COLOR = new Color(0x2e3436);
     
     public static final boolean MARKER_VISIBILITY = false;
@@ -70,7 +71,7 @@ public class ChartProperties {
     private boolean gridVerticalVisibility = GRID_VERTICAL_VISIBILITY;
     
     private Color backgroundColor = BACKGROUND_COLOR;
-    private Font font = FONT;
+    private Font font = MAIN_FONT;
     private Color fontColor = FONT_COLOR;
     
     private boolean markerVisibility = MARKER_VISIBILITY;
@@ -81,10 +82,7 @@ public class ChartProperties {
     /** Determines if the annotations are visible for a chart. */
     private boolean annotationLayerVisible = true;
     
-    public ChartProperties() 
-    {
-    }
-    
+
     public double getAxisTick() { return this.axisTick; }
     public double getAxisDateStick() { return this.axisDateStick; }
     public double getAxisPriceStick() {  return this.axisPriceStick; }

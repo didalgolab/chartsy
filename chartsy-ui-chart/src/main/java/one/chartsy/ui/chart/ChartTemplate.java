@@ -3,6 +3,7 @@
  * See the file "LICENSE.txt" for the full license governing this code. */
 package one.chartsy.ui.chart;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,7 +16,7 @@ import one.chartsy.ui.chart.Overlay;
  * 
  * @author Mariusz Bernacki
  */
-public class ChartTemplate {
+public class ChartTemplate implements Serializable {
     
     private final String name;
     private Chart chart;

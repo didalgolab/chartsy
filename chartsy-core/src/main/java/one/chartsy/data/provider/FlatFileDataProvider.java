@@ -20,7 +20,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.function.Predicate;
 
-public class FlatFileDataProvider extends AbstractDataProvider implements AutoCloseable, SymbolListAccessor, SymbolProposalProvider, HierarchicalConfiguration {
+public class FlatFileDataProvider extends AbstractDataProvider implements SymbolListAccessor, SymbolProposalProvider, HierarchicalConfiguration {
     private final Lookup lookup = Lookups.singleton(this);
     private final FlatFileFormat fileFormat;
     private final ResourceHandle<FileSystem> fileSystem;
@@ -146,7 +146,6 @@ public class FlatFileDataProvider extends AbstractDataProvider implements AutoCl
         return baseDirectories;
     }
 
-    @Override
     public void close() throws IOException {
         if (isCloseable(fileSystem))
             getFileSystem().close();

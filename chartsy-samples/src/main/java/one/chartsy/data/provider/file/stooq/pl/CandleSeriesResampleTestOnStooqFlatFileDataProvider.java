@@ -5,6 +5,8 @@ import one.chartsy.data.*;
 import one.chartsy.data.provider.FlatFileDataProvider;
 import one.chartsy.data.provider.file.FlatFileFormat;
 import one.chartsy.util.Pair;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -14,14 +16,15 @@ import java.util.TreeMap;
 
 public class CandleSeriesResampleTestOnStooqFlatFileDataProvider {
 
+    private static final Logger log = LogManager.getLogger(CandleSeriesResampleTestOnStooqFlatFileDataProvider.class);
+
     public static void main(String[] args) throws IOException {
         FlatFileDataProvider dataProvider = FlatFileFormat.STOOQ
                 .newDataProvider(Path.of("C:/Downloads/d_pl_txt(6).zip"));
 
-        //CandleSeries series = dataProvider.queryForCandles(query).collect(Batches.toCandleSeries());
         Map<Pair<Double, String>, String> counts = new TreeMap<>();
         List<? extends SymbolIdentity> stocks = dataProvider.listSymbols(new SymbolGroup("/data/daily/pl/wse stocks"));
-        System.out.println("Stocks: " + stocks.size());
+        log.info("Stocks: {}", stocks.size());
         for (SymbolIdentity stock : stocks) {
             DataQuery<Candle> query = DataQuery.resource(SymbolResource.of(stock, TimeFrame.Period.DAILY))
                     .limit(500)
@@ -31,7 +34,7 @@ public class CandleSeriesResampleTestOnStooqFlatFileDataProvider {
                     .as(CandleSeries.of(query.resource()));
 
             if (series.length() == 0) {
-                System.out.println("Empty series: " + stock);
+                log.info("Empty series: {}", stock);
                 continue;
             }
 
@@ -45,8 +48,8 @@ public class CandleSeriesResampleTestOnStooqFlatFileDataProvider {
             }
             counts.put(Pair.of((cnt*10_000L/n)/100.0, stock.name()), stock.name());
 
-            System.out.println("" + stock.name() + ": " + (cnt*10_000L/n)/100.0 + " %");
+            log.info("" + stock.name() + ": " + (cnt*10_000L/n)/100.0 + " %");
         }
-        counts.forEach((k,v) -> System.out.println("# " + k + ": " + v));
+        counts.forEach((k,v) -> log.info("# {}: {}", k, v));
     }
 }

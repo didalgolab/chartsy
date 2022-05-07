@@ -7,6 +7,7 @@ import one.chartsy.core.Named;
 import one.chartsy.data.CandleSeries;
 
 import java.awt.Graphics2D;
+import java.io.Serializable;
 
 /**
  * Displays a symbol's price over time. A number of various chart types is
@@ -15,7 +16,7 @@ import java.awt.Graphics2D;
  * 
  * @author Mariusz Bernacki
  */
-public interface Chart extends Named {
+public interface Chart extends Named, Serializable {
     
     /**
      * Gives the human-readable name describing this chart type implementation.

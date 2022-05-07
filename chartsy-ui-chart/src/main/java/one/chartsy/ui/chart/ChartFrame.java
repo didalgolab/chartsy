@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class ChartFrame extends JPanel implements ChartContext, MouseWheelListener {
 
-    private final Logger log = LogManager.getLogger(getClass());
+    private final transient Logger log = LogManager.getLogger(getClass());
     private final JLayer<JPanel> chartLayer = new JLayer<>();
 
     private ChartToolbar chartToolbar;
@@ -363,6 +363,7 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
         chartLayer.setUI(new WaitLayerUI(loadingLabel));
 
         // start a progress indicator
+        @SuppressWarnings("java:S2095")
         ProgressHandle handle = ProgressHandle.createHandle(loadingLabel.getText());
         handle.start();
         handle.switchToIndeterminate();

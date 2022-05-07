@@ -1,5 +1,8 @@
 package one.chartsy.data.provider.file.histdata;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -15,6 +18,7 @@ import java.util.zip.ZipOutputStream;
  *
  */
 public class ConcatenateHistDataFiles {
+    static final Logger log = LogManager.getLogger(ConcatenateHistDataFiles.class);
     static final Path SOURCE_FOLDER = Path.of(System.getProperty("user.home"), "Downloads");
     static final List<String> FILES = List.of(
             "HISTDATA_COM_ASCII_EURUSD_M12000.zip",
@@ -44,38 +48,39 @@ public class ConcatenateHistDataFiles {
 
     public static void main(String[] args) throws IOException {
 
-        Path OUT_FILE = SOURCE_FOLDER.resolve("EURUSD.zip");
+        Path outFile = SOURCE_FOLDER.resolve("EURUSD.zip");
 
         long[] lineLengthMinMax = new long[] {Long.MAX_VALUE, Long.MIN_VALUE};
-        try (ZipOutputStream zipDest = new ZipOutputStream(Files.newOutputStream(OUT_FILE))) {
+        try (ZipOutputStream zipDest = new ZipOutputStream(Files.newOutputStream(outFile))) {
             zipDest.putNextEntry(new ZipEntry("EURUSD.csv"));
 
             try (BufferedWriter out = new BufferedWriter(new OutputStreamWriter(zipDest))) {
                 for (String filename : FILES) {
-                    ZipFile zip = new ZipFile(SOURCE_FOLDER.resolve(filename).toFile());
-                    List<? extends ZipEntry> zipEntries = zip.stream()
-                            .filter(entry -> entry.getName().endsWith(".csv"))
-                            .toList();
-                    if (zipEntries.size() != 1)
-                        throw new AssertionError("ZipFile CSV entries: " + zipEntries);
+                    try (ZipFile zip = new ZipFile(SOURCE_FOLDER.resolve(filename).toFile())) {
+                        List<? extends ZipEntry> zipEntries = zip.stream()
+                                .filter(entry -> entry.getName().endsWith(".csv"))
+                                .toList();
+                        if (zipEntries.size() != 1)
+                            throw new AssertionError("ZipFile CSV entries: " + zipEntries);
 
-                    try (BufferedReader in = new BufferedReader(new InputStreamReader(zip.getInputStream(zipEntries.get(0))))) {
-                        in.lines().forEach(line -> {
-                            try {
-                                line = line.replace("    ", "");
+                        try (BufferedReader in = new BufferedReader(new InputStreamReader(zip.getInputStream(zipEntries.get(0))))) {
+                            in.lines().forEach(line -> {
+                                try {
+                                    line = line.replace("    ", "");
 
-                                out.append(line).append("\n");
-                                lineLengthMinMax[0] = Math.min(lineLengthMinMax[0], line.length());
-                                lineLengthMinMax[1] = Math.max(lineLengthMinMax[1], line.length());
-                            } catch (IOException e) {
-                                throw new UncheckedIOException(e);
-                            }
-                        });
+                                    out.append(line).append("\n");
+                                    lineLengthMinMax[0] = Math.min(lineLengthMinMax[0], line.length());
+                                    lineLengthMinMax[1] = Math.max(lineLengthMinMax[1], line.length());
+                                } catch (IOException e) {
+                                    throw new UncheckedIOException(e);
+                                }
+                            });
+                        }
                     }
                 }
             }
         }
-        System.out.println("CSV lines min length: " + lineLengthMinMax[0]);
-        System.out.println("CSV lines max length: " + lineLengthMinMax[1]);
+        log.info("CSV lines min length: {}", lineLengthMinMax[0]);
+        log.info("CSV lines max length: {}", lineLengthMinMax[1]);
     }
 }
