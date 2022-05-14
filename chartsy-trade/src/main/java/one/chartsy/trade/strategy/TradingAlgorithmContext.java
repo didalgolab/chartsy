@@ -1,3 +1,5 @@
+/* Copyright 2022 Mariusz Bernacki <info@softignition.com>
+ * SPDX-License-Identifier: Apache-2.0 */
 package one.chartsy.trade.strategy;
 
 import one.chartsy.data.Series;
@@ -11,8 +13,12 @@ import org.openide.util.Lookup;
 import java.time.ZoneId;
 import java.util.List;
 
+/**
+ * A context containing trading algorithms' name and id, and providing a various container services to the algorithm.
+ *
+ */
 @Value.Immutable
-public interface TradingAgentRuntime extends Lookup.Provider {
+public interface TradingAlgorithmContext extends Lookup.Provider {
 
     Clock clock();
 
@@ -27,13 +33,13 @@ public interface TradingAgentRuntime extends Lookup.Provider {
     StrategyConfiguration configuration();
 
 
-    TradingAgentRuntime withClock(Clock clock);
+    TradingAlgorithmContext withClock(Clock clock);
 
-    default TradingAgentRuntime withClockAtZone(ZoneId zone) {
+    default TradingAlgorithmContext withClockAtZone(ZoneId zone) {
         return withClock(clock().withZone(zone));
     }
 
-    TradingAgentRuntime withScheduler(EventScheduler scheduler);
+    TradingAlgorithmContext withScheduler(EventScheduler scheduler);
 
-    TradingAgentRuntime withTradingService(TradingService service);
+    TradingAlgorithmContext withTradingService(TradingService service);
 }

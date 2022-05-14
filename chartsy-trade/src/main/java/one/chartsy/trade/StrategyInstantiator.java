@@ -1,10 +1,13 @@
+/* Copyright 2022 Mariusz Bernacki <info@softignition.com>
+ * SPDX-License-Identifier: Apache-2.0 */
 package one.chartsy.trade;
 
 import one.chartsy.core.ThreadContext;
 import one.chartsy.time.Chronological;
 
-import one.chartsy.trade.strategy.TradingAgent;
-import one.chartsy.trade.strategy.TradingAgentFactory;
+import one.chartsy.trade.strategy.TradingAlgorithm;
+import one.chartsy.trade.strategy.TradingAlgorithmContext;
+import one.chartsy.trade.strategy.TradingAlgorithmFactory;
 import org.apache.commons.lang3.reflect.TypeUtils;
 
 import java.lang.reflect.Type;
@@ -13,8 +16,14 @@ import java.util.Map;
 
 public class StrategyInstantiator {
 
-    public TradingAgent newInstance(TradingAgentFactory provider, StrategyConfigData config) {
-        return ThreadContext.of(Map.of("config", config)).execute(provider::createInstance);
+    private final TradingAlgorithmContext context;
+
+    public StrategyInstantiator(TradingAlgorithmContext context) {
+        this.context = context;
+    }
+
+    public TradingAlgorithm newInstance(TradingAlgorithmFactory provider, StrategyConfigData config) {
+        return ThreadContext.of(Map.of("config", config)).execute(() -> provider.create(context));
     }
 
     static Class<?> probeDataType(Class<? extends Strategy<?>> strategyClass) {

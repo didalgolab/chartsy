@@ -1,3 +1,5 @@
+/* Copyright 2022 Mariusz Bernacki <info@softignition.com>
+ * SPDX-License-Identifier: Apache-2.0 */
 package one.chartsy.trade.strategy;
 
 import one.chartsy.When;
@@ -7,17 +9,17 @@ import one.chartsy.trade.data.Position;
 
 import java.time.LocalDate;
 
-public class TradingAgentAdapter implements TradingAgent {
+public class TradingAlgorithmAdapter implements TradingAlgorithm {
 
-    private TradingAgent target;
+    private TradingAlgorithm target;
 
-    public TradingAgentAdapter(TradingAgent target) {
+    public TradingAlgorithmAdapter(TradingAlgorithm target) {
         setTarget(target);
     }
 
 
     @Override
-    public void onInit(TradingAgentRuntime runtime) {
+    public void onInit(TradingAlgorithmContext runtime) {
         getTarget().onInit(runtime);
     }
 
@@ -71,11 +73,11 @@ public class TradingAgentAdapter implements TradingAgent {
         getTarget().onExecution(execution);
     }
 
-    public final TradingAgent getTarget() {
+    public final TradingAlgorithm getTarget() {
         return target;
     }
 
-    public void setTarget(TradingAgent target) {
+    public void setTarget(TradingAlgorithm target) {
         if (target == null)
             throw new IllegalArgumentException("target is NULL");
 

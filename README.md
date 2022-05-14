@@ -1,5 +1,6 @@
 # **Chartsy|One** Open Source
 [![build](https://github.com/chartsyone/chartsy/actions/workflows/github-actions-build.yaml/badge.svg)](https://github.com/chartsyone/chartsy/actions/workflows/github-actions-build.yaml)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 The project is an ongoing work in progress... help or support of any kind is appreciated and welcomed.
 
@@ -60,4 +61,4 @@ java.io.FileNotFoundException: ..\..\..\chartsy-ui-chart-indicators\target\class
 Solution: Disable "Compile on Save" feature in the NetBeans IDE.
 ___
 ## License
-To be established.
+Licensed under Apache License, Version 2.0 ([License](LICENSE) or https://www.apache.org/licenses/LICENSE-2.0).

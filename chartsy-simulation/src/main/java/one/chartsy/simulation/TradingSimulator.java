@@ -1,3 +1,5 @@
+/* Copyright 2022 Mariusz Bernacki <info@softignition.com>
+ * SPDX-License-Identifier: Apache-2.0 */
 package one.chartsy.simulation;
 
 import one.chartsy.*;
@@ -10,8 +12,8 @@ import one.chartsy.trade.*;
 import one.chartsy.trade.data.Position;
 import one.chartsy.trade.strategy.ExitState;
 import one.chartsy.trade.strategy.SimulatorOptions;
-import one.chartsy.trade.strategy.TradingAgent;
-import one.chartsy.trade.strategy.TradingAgentAdapter;
+import one.chartsy.trade.strategy.TradingAlgorithm;
+import one.chartsy.trade.strategy.TradingAlgorithmAdapter;
 import org.openide.util.Lookup;
 
 import java.time.*;
@@ -20,7 +22,7 @@ import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-public class TradingSimulator extends TradingAgentAdapter implements TradingService, SimulationDriver {
+public class TradingSimulator extends TradingAlgorithmAdapter implements TradingService, SimulationDriver {
 
     private final SimulationClock clock = new SimulationClock(ZoneId.systemDefault(), 0);
     private final EventCorrelator eventCorrelator = new EventCorrelator();
@@ -28,7 +30,7 @@ public class TradingSimulator extends TradingAgentAdapter implements TradingServ
 
     protected SimpleMatchingEngine matchingEngine;
 
-    public TradingSimulator(TradingAgent agent) {
+    public TradingSimulator(TradingAlgorithm agent) {
         super(agent);
     }
 

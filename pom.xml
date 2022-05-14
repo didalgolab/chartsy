@@ -178,16 +178,16 @@
         <jsch.version>0.1.55</jsch.version>
         <junit5.version>5.8.2</junit5.version>
         <lightbend.config.version>1.4.2</lightbend.config.version>
-        <liquibase.version>4.7.1</liquibase.version>
+        <liquibase.version>4.10.0</liquibase.version>
         <log4j.version>2.17.2</log4j.version><!-- Synchronize with 'spring-boot-starter-log4j2'-injected version -->
-        <lombok.version>1.18.22</lombok.version>
-        <methanol.version>1.6.0</methanol.version>
-        <mockito.version>4.3.1</mockito.version>
+        <lombok.version>1.18.24</lombok.version>
+        <methanol.version>1.7.0</methanol.version>
+        <mockito.version>4.5.1</mockito.version>
         <netbeans.version>RELEASE130</netbeans.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <reactor.core.version>3.4.16</reactor.core.version>
-        <spotbugs.version>4.6.0</spotbugs.version>
-        <spring.boot.version>2.6.6</spring.boot.version>
-        <spring.version>5.3.18</spring.version>
+        <reactor.core.version>3.4.18</reactor.core.version>
+        <spotbugs.version>4.7.0</spotbugs.version>
+        <spring.boot.version>2.6.7</spring.boot.version>
+        <spring.version>5.3.20</spring.version>
     </properties>
 </project>

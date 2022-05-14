@@ -1,3 +1,5 @@
+/* Copyright 2022 Mariusz Bernacki <info@softignition.com>
+ * SPDX-License-Identifier: Apache-2.0 */
 package one.chartsy.trade.strategy;
 
 import one.chartsy.scheduling.EventScheduler;
@@ -16,17 +18,17 @@ import java.util.concurrent.TimeUnit;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
-class HostTradingAgentRuntimeTest {
+class HostTradingAlgorithmRuntimeTest {
 
-    final TradingAgentRuntime local = new HostTradingAgentRuntime();
+    final TradingAlgorithmContext local = new HostTradingAlgorithmContext();
 
     @Test
     void is_installed_as_a_service() {
-        var service = Lookup.getDefault().lookup(TradingAgentRuntime.class);
-        assertInstanceOf(HostTradingAgentRuntime.class, service);
+        var service = Lookup.getDefault().lookup(TradingAlgorithmContext.class);
+        assertInstanceOf(HostTradingAlgorithmContext.class, service);
 
-        service = ServiceLoader.load(TradingAgentRuntime.class).findFirst().orElseThrow(AssertionFailedError::new);
-        assertInstanceOf(HostTradingAgentRuntime.class, service);
+        service = ServiceLoader.load(TradingAlgorithmContext.class).findFirst().orElseThrow(AssertionFailedError::new);
+        assertInstanceOf(HostTradingAlgorithmContext.class, service);
     }
 
     @Test

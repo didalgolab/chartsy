@@ -1,3 +1,5 @@
+/* Copyright 2022 Mariusz Bernacki <info@softignition.com>
+ * SPDX-License-Identifier: Apache-2.0 */
 package de.gsi.chart.renderer.spi.financial.service.footprint;
 
 import java.util.HashMap;

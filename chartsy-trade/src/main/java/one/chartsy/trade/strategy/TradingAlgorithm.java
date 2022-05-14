@@ -1,3 +1,5 @@
+/* Copyright 2022 Mariusz Bernacki <info@softignition.com>
+ * SPDX-License-Identifier: Apache-2.0 */
 package one.chartsy.trade.strategy;
 
 import one.chartsy.When;
@@ -8,9 +10,9 @@ import one.chartsy.trade.data.Position;
 
 import java.time.LocalDate;
 
-public interface TradingAgent {
+public interface TradingAlgorithm {
 
-    void onInit(TradingAgentRuntime runtime);
+    void onInit(TradingAlgorithmContext runtime);
 
     void onAfterInit();
 

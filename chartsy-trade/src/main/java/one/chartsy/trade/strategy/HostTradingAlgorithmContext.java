@@ -1,3 +1,5 @@
+/* Copyright 2022 Mariusz Bernacki <info@softignition.com>
+ * SPDX-License-Identifier: Apache-2.0 */
 package one.chartsy.trade.strategy;
 
 import one.chartsy.data.Series;
@@ -12,8 +14,8 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
-@ServiceProvider(service = TradingAgentRuntime.class)
-public class HostTradingAgentRuntime implements TradingAgentRuntime {
+@ServiceProvider(service = TradingAlgorithmContext.class)
+public class HostTradingAlgorithmContext implements TradingAlgorithmContext {
 
     private final Clock hostClock = Clock.systemDefaultZone();
     private final EventScheduler scheduler = new Scheduler();
@@ -34,8 +36,8 @@ public class HostTradingAgentRuntime implements TradingAgentRuntime {
     }
 
     @Override
-    public TradingAgentRuntime withTradingService(TradingService service) {
-        return ImmutableTradingAgentRuntime.builder()
+    public TradingAlgorithmContext withTradingService(TradingService service) {
+        return ImmutableTradingAlgorithmContext.builder()
                 .from(this)
                 .tradingService(service)
                 .build();
@@ -62,15 +64,15 @@ public class HostTradingAgentRuntime implements TradingAgentRuntime {
     }
 
     @Override
-    public TradingAgentRuntime withClock(Clock clock) {
-        return ImmutableTradingAgentRuntime.builder().from(this)
+    public TradingAlgorithmContext withClock(Clock clock) {
+        return ImmutableTradingAlgorithmContext.builder().from(this)
                 .clock(clock)
                 .build();
     }
 
     @Override
-    public TradingAgentRuntime withScheduler(EventScheduler scheduler) {
-        return ImmutableTradingAgentRuntime.builder().from(this)
+    public TradingAlgorithmContext withScheduler(EventScheduler scheduler) {
+        return ImmutableTradingAlgorithmContext.builder().from(this)
                 .scheduler(scheduler)
                 .build();
     }

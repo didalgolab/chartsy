@@ -1,3 +1,5 @@
+/* Copyright 2022 Mariusz Bernacki <info@softignition.com>
+ * SPDX-License-Identifier: Apache-2.0 */
 package one.chartsy.trade;
 
 import one.chartsy.SymbolIdentity;
@@ -6,10 +8,7 @@ import one.chartsy.data.Series;
 import one.chartsy.naming.SymbolIdentifier;
 import one.chartsy.time.Chronological;
 import one.chartsy.trade.data.Position;
-import one.chartsy.trade.strategy.ExitState;
-import one.chartsy.trade.strategy.TradingAgent;
-import one.chartsy.trade.strategy.TradingAgentFactory;
-import one.chartsy.trade.strategy.TradingAgentRuntime;
+import one.chartsy.trade.strategy.*;
 import org.openide.util.Lookup;
 import org.openide.util.lookup.Lookups;
 import org.openide.util.lookup.ProxyLookup;
@@ -20,9 +19,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 @SuppressWarnings("ForLoopReplaceableByForEach")
-public class MetaStrategy implements TradingAgent {
+public class MetaStrategy implements TradingAlgorithm {
 
     public static final Predicate<?> ACCEPT_ALL = __ -> true;
 
@@ -32,22 +32,22 @@ public class MetaStrategy implements TradingAgent {
     private Account account;
 
     private final ConcurrentMap<String, Object> sharedVariables = new ConcurrentHashMap<>();
-    private final TradingAgentFactory childStrategiesProviders;
+    private final TradingAlgorithmFactory childStrategiesProviders;
 
-    private final List<TradingAgent> subStrategies = new ArrayList<>();
+    private final List<TradingAlgorithm> subStrategies = new ArrayList<>();
     private final Map<SymbolIdentity, Slot> symbols = new LinkedHashMap<>();
     private Slot[] instruments;
 
     private Lookup lookup = Lookup.EMPTY;
 
-    protected Lookup createLookup(TradingAgentRuntime runtime) {
+    protected Lookup createLookup(TradingAlgorithmContext runtime) {
         return new ProxyLookup(
                 Lookups.fixed(account, sharedVariables, this),
                 runtime.getLookup()
         );
     }
 
-    protected void initSimulation(List<? extends Series<?>> dataSeries, Predicate<Series<?>> dataFilter, TradingAgentFactory isp) {
+    protected void initSimulation(TradingAlgorithmContext context, List<? extends Series<?>> dataSeries, Predicate<Series<?>> dataFilter, TradingAlgorithmFactory isp) {
         // clear object state
         this.symbols.clear();
         this.subStrategies.clear();
@@ -65,7 +65,7 @@ public class MetaStrategy implements TradingAgent {
         }
 
         // init instrument strategies
-        StrategyInstantiator initializer = new StrategyInstantiator();
+        StrategyInstantiator initializer = new StrategyInstantiator(context);
         symbols.forEach((symbol, slot) -> {
             var config = new StrategyConfigData(lookup, slot.getSymbol(), slot.dataSeries, sharedVariables, Map.of(), account);
             var childStrategy = initializer.newInstance(isp, config);
@@ -113,7 +113,7 @@ public class MetaStrategy implements TradingAgent {
     private static final class Slot extends InstrumentState {
         private final List<Series<?>> dataSeries = new LinkedList<>();
         private final Instrument instrument;
-        private TradingAgent strategy;
+        private TradingAlgorithm strategy;
 
         public Slot(SymbolIdentifier symbol, Instrument instrument) {
             super(symbol);
@@ -141,28 +141,32 @@ public class MetaStrategy implements TradingAgent {
             return dataSeries;
         }
 
-        public TradingAgent getStrategy() {
+        public TradingAlgorithm getStrategy() {
             return strategy;
         }
 
-        void setStrategy(TradingAgent strategy) {
+        void setStrategy(TradingAlgorithm strategy) {
             if (this.strategy != null)
                 throw new IllegalStateException("InstrumentSlots' strategy already initialized");
             this.strategy = strategy;
         }
     }
 
-    public MetaStrategy(TradingAgentFactory childStrategies) {
+    public MetaStrategy(Supplier<? extends Strategy> childStrategies) {
+        this(AbstractTradingAlgorithmFactory.from(childStrategies));
+    }
+
+    public MetaStrategy(TradingAlgorithmFactory childStrategies) {
         this.childStrategiesProviders = Objects.requireNonNull(childStrategies);
     }
 
     @Override
-    public void onInit(TradingAgentRuntime runtime) {
+    public void onInit(TradingAlgorithmContext runtime) {
         this.account = runtime.tradingService().getAccounts().get(0);
         this.lookup = createLookup(runtime);
-        initSimulation(runtime.dataSeries(), dataSeriesFilter, childStrategiesProviders);
+        initSimulation(runtime, runtime.dataSeries(), dataSeriesFilter, childStrategiesProviders);
         subStrategies.forEach(strategy -> strategy.onInit(runtime));
-        subStrategies.forEach(TradingAgent::onAfterInit);
+        subStrategies.forEach(TradingAlgorithm::onAfterInit);
     }
 
     @Override
@@ -173,16 +177,16 @@ public class MetaStrategy implements TradingAgent {
         subStrategies.forEach(strategy -> strategy.onExit(state));
     }
 
-    public void forEachStrategy(Consumer<TradingAgent> action) {
+    public void forEachStrategy(Consumer<TradingAlgorithm> action) {
         symbols.values().forEach(slot -> action.accept(slot.getStrategy()));
     }
 
-    protected TradingAgent getTargetStrategy(When when) {
+    protected TradingAlgorithm getTargetStrategy(When when) {
         int index = when.getId();
         return (index >= 0 && index < instruments.length)? instruments[index].getStrategy() : null;
     }
 
-    protected TradingAgent getTargetStrategy(SymbolIdentity symbol) {
+    protected TradingAlgorithm getTargetStrategy(SymbolIdentity symbol) {
         Slot slot = symbols.get(new SymbolIdentifier(symbol));
         return (slot == null)? null : slot.getStrategy();
     }
@@ -197,7 +201,7 @@ public class MetaStrategy implements TradingAgent {
 
     @Override
     public void onData(When when, Chronological next, boolean timeTick) {
-        List<TradingAgent> strategies = this.subStrategies;
+        List<TradingAlgorithm> strategies = this.subStrategies;
         for (int i = 0, count = strategies.size(); i < count; i++)
             strategies.get(i).onData(when, next, timeTick);
     }

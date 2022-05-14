@@ -1,3 +1,5 @@
+/* Copyright 2022 Mariusz Bernacki <info@softignition.com>
+ * SPDX-License-Identifier: Apache-2.0 */
 package one.chartsy.trade;
 
 import one.chartsy.When;
@@ -9,8 +11,8 @@ import one.chartsy.naming.SymbolIdentifier;
 import one.chartsy.time.Chronological;
 import one.chartsy.trade.data.Position;
 import one.chartsy.trade.strategy.ExitState;
-import one.chartsy.trade.strategy.TradingAgent;
-import one.chartsy.trade.strategy.TradingAgentRuntime;
+import one.chartsy.trade.strategy.TradingAlgorithm;
+import one.chartsy.trade.strategy.TradingAlgorithmContext;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openide.util.Lookup;
@@ -23,7 +25,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Supplier;
 
-public abstract class Strategy<E extends Chronological> implements TradingAgent, LaunchableTarget<Object> {
+public abstract class Strategy<E extends Chronological> implements TradingAlgorithm, LaunchableTarget<Object> {
     /** The unique identifier of the strategy. */
     private final UUID strategyUUID = UUID.randomUUID();
     /** The external lookup associated with the strategy. */
@@ -45,7 +47,7 @@ public abstract class Strategy<E extends Chronological> implements TradingAgent,
     /** The type of primary data accepted by this strategy. */
     protected final Class<E> primaryDataType;
 
-    protected TradingAgentRuntime runtime;
+    protected TradingAlgorithmContext runtime;
 
 
     protected Strategy() {
@@ -102,7 +104,7 @@ public abstract class Strategy<E extends Chronological> implements TradingAgent,
     }
 
     @Override
-    public void onInit(TradingAgentRuntime runtime) {
+    public void onInit(TradingAlgorithmContext runtime) {
         this.runtime = runtime;
         log().info("Strategy {} configured", symbol.name());
     }
