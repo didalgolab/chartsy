@@ -1,5 +1,7 @@
-/* Copyright 2022 Mariusz Bernacki <info@softignition.com>
- * SPDX-License-Identifier: Apache-2.0 */
+/*
+ * Copyright 2022 Mariusz Bernacki <info@softignition.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package one.chartsy.simulation;
 
 import one.chartsy.When;
@@ -13,8 +15,7 @@ import java.util.Map;
 
 public interface SimulationDriver {
     void initSimulation(SimulationContext context);
-    void onTradingDayStart(LocalDate date);
-    void onTradingDayEnd(LocalDate date);
+    void onTradingDayChange(LocalDate endDate, LocalDate startDate);
 
     void onData(When when, Chronological next, boolean timeTick);
     void onData(When when, Chronological last);

@@ -1,5 +1,7 @@
-/* Copyright 2022 Mariusz Bernacki <info@softignition.com>
- * SPDX-License-Identifier: Apache-2.0 */
+/*
+ * Copyright 2022 Mariusz Bernacki <info@softignition.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package one.chartsy.trade;
 
 import one.chartsy.SymbolIdentity;
@@ -222,8 +224,8 @@ public class MetaStrategy implements TradingAlgorithm {
     }
 
     @Override
-    public void onExitManagement(When when) {
-        getTargetStrategy(when).onExitManagement(when);
+    public void doFirst(When when) {
+        getTargetStrategy(when).doFirst(when);
     }
 
     @Override
@@ -237,8 +239,8 @@ public class MetaStrategy implements TradingAlgorithm {
     }
 
     @Override
-    public void adjustRisk(When when) {
-        getTargetStrategy(when).adjustRisk(when);
+    public void doLast(When when) {
+        getTargetStrategy(when).doLast(when);
     }
 
 }

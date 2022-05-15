@@ -1,5 +1,7 @@
-/* Copyright 2022 Mariusz Bernacki <info@softignition.com>
- * SPDX-License-Identifier: Apache-2.0 */
+/*
+ * Copyright 2022 Mariusz Bernacki <info@softignition.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package one.chartsy.trade.strategy;
 
 import one.chartsy.When;
@@ -44,8 +46,8 @@ public class TradingAlgorithmAdapter implements TradingAlgorithm {
     }
 
     @Override
-    public void onExitManagement(When when) {
-        getTarget().onExitManagement(when);
+    public void doFirst(When when) {
+        getTarget().doFirst(when);
     }
 
     @Override
@@ -59,8 +61,8 @@ public class TradingAlgorithmAdapter implements TradingAlgorithm {
     }
 
     @Override
-    public void adjustRisk(When when) {
-        getTarget().adjustRisk(when);
+    public void doLast(When when) {
+        getTarget().doLast(when);
     }
 
     @Override

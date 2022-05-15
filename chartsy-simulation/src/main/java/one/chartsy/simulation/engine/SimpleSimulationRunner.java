@@ -1,5 +1,7 @@
-/* Copyright 2022 Mariusz Bernacki <info@softignition.com>
- * SPDX-License-Identifier: Apache-2.0 */
+/*
+ * Copyright 2022 Mariusz Bernacki <info@softignition.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package one.chartsy.simulation.engine;
 
 import one.chartsy.collections.PriorityMap;
@@ -31,7 +33,7 @@ public class SimpleSimulationRunner implements SimulationRunner {
 
         if (!map.isEmpty()) {
             LocalDate currDate = map.peekKey().getDate();
-            strategy.onTradingDayStart(currDate);
+            strategy.onTradingDayChange(null, currDate);
             long nextDayTime = Chronological.toEpochMicros(currDate.plusDays(1).atStartOfDay());
             long eventTime = 0;
             while (!map.isEmpty()) {
@@ -49,8 +51,7 @@ public class SimpleSimulationRunner implements SimulationRunner {
 
                 // Check for a trading day boundary
                 if (eventTime > nextDayTime) {
-                    strategy.onTradingDayEnd(currDate);
-                    strategy.onTradingDayStart(currDate = event.getDate());
+                    strategy.onTradingDayChange(currDate, currDate = event.getDate());
                     nextDayTime = Chronological.toEpochMicros(currDate.plusDays(1).atStartOfDay());
                 }
 
@@ -63,7 +64,7 @@ public class SimpleSimulationRunner implements SimulationRunner {
                     map.put(when.peek(), when);
             }
             // Generate the last end-of-day event
-            strategy.onTradingDayEnd(currDate);
+            strategy.onTradingDayChange(currDate, null);
         }
         return strategy.postSimulation(ExitState.COMPLETED);
     }

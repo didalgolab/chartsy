@@ -1,5 +1,7 @@
-/* Copyright 2022 Mariusz Bernacki <info@softignition.com>
- * SPDX-License-Identifier: Apache-2.0 */
+/*
+ * Copyright 2022 Mariusz Bernacki <info@softignition.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package one.chartsy.trade.strategy;
 
 import one.chartsy.When;
@@ -22,13 +24,13 @@ public interface TradingAlgorithm {
 
     void onTradingDayEnd(LocalDate date);
 
-    void onExitManagement(When when);
+    void doFirst(When when);
 
     void exitOrders(When when, Position position);
 
     void entryOrders(When when, Chronological data);
 
-    void adjustRisk(When when);
+    void doLast(When when);
 
     @LookAheadBiasHazard
     default void onData(When when, Chronological next, boolean timeTick) { }

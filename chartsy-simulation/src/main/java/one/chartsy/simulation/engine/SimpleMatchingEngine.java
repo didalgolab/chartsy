@@ -1,5 +1,7 @@
-/* Copyright 2022 Mariusz Bernacki <info@softignition.com>
- * SPDX-License-Identifier: Apache-2.0 */
+/*
+ * Copyright 2022 Mariusz Bernacki <info@softignition.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package one.chartsy.simulation.engine;
 
 import one.chartsy.*;
@@ -82,10 +84,11 @@ public class SimpleMatchingEngine extends OrderStatusUpdater implements OrderBro
     private final AtomicInteger orderID = new AtomicInteger();
 
     @Override
-    public Order submitOrder(Order order) {
+    public Order submitOrder(OrderContext context, Order order) {
         SimulationInstrument instrument = account.getInstrument(order.getSymbol());
         //instrument.orders().add(order);
         instrument.getTransmitQueue().add(order);
+        order.setSourceId(context.name());
         toSubmitted(order, orderID.incrementAndGet(), currentTime);
         return order;
     }

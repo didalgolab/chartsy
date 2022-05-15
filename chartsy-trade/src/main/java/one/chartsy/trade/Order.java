@@ -1,6 +1,7 @@
-/* Copyright 2016 by Mariusz Bernacki. PROPRIETARY and CONFIDENTIAL content.
- * Unauthorized copying of this file, via any medium is strictly prohibited.
- * See the file "LICENSE.txt" for the full license governing this code. */
+/*
+ * Copyright 2022 Mariusz Bernacki <info@softignition.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package one.chartsy.trade;
 
 import java.io.Serial;
@@ -45,6 +46,8 @@ public class Order implements java.io.Serializable, Cloneable, CustomValuesHolde
     private long expirationTime = Long.MAX_VALUE;
     /** The order validity start date and time. */
     private long validSinceTime = Long.MIN_VALUE;
+    /** The trading algorithm from where the order was submitted. */
+    private String sourceId;
     /** A user-definable rule/signal description for the order. */
     private String ruleLabel;
     /** The order that is replaced by this one. */
@@ -687,5 +690,18 @@ public class Order implements java.io.Serializable, Cloneable, CustomValuesHolde
             throw new IllegalArgumentException("orderLatency argument `" + orderLatency + "`must be between -1 and MAX_VALUE");
 
         this.orderLatency = orderLatency;
+    }
+
+    public String getSourceId() {
+        return sourceId;
+    }
+
+    public void setSourceId(String sourceId) {
+        if (!sourceId.equals(this.sourceId)) {
+            if (this.sourceId != null)
+                throw new InvalidOrderStatusException(getState(), String.format("Order.source already set (%s), can't change to %s", this.sourceId, sourceId));
+            else
+                this.sourceId = sourceId;
+        }
     }
 }

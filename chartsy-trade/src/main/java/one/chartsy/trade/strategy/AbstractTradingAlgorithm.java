@@ -1,14 +1,20 @@
-/* Copyright 2022 Mariusz Bernacki <info@softignition.com>
- * SPDX-License-Identifier: Apache-2.0 */
+/*
+ * Copyright 2022 Mariusz Bernacki <info@softignition.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package one.chartsy.trade.strategy;
 
 import one.chartsy.core.ThreadContext;
+import one.chartsy.trade.Execution;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.Map;
 import java.util.Objects;
 
-public class AbstractTradingAlgorithm {
+public abstract class AbstractTradingAlgorithm implements TradingAlgorithm {
 
+    private final Logger log = LogManager.getLogger(getClass());
     protected final TradingAlgorithmContext context;
     private final Map<String, ?> parameters;
 
@@ -28,6 +34,33 @@ public class AbstractTradingAlgorithm {
 
     private AbstractTradingAlgorithm(Configuration config) {
         this(config.context(), config.parameters());
+    }
+
+    /**
+     * Gives the Logger instance associated with the trading algorithm.
+     */
+    public final Logger log() {
+        return log;
+    }
+
+    @Override
+    public void onInit(TradingAlgorithmContext runtime) {
+        // empty implementation, may be provided by a subclass
+    }
+
+    @Override
+    public void onAfterInit() {
+        // empty implementation, may be provided by a subclass
+    }
+
+    @Override
+    public void onExecution(Execution execution) {
+        log().debug("Received Execution: {}", execution);
+    }
+
+    @Override
+    public void onExit(ExitState state) {
+        // empty implementation, may be provided by a subclass
     }
 
     private record Configuration(

@@ -1,5 +1,7 @@
-/* Copyright 2022 Mariusz Bernacki <info@softignition.com>
- * SPDX-License-Identifier: Apache-2.0 */
+/*
+ * Copyright 2022 Mariusz Bernacki <info@softignition.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package one.chartsy.trade;
 
 import one.chartsy.When;
@@ -142,7 +144,7 @@ public abstract class Strategy<E extends Chronological> implements TradingAlgori
     }
 
     @Override
-    public void onExitManagement(When when) {
+    public void doFirst(When when) {
 
     }
 
@@ -157,7 +159,7 @@ public abstract class Strategy<E extends Chronological> implements TradingAlgori
     }
 
     @Override
-    public void adjustRisk(When when) {
+    public void doLast(When when) {
 
     }
 
@@ -219,7 +221,7 @@ public abstract class Strategy<E extends Chronological> implements TradingAlgori
     }
 
     public Order submitOrder(Order order) {
-        return runtime.tradingService().getOrderBroker().submitOrder(order);
+        return runtime.tradingService().getOrderBroker().submitOrder(runtime, order);
     }
 
     public Order buy() {

@@ -1,5 +1,7 @@
-/* Copyright 2022 Mariusz Bernacki <info@softignition.com>
- * SPDX-License-Identifier: Apache-2.0 */
+/*
+ * Copyright 2022 Mariusz Bernacki <info@softignition.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package one.chartsy.simulation;
 
 import one.chartsy.Candle;
@@ -56,9 +58,9 @@ class SimulationRunnerTest {
 
         var order = inOrder(simDriver);
         order.verify(simDriver).initSimulation(any());
-        order.verify(simDriver).onTradingDayStart(dataPointDate);
+        order.verify(simDriver).onTradingDayChange(null, dataPointDate);
         order.verify(simDriver).onData(any(), same(dataPoint));
-        order.verify(simDriver).onTradingDayEnd(dataPointDate);
+        order.verify(simDriver).onTradingDayChange(dataPointDate, null);
         order.verify(simDriver).postSimulation(ExitState.COMPLETED);
         Mockito.verifyNoMoreInteractions(simDriver);
     }

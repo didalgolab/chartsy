@@ -1,5 +1,7 @@
-/* Copyright 2022 Mariusz Bernacki <info@softignition.com>
- * SPDX-License-Identifier: Apache-2.0 */
+/*
+ * Copyright 2022 Mariusz Bernacki <info@softignition.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package one.chartsy.benchmarking;
 
 import one.chartsy.Candle;
@@ -51,8 +53,7 @@ public class StrategyBenchmarkTest {
         DoubleAdder cnt2 = new DoubleAdder();
         SimulationDriver driver = new SimulationDriver() {
             @Override public void initSimulation(SimulationContext context) { }
-            @Override public void onTradingDayStart(LocalDate date) { }
-            @Override public void onTradingDayEnd(LocalDate date) { }
+            @Override public void onTradingDayChange(LocalDate endDate, LocalDate startDate) { }
             @Override public void onData(When when, Chronological next, boolean timeTick) { }
 
             @Override

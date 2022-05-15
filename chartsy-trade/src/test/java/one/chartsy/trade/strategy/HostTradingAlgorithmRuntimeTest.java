@@ -1,10 +1,11 @@
-/* Copyright 2022 Mariusz Bernacki <info@softignition.com>
- * SPDX-License-Identifier: Apache-2.0 */
+/*
+ * Copyright 2022 Mariusz Bernacki <info@softignition.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package one.chartsy.trade.strategy;
 
 import one.chartsy.scheduling.EventScheduler;
 import one.chartsy.time.Chronological;
-import one.chartsy.time.Clock;
 import org.junit.jupiter.api.Test;
 import org.openide.util.Lookup;
 import org.opentest4j.AssertionFailedError;
@@ -47,18 +48,6 @@ class HostTradingAlgorithmRuntimeTest {
         long timeBefore = Chronological.now();
         assertThat(clock.time())
                 .isBetween(timeBefore, Chronological.now());
-    }
-
-    @Test
-    void withClock_gives_another_Clock_to_use() {
-        var anotherClock = Clock.system(ZoneId.of("America/Los_Angeles"));
-        assertEquals(anotherClock, local.withClock(anotherClock).clock());
-    }
-
-    @Test
-    void withClockAtZone_replaces_Clock_and_zone() {
-        var anotherZone = ZoneId.of("America/Los_Angeles");
-        assertEquals(anotherZone, local.withClockAtZone(anotherZone).clock().getZone());
     }
 
     @Test

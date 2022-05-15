@@ -1,5 +1,7 @@
-/* Copyright 2022 Mariusz Bernacki <info@softignition.com>
- * SPDX-License-Identifier: Apache-2.0 */
+/*
+ * Copyright 2022 Mariusz Bernacki <info@softignition.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package one.chartsy.simulation.services;
 
 import one.chartsy.data.Series;
@@ -15,7 +17,6 @@ import org.openide.util.lookup.ServiceProvider;
 
 import java.util.List;
 
-@Deprecated
 @ServiceProvider(service = SimulationContext.class)
 public class HostSimulationContext extends HostTradingAlgorithmContext implements SimulationContext {
 
@@ -37,14 +38,6 @@ public class HostSimulationContext extends HostTradingAlgorithmContext implement
     @Override
     public TradingService tradingService() {
         return FakeTradingService.instance;
-    }
-
-    @Override
-    public SimulationContext withTradingService(TradingService service) {
-        return ImmutableSimulationContext.builder()
-                .from(this)
-                .tradingService(service)
-                .build();
     }
 
     @Override

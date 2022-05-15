@@ -1,5 +1,7 @@
-/* Copyright 2022 Mariusz Bernacki <info@softignition.com>
- * SPDX-License-Identifier: Apache-2.0 */
+/*
+ * Copyright 2022 Mariusz Bernacki <info@softignition.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package one.chartsy.trade.strategy;
 
 import one.chartsy.data.Series;
@@ -9,7 +11,9 @@ import one.chartsy.trade.*;
 import org.openide.util.Lookup;
 import org.openide.util.lookup.ServiceProvider;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -19,6 +23,11 @@ public class HostTradingAlgorithmContext implements TradingAlgorithmContext {
 
     private final Clock hostClock = Clock.systemDefaultZone();
     private final EventScheduler scheduler = new Scheduler();
+
+    @Override
+    public String name() {
+        return "$";
+    }
 
     @Override
     public Clock clock() {
@@ -36,11 +45,13 @@ public class HostTradingAlgorithmContext implements TradingAlgorithmContext {
     }
 
     @Override
-    public TradingAlgorithmContext withTradingService(TradingService service) {
-        return ImmutableTradingAlgorithmContext.builder()
-                .from(this)
-                .tradingService(service)
-                .build();
+    public Optional<Object> strategyPartition() {
+        return Optional.empty();
+    }
+
+    @Override
+    public TradingAlgorithmSet tradingAlgorithms() {
+        return FakeTradingAlgorithmSet.INSTANCE;
     }
 
     @Override
@@ -61,20 +72,6 @@ public class HostTradingAlgorithmContext implements TradingAlgorithmContext {
     @Override
     public Lookup getLookup() {
         return Lookup.getDefault();
-    }
-
-    @Override
-    public TradingAlgorithmContext withClock(Clock clock) {
-        return ImmutableTradingAlgorithmContext.builder().from(this)
-                .clock(clock)
-                .build();
-    }
-
-    @Override
-    public TradingAlgorithmContext withScheduler(EventScheduler scheduler) {
-        return ImmutableTradingAlgorithmContext.builder().from(this)
-                .scheduler(scheduler)
-                .build();
     }
 
     /**
@@ -120,6 +117,25 @@ public class HostTradingAlgorithmContext implements TradingAlgorithmContext {
         @Override
         public Lookup getLookup() {
             return Lookup.EMPTY;
+        }
+    }
+
+    private static class FakeTradingAlgorithmSet implements TradingAlgorithmSet {
+        private static final FakeTradingAlgorithmSet INSTANCE = new FakeTradingAlgorithmSet();
+
+        @Override
+        public Collection<TradingAlgorithm> findAll() {
+            return List.of();
+        }
+
+        @Override
+        public Optional<TradingAlgorithm> get(String name) {
+            return Optional.empty();
+        }
+
+        @Override
+        public <T extends TradingAlgorithm> T newInstance(String name, TradingAlgorithmContext context, TradingAlgorithmFactory<T> factory) {
+            throw new UnsupportedOperationException("Unsupported by HostTradingAlgorithmContext");
         }
     }
 }

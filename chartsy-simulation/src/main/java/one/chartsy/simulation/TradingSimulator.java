@@ -1,5 +1,7 @@
-/* Copyright 2022 Mariusz Bernacki <info@softignition.com>
- * SPDX-License-Identifier: Apache-2.0 */
+/*
+ * Copyright 2022 Mariusz Bernacki <info@softignition.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package one.chartsy.simulation;
 
 import one.chartsy.*;
@@ -10,10 +12,7 @@ import one.chartsy.simulation.time.SimulationClock;
 import one.chartsy.time.Chronological;
 import one.chartsy.trade.*;
 import one.chartsy.trade.data.Position;
-import one.chartsy.trade.strategy.ExitState;
-import one.chartsy.trade.strategy.SimulatorOptions;
-import one.chartsy.trade.strategy.TradingAlgorithm;
-import one.chartsy.trade.strategy.TradingAlgorithmAdapter;
+import one.chartsy.trade.strategy.*;
 import org.openide.util.Lookup;
 
 import java.time.*;
@@ -28,6 +27,8 @@ public class TradingSimulator extends TradingAlgorithmAdapter implements Trading
     private final EventCorrelator eventCorrelator = new EventCorrelator();
     private int currentDayNumber;
 
+    private TradingAlgorithmSet tradingAlgorithms;
+
     protected SimpleMatchingEngine matchingEngine;
 
     public TradingSimulator(TradingAlgorithm agent) {
@@ -36,7 +37,13 @@ public class TradingSimulator extends TradingAlgorithmAdapter implements Trading
 
     protected SimpleMatchingEngine createMatchingEngine(SimulatorOptions properties, SimulationResult.Builder result) {
         SimpleMatchingEngine model = new SimpleMatchingEngine(properties, result);
-        model.addExecutionListener((getTarget()::onExecution));
+        model.addExecutionListener(execution -> {
+            String sourceId = execution.getOrder().getSourceId();
+            if (sourceId != null) {
+                getTradingAlgorithms().get(sourceId)
+                        .ifPresent(algorithm -> algorithm.onExecution(execution));
+            }
+        });
         return model;
     }
 
@@ -59,12 +66,22 @@ public class TradingSimulator extends TradingAlgorithmAdapter implements Trading
         return Lookup.EMPTY;
     }
 
+    public TradingAlgorithmSet getTradingAlgorithms() {
+        return tradingAlgorithms;
+    }
+
     @Override
     public void initSimulation(SimulationContext context) {
         currentDayNumber = 0;
         eventCorrelator.clear();
         initDataSource(context.configuration().simulatorOptions(), context.dataSeries());
-        super.onInit(context.withTradingService(this).withClock(clock).withScheduler(eventCorrelator));
+        var newContext = ImmutableSimulationContext.builder().from(context)
+                .tradingService(this)
+                .clock(clock)
+                .scheduler(eventCorrelator)
+                .tradingAlgorithms(tradingAlgorithms = new DefaultTradingAlgorithmSet())
+                .build();
+        super.onInit(newContext);
         super.onAfterInit();
     }
 
@@ -111,6 +128,14 @@ public class TradingSimulator extends TradingAlgorithmAdapter implements Trading
     }
 
     @Override
+    public void onTradingDayChange(LocalDate endDate, LocalDate startDate) {
+        if (endDate != null)
+            onTradingDayEnd(endDate);
+        if (startDate != null)
+            onTradingDayEnd(startDate);
+    }
+
+    @Override
     public void onData(When when, Chronological next, boolean timeTick) {
         super.onData(when, next, timeTick);
         matchingEngine.onData(when, next, timeTick);
@@ -121,14 +146,14 @@ public class TradingSimulator extends TradingAlgorithmAdapter implements Trading
         eventCorrelator.triggerEventsUpTo(data.getTime(), clock);
         var target = getTarget();
 
-        target.onExitManagement(when);
+        target.doFirst(when);
         target.entryOrders(when, data);
-        target.adjustRisk(when);
+        target.doLast(when);
     }
 
     @Override
-    public void onExitManagement(When when) {
-        getTarget().onExitManagement(when);
+    public void doFirst(When when) {
+        getTarget().doFirst(when);
 
         Position position = matchingEngine.getAccount().getPosition(when.getSymbol());
         if (position != null)
