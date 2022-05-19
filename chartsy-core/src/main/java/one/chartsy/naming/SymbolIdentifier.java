@@ -1,5 +1,7 @@
-/* Copyright 2022 Mariusz Bernacki <info@softignition.com>
- * SPDX-License-Identifier: Apache-2.0 */
+/*
+ * Copyright 2022 Mariusz Bernacki <info@softignition.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package one.chartsy.naming;
 
 import one.chartsy.IdentifierType;
@@ -21,6 +23,10 @@ public record SymbolIdentifier(
 
     public SymbolIdentifier(SymbolIdentity symbol, IdentifierType identifierType) {
         this(symbol.name(), symbol.type(), identifierType);
+    }
+
+    public SymbolIdentifier(String name) {
+        this(name, Optional.empty(), IdentifierType.Standard.TICKER);
     }
 
     public SymbolIdentifier(String name, Optional<InstrumentType> type) {

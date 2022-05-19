@@ -1,5 +1,7 @@
-/* Copyright 2022 Mariusz Bernacki <info@softignition.com>
- * SPDX-License-Identifier: Apache-2.0 */
+/*
+ * Copyright 2022 Mariusz Bernacki <info@softignition.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package one.chartsy.benchmarking;
 
 import one.chartsy.Candle;
@@ -15,8 +17,7 @@ import one.chartsy.simulation.SimulationRunner;
 import one.chartsy.simulation.TradingSimulator;
 import one.chartsy.simulation.engine.SimpleSimulationRunner;
 import one.chartsy.time.Chronological;
-import one.chartsy.trade.MetaStrategy;
-import one.chartsy.trade.Strategy;
+import one.chartsy.trade.strategy.Strategy;
 import org.openide.util.Lookup;
 
 import java.io.IOException;
@@ -68,7 +69,7 @@ public class Main3 {
         }
         //System.in.read();
         //for (int i = 0; i < 100; i++)
-        SimulationResult result = runner.run(seriesList, new TradingSimulator(new MetaStrategy(MyStrategy::new)));
+        SimulationResult result = runner.run(seriesList, new TradingSimulator(MyStrategy::new));
         System.out.println(result.testDays());
     }
 }

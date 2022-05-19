@@ -20,8 +20,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
-public class TradingSimulator extends TradingAlgorithmAdapter implements TradingService, SimulationDriver {
+public class TradingSimulator extends TradingAlgorithmHandle implements TradingService, SimulationDriver {
 
     private final SimulationClock clock = new SimulationClock(ZoneId.systemDefault(), 0);
     private final EventCorrelator eventCorrelator = new EventCorrelator();
@@ -31,8 +32,15 @@ public class TradingSimulator extends TradingAlgorithmAdapter implements Trading
 
     protected SimpleMatchingEngine matchingEngine;
 
-    public TradingSimulator(TradingAlgorithm agent) {
-        super(agent);
+    private TradingAlgorithmFactory<?> algorithmFactory;
+
+    public TradingSimulator(TradingAlgorithmFactory<?> algorithmFactory) {
+        super();
+        this.algorithmFactory = algorithmFactory;
+    }
+
+    public TradingSimulator(Supplier<? extends Strategy<?>> strategy) {
+        this(new TradingAlgorithmSupplierAdapter(strategy));
     }
 
     protected SimpleMatchingEngine createMatchingEngine(SimulatorOptions properties, SimulationResult.Builder result) {
@@ -74,13 +82,16 @@ public class TradingSimulator extends TradingAlgorithmAdapter implements Trading
     public void initSimulation(SimulationContext context) {
         currentDayNumber = 0;
         eventCorrelator.clear();
-        initDataSource(context.configuration().simulatorOptions(), context.dataSeries());
+        initDataSource(context.configuration().simulatorOptions(), context.partitionSeries().values());
         var newContext = ImmutableSimulationContext.builder().from(context)
                 .tradingService(this)
                 .clock(clock)
                 .scheduler(eventCorrelator)
                 .tradingAlgorithms(tradingAlgorithms = new DefaultTradingAlgorithmSet())
                 .build();
+        HierarchicalTradingAlgorithm metaAlgorithm = new HierarchicalTradingAlgorithm(newContext);
+        metaAlgorithm.addSubStrategies(algorithmFactory, Series.PARTITION_BY_SYMBOL);
+        setTarget(metaAlgorithm);
         super.onInit(newContext);
         super.onAfterInit();
     }
@@ -132,7 +143,7 @@ public class TradingSimulator extends TradingAlgorithmAdapter implements Trading
         if (endDate != null)
             onTradingDayEnd(endDate);
         if (startDate != null)
-            onTradingDayEnd(startDate);
+            onTradingDayStart(startDate);
     }
 
     @Override

@@ -5,6 +5,7 @@
 package one.chartsy.trade.strategy;
 
 import one.chartsy.data.Series;
+import one.chartsy.data.structures.IntMap;
 import one.chartsy.scheduling.EventScheduler;
 import one.chartsy.time.Clock;
 import one.chartsy.trade.OrderContext;
@@ -15,6 +16,7 @@ import org.openide.util.Lookup;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * A context containing trading algorithms' name and id, and providing a various container services to the algorithm.
@@ -33,11 +35,15 @@ public interface TradingAlgorithmContext extends Lookup.Provider, OrderContext {
 
     TradingOptions options();
 
-    List<? extends Series<?>> dataSeries();
-
     StrategyConfiguration configuration();
 
-    Optional<Object> strategyPartition();
+    Optional<Object> partitionKey();
+
+    List<Object> partitionKeys();
+
+    IntMap<Series<?>> partitionSeries();
+
+    ConcurrentMap<String, Object> sharedVariables();
 
     TradingAlgorithmSet tradingAlgorithms();
 

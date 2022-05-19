@@ -6,28 +6,56 @@ package one.chartsy.trade.strategy;
 
 import one.chartsy.When;
 import one.chartsy.core.TriConsumer;
+import one.chartsy.data.Series;
+import one.chartsy.data.structures.IntHashMap;
+import one.chartsy.data.structures.IntMap;
+import one.chartsy.data.structures.UnmodifiableIntMap;
 import one.chartsy.time.Chronological;
+import one.chartsy.trade.MarketUniverse;
+import one.chartsy.trade.MarketUniverseChangeEvent;
+import one.chartsy.trade.MarketUniverseChangeListener;
+import one.chartsy.trade.MarketUniverseObserver;
 import one.chartsy.trade.data.Position;
+import one.chartsy.util.ListUtils;
+import org.openide.util.Lookup;
+import org.openide.util.lookup.Lookups;
+import org.openide.util.lookup.ProxyLookup;
 
 import java.time.LocalDate;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-public abstract class AbstractHierarchicalTradingAlgorithm extends AbstractTradingAlgorithm {
+public class HierarchicalTradingAlgorithm extends AbstractTradingAlgorithm {
 
     /** Marks if the system is after init call. */
     private boolean isAfterInit;
 
-    private final List<ChildFactory> childFactories = Collections.synchronizedList(new ArrayList<>());
+    private final MarketUniverseObserver marketUniverse = new MarketUniverseObserver();
+
+    private final MarketUniverseChangeListener marketUniverseHandler = (MarketUniverseChangeEvent event) -> {
+        invokeAll(getAllSubStrategies(), TradingAlgorithm::onMarketUniverseChange, event);
+    };
+
+    private final List<TradingSystem> childFactories = Collections.synchronizedList(new ArrayList<>());
     private ChildInvoker[] children = new ChildInvoker[0];
 
     private final List<TradingAlgorithm> allSubStrategies = new ArrayList<>();
 
+
+    /**
+     * Gives the view of a market universe captured by this trading algorithm.
+     *
+     * @return the readonly view of a market universe
+     */
+    public MarketUniverse getMarketUniverse() {
+        return marketUniverse;
+    }
 
     /**
      * Gives mark if the current trading algorithm is after init call.
@@ -39,6 +67,8 @@ public abstract class AbstractHierarchicalTradingAlgorithm extends AbstractTradi
     @Override
     public void onInit(TradingAlgorithmContext context) {
         super.onInit(context);
+        marketUniverse.removeListener(marketUniverseHandler);
+        marketUniverse.addListener(marketUniverseHandler);
     }
 
     @Override
@@ -46,6 +76,13 @@ public abstract class AbstractHierarchicalTradingAlgorithm extends AbstractTradi
         super.onAfterInit();
         isAfterInit = true;
         invokeAll(getAllSubStrategies(), TradingAlgorithm::onAfterInit);
+    }
+
+    @Override
+    public void onMarketUniverseChange(MarketUniverseChangeEvent change) {
+        super.onMarketUniverseChange(change);
+        if (change.hasRemovedMarkets())
+            change.getRemovedMarkets().forEach(marketUniverse::removeMarket);
     }
 
     @Override
@@ -110,9 +147,10 @@ public abstract class AbstractHierarchicalTradingAlgorithm extends AbstractTradi
         var invoker = children[id];
         if (invoker == null) {
             invoker = children[id] = new ChildInvoker(when, new ArrayList<>());
+            marketUniverse.addMarket(when);
 
             List<TradingAlgorithm> newlyCreated = new LinkedList<>();
-            for (ChildFactory factory : childFactories) {
+            for (TradingSystem factory : childFactories) {
                 var targetAlgorithm = factory.getTargetAlgorithm(context, when, newlyCreated);
                 if (targetAlgorithm != null)
                     invoker.addTarget(targetAlgorithm);
@@ -128,8 +166,8 @@ public abstract class AbstractHierarchicalTradingAlgorithm extends AbstractTradi
         return invoker;
     }
 
-    public void addSubStrategies(TradingAlgorithmFactory<?> factory, Function<When, Object> partitionFunction) {
-        var childFactory = new ChildFactory(factory, partitionFunction);
+    public void addSubStrategies(TradingAlgorithmFactory<?> factory, Function<Series<?>, Object> partitionFunction) {
+        var childFactory = new TradingSystem(factory, partitionFunction);
         childFactories.add(childFactory);
 
         List<TradingAlgorithm> newlyCreated = new LinkedList<>();
@@ -161,53 +199,75 @@ public abstract class AbstractHierarchicalTradingAlgorithm extends AbstractTradi
             method.accept(target, arg1, arg2);
     }
 
+    protected Lookup createChildLookup(TradingAlgorithmContext context, ConcurrentMap<String, ?> sharedVariables) {
+        return new ProxyLookup(
+                Lookups.fixed(sharedVariables, this),
+                context.getLookup()
+        );
+    }
 
+    private record Partition(TradingAlgorithm algorithm, IntMap<? super Series<?>> seriesView) { }
 
-    private final class ChildFactory {
-        private final Function<When, Object> partitionFunction;
+    private final class TradingSystem {
+        private final Function<Series<?>, Object> partitionFunction;
         private final TradingAlgorithmFactory<?> factory;
-        private final Map<Object, TradingAlgorithm> algorithmPartitions = new ConcurrentHashMap<>();
+        private final ConcurrentMap<String, Object> sharedVariables = new ConcurrentHashMap<>();
+        private final Map<Object, Partition> algorithmPartitions = new ConcurrentHashMap<>();
         private final Lock lock = new ReentrantLock();
 
-        ChildFactory(TradingAlgorithmFactory<?> factory, Function<When, Object> partitionFunction) {
+        TradingSystem(TradingAlgorithmFactory<?> factory, Function<Series<?>, Object> partitionFunction) {
             this.partitionFunction = partitionFunction;
             this.factory = factory;
         }
 
         TradingAlgorithm getTargetAlgorithm(TradingAlgorithmContext context, When when, List<TradingAlgorithm> newlyCreated) {
-            Object partition = partitionFunction.apply(when);
-            if (partition == null)
+            Series<?> series = context.partitionSeries().get(when.getId());
+            Object partitionKey = partitionFunction.apply(series);
+            if (partitionKey == null)
                 return null;
 
-            TradingAlgorithm algorithm = algorithmPartitions.get(partition);
-            if (algorithm == null)
-                algorithm = getOrCreateTargetAlgorithm(context, partition, newlyCreated);
-            return algorithm;
+            var partition = algorithmPartitions.get(partitionKey);
+            if (partition == null)
+                partition = getOrCreatePartition(context, partitionKey, newlyCreated);
+
+            partition.seriesView.put(when.getId(), context.partitionSeries().get(when.getId()));
+            return partition.algorithm;
         }
 
-        TradingAlgorithm getOrCreateTargetAlgorithm(TradingAlgorithmContext context, Object partition, List<TradingAlgorithm> newlyCreated) {
+        Partition getOrCreatePartition(TradingAlgorithmContext context, Object partitionKey, List<TradingAlgorithm> newlyCreated) {
             lock.lock();
             try {
-                var algorithm = algorithmPartitions.get(partition);
-                if (algorithm == null) {
-                    algorithm = createTargetAlgorithm(context, partition);
-                    newlyCreated.add(algorithm);
-                    algorithmPartitions.put(partition, algorithm);
+                var partition = algorithmPartitions.get(partitionKey);
+                if (partition == null) {
+                    partition = createTargetPartition(context, partitionKey, createChildLookup(context, sharedVariables));
+                    newlyCreated.add(partition.algorithm);
+                    algorithmPartitions.put(partitionKey, partition);
                 }
-                return algorithm;
+                return partition;
             } finally {
                 lock.unlock();
             }
         }
 
-        TradingAlgorithm createTargetAlgorithm(TradingAlgorithmContext context, Object partitionKey) {
-            var algorithmName = context.name().isBlank()? String.valueOf(partitionKey) : context.name() + "." + partitionKey;
-            var algorithmContext = ImmutableTradingAlgorithmContext.builder()
+        Partition createTargetPartition(TradingAlgorithmContext context, Object partitionKey, Lookup lookup) {
+            String algorithmName = context.name().isBlank()? String.valueOf(partitionKey) : context.name() + "." + partitionKey;
+
+            IntMap<Series<?>> partitionSeries = new IntHashMap<>(4);
+            context.partitionSeries().forEach((seriesId, series) -> {
+                if (partitionKey.equals(partitionFunction.apply(series)))
+                    partitionSeries.put(seriesId, series);
+            });
+            TradingAlgorithmContext algorithmContext = ImmutableTradingAlgorithmContext.builder()
                     .from(context)
-                    .strategyPartition(partitionKey)
+                    .lookup(lookup)
+                    .partitionKey(partitionKey)
+                    .partitionKeys(ListUtils.appendTo(context.partitionKeys(), partitionKey))
+                    .partitionSeries(UnmodifiableIntMap.of(partitionSeries))
+                    .sharedVariables(sharedVariables)
                     .name(algorithmName)
                     .build();
-            return context.tradingAlgorithms().newInstance(algorithmName, algorithmContext, factory);
+            TradingAlgorithm algorithm = context.tradingAlgorithms().newInstance(algorithmName, algorithmContext, factory);
+            return new Partition(algorithm, partitionSeries);
         }
     }
 
@@ -220,13 +280,11 @@ public abstract class AbstractHierarchicalTradingAlgorithm extends AbstractTradi
         }
     }
 
-    public AbstractHierarchicalTradingAlgorithm() { }
-
-    public AbstractHierarchicalTradingAlgorithm(TradingAlgorithmContext context) {
+    public HierarchicalTradingAlgorithm(TradingAlgorithmContext context) {
         super(context);
     }
 
-    public AbstractHierarchicalTradingAlgorithm(TradingAlgorithmContext context, Map<String, ?> parameters) {
+    public HierarchicalTradingAlgorithm(TradingAlgorithmContext context, Map<String, ?> parameters) {
         super(context, parameters);
     }
 }

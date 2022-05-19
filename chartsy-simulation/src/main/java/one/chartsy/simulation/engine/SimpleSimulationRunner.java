@@ -7,11 +7,13 @@ package one.chartsy.simulation.engine;
 import one.chartsy.collections.PriorityMap;
 import one.chartsy.data.ChronologicalIterator;
 import one.chartsy.data.Series;
+import one.chartsy.data.structures.IntMap;
+import one.chartsy.data.structures.UnmodifiableIntMap;
 import one.chartsy.simulation.SimulationContext;
 import one.chartsy.simulation.SimulationDriver;
 import one.chartsy.simulation.SimulationResult;
 import one.chartsy.simulation.SimulationRunner;
-import one.chartsy.simulation.data.TradingData;
+import one.chartsy.simulation.data.SimulationData;
 import one.chartsy.time.Chronological;
 import one.chartsy.trade.strategy.ExitState;
 
@@ -27,9 +29,10 @@ public class SimpleSimulationRunner implements SimulationRunner {
 
     @Override
     public SimulationResult run(List<? extends Series<?>> datasets, SimulationDriver strategy) {
-        SimulationContext context = this.context.withDataSeries(datasets);
+        IntMap<Series<?>> seriesMap = SimulationData.seriesMap(datasets);
+        SimulationContext context = this.context.withPartitionSeries(UnmodifiableIntMap.of(seriesMap));
         strategy.initSimulation(context);
-        PriorityMap<Chronological, ChronologicalIterator<?>> map = TradingData.priorityMap(context, datasets);
+        PriorityMap<Chronological, ChronologicalIterator<?>> map = SimulationData.priorityMap(seriesMap);
 
         if (!map.isEmpty()) {
             LocalDate currDate = map.peekKey().getDate();

@@ -42,7 +42,6 @@ public class DefaultTradingAlgorithmSet implements TradingAlgorithmSet {
         return Pair.of(name, null);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public <T extends TradingAlgorithm> T newInstance(String name, TradingAlgorithmContext context, TradingAlgorithmFactory<T> factory) {
         var nameAndHash = splitByHashNumber(name);
@@ -58,6 +57,8 @@ public class DefaultTradingAlgorithmSet implements TradingAlgorithmSet {
                 .from(context)
                 .name(name)
                 .build();
-        return (T) algorithms.putIfAbsent(name, factory.create(algorithmContext));
+        var algorithm = factory.create(algorithmContext);
+        algorithms.put(name, algorithm);
+        return algorithm;
     }
 }

@@ -2,40 +2,28 @@
  * Copyright 2022 Mariusz Bernacki <info@softignition.com>
  * SPDX-License-Identifier: Apache-2.0
  */
-package one.chartsy.trade;
+package one.chartsy.trade.strategy;
 
-import one.chartsy.When;
-import one.chartsy.collections.ImmutableCollections;
+import one.chartsy.SymbolIdentity;
 import one.chartsy.core.LaunchableTarget;
 import one.chartsy.core.ThreadContext;
 import one.chartsy.data.Series;
 import one.chartsy.naming.SymbolIdentifier;
 import one.chartsy.time.Chronological;
+import one.chartsy.trade.*;
 import one.chartsy.trade.data.Position;
-import one.chartsy.trade.strategy.ExitState;
-import one.chartsy.trade.strategy.TradingAlgorithm;
-import one.chartsy.trade.strategy.TradingAlgorithmContext;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.openide.util.Lookup;
 
-import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Supplier;
 
-public abstract class Strategy<E extends Chronological> implements TradingAlgorithm, LaunchableTarget<Object> {
-    /** The unique identifier of the strategy. */
-    private final UUID strategyUUID = UUID.randomUUID();
+public abstract class Strategy<E extends Chronological> extends HierarchicalTradingAlgorithm implements TradingAlgorithm, LaunchableTarget<Object> {
     /** The external lookup associated with the strategy. */
     private final Lookup lookup;
-    /** The instance logger currently in use. */
-    private final Logger log = LogManager.getLogger(getClass());
-    /** The current strategy configuration. */
-    protected final StrategyConfig config;
     /** The variables shared between all strategies created under the same meta-strategy. */
     private final ConcurrentMap<String, Object> globalVariables;
     /** The symbol assigned to the current Strategy. */
@@ -49,8 +37,6 @@ public abstract class Strategy<E extends Chronological> implements TradingAlgori
     /** The type of primary data accepted by this strategy. */
     protected final Class<E> primaryDataType;
 
-    protected TradingAlgorithmContext runtime;
-
 
     protected Strategy() {
         this(findConfig(), null);
@@ -60,36 +46,47 @@ public abstract class Strategy<E extends Chronological> implements TradingAlgori
         this(findConfig(), primaryDataType);
     }
 
-    protected Strategy(StrategyConfig config) {
-        this(config, null);
+    protected Strategy(TradingAlgorithmContext context) {
+        this(context, null);
     }
 
-    @SuppressWarnings("unchecked")
-    protected Strategy(StrategyConfig config, Class<E> primaryDataType) {
-        if (primaryDataType == null)
-            primaryDataType = (Class<E>) StrategyInstantiator.probeDataType((Class<? extends Strategy<?>>) getClass());
-        this.primaryDataType = primaryDataType;
+    private static TradingAlgorithmContext findConfig() {
+        try {
+            ThreadContext config = ThreadContext.current();
+            if (config.getVars().get("context") instanceof TradingAlgorithmContext context)
+                return context;
+            else
+                throw new TradingException("Current context not available, found " + config.getVars().keySet() + " instead");
 
-        this.config = config;
-        if (config != null) {
-            this.lookup = config.lookup();
-            this.globalVariables = config.sharedVariables();
-            this.symbol = config.symbol();
-            this.series = getPrimaryDataSeries(primaryDataType, config.dataSources());
-            this.alternateSeries = config.dataSources();
-            this.account = config.account();
-        } else {
-            this.lookup = Lookup.EMPTY;
-            this.globalVariables = ImmutableCollections.emptyConcurrentMap();
-            this.symbol = null;
-            this.series = null;
-            this.alternateSeries = List.of();
-            this.account = null;
+        } catch (ThreadContext.NotFoundException e) {
+            return new HostTradingAlgorithmContext();
         }
     }
 
     @SuppressWarnings("unchecked")
-    protected Series<E> getPrimaryDataSeries(Class<E> primaryDataType, List<? extends Series<?>> dataSource) {
+    protected Strategy(TradingAlgorithmContext context, Class<E> primaryDataType) {
+        super(context);
+        if (primaryDataType == null)
+            primaryDataType = (Class<E>) StrategyUtils.probeDataType((Class<? extends Strategy<?>>) getClass());
+        this.primaryDataType = primaryDataType;
+
+        this.lookup = context.getLookup();
+        this.globalVariables = context.sharedVariables();
+        var partitionKey = context.partitionKey().orElse(null);
+        this.symbol = (partitionKey instanceof SymbolIdentity symb)? new SymbolIdentifier(symb): null;
+        this.series = getPrimaryDataSeries(primaryDataType, context.partitionSeries().values());
+        this.alternateSeries = List.copyOf(context.partitionSeries().values());
+        var mainAccount = lookup.lookup(Account.class);
+        if (mainAccount != null)
+            this.account = mainAccount;
+        else {
+            List<Account> accounts = context.tradingService().getAccounts();
+            this.account = accounts.isEmpty()? null : accounts.get(0);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    protected Series<E> getPrimaryDataSeries(Class<E> primaryDataType, Collection<? extends Series<?>> dataSource) {
         for (Series<?> dataSeries : dataSource)
             if (primaryDataType.equals(dataSeries.getResource().dataType()))
                 return (Series<E>) dataSeries;
@@ -104,18 +101,6 @@ public abstract class Strategy<E extends Chronological> implements TradingAlgori
     public Class<E> getPrimaryDataType() {
         return primaryDataType;
     }
-
-    @Override
-    public void onInit(TradingAlgorithmContext runtime) {
-        this.runtime = runtime;
-        log().info("Strategy {} configured", symbol.name());
-    }
-
-    @Override
-    public void onAfterInit() { }
-
-    @Override
-    public void onExit(ExitState state) { }
 
     public ConcurrentMap<String, Object> globalVariables() {
         return globalVariables;
@@ -133,34 +118,6 @@ public abstract class Strategy<E extends Chronological> implements TradingAlgori
 
     public <T> T lookup(Class<T> clazz) {
         return lookup().lookup(clazz);
-    }
-
-    @Override
-    public void onTradingDayStart(LocalDate date) {
-    }
-
-    @Override
-    public void onTradingDayEnd(LocalDate date) {
-    }
-
-    @Override
-    public void doFirst(When when) {
-
-    }
-
-    @Override
-    public void exitOrders(When when, Position position) {
-
-    }
-
-    @Override
-    public void entryOrders(When when, Chronological data) {
-
-    }
-
-    @Override
-    public void doLast(When when) {
-
     }
 
     @Override
@@ -187,26 +144,6 @@ public abstract class Strategy<E extends Chronological> implements TradingAlgori
         return account.isOnMarket(symbol);
     }
 
-    public final Logger log() {
-        return log;
-    }
-
-    public final UUID getStrategyUUID() {
-        return strategyUUID;
-    }
-
-    private static StrategyConfig findConfig() {
-        try {
-            var config = ThreadContext.current().getVars().get("config");
-            if (config == null || config instanceof StrategyConfig)
-                return (StrategyConfig) config;
-            else
-                throw new TradingException("Valid StrategyConfig not found, found instead: " + config.getClass().getSimpleName());
-        } catch (ThreadContext.NotFoundException e) {
-            return null;
-        }
-    }
-
     public SymbolIdentifier getSymbol() {
         return symbol;
     }
@@ -221,7 +158,7 @@ public abstract class Strategy<E extends Chronological> implements TradingAlgori
     }
 
     public Order submitOrder(Order order) {
-        return runtime.tradingService().getOrderBroker().submitOrder(runtime, order);
+        return context.tradingService().getOrderBroker().submitOrder(context, order);
     }
 
     public Order buy() {

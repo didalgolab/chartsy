@@ -1,6 +1,8 @@
-/* Copyright 2022 Mariusz Bernacki <info@softignition.com>
- * SPDX-License-Identifier: Apache-2.0 */
-package one.chartsy.trade;
+/*
+ * Copyright 2022 Mariusz Bernacki <info@softignition.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
+package one.chartsy.trade.strategy;
 
 import one.chartsy.Candle;
 import one.chartsy.SymbolResource;
@@ -14,6 +16,7 @@ import one.chartsy.simulation.SimulationRunner;
 import one.chartsy.simulation.TradingSimulator;
 import one.chartsy.simulation.engine.SimpleSimulationRunner;
 import one.chartsy.time.Chronological;
+import one.chartsy.trade.Direction;
 import one.chartsy.trade.data.Position;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -47,8 +50,7 @@ public class StrategyTest {
                 assertNull(account.getInstrument(symbol).position(), "no open positions");
             }
         }
-        MetaStrategy metaStrategy = new MetaStrategy(MyStrategy::new);
-        TradingSimulator simulator = new TradingSimulator(metaStrategy);
+        TradingSimulator simulator = new TradingSimulator(MyStrategy::new);
         SimulationResult result = runner.run(inputSeries, simulator);
 
         assertEquals(SimulationResult.State.READY, result.state());
@@ -83,8 +85,7 @@ public class StrategyTest {
                 }
             }
         }
-        MetaStrategy metaStrategy = new MetaStrategy(MyStrategy::new);
-        TradingSimulator simulator = new TradingSimulator(metaStrategy);
+        TradingSimulator simulator = new TradingSimulator(MyStrategy::new);
         runner.run(inputSeries, simulator);
 
         assertEquals(0, simulator.getMainAccount().getPendingOrders().size(), "remained pending orders");
@@ -113,8 +114,7 @@ public class StrategyTest {
                 assertFalse(isOnMarket(), "not on market because of same-bar-exit");
             }
         }
-        MetaStrategy metaStrategy = new MetaStrategy(MyStrategy::new);
-        TradingSimulator simulator = new TradingSimulator(metaStrategy);
+        TradingSimulator simulator = new TradingSimulator(MyStrategy::new);
         runner.run(inputSeries, simulator);
 
         var entryPrice = c2.open();

@@ -1,7 +1,10 @@
-/* Copyright 2022 Mariusz Bernacki <info@softignition.com>
- * SPDX-License-Identifier: Apache-2.0 */
+/*
+ * Copyright 2022 Mariusz Bernacki <info@softignition.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package one.chartsy.data;
 
+import one.chartsy.SymbolIdentity;
 import one.chartsy.SymbolResource;
 import one.chartsy.collections.ReversedView;
 import one.chartsy.data.packed.PackedDataset;
@@ -35,6 +38,9 @@ public interface Series<E extends Chronological> extends IndexedSymbolResourceDa
         return query.queryFrom(this);
     }
 
+    default SymbolIdentity getSymbol() {
+        return getResource().symbol();
+    }
 
     /*-------------------------------------------- STATIC FACTORY METHODS --------------------------------------------*/
     static <E extends Chronological> Series<E> empty(SymbolResource<E> resource) {
@@ -57,4 +63,7 @@ public interface Series<E extends Chronological> extends IndexedSymbolResourceDa
 
         return new PackedSeries<>(resource, PackedDataset.of(data));
     }
+
+    /*----------------------------------------- PARTITIONING HELPER METHODS ------------------------------------------*/
+    Function<Series<?>, Object> PARTITION_BY_SYMBOL = Series::getSymbol;
 }

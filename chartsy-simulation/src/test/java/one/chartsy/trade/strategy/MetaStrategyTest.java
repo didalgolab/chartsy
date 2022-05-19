@@ -1,6 +1,8 @@
-/* Copyright 2022 Mariusz Bernacki <info@softignition.com>
- * SPDX-License-Identifier: Apache-2.0 */
-package one.chartsy.trade;
+/*
+ * Copyright 2022 Mariusz Bernacki <info@softignition.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
+package one.chartsy.trade.strategy;
 
 import one.chartsy.Candle;
 import one.chartsy.SymbolResource;
@@ -25,7 +27,7 @@ import java.util.*;
 import java.util.stream.Stream;
 
 import static one.chartsy.time.Chronological.toEpochMicros;
-import static one.chartsy.trade.StrategyInstantiator.probeDataType;
+import static one.chartsy.trade.strategy.StrategyUtils.probeDataType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class MetaStrategyTest {
@@ -66,8 +68,7 @@ public class MetaStrategyTest {
                 usedDataTypes.add(this.getPrimaryDataType());
             }
         }
-        MetaStrategy metaStrategy = new MetaStrategy(MyStrategy::new);
-        TradingSimulator simulator = new TradingSimulator(metaStrategy);
+        TradingSimulator simulator = new TradingSimulator(MyStrategy::new);
         runner.run(inputSeries, simulator);
 
         assertEquals(List.of(TEST_SYMBOL1.symbol(), TEST_SYMBOL2.symbol()), usedSymbols);

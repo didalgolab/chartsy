@@ -74,7 +74,7 @@ class SimulationRunnerTest {
         runner.run(series, simDriver);
         verify(simDriver).initSimulation(
                 argThat(
-                        context -> series.equals(context.dataSeries())));
+                        context -> series.equals(List.copyOf(context.partitionSeries().values()))));
     }
 
     @ParameterizedTest

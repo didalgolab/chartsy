@@ -7,12 +7,13 @@ package one.chartsy.trade.strategy;
 import one.chartsy.When;
 import one.chartsy.time.Chronological;
 import one.chartsy.trade.Execution;
+import one.chartsy.trade.MarketUniverseChangeListener;
 import one.chartsy.trade.strategy.annotation.LookAheadBiasHazard;
 import one.chartsy.trade.data.Position;
 
 import java.time.LocalDate;
 
-public interface TradingAlgorithm {
+public interface TradingAlgorithm extends MarketUniverseChangeListener {
 
     void onInit(TradingAlgorithmContext runtime);
 

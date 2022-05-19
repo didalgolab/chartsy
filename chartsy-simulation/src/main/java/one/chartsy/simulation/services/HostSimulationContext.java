@@ -5,6 +5,7 @@
 package one.chartsy.simulation.services;
 
 import one.chartsy.data.Series;
+import one.chartsy.data.structures.IntMap;
 import one.chartsy.simulation.ImmutableSimulationContext;
 import one.chartsy.simulation.SimulationContext;
 import one.chartsy.simulation.BacktestConfiguration;
@@ -31,20 +32,15 @@ public class HostSimulationContext extends HostTradingAlgorithmContext implement
     }
 
     @Override
-    public List<? extends Series<?>> dataSeries() {
-        return List.of();
-    }
-
-    @Override
     public TradingService tradingService() {
         return FakeTradingService.instance;
     }
 
     @Override
-    public SimulationContext withDataSeries(List<? extends Series<?>> ds) {
+    public SimulationContext withPartitionSeries(IntMap<Series<?>> ps) {
         return ImmutableSimulationContext.builder()
                 .from(this)
-                .dataSeries(ds)
+                .partitionSeries(ps)
                 .build();
     }
 

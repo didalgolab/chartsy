@@ -4,7 +4,11 @@
  */
 package one.chartsy.trade.strategy;
 
+import one.chartsy.collections.ImmutableCollections;
 import one.chartsy.data.Series;
+import one.chartsy.data.structures.IntHashMap;
+import one.chartsy.data.structures.IntMap;
+import one.chartsy.data.structures.UnmodifiableIntMap;
 import one.chartsy.scheduling.EventScheduler;
 import one.chartsy.time.Clock;
 import one.chartsy.trade.*;
@@ -14,6 +18,7 @@ import org.openide.util.lookup.ServiceProvider;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -45,8 +50,23 @@ public class HostTradingAlgorithmContext implements TradingAlgorithmContext {
     }
 
     @Override
-    public Optional<Object> strategyPartition() {
+    public Optional<Object> partitionKey() {
         return Optional.empty();
+    }
+
+    @Override
+    public List<Object> partitionKeys() {
+        return List.of();
+    }
+
+    @Override
+    public IntMap<Series<?>> partitionSeries() {
+        return UnmodifiableIntMap.of(new IntHashMap<>(0));
+    }
+
+    @Override
+    public ConcurrentMap<String, Object> sharedVariables() {
+        return ImmutableCollections.emptyConcurrentMap();
     }
 
     @Override
@@ -62,11 +82,6 @@ public class HostTradingAlgorithmContext implements TradingAlgorithmContext {
     @Override
     public StrategyConfiguration configuration() {
         return StrategyConfiguration.builder().build();
-    }
-
-    @Override
-    public List<? extends Series<?>> dataSeries() {
-        return List.of();
     }
 
     @Override

@@ -7,17 +7,14 @@ package one.chartsy.trade.strategy;
 import one.chartsy.When;
 import one.chartsy.time.Chronological;
 import one.chartsy.trade.Execution;
+import one.chartsy.trade.MarketUniverseChangeEvent;
 import one.chartsy.trade.data.Position;
 
 import java.time.LocalDate;
 
-public class TradingAlgorithmAdapter implements TradingAlgorithm {
+public class TradingAlgorithmHandle implements TradingAlgorithm {
 
     private TradingAlgorithm target;
-
-    public TradingAlgorithmAdapter(TradingAlgorithm target) {
-        setTarget(target);
-    }
 
 
     @Override
@@ -43,6 +40,11 @@ public class TradingAlgorithmAdapter implements TradingAlgorithm {
     @Override
     public void onTradingDayEnd(LocalDate date) {
         getTarget().onTradingDayEnd(date);
+    }
+
+    @Override
+    public void onMarketUniverseChange(MarketUniverseChangeEvent change) {
+        getTarget().onMarketUniverseChange(change);
     }
 
     @Override

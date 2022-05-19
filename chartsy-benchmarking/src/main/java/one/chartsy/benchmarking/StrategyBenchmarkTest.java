@@ -17,8 +17,7 @@ import one.chartsy.simulation.SimulationRunner;
 import one.chartsy.simulation.TradingSimulator;
 import one.chartsy.simulation.engine.SimpleSimulationRunner;
 import one.chartsy.time.Chronological;
-import one.chartsy.trade.MetaStrategy;
-import one.chartsy.trade.Strategy;
+import one.chartsy.trade.strategy.Strategy;
 import org.openide.util.Lookup;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.profile.StackProfiler;
@@ -77,7 +76,7 @@ public class StrategyBenchmarkTest {
         }
         int r = 0;
         ////for (int i = 0; i < 900; i++)
-        r += runner.run(state.seriesList, new TradingSimulator(new MetaStrategy(MyStrategy::new))).remainingOrderCount();
+        r += runner.run(state.seriesList, new TradingSimulator(MyStrategy::new)).remainingOrderCount();
         //runner.run(state.seriesList, driver);
         return cnt2.intValue() + r;
     }
