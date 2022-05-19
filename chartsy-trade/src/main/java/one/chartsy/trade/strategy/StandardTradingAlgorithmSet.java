@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class DefaultTradingAlgorithmSet implements TradingAlgorithmSet {
+public class StandardTradingAlgorithmSet implements TradingAlgorithmSet {
 
     /** The map of trading algorithms by name. */
     private final Map<String, TradingAlgorithm> algorithms = new ConcurrentHashMap<>();

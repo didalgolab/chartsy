@@ -136,7 +136,7 @@ class HierarchicalTradingAlgorithmTest {
 
         return ImmutableTradingAlgorithmContext.builder()
                 .from(new HostTradingAlgorithmContext())
-                .tradingAlgorithms(new DefaultTradingAlgorithmSet())
+                .tradingAlgorithms(new StandardTradingAlgorithmSet())
                 .partitionSeries(seriesMap)
                 .build();
     }

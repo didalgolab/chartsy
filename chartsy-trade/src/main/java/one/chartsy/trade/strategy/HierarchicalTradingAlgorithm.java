@@ -166,7 +166,11 @@ public class HierarchicalTradingAlgorithm extends AbstractTradingAlgorithm {
         return invoker;
     }
 
-    public void addSubStrategies(TradingAlgorithmFactory<?> factory, Function<Series<?>, Object> partitionFunction) {
+    public void addSubStrategies(TradingAlgorithmFactory<?> factory) {
+        addSubStrategies(factory, Series.PARTITION_BY_SYMBOL);
+    }
+
+    public void addSubStrategies(TradingAlgorithmFactory<?> factory, Function<Series<?>, ?> partitionFunction) {
         var childFactory = new TradingSystem(factory, partitionFunction);
         childFactories.add(childFactory);
 
@@ -209,13 +213,13 @@ public class HierarchicalTradingAlgorithm extends AbstractTradingAlgorithm {
     private record Partition(TradingAlgorithm algorithm, IntMap<? super Series<?>> seriesView) { }
 
     private final class TradingSystem {
-        private final Function<Series<?>, Object> partitionFunction;
+        private final Function<Series<?>, ?> partitionFunction;
         private final TradingAlgorithmFactory<?> factory;
         private final ConcurrentMap<String, Object> sharedVariables = new ConcurrentHashMap<>();
         private final Map<Object, Partition> algorithmPartitions = new ConcurrentHashMap<>();
         private final Lock lock = new ReentrantLock();
 
-        TradingSystem(TradingAlgorithmFactory<?> factory, Function<Series<?>, Object> partitionFunction) {
+        TradingSystem(TradingAlgorithmFactory<?> factory, Function<Series<?>, ?> partitionFunction) {
             this.partitionFunction = partitionFunction;
             this.factory = factory;
         }

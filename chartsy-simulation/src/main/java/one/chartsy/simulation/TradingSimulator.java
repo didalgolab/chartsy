@@ -32,15 +32,14 @@ public class TradingSimulator extends TradingAlgorithmHandle implements TradingS
 
     protected SimpleMatchingEngine matchingEngine;
 
-    private TradingAlgorithmFactory<?> algorithmFactory;
+    private final TradingAlgorithmFactory<?> algorithmFactory;
 
     public TradingSimulator(TradingAlgorithmFactory<?> algorithmFactory) {
-        super();
         this.algorithmFactory = algorithmFactory;
     }
 
     public TradingSimulator(Supplier<? extends Strategy<?>> strategy) {
-        this(new TradingAlgorithmSupplierAdapter(strategy));
+        this(new TradingAlgorithmSupplierAdapter<>(strategy));
     }
 
     protected SimpleMatchingEngine createMatchingEngine(SimulatorOptions properties, SimulationResult.Builder result) {
@@ -87,10 +86,10 @@ public class TradingSimulator extends TradingAlgorithmHandle implements TradingS
                 .tradingService(this)
                 .clock(clock)
                 .scheduler(eventCorrelator)
-                .tradingAlgorithms(tradingAlgorithms = new DefaultTradingAlgorithmSet())
+                .tradingAlgorithms(tradingAlgorithms = new StandardTradingAlgorithmSet())
                 .build();
         HierarchicalTradingAlgorithm metaAlgorithm = new HierarchicalTradingAlgorithm(newContext);
-        metaAlgorithm.addSubStrategies(algorithmFactory, Series.PARTITION_BY_SYMBOL);
+        metaAlgorithm.addSubStrategies(algorithmFactory);
         setTarget(metaAlgorithm);
         super.onInit(newContext);
         super.onAfterInit();

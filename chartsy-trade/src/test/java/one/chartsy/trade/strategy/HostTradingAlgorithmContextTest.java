@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
-class HostTradingAlgorithmRuntimeTest {
+class HostTradingAlgorithmContextTest {
 
     final TradingAlgorithmContext local = new HostTradingAlgorithmContext();
 

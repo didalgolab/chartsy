@@ -6,6 +6,7 @@ package one.chartsy.data;
 
 import one.chartsy.SymbolIdentity;
 import one.chartsy.SymbolResource;
+import one.chartsy.TimeFrame;
 import one.chartsy.collections.ReversedView;
 import one.chartsy.data.packed.PackedDataset;
 import one.chartsy.data.packed.PackedSeries;
@@ -38,8 +39,14 @@ public interface Series<E extends Chronological> extends IndexedSymbolResourceDa
         return query.queryFrom(this);
     }
 
+    @Override
     default SymbolIdentity getSymbol() {
         return getResource().symbol();
+    }
+
+    @Override
+    default TimeFrame getTimeFrame() {
+        return getResource().timeFrame();
     }
 
     /*-------------------------------------------- STATIC FACTORY METHODS --------------------------------------------*/
@@ -66,4 +73,9 @@ public interface Series<E extends Chronological> extends IndexedSymbolResourceDa
 
     /*----------------------------------------- PARTITIONING HELPER METHODS ------------------------------------------*/
     Function<Series<?>, Object> PARTITION_BY_SYMBOL = Series::getSymbol;
+
+    Function<Series<?>, Object> PARTITION_BY_TIME_FRAME = Series::getTimeFrame;
+
+    Function<Series<?>, Series<?>> PARTITION_BY_SERIES = Function.identity();
+
 }

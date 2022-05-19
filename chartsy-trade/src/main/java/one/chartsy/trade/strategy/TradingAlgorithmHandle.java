@@ -11,6 +11,7 @@ import one.chartsy.trade.MarketUniverseChangeEvent;
 import one.chartsy.trade.data.Position;
 
 import java.time.LocalDate;
+import java.util.Objects;
 
 public class TradingAlgorithmHandle implements TradingAlgorithm {
 
@@ -77,14 +78,12 @@ public class TradingAlgorithmHandle implements TradingAlgorithm {
         getTarget().onExecution(execution);
     }
 
+
     public final TradingAlgorithm getTarget() {
         return target;
     }
 
-    public void setTarget(TradingAlgorithm target) {
-        if (target == null)
-            throw new IllegalArgumentException("target is NULL");
-
-        this.target = target;
+    protected void setTarget(TradingAlgorithm target) {
+        this.target = Objects.requireNonNull(target, "target");
     }
 }
