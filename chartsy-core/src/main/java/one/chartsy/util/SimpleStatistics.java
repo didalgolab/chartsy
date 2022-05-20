@@ -1,4 +1,5 @@
 /*
+ * Copyright 2021 EPAM Systems, Inc
  * Copyright 2022 Mariusz Bernacki <info@softignition.com>
  * SPDX-License-Identifier: Apache-2.0
  */
