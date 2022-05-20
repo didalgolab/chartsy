@@ -1,19 +1,17 @@
-/* Copyright 2022 Mariusz Bernacki <info@softignition.com>
- * SPDX-License-Identifier: Apache-2.0 */
+/*
+ * Copyright 2022 Mariusz Bernacki <info@softignition.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package one.chartsy.benchmarking;
 
 import one.chartsy.Candle;
-import one.chartsy.collections.PriorityMap;
-import one.chartsy.core.json.JsonFormatter;
+import one.chartsy.data.structures.PriorityMap;
 import one.chartsy.data.AbstractCandle;
-import one.chartsy.data.CandleSupport;
 import one.chartsy.data.ExtendedCandle;
 import one.chartsy.data.SimpleCandle;
-import one.chartsy.naming.SymbolIdentityGenerator;
 import one.chartsy.random.RandomWalk;
 import one.chartsy.simulation.time.SimulationClock;
 import one.chartsy.time.Chronological;
-import org.openide.util.Lookup;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.profile.StackProfiler;
 import org.openjdk.jmh.runner.Runner;
@@ -28,13 +26,10 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.PriorityQueue;
-import java.util.ServiceLoader;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
 public class GenericBenchmark {

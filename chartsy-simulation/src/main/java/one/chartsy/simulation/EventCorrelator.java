@@ -1,8 +1,10 @@
-/* Copyright 2022 Mariusz Bernacki <info@softignition.com>
- * SPDX-License-Identifier: Apache-2.0 */
+/*
+ * Copyright 2022 Mariusz Bernacki <info@softignition.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package one.chartsy.simulation;
 
-import one.chartsy.collections.PriorityMap;
+import one.chartsy.data.structures.PriorityMap;
 import one.chartsy.data.TimedEntry;
 import one.chartsy.scheduling.EventScheduler;
 import one.chartsy.simulation.time.SimulationClock;

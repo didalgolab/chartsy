@@ -61,4 +61,4 @@ java.io.FileNotFoundException: ..\..\..\chartsy-ui-chart-indicators\target\class
 Solution: Disable "Compile on Save" feature in the NetBeans IDE.
 ___
 ## License
-Licensed under Apache License, Version 2.0 ([License](LICENSE) or https://www.apache.org/licenses/LICENSE-2.0).
+Licensed under the Apache License, Version 2.0 ([License](LICENSE) or https://www.apache.org/licenses/LICENSE-2.0).

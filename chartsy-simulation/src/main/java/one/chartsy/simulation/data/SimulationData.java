@@ -4,12 +4,12 @@
  */
 package one.chartsy.simulation.data;
 
-import one.chartsy.collections.PriorityMap;
 import one.chartsy.data.ChronologicalIterator;
 import one.chartsy.data.ChronologicalIteratorContext;
 import one.chartsy.data.Series;
 import one.chartsy.data.structures.IntHashMap;
 import one.chartsy.data.structures.IntMap;
+import one.chartsy.data.structures.PriorityMap;
 import one.chartsy.time.Chronological;
 
 import java.util.Collection;

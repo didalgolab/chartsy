@@ -1,6 +1,7 @@
-/* Copyright 2016 by Mariusz Bernacki. PROPRIETARY and CONFIDENTIAL content.
- * Unauthorized copying of this file, via any medium is strictly prohibited.
- * See the file "LICENSE.txt" for the full license governing this code. */
+/*
+ * Copyright 2022 Mariusz Bernacki <info@softignition.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package one.chartsy.ui.chart.components;
 
 import one.chartsy.ui.chart.internal.UpperCaseDocumentFilter;

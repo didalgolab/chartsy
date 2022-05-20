@@ -2,7 +2,7 @@
  * Copyright 2022 Mariusz Bernacki <info@softignition.com>
  * SPDX-License-Identifier: Apache-2.0
  */
-package one.chartsy.core;
+package one.chartsy.data.function;
 
 /**
  * An operation that accepts three input arguments and returns no result.

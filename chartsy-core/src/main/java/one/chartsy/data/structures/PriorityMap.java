@@ -1,7 +1,8 @@
-/* Copyright 2016 by Mariusz Bernacki. PROPRIETARY and CONFIDENTIAL content ahead.
- * Unauthorized copying of this file, via any medium is strictly prohibited.
- * See the file "LICENSE.txt" for the full license governing this code. */
-package one.chartsy.collections;
+/*
+ * Copyright 2022 Mariusz Bernacki <info@softignition.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
+package one.chartsy.data.structures;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -44,7 +45,7 @@ public class PriorityMap<K extends Comparable<? super K>, V> implements Serializ
     private V[] values;
     /** The number of elements currently in this buffer */
     private int size;
-
+    /** An optional comparator to provide explicit ordering of elements in the map. */
     private final Comparator<K> keyComparator;
 
 

@@ -4,10 +4,10 @@
  */
 package one.chartsy.simulation.engine;
 
-import one.chartsy.collections.PriorityMap;
 import one.chartsy.data.ChronologicalIterator;
 import one.chartsy.data.Series;
 import one.chartsy.data.structures.IntMap;
+import one.chartsy.data.structures.PriorityMap;
 import one.chartsy.data.structures.UnmodifiableIntMap;
 import one.chartsy.simulation.SimulationContext;
 import one.chartsy.simulation.SimulationDriver;
