@@ -25,7 +25,7 @@ public interface SymbolResource<E> {
         return of(SymbolIdentity.of(name), timeFrame);
     }
 
-    static SymbolResource<Candle> of(String name, TimeFrame timeFrame, InstrumentType type) {
+    static SymbolResource<Candle> of(String name, TimeFrame timeFrame, AssetClass type) {
         return of(SymbolIdentity.of(name, type), timeFrame);
     }
 

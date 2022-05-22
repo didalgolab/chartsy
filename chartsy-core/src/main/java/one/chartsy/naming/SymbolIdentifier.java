@@ -5,14 +5,14 @@
 package one.chartsy.naming;
 
 import one.chartsy.IdentifierType;
-import one.chartsy.InstrumentType;
+import one.chartsy.AssetClass;
 import one.chartsy.SymbolIdentity;
 
 import java.util.Optional;
 
 public record SymbolIdentifier(
         String name,
-        Optional<InstrumentType> type,
+        Optional<AssetClass> type,
         IdentifierType identifierType)
         implements SymbolIdentity, Comparable<SymbolIdentifier>
 {
@@ -29,7 +29,7 @@ public record SymbolIdentifier(
         this(name, Optional.empty(), IdentifierType.Standard.TICKER);
     }
 
-    public SymbolIdentifier(String name, Optional<InstrumentType> type) {
+    public SymbolIdentifier(String name, Optional<AssetClass> type) {
         this(name, type, IdentifierType.Standard.TICKER);
     }
 

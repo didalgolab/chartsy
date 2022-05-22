@@ -7,7 +7,21 @@ public interface PriceDomain {
     String name();
 
     record Of(String name) implements PriceDomain {
+        /**
+         * The average between bid and ask quote prices.
+         */
         public static final PriceDomain MIDPOINT = new Of("MIDPOINT");
-        public static final PriceDomain LAST_TRADE = new Of("LAST_TRADE");
+        /**
+         * The historical trade prices.
+         */
+        public static final PriceDomain TRADE = new Of("TRADE");
+        /**
+         * The mark prices of the instrument.
+         */
+        public static final PriceDomain MARK = new Of("MARK");
+        /**
+         * Represents the underlying spot/index prices of the instrument.
+         */
+        public static final PriceDomain SPOT = new Of("SPOT");
     }
 }

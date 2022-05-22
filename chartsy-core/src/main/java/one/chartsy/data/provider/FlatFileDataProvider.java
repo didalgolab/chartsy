@@ -164,7 +164,7 @@ public class FlatFileDataProvider extends AbstractDataProvider implements Symbol
         return getFileFormat().isCaseSensitiveSymbols()? name : name.toUpperCase();
     }
 
-    protected Optional<InstrumentType> asAssetType(Path path) {
+    protected Optional<AssetClass> asAssetType(Path path) {
         return Optional.empty();
     }
 

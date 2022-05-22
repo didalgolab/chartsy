@@ -8,7 +8,7 @@ package one.chartsy;
  * @author Mariusz Bernacki
  *
  */
-public enum AssetType implements InstrumentType {
+public enum AssetType implements AssetClass {
     BOND(true),
     CASH(true), // ie: Forex, no leverage
     CFD(true),

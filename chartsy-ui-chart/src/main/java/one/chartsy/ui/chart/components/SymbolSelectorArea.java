@@ -3,7 +3,7 @@
 package one.chartsy.ui.chart.components;
 
 import net.miginfocom.swing.MigLayout;
-import one.chartsy.InstrumentType;
+import one.chartsy.AssetClass;
 import one.chartsy.SymbolIdentity;
 import one.chartsy.core.text.SplittedString;
 import one.chartsy.core.text.StringSplitter;
@@ -54,7 +54,7 @@ public class SymbolSelectorArea extends JPanel {
         return getStringSplitter().split(getText());
     }
 
-    public List<SymbolIdentity> getSelectedSymbols(InstrumentType type) {
+    public List<SymbolIdentity> getSelectedSymbols(AssetClass type) {
         return getSplittedText().fragments()
                 .map(frag -> SymbolIdentity.of(frag.toString(), type))
                 .toList();

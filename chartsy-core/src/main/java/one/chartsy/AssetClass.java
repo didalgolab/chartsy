@@ -7,7 +7,7 @@ package one.chartsy;
  *
  * @see AssetType
  */
-public interface InstrumentType {
+public interface AssetClass {
 
     /**
      * The financial asset type identifier.

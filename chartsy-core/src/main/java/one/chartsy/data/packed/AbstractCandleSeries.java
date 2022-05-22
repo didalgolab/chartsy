@@ -10,12 +10,20 @@ import java.util.function.ToDoubleFunction;
 
 public abstract class AbstractCandleSeries<T extends Candle, DS extends AbstractDoubleSeries<DS>> extends PackedSeries<T> {
 
-    public AbstractCandleSeries(SymbolResource<T> resource, Dataset<T> dataset) {
+    protected AbstractCandleSeries(SymbolResource<T> resource, Dataset<T> dataset) {
         super(resource, dataset);
+    }
+
+    public DS opens() {
+        return mapToDouble(Candle::open);
     }
 
     public DS highs() {
         return mapToDouble(Candle::high);
+    }
+
+    public DS lows() {
+        return mapToDouble(Candle::low);
     }
 
     public DS closes() {

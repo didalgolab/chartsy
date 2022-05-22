@@ -6,8 +6,6 @@ import one.chartsy.Candle;
 import one.chartsy.SymbolResource;
 import one.chartsy.data.*;
 
-import java.util.function.ToDoubleFunction;
-
 public class PackedCandleSeries extends AbstractCandleSeries<Candle, PackedDoubleSeries> implements CandleSeries {
 
     public PackedCandleSeries(SymbolResource<Candle> resource, Dataset<Candle> dataset) {
@@ -15,8 +13,8 @@ public class PackedCandleSeries extends AbstractCandleSeries<Candle, PackedDoubl
     }
 
     public static PackedCandleSeries from(Series<? extends Candle> series) {
-        if (series instanceof PackedCandleSeries)
-            return (PackedCandleSeries) series;
+        if (series instanceof PackedCandleSeries ps)
+            return ps;
 
         @SuppressWarnings("unchecked")
         var cs = (Series<Candle>) series;
@@ -25,7 +23,7 @@ public class PackedCandleSeries extends AbstractCandleSeries<Candle, PackedDoubl
 
     @Override
     public String toString() {
-        return getResource() + ": " /*+ getData()*/;
+        return getResource() + ": <<" + getData().length() + ">>";
     }
 
     @Override

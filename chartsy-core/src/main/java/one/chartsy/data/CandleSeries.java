@@ -4,10 +4,10 @@ package one.chartsy.data;
 
 import one.chartsy.Candle;
 import one.chartsy.SymbolResource;
-import one.chartsy.TimeFrame;
 import one.chartsy.data.packed.PackedCandleSeries;
 import one.chartsy.data.packed.PackedDataset;
 import one.chartsy.random.RandomWalk;
+import one.chartsy.time.Chronological;
 import reactor.core.publisher.Mono;
 
 import java.util.Collection;
@@ -29,22 +29,27 @@ public interface CandleSeries extends Series<Candle> {
     }
 
     static CandleSeries of(SymbolResource<Candle> resource, Collection<? extends Candle> values) {
-        return new PackedCandleSeries(resource, PackedDataset.of(values));
+        boolean reverse = (Chronological.Order.CHRONOLOGICAL.isOrdered(values));
+        return new PackedCandleSeries(resource, PackedDataset.of(values, reverse));
     }
 
     static <T extends Candle> CandleSeries from(Series<T> series) {
-        if (series instanceof CandleSeries)
-            return (CandleSeries) series;
+        if (series instanceof CandleSeries cs)
+            return cs;
 
         return new PackedCandleSeries((SymbolResource<Candle>) series.getResource(), (Dataset<Candle>) series.getData());
     }
 
-    default TimeFrame getTimeFrame() {
-        return getResource().timeFrame();
+    default DoubleSeries opens() {
+        return mapToDouble(Candle::open);
     }
 
     default DoubleSeries highs() {
         return mapToDouble(Candle::high);
+    }
+
+    default DoubleSeries lows() {
+        return mapToDouble(Candle::low);
     }
 
     default DoubleSeries closes() {

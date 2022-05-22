@@ -8,6 +8,7 @@ import reactor.core.publisher.Flux;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.stream.Stream;
 
 public class PackedDataset<E> extends AbstractDataset<E> {
@@ -25,7 +26,15 @@ public class PackedDataset<E> extends AbstractDataset<E> {
     }
 
     public static <E> PackedDataset<E> of(Collection<? extends E> values) {
-        return new PackedDataset<>(values.toArray((E[])new Object[values.size()]));
+        return of(values, false);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <E> PackedDataset<E> of(Collection<? extends E> values, boolean reverse) {
+        E[] array = values.toArray((E[]) new Object[values.size()]);
+        if (reverse)
+            Collections.reverse(Arrays.asList(array));
+        return new PackedDataset<>(array);
     }
 
     public static <E> PackedDataset<E> from(Dataset<E> dataset) {

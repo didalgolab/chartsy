@@ -16,18 +16,18 @@ public interface SymbolIdentity {
 
     String name();
 
-    Optional<InstrumentType> type();
+    Optional<AssetClass> type();
 
 
     static SymbolIdentity of(String name) {
         return of(name, IdentifierType.Standard.TICKER);
     }
 
-    static SymbolIdentity of(String name, InstrumentType type) {
+    static SymbolIdentity of(String name, AssetClass type) {
         return of(name, type, IdentifierType.Standard.TICKER);
     }
 
-    static SymbolIdentity of(String name, InstrumentType type, IdentifierType identifierType) {
+    static SymbolIdentity of(String name, AssetClass type, IdentifierType identifierType) {
         return generator().generate(name, type, identifierType);
     }
 

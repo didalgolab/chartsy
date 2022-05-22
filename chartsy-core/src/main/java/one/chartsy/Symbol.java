@@ -111,7 +111,7 @@ public class Symbol implements SymbolIdentity, SymbolGroupContent {
     }
 
     @Override
-    public Optional<InstrumentType> type() {
+    public Optional<AssetClass> type() {
         return identifier.type();
     }
 
