@@ -3,11 +3,14 @@
 package one.chartsy.simulation.services;
 
 import one.chartsy.simulation.SimulationResult;
+import one.chartsy.simulation.platform.StandardReport;
+import one.chartsy.trade.strategy.ReportOptions;
 import org.openide.util.lookup.ServiceProvider;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.Optional;
 
 @ServiceProvider(service = SimulationResultBuilderFactory.class)
 public class HostSimulationResultBuilderFactory implements SimulationResultBuilderFactory {
@@ -20,6 +23,12 @@ public class HostSimulationResultBuilderFactory implements SimulationResultBuild
                 .testDays(0)
                 .testDuration(Duration.ZERO)
                 .estimatedDataPointCount(0)
+                .totalProfit(0.0)
+                .report(new StandardReport(
+                        new ReportOptions.Builder().build(),
+                        Optional.empty(),
+                        Optional.empty()
+                ))
                 .remainingOrderCount(0);
     }
 }

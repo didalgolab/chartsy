@@ -37,7 +37,7 @@ public class ExplorationResultTable extends ETable implements ExplorationListene
         setColumnHidingAllowed(true);
         setBorder(null);
         setShowGrid(true);
-        setGridColor(new Color(160, 160, 160));
+        setGridColor(new Color(230, 230, 230));
         installEventListeners();
     }
 
@@ -53,7 +53,7 @@ public class ExplorationResultTable extends ETable implements ExplorationListene
         );
         setFont(font.deriveFont(attributes));
         FontMetrics fm = getFontMetrics(getFont());
-        setRowHeight(fm.getHeight() + 3);
+        setRowHeight(fm.getHeight() + 1);
     }
 
     /** The custom cell renderer associated with the table component. */

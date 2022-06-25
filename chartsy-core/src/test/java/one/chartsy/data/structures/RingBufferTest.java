@@ -1,0 +1,149 @@
+/*
+ * Copyright 2022 Mariusz Bernacki <info@softignition.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
+package one.chartsy.data.structures;
+
+import org.junit.jupiter.api.Test;
+
+import java.util.NoSuchElementException;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+class RingBufferTests {
+
+    @Test
+    void populateAndRandomAccess() {
+        RingBuffer<Integer> buffer = new RingBuffer<>();
+        buffer.addLast(5); // [5]
+        buffer.addLast(6); // [5, 6]
+        buffer.addLast(7); // [5, 6, 7]
+
+        assertEquals(5, (int)buffer.getFromFirst(0));
+        assertEquals(6, (int)buffer.getFromFirst(1));
+        assertEquals(7, (int)buffer.getFromFirst(2));
+    }
+
+    @Test
+    void populateAndRandomAccessFromLast() {
+        RingBuffer<Integer> buffer = new RingBuffer<>();
+        buffer.addLast(5); // [5];
+        buffer.addLast(6); // [5, 6]
+        buffer.addLast(7); // [5, 6, 7]
+
+        assertEquals(7, (int)buffer.getFromLast(0));
+        assertEquals(6, (int)buffer.getFromLast(1));
+        assertEquals(5, (int)buffer.getFromLast(2));
+    }
+
+    @Test
+    void populateFromFirst() {
+        RingBuffer<Integer> buffer = new RingBuffer<>();
+        buffer.addFirst(5); // [5]
+        buffer.addFirst(6); // [6, 5]
+        buffer.addFirst(7); // [7, 6, 5]
+
+        assertEquals(5, (int)buffer.getFromLast(0));
+        assertEquals(6, (int)buffer.getFromLast(1));
+        assertEquals(7, (int)buffer.getFromLast(2));
+
+        assertEquals(7, (int)buffer.getFromFirst(0));
+        assertEquals(6, (int)buffer.getFromFirst(1));
+        assertEquals(5, (int)buffer.getFromFirst(2));
+    }
+
+    @Test
+    void populateFromBothEnds() {
+        RingBuffer<Integer> buffer = new RingBuffer<>();
+        buffer.addFirst(6); // [6]
+        buffer.addFirst(5); // [5, 6]
+        buffer.addLast(7);  // [5, 6, 7]
+        buffer.addLast(8);  // [5, 6, 7, 8]
+
+        assertEquals(8, (int)buffer.getFromLast(0));
+        assertEquals(7, (int)buffer.getFromLast(1));
+        assertEquals(6, (int)buffer.getFromLast(2));
+        assertEquals(5, (int)buffer.getFromLast(3));
+
+        assertEquals(5, (int)buffer.getFromFirst(0));
+        assertEquals(6, (int)buffer.getFromFirst(1));
+        assertEquals(7, (int)buffer.getFromFirst(2));
+        assertEquals(8, (int)buffer.getFromFirst(3));
+    }
+
+    @Test
+    void outOfBoundsAccessThrows() {
+        RingBuffer<Integer> buffer = new RingBuffer<>();
+        buffer.addLast(5); // [5]
+        buffer.addLast(6); // [5, 6]
+        buffer.addLast(7); // [5, 6, 7]
+
+        assertThrows(NoSuchElementException.class, () -> buffer.getFromFirst(3));
+        assertThrows(NoSuchElementException.class, () -> buffer.getFromFirst(4));
+        assertThrows(NoSuchElementException.class, () -> buffer.getFromFirst(5));
+        assertThrows(NoSuchElementException.class, () -> buffer.getFromLast(3));
+        assertThrows(NoSuchElementException.class, () -> buffer.getFromLast(4));
+        assertThrows(NoSuchElementException.class, () -> buffer.getFromLast(5));
+
+        assertThrows(NoSuchElementException.class, () -> buffer.getFromFirst(-1));
+        assertThrows(NoSuchElementException.class, () -> buffer.getFromLast(-1));
+    }
+
+    @Test
+    void removingWhenEmptyThrows() {
+        RingBuffer<Integer> buffer = new RingBuffer<>();
+        buffer.addLast(5); // [5]
+        buffer.addLast(6); // [5, 6]
+        buffer.addLast(7); // [5, 6, 7]
+
+        buffer.removeFirst();
+        buffer.removeFirst();
+        buffer.removeFirst();
+
+        assertThrows(NoSuchElementException.class, buffer::removeFirst);
+        assertThrows(NoSuchElementException.class, buffer::removeLast);
+    }
+
+    @Test
+    void populateAndRemove() {
+        RingBuffer<Integer> buffer = new RingBuffer<>();
+        buffer.addLast(5); // [5]
+        buffer.addLast(6); // [5, 6]
+        buffer.addLast(7); // [5, 6, 7]
+
+        buffer.removeFirst();   // Should remove the 5
+
+        assertEquals(6, (int)buffer.getFromFirst(0));
+        assertEquals(7, (int)buffer.getFromFirst(1));
+
+        assertEquals(6, (int)buffer.getFromLast(1));
+        assertEquals(7, (int)buffer.getFromLast(0));
+    }
+
+    @Test
+    void populateAndRemoveManyTimes() {
+        RingBuffer<Integer> buffer = new RingBuffer<>();
+
+        // This should result in the buffer always containing between 3 and 5 elements.
+        buffer.addLast(-1);
+        buffer.addLast(-1);
+        buffer.addLast(-1);
+        for (int i=0; i < 100; i+=2) {
+            buffer.addLast(i);
+            buffer.addLast(i+1);
+            buffer.removeFirst();
+            buffer.removeFirst();
+        }
+
+        // Check that the buffer has only 3 elements
+        assertEquals(3, buffer.size());
+        // Check that these elements are [97, 98, 99]
+        assertEquals(97, (int)buffer.getFromFirst(0));
+        assertEquals(98, (int)buffer.getFromFirst(1));
+        assertEquals(99, (int)buffer.getFromFirst(2));
+
+        // Check that the buffer has not grown in capacity to some absurd size
+        // Will use 8 since my implementation will probably grow by doubling the backing array size.
+        assertTrue(buffer.capacity() <= 8);
+    }
+}

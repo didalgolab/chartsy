@@ -12,6 +12,7 @@ import one.chartsy.data.packed.PackedSeries;
 import one.chartsy.time.Chronological;
 import reactor.core.publisher.Mono;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.ToDoubleFunction;
@@ -28,11 +29,23 @@ import java.util.function.ToDoubleFunction;
  * @author Mariusz Bernacki
  *
  */
-public interface Series<E extends Chronological> extends IndexedSymbolResourceData<E>, TimeSeriesAlike {
+public interface Series<E extends Chronological> extends IndexedSymbolResourceData<E>, Iterable<E>, TimeSeriesAlike {
 
     DoubleSeries mapToDouble(ToDoubleFunction<E> mapper);
 
     ChronologicalIterator<E> chronologicalIterator(ChronologicalIteratorContext context);
+
+    default Iterator<E> iterator() {
+        return chronologicalIterator(iteratorContext());
+    }
+
+    private static ChronologicalIteratorContext iteratorContext() {
+        class Holder {
+            private static final ChronologicalIteratorContext INSTANCE = new ChronologicalIteratorContext(-1);
+            private Holder() { }
+        }
+        return Holder.INSTANCE;
+    }
 
     default <R> R query(Query<? super Series<? extends E>, R> query) {
         return query.queryFrom(this);

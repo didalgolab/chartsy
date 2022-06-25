@@ -4,6 +4,7 @@ package one.chartsy.simulation;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import one.chartsy.simulation.reporting.Report;
 import one.chartsy.trade.Order;
 import one.chartsy.trade.data.TransactionData;
 import org.immutables.builder.Builder.AccessibleFields;
@@ -42,12 +43,16 @@ public abstract class SimulationResult {
     public abstract int testDays();
     @JsonProperty("estimatedDataPointCount")
     public abstract long estimatedDataPointCount();
+    @JsonProperty("totalProfit")
+    public abstract double totalProfit();
     @JsonProperty("remainingOrders")
     public abstract List<Order> remainingOrders();
     @JsonProperty("remainingOrderCount")
     public abstract int remainingOrderCount();
     @JsonProperty("transactions")
     public abstract List<TransactionData> transactions();
+    @JsonProperty("report")
+    public abstract Report report();
 
     @Value.Default
     @JsonProperty("state")

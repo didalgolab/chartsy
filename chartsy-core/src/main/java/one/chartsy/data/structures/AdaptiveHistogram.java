@@ -41,12 +41,6 @@ public class AdaptiveHistogram implements Serializable {
     private Node root = new LeafNode();
 
     /**
-     * Class constructor.
-     */
-    public AdaptiveHistogram() {
-    }
-
-    /**
      * Erases all data from the histogram.
      */
     public void reset() {

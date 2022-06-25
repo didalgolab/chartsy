@@ -134,7 +134,7 @@ public class RandomWalk {
     }
 
     public static CandleSeries bootstrap(Series<Candle> origin, RandomGenerator rnd, AdjustmentFunction method) {
-        int[] mapping = rnd.ints(origin.length(), 0, origin.length()).toArray();
+        int[] mapping = (origin.length() == 0)? new int[0] : rnd.ints(origin.length(), 0, origin.length()).toArray();
         return bootstrap(origin, index -> mapping[index], method);
     }
 
@@ -163,7 +163,7 @@ public class RandomWalk {
         }
         var resource = series.getResource();
         var symbol = resource.symbol();
-        return new PackedCandleSeries(resource.withSymbol(SymbolIdentity.of("~" + symbol.name(), symbol.type().orElse(null))), PackedDataset.of(result));
+        return new PackedCandleSeries(resource.withSymbol(SymbolIdentity.of("~" + symbol.name() + "~", symbol.type().orElse(null))), PackedDataset.of(result));
     }
 
     private RandomWalk() { }

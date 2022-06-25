@@ -8,6 +8,8 @@ import one.chartsy.*;
 import one.chartsy.data.Series;
 import one.chartsy.data.TimedEntry;
 import one.chartsy.simulation.engine.SimpleMatchingEngine;
+import one.chartsy.simulation.platform.BacktestPlatformServices;
+import one.chartsy.simulation.reporting.ReportEngine;
 import one.chartsy.simulation.time.SimulationClock;
 import one.chartsy.time.Chronological;
 import one.chartsy.trade.*;
@@ -31,6 +33,8 @@ public class TradingSimulator extends TradingAlgorithmHandle implements TradingS
     private TradingAlgorithmSet tradingAlgorithms;
 
     protected SimpleMatchingEngine matchingEngine;
+
+    protected ReportEngine reportEngine;
 
     private final TradingAlgorithmFactory<?> algorithmFactory;
 
@@ -82,6 +86,8 @@ public class TradingSimulator extends TradingAlgorithmHandle implements TradingS
         currentDayNumber = 0;
         eventCorrelator.clear();
         initDataSource(context.configuration().simulatorOptions(), context.partitionSeries().values());
+        reportEngine = context.getLookup().lookup(BacktestPlatformServices.class)
+                .createReportEngine(context.configuration().reportOptions(), matchingEngine.getAccount());
         var newContext = ImmutableSimulationContext.builder().from(context)
                 .tradingService(this)
                 .clock(clock)
@@ -230,7 +236,8 @@ public class TradingSimulator extends TradingAlgorithmHandle implements TradingS
         onExit(state);
         var endTime = LocalDateTime.now();
         var result = model.getResult();
-        var remainedOrders = model.getAccount().getPendingOrders();
+        var account = model.getAccount();
+        var remainedOrders = account.getPendingOrders();
         //result.remainingOrders(model.getAccount().getPendingOrders());
         result.remainingOrderCount(remainedOrders
                 .values().stream()
@@ -240,6 +247,8 @@ public class TradingSimulator extends TradingAlgorithmHandle implements TradingS
         result.testDuration(Duration.between(result.getStartTime(), endTime));
         result.testDays(currentDayNumber);
         result.state(SimulationResult.State.READY);
+        result.totalProfit(account.getEquity() - account.getInitialBalance());
+        result.report(reportEngine.createReport());
         return result.build();
     }
 

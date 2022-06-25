@@ -72,12 +72,12 @@ public class KagiCandleBuilder<C extends Candle, T extends Tick> implements Inco
     }
 
     public void turnaround() {
-        if (direction == BULLISH) {
-            direction = BEARISH;
+        if (direction == UP) {
+            direction = DOWN;
             kagiPreviousLow = kagiLow;
             kagiLow = kagiHigh;
-        } else if (direction == BEARISH) {
-            direction = BULLISH;
+        } else if (direction == DOWN) {
+            direction = UP;
             kagiPreviousHigh = kagiHigh;
             kagiHigh = kagiLow;
         } else
@@ -96,18 +96,18 @@ public class KagiCandleBuilder<C extends Candle, T extends Tick> implements Inco
             kagiLow = Math.min(kagiLow, c.low());
             return;
         }
-        else if (direction == BULLISH) {
+        else if (direction == UP) {
             if (c.high() >= kagiHigh) {
                 if ((kagiHigh = c.high()) > kagiPreviousHigh)
-                    kagiTrend = BULLISH;
+                    kagiTrend = UP;
                 addBaseCandle(c);
                 return;
             }
         }
-        else if (direction == BEARISH) {
+        else if (direction == DOWN) {
             if (c.low() <= kagiLow) {
                 if ((kagiLow = c.low()) < kagiPreviousLow)
-                    kagiTrend = BEARISH;
+                    kagiTrend = DOWN;
                 addBaseCandle(c);
                 return;
             }
@@ -126,18 +126,18 @@ public class KagiCandleBuilder<C extends Candle, T extends Tick> implements Inco
             kagiLow = Math.min(kagiLow, t.price());
             return;
         }
-        else if (direction == BULLISH) {
+        else if (direction == UP) {
             if (t.price() >= kagiHigh) {
                 if ((kagiHigh = t.price()) > kagiPreviousHigh)
-                    kagiTrend = BULLISH;
+                    kagiTrend = UP;
                 addBaseTick(t);
                 return;
             }
         }
-        else if (direction == BEARISH) {
+        else if (direction == DOWN) {
             if (t.price() <= kagiLow) {
                 if ((kagiLow = t.price()) < kagiPreviousLow)
-                    kagiTrend = BEARISH;
+                    kagiTrend = DOWN;
                 addBaseTick(t);
                 return;
             }
@@ -152,7 +152,7 @@ public class KagiCandleBuilder<C extends Candle, T extends Tick> implements Inco
             return null;
 
         var base = this.base.get();
-        var bullish = (direction() == BULLISH);
+        var bullish = (direction() == UP);
         var openPrice = bullish? kagiLow: kagiHigh;
         var closePrice = bullish? kagiHigh: kagiLow;
         return new Kagi<>(base, openPrice, closePrice, kagiTrend, kagiPreviousLow, kagiPreviousHigh, formedElementsCount);

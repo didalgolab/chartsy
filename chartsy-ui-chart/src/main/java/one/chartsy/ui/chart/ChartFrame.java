@@ -66,7 +66,9 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
 
             JPanel chartLayerView = new JPanel(new BorderLayout());
             chartLayerView.add(chartToolbar, BorderLayout.NORTH);
-            chartLayerView.add(new JLayer<>(mainPanel, new XORCrosshairActiveRendererLayer()), BorderLayout.CENTER);
+            JLayer<JComponent> crosshairLayer = new JLayer<>(mainPanel, new StandardCrosshairRendererLayer());
+            crosshairLayer.setForeground(Color.lightGray.darker());
+            chartLayerView.add(crosshairLayer, BorderLayout.CENTER);
             //		chartLayerView.add(mainPanel, BorderLayout.CENTER);
             chartLayerView.add(scrollBar, BorderLayout.SOUTH);
             chartLayer.setView(chartLayerView);

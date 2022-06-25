@@ -9,11 +9,13 @@ import one.chartsy.data.structures.IntMap;
 import one.chartsy.simulation.ImmutableSimulationContext;
 import one.chartsy.simulation.SimulationContext;
 import one.chartsy.simulation.BacktestConfiguration;
+import one.chartsy.simulation.platform.BacktestPlatformServices;
 import one.chartsy.trade.Account;
 import one.chartsy.trade.OrderBroker;
 import one.chartsy.trade.TradingService;
 import one.chartsy.trade.strategy.HostTradingAlgorithmContext;
 import org.openide.util.Lookup;
+import org.openide.util.lookup.Lookups;
 import org.openide.util.lookup.ServiceProvider;
 
 import java.util.List;
@@ -21,9 +23,11 @@ import java.util.List;
 @ServiceProvider(service = SimulationContext.class)
 public class HostSimulationContext extends HostTradingAlgorithmContext implements SimulationContext {
 
+    private final BacktestPlatformServices backtestPlatform = Lookup.getDefault().lookup(BacktestPlatformServices.class);
+
     @Override
     public Lookup getLookup() {
-        return Lookup.EMPTY;
+        return Lookups.singleton(backtestPlatform);
     }
 
     @Override

@@ -68,13 +68,13 @@ public class KagiIndicator implements Incomplete<Kagi<Candle>> {
         if (direction == UNSPECIFIED && kagi.isPresent()) {
 
             if (kagiLow <= reversalAmount.getTurnaroundPrice(kagiOpen, ReversalType.BEARISH))
-                direction = BEARISH;
+                direction = DOWN;
             else if (kagiHigh >= reversalAmount.getTurnaroundPrice(kagiOpen, ReversalType.BULLISH))
-                direction = BULLISH;
+                direction = UP;
 
             if (direction != UNSPECIFIED) {
                 kagi.assumeDirection(direction);
-                if (direction == BULLISH)
+                if (direction == UP)
                     kagiTurnaroundPrice = reversalAmount.getTurnaroundPrice(kagiHigh, ReversalType.BEARISH);
                 else
                     kagiTurnaroundPrice = reversalAmount.getTurnaroundPrice(kagiLow, ReversalType.BULLISH);
@@ -100,7 +100,7 @@ public class KagiIndicator implements Incomplete<Kagi<Candle>> {
             return;
         }
 
-        if (trend == BULLISH) { // currently building candle is bullish
+        if (trend == UP) { // currently building candle is bullish
             if (c.low() <= kagiTurnaroundPrice) {
                 // top-type reversal
                 if (c.isBearish() && c.high() > kagiHigh) {
@@ -131,7 +131,7 @@ public class KagiIndicator implements Incomplete<Kagi<Candle>> {
                 }
             }
         }
-        if (trend == BEARISH) { // currently building candle is bearish
+        if (trend == DOWN) { // currently building candle is bearish
             if (c.high() >= kagiTurnaroundPrice) {
                 // bottom-type reversal
                 if (c.isBullish() && c.low() < kagiLow) {
@@ -178,7 +178,7 @@ public class KagiIndicator implements Incomplete<Kagi<Candle>> {
             return;
         }
 
-        if (trend == BULLISH) { // currently building candle is bullish
+        if (trend == UP) { // currently building candle is bullish
             if (t.price() <= kagiTurnaroundPrice) {
                 // top-type reversal
                 addOutputUpdate(get());
@@ -194,7 +194,7 @@ public class KagiIndicator implements Incomplete<Kagi<Candle>> {
                 kagiTurnaroundPrice = reversalAmount.getTurnaroundPrice(kagiHigh, ReversalType.BEARISH);
             }
         }
-        if (trend == BEARISH) { // currently building candle is bearish
+        if (trend == DOWN) { // currently building candle is bearish
             if (t.price() >= kagiTurnaroundPrice) {
                 // bottom-type reversal
                 addOutputUpdate(get());

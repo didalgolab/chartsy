@@ -133,7 +133,7 @@ public class StooqDataProvider extends AbstractDataProvider implements SymbolPro
         var execContext = new ExecutionContext();
         var fileFormat = FlatFileFormat.builder()
                 .lineMapper(new SimpleCandleLineMapper.Type(
-                        ',', List.of("DATE",(isIntraday(baseTimeFrame)? "TIME":"SKIP"),"OPEN","HIGH","LOW","CLOSE"/*,"VOLUME"*/),
+                        ',', List.of("DATE",(isIntraday(baseTimeFrame)? "TIME":"SKIP"),"OPEN","HIGH","LOW","CLOSE","VOLUME"),
                                 DateTimeFormatter.ofPattern("['*']yyyyMMdd"), DateTimeFormatter.ofPattern("HHmmss")))
                 .skipFirstLines(1)
                 //.setSkipLinesMatcher(line -> line.startsWith("Date,Time,"))

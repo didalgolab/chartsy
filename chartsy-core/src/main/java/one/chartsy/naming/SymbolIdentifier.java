@@ -37,4 +37,12 @@ public record SymbolIdentifier(
     public int compareTo(SymbolIdentifier o) {
         return SymbolIdentityComparator.LazyHolder.INSTANCE.compare(this, o);
     }
+
+    @Override
+    public String toString() {
+        if (type().isEmpty())
+            return name();
+        else
+            return name() + "." + type().get();
+    }
 }

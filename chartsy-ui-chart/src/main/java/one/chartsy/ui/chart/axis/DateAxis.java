@@ -4,11 +4,7 @@
  */
 package one.chartsy.ui.chart.axis;
 
-import java.awt.Cursor;
-import java.awt.Font;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.Rectangle;
+import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.font.FontRenderContext;
@@ -21,6 +17,8 @@ import java.util.Calendar;
 
 import javax.swing.JPanel;
 
+import lombok.Getter;
+import lombok.Setter;
 import one.chartsy.ui.chart.*;
 import one.chartsy.ui.chart.components.ChartPanel;
 import one.chartsy.ui.chart.internal.CoordCalc;
@@ -32,6 +30,8 @@ import org.openide.util.NbBundle;
  * 
  * @author Mariusz Bernacki
  */
+@Getter
+@Setter
 public class DateAxis extends JPanel implements Serializable {
     /** The manual axis adjustment cursor. */
     private static final Cursor adjustmentCursor = Cursor.getPredefinedCursor(Cursor.E_RESIZE_CURSOR);
@@ -188,5 +188,14 @@ public class DateAxis extends JPanel implements Serializable {
                 paintLabels(g2, lm, bounds, dateScale, new Rectangle2D.Double(bounds.getMaxX(), 0, 1, 1), scaleIndexes, 0);
             }
         }
+    }
+
+    private float heightFactor = 3.3f;
+
+    @Override
+    public Dimension getPreferredSize() {
+        Dimension preferredSize = super.getPreferredSize();
+        preferredSize.height = Math.round(getFont().getSize2D() * getHeightFactor());
+        return preferredSize;
     }
 }

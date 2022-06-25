@@ -15,6 +15,8 @@ public interface Account {
 
     String getId();
 
+    double getInitialBalance();
+
     /**
      * Returns the account equity that is (balance - profit).
      */

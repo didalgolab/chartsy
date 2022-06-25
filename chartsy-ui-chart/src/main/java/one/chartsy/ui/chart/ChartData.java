@@ -331,8 +331,7 @@ public class ChartData implements Serializable, ChartFrameListener {
             if (period == 0)
                 period = 150;
             period = Math.min(period, dataset.length());
-            System.out.println("[CHART] Period: " + period + " = " + rectWidth + "/" + barWidth);
-            
+
             setVisible(new VisibleCandles(dataset, dataset.length() - last, period));
             
             // shift the marker index if new dataset is shorter than marker location

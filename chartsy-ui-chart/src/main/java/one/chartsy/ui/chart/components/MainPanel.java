@@ -4,20 +4,19 @@
  */
 package one.chartsy.ui.chart.components;
 
-import java.awt.Component;
-import java.awt.Container;
-import java.awt.Dimension;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.Insets;
-import java.awt.LayoutManager;
-import java.awt.image.BufferedImage;
+import java.awt.*;
+import java.awt.image.BufferedImageOp;
+import java.awt.image.VolatileImage;
+import java.io.File;
+import java.util.UUID;
 
+import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
 import javax.swing.JLayeredPane;
 
 import one.chartsy.ui.chart.ChartContext;
 import one.chartsy.ui.chart.ChartData;
+import one.chartsy.ui.chart.PaintScope;
 import one.chartsy.ui.chart.axis.DateAxis;
 import one.chartsy.ui.chart.axis.Grid;
 import one.chartsy.ui.chart.axis.PriceAxis;
@@ -41,7 +40,6 @@ public class MainPanel extends JLayeredPane {
         setOpaque(true);
         setBackground(chartFrame.getChartProperties().getBackgroundColor());
         setBorder(BorderFactory.createEmptyBorder(2, 20, 0, 0));
-        setDoubleBuffered(true);
         setLayout(new LayoutManager() {
             @Override
             public void addLayoutComponent(String name, Component comp) {
@@ -64,14 +62,13 @@ public class MainPanel extends JLayeredPane {
             @Override
             public void layoutContainer(Container parent) {
                 int right = ChartData.dataOffset.right;
-                int bottom = ChartData.dataOffset.bottom;
+                int bottom = dateAxis.getPreferredSize().height;
                 Insets insets = parent.getInsets();
                 int w = parent.getWidth() - insets.left - insets.right - right;
                 int h = parent.getHeight() - insets.top - insets.bottom - bottom;
                 
                 grid.setBounds(insets.left, insets.top, w, h);
-                dateAxis.setBounds(insets.left, insets.top + h /* + bottom */,
-                        w, bottom);
+                dateAxis.setBounds(insets.left, insets.top + h, w, bottom);
                 priceAxis.setBounds(insets.left + insets.right + w, insets.top,
                         right, /*insets.top + insets.bottom +*/ h);
                 sPane.setBounds(insets.left, insets.top, w, h);
@@ -91,8 +88,8 @@ public class MainPanel extends JLayeredPane {
         return sPane;
     }
     
-    @Override
-    public void paint(Graphics g) {
+    //@Override
+    public void paint0(Graphics g) {
         chartFrame.getChartData().calculate(chartFrame);
         chartFrame.getChartData().calculateRange(chartFrame, sPane.getChartPanel().getOverlays());
         
@@ -100,29 +97,67 @@ public class MainPanel extends JLayeredPane {
         super.paint(g);
     }
     
-    private BufferedImage img;
-    
-    //	@Override
-    public void paint2(Graphics g) {
+    private VolatileImage vImg;
+
+    public VolatileImage createVolatileImage() {
+        return getGraphicsConfiguration().createCompatibleVolatileImage(getWidth(), getHeight());
+    }
+
+    public void renderOffscreen(Shape clip) {
+        do {
+            if (vImg == null
+                    || vImg.validate(getGraphicsConfiguration()) == VolatileImage.IMAGE_INCOMPATIBLE
+                    || vImg.getHeight() != getHeight()
+                    || vImg.getWidth() != getWidth()) {
+                vImg = createVolatileImage();
+            }
+            Graphics2D g2 = vImg.createGraphics();
+            if (clip != null)
+                g2.setClip(clip);
+            // paint Component to the volatile image
+            //g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+            super.paint(g2);
+            g2.dispose();
+            // in case of lost contents next iteration should restore the entire image area
+            clip = null;
+        } while (vImg.contentsLost());
+    }
+
+    public void paintOnscreen(Graphics gScreen) {
+        do {
+            int returnCode = vImg.validate(getGraphicsConfiguration());
+            if (returnCode == VolatileImage.IMAGE_RESTORED) {
+                // Contents need to be restored
+                renderOffscreen(null);
+            } else if (returnCode == VolatileImage.IMAGE_INCOMPATIBLE) {
+                // old vImg doesn't work with new GraphicsConfig; re-create it
+                vImg = createVolatileImage();
+                renderOffscreen(null);
+            }
+            int width = getWidth() - 1;
+            int height = getHeight() - 1;
+            gScreen.drawImage(vImg, 1, 1, width, height, 1, 1, width, height, null);
+        } while (vImg.contentsLost());
+    }
+
+    @Override
+    public void paint(Graphics g) {
         chartFrame.getChartData().calculate(chartFrame);
         chartFrame.getChartData().calculateRange(chartFrame, sPane.getChartPanel().getOverlays());
         
-        setBackground(chartFrame.getChartProperties().getBackgroundColor());
-        if (img == null || img.getHeight() != getHeight() || img.getWidth() != getWidth()) {
-            if (img != null)
-                img.flush();
-            img = (BufferedImage) createImage(getWidth(), getHeight());
-        }
-        Graphics2D g2 = img.createGraphics();
-        g2.setClip(g.getClip());
-        super.paint(g2);
-        g2.dispose();
-        g.drawImage(img, 0, 0, null);
+        //setBackground(chartFrame.getChartProperties().getBackgroundColor());
+        if (vImg == null || !PaintScope.current().isOnTopRedraw())
+            renderOffscreen(g.getClip());
+        paintOnscreen(g);
+
+        //((Graphics2D) g).setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+        //g.setRenderingHint(RenderingHints.KEY_DITHERING, RenderingHints.VALUE_DITHER_ENABLE);
+        //g.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_OFF);
+        //super.paint(g);
     }
     
     @Override
     public void print(Graphics g) {
-        // TODO Auto-generated method stub
         super.paint(g);
     }
     
@@ -136,5 +171,4 @@ public class MainPanel extends JLayeredPane {
             ip.getAnnotationPanel().deselectAll();
         }
     }
-    
 }

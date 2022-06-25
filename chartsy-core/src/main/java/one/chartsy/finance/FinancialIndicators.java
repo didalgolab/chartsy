@@ -161,12 +161,12 @@ public class FinancialIndicators {
                 if (max - min > 0.0) {
                     double diff = (series.get(barNo + k) - min) / (max - min);
                     if (k > 0)
-                        length += Math.sqrt((diff - prev)*(diff - prev) + 1.0 / Math.pow(periods - 1, 2.0));
+                        length += Math.sqrt((diff - prev)*(diff - prev) + 1.0 / Math.pow(periods - 1.0, 2.0));
                     prev = diff;
                 }
             }
             if (length > 0.0)
-                value = 1.0 + (Math.log(length) + Math.log(2)) / Math.log(2 * (periods - 1));
+                value = 1.0 + (Math.log(length) + Math.log(2)) / Math.log(2.0 * (periods - 1));
             result[barNo] = value;
         }
         return DoubleSeries.of(result, series.getTimeline());

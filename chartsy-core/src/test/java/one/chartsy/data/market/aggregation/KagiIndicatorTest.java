@@ -12,8 +12,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import static one.chartsy.data.market.aggregation.Kagi.Trend.BEARISH;
-import static one.chartsy.data.market.aggregation.Kagi.Trend.BULLISH;
+import static one.chartsy.data.market.aggregation.Kagi.Trend.DOWN;
+import static one.chartsy.data.market.aggregation.Kagi.Trend.UP;
 import static org.junit.jupiter.api.Assertions.*;
 
 class KagiIndicatorTest {
@@ -65,7 +65,7 @@ class KagiIndicatorTest {
 
         assertTrue(kagi.isPresent());
         assertEquals((1), kagi.length());
-        assertEquals(BULLISH, kagi.getKagiDirection());
+        assertEquals(UP, kagi.getKagiDirection());
         var kagiCandle = kagi.get(0);
         assertTrue(kagiCandle.isBullish());
         assertEquals(Candle.of(last.getTime(), first.open(), last.high(), first.low(), last.close()), kagiCandle.baseCandle());
@@ -74,7 +74,7 @@ class KagiIndicatorTest {
         assertEquals(last.close(), kagiCandle.close());
         assertEquals(last.high(), kagiCandle.high());
         assertEquals(first.low(), kagiCandle.low());
-        assertEquals(BULLISH, kagiCandle.trend());
+        assertEquals(UP, kagiCandle.trend());
         assertEquals((7), kagiCandle.formedElementsCount());
     }
 
@@ -94,18 +94,18 @@ class KagiIndicatorTest {
         // verify
         var kagi1 = kagi.get(1);
         assertTrue(kagi1.isBullish());
-        assertEquals(BULLISH, kagi1.trend());
+        assertEquals(UP, kagi1.trend());
         assertEquals(21, kagi1.close());
         var kagi0 = kagi.get(0);
         assertTrue(kagi0.isBearish()); // is kagi rising?
-        assertEquals(BULLISH, kagi0.trend()); // is kagi yang line?
+        assertEquals(UP, kagi0.trend()); // is kagi yang line?
         assertEquals(11, kagi0.close());
         //assertEquals(21, kagi0.yangLevel());
         assertEquals(1, kagi0.yinLevel());
         assertEquals((1 + 1), kagi0.formedElementsCount(), "two candles from highest high");
 
         assertTrue(kagi.isPresent());
-        assertEquals(Kagi.Trend.BEARISH, kagi.getKagiDirection());
+        assertEquals(Kagi.Trend.DOWN, kagi.getKagiDirection());
     }
 
     @Test
@@ -122,13 +122,13 @@ class KagiIndicatorTest {
         kagi.onCandle( last=c(30) );
 
         assertEquals(3, kagi.length());
-        assertEquals(BULLISH, kagi.getKagiDirection());
+        assertEquals(UP, kagi.getKagiDirection());
         var kagi0 = kagi.get(0);
         assertTrue(kagi0.isBullish());
         assertEquals(last.close(), kagi0.close());
         assertEquals(0, kagi0.open());
         assertEquals(1, kagi0.yinLevel());
-        assertEquals(Kagi.Trend.BEARISH, kagi0.trend()); // yin still
+        assertEquals(Kagi.Trend.DOWN, kagi0.trend()); // yin still
     }
 
     @ParameterizedTest
@@ -268,7 +268,7 @@ class KagiIndicatorTest {
         assertEquals(t(t1, t2, t3).high(), kagi1.high());
         assertEquals((3), kagi1.formedElementsCount());
         assertEquals( !inverted, kagi1.isBullish(), "kagi[1].bullish");
-        assertEquals( !inverted? BULLISH:BEARISH, kagi1.trend(), "kagi[1].trend");
+        assertEquals( !inverted? UP : DOWN, kagi1.trend(), "kagi[1].trend");
 
         var kagi0 = kagi.get(0);
         assertEquals(t(t4, t5, t6), kagi0.baseCandle());
@@ -277,7 +277,7 @@ class KagiIndicatorTest {
         assertEquals((3), kagi0.formedElementsCount());
         assertEquals(t2.price(), !inverted? kagi0.yinLevel() : kagi0.yangLevel());
         assertEquals( !inverted, kagi0.isBearish(), "kagi[0].bullish");
-        assertEquals( !inverted? BULLISH:BEARISH, kagi0.trend(), "kagi[0].trend");
+        assertEquals( !inverted? UP : DOWN, kagi0.trend(), "kagi[0].trend");
     }
 
     @ParameterizedTest
@@ -291,7 +291,7 @@ class KagiIndicatorTest {
 
         // verify
         var kagi0 = kagi.get(0);
-        assertEquals( !inverted? BEARISH:BULLISH, kagi0.trend(), "kagi[0].trend");
+        assertEquals( !inverted? DOWN : UP, kagi0.trend(), "kagi[0].trend");
         assertEquals(t7.price(), kagi0.close());
     }
 

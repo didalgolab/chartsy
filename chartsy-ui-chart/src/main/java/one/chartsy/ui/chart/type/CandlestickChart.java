@@ -80,7 +80,6 @@ public class CandlestickChart implements Chart {
         
         Line2D line2d = new Line2D.Double();
         Rectangle2D rect2d = new Rectangle2D.Double();
-        System.out.println("[CHART] Rect: " + rect);
         for (int i = 0, j = dataset.getLength(); i < j; i++) {
             Candle q0 = dataset.getQuoteAt(i);
             
@@ -108,11 +107,11 @@ public class CandlestickChart implements Chart {
         for (int i = 0, j = dataset.getLength(); i < j; i++) {
             Candle q0 = dataset.getQuoteAt(i);
             int x = (int)(0.5 + cd.getX(i, rect));
-            int yOpen = (int)(0.5 + cd.getY(q0.open(), rect, range, isLog));
-            int yClose = (int)(0.5 + cd.getY(q0.close(), rect, range, isLog));
-            int yHigh = (int)(0.5 + cd.getY(q0.high(), rect, range, isLog));
-            int yLow = (int)(0.5 + cd.getY(q0.low(), rect, range, isLog));
-            int candleHeight =  Math.abs(yOpen - yClose);
+            double yOpen = (cd.getY(q0.open(), rect, range, isLog));
+            double yClose = (cd.getY(q0.close(), rect, range, isLog));
+            double yHigh = (cd.getY(q0.high(), rect, range, isLog));
+            double yLow = (cd.getY(q0.low(), rect, range, isLog));
+            double candleHeight =  Math.abs(yOpen - yClose);
             boolean bearish = q0.isBearish();
             
             // draw the candle upper wick

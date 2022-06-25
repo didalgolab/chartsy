@@ -7,7 +7,7 @@ import one.chartsy.data.AbstractCandle;
 
 public class Kagi<C extends Candle> extends AbstractCandle<C> {
     public enum Trend {
-        UNSPECIFIED, BEARISH, BULLISH
+        UNSPECIFIED, DOWN, UP
     }
 
     private final double open;
@@ -71,5 +71,10 @@ public class Kagi<C extends Candle> extends AbstractCandle<C> {
      */
     public int formedElementsCount() {
         return formedElementsCount;
+    }
+
+    @Override
+    public String toString() {
+        return "\"" + getDateTime() + "\": {\"Kagi\": {\"OC\":[" + open() + "," + close() + "], \"trend\":" + trend() + "}}";
     }
 }

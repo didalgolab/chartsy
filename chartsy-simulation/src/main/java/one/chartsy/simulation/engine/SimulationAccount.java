@@ -19,6 +19,8 @@ import java.util.*;
 public class SimulationAccount implements Account {
     /** The strategy properties currently in use. */
     private final SimulatorOptions properties;
+    /** The initial account balance. */
+    private double initialBalance;
     /** The current account balance. */
     private double balance;
     /** The current profit of the account. */
@@ -49,12 +51,17 @@ public class SimulationAccount implements Account {
 
     public SimulationAccount(SimulatorOptions properties) {
         this.properties = properties;
-        this.balance = properties.initialBalance();
+        this.balance = this.initialBalance = properties.initialBalance();
     }
 
     @Override
     public String getId() {
         return "";
+    }
+
+    @Override
+    public double getInitialBalance() {
+        return initialBalance;
     }
 
     public double getBalance() {

@@ -164,7 +164,7 @@ public class TristateCheckBox extends JCheckBox {
     protected void paintComponent(Graphics g) {
         // Workaround for missing borders in checkbox appearance on Windows-based LAF
         Graphics2D g2 = (Graphics2D) g;
-        g2.translate(-0.04, -0.04);
+        //g2.translate(-0.04, -0.04);
 
         if (isMixed()) {
             Composite old = g2.getComposite();
