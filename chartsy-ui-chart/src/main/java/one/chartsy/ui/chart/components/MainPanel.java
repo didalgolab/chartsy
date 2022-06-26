@@ -5,18 +5,14 @@
 package one.chartsy.ui.chart.components;
 
 import java.awt.*;
-import java.awt.image.BufferedImageOp;
 import java.awt.image.VolatileImage;
-import java.io.File;
-import java.util.UUID;
 
-import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
 import javax.swing.JLayeredPane;
 
 import one.chartsy.ui.chart.ChartContext;
 import one.chartsy.ui.chart.ChartData;
-import one.chartsy.ui.chart.PaintScope;
+import one.chartsy.ui.chart.ChartRenderingSystem;
 import one.chartsy.ui.chart.axis.DateAxis;
 import one.chartsy.ui.chart.axis.Grid;
 import one.chartsy.ui.chart.axis.PriceAxis;
@@ -100,7 +96,7 @@ public class MainPanel extends JLayeredPane {
     private VolatileImage vImg;
 
     public VolatileImage createVolatileImage() {
-        return getGraphicsConfiguration().createCompatibleVolatileImage(getWidth(), getHeight());
+        return createVolatileImage(getWidth(), getHeight());
     }
 
     public void renderOffscreen(Shape clip) {
@@ -115,7 +111,6 @@ public class MainPanel extends JLayeredPane {
             if (clip != null)
                 g2.setClip(clip);
             // paint Component to the volatile image
-            //g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
             super.paint(g2);
             g2.dispose();
             // in case of lost contents next iteration should restore the entire image area
@@ -134,8 +129,8 @@ public class MainPanel extends JLayeredPane {
                 vImg = createVolatileImage();
                 renderOffscreen(null);
             }
-            int width = getWidth() - 1;
-            int height = getHeight() - 1;
+            int width = getWidth() - 2;
+            int height = getHeight() - 2;
             gScreen.drawImage(vImg, 1, 1, width, height, 1, 1, width, height, null);
         } while (vImg.contentsLost());
     }
@@ -145,15 +140,9 @@ public class MainPanel extends JLayeredPane {
         chartFrame.getChartData().calculate(chartFrame);
         chartFrame.getChartData().calculateRange(chartFrame, sPane.getChartPanel().getOverlays());
         
-        //setBackground(chartFrame.getChartProperties().getBackgroundColor());
-        if (vImg == null || !PaintScope.current().isOnTopRedraw())
+        if (vImg == null || ChartRenderingSystem.current().isRerender())
             renderOffscreen(g.getClip());
         paintOnscreen(g);
-
-        //((Graphics2D) g).setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
-        //g.setRenderingHint(RenderingHints.KEY_DITHERING, RenderingHints.VALUE_DITHER_ENABLE);
-        //g.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_OFF);
-        //super.paint(g);
     }
     
     @Override

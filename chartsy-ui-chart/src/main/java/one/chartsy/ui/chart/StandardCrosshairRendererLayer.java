@@ -3,7 +3,6 @@
 package one.chartsy.ui.chart;
 
 import one.chartsy.Candle;
-import one.chartsy.ui.chart.PaintScope.Orientation;
 import one.chartsy.ui.chart.components.AnnotationPanel;
 import one.chartsy.ui.chart.components.MainPanel;
 import one.chartsy.ui.chart.hover.HoverEvent;
@@ -15,9 +14,6 @@ import javax.swing.plaf.LayerUI;
 import java.awt.*;
 import java.awt.event.InputEvent;
 import java.awt.event.MouseEvent;
-
-import static one.chartsy.ui.chart.PaintScope.Orientation.HORIZONTAL;
-import static one.chartsy.ui.chart.PaintScope.Orientation.VERTICAL;
 
 /**
  * Provides the crosshair cursor functionality for a component being decorated.
@@ -74,14 +70,9 @@ public class StandardCrosshairRendererLayer extends LayerUI<JComponent> {
     
     int drawnLineX = -1, drawnLineY = -1;
 
-    protected void repaintImmediately(JLayer<?> layer, int x, int y, int w, int h, Orientation orient) {
-        PaintScope scope = PaintScope.current();
-        try {
-            scope.setOnTopRedraw(orient);
-            layer.paintImmediately(x, y, w, h);
-        } finally {
-            scope.setOnTopRedraw(false);
-        }
+    protected void repaintImmediately(JLayer<?> layer, int x, int y, int w, int h) {
+        ChartRenderingSystem.current()
+                .withoutRerender(() -> layer.paintImmediately(x, y, w, h));
     }
 
     public void drawCrossLines(int x, int y, JLayer<?> layer) {
@@ -94,19 +85,19 @@ public class StandardCrosshairRendererLayer extends LayerUI<JComponent> {
         hoverPoint.setLocation(x, y);
         if (x0 != x) {
             if (x0 > -1 && x > -1)
-                repaintImmediately(layer, Math.min(x0, x)-1, 0, Math.abs(x0 - x)+2, height-1, VERTICAL);
+                repaintImmediately(layer, Math.min(x0, x)-1, 0, Math.abs(x0 - x)+2, height-1);
             else if (x0 > -1)
-                repaintImmediately(layer, x0-1, 0, 2, height-1, VERTICAL);
+                repaintImmediately(layer, x0-1, 0, 2, height-1);
             else if (x > -1)
-                repaintImmediately(layer, x-1, 0, 2, height-1, VERTICAL);
+                repaintImmediately(layer, x-1, 0, 2, height-1);
         }
         if (y0 != y) {
             if (y0 > -1 && y > -1)
-                repaintImmediately(layer, 0, Math.min(y0, y)-1, width-1, Math.abs(y0 - y)+2, HORIZONTAL);
+                repaintImmediately(layer, 0, Math.min(y0, y)-1, width-1, Math.abs(y0 - y)+2);
             else if (y0 > -1)
-                repaintImmediately(layer, 0, y0-1, width-1, 2, HORIZONTAL);
+                repaintImmediately(layer, 0, y0-1, width-1, 2);
             else if (y > -1)
-                repaintImmediately(layer, 0, y-1, width-1, 2, HORIZONTAL);
+                repaintImmediately(layer, 0, y-1, width-1, 2);
         }
     }
     
