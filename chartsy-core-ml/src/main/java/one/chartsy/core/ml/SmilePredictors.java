@@ -2,15 +2,40 @@
  * SPDX-License-Identifier: Apache-2.0 */
 package one.chartsy.core.ml;
 
-import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
-import smile.regression.RidgeRegression;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.concurrent.ThreadLocalRandom;
+import one.chartsy.data.Dataset;
+import one.chartsy.data.DoubleDataset;
+import one.chartsy.smile.regression.OLS;
+import one.chartsy.util.Pair;
 
 public class SmilePredictors {
+
+    public static ToDoublePredictorFunction<DoubleDataset> linearRegression(Dataset<Pair<DoubleDataset, Double>> data) {
+        double[][] x = Predictors.getInputValues(data);
+        double[] y = Predictors.getTargetValues(data);
+        OLS ols = new OLS(x, y, true);
+        return new ToDoubleSmilePredictor<>(ols) {
+            @Override
+            public double predictAsDouble(DoubleDataset data) {
+                return getModel().predict(data.toArray());
+            }
+        };
+    }
+
+    public static ToDoublePredictorFunction<double[]> linearRegression(double[][] x, double[] y) {
+        OLS ols = new OLS(x, y);
+        return new ToDoubleSmilePredictor<>(ols) {
+            @Override
+            public double predictAsDouble(double[] data) {
+                return getModel().predict(data);
+            }
+        };
+    }
+
+    private abstract static class ToDoubleSmilePredictor<I, M> extends AbstractPredictorFunction<I, Double, M> implements ToDoublePredictorFunction<I>  {
+        protected ToDoubleSmilePredictor(M model) {
+            super(model);
+        }
+    }
 
 //    static class OLS {
 //        public static void main(String[] args) {

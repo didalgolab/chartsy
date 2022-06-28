@@ -29,6 +29,14 @@ public class FlatFileFormat {
         String encoding = "ISO-8859-2";
     }
 
+    public static final FlatFileFormat FOREXTESTER = builder()
+            .fileNamePattern("*\\.zip")
+            .skipFirstLines(1)
+            .lineMapper(
+                    new SimpleCandleLineMapper.Type(
+                            ',', Arrays.asList("SKIP","DATE","TIME","OPEN","HIGH","LOW","CLOSE","SKIP"), DateTimeFormatter.ofPattern("yyyyMMdd"), DateTimeFormatter.ofPattern("HHmmss")))
+            .build();
+
     public static final FlatFileFormat HISTDATA_ASCII = builder()
             .fileNamePattern("*\\.zip")
             .lineMapper(

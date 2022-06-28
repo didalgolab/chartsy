@@ -54,7 +54,8 @@ public class Beta {
      * Continued Fraction approximation (see Numerical recipies for details)
      */
     public static double regularizedIncompleteBetaFunction(double alpha, double beta, double x) {
-        if (x < 0.0 || x > 1.0) {
+        final boolean ignoreErrors = true;
+        if (!ignoreErrors && (x < 0.0 || x > 1.0)) {
             throw new IllegalArgumentException("Invalid x: " + x);
         }
 
@@ -69,10 +70,10 @@ public class Beta {
                 ibeta = Math.exp(Gamma.lgamma(alpha + beta) - Gamma.lgamma(alpha) - Gamma.lgamma(beta) + alpha * Math.log(x) + beta * Math.log(1.0D - x));
                 // Continued fraction
                 if (x < (alpha + 1.0) / (alpha + beta + 2.0)) {
-                    ibeta = ibeta * incompleteFractionSummation(alpha, beta, x) / alpha;
+                    ibeta = ibeta * incompleteFractionSummation(alpha, beta, x, ignoreErrors) / alpha;
                 } else {
                     // Use symmetry relationship
-                    ibeta = 1.0 - ibeta * incompleteFractionSummation(beta, alpha, 1.0 - x) / beta;
+                    ibeta = 1.0 - ibeta * incompleteFractionSummation(beta, alpha, 1.0 - x, ignoreErrors) / beta;
                 }
             }
         }
@@ -83,7 +84,7 @@ public class Beta {
      * Incomplete fraction summation used in the method regularizedIncompleteBeta
      * using a modified Lentz's method.
      */
-    private static double incompleteFractionSummation(double alpha, double beta, double x) {
+    private static double incompleteFractionSummation(double alpha, double beta, double x, boolean ignoreErrors) {
         final int MAXITER = 500;
         final double EPS = 3.0E-7;
 
@@ -132,7 +133,8 @@ public class Beta {
             }
             if (i > MAXITER) {
                 test = false;
-                logger.error("Beta.incompleteFractionSummation: Maximum number of iterations wes exceeded");
+                if (!ignoreErrors)
+                    logger.error("Beta.incompleteFractionSummation: Maximum number of iterations wes exceeded");
             }
         }
         return h;

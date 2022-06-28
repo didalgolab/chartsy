@@ -34,38 +34,6 @@ class Factory {
     private static Constructor<?> nlmatrixZeros;
     private static Constructor<?> nlmatrixOnes;
 
-    static {
-        try {
-            nlmatrix = Class.forName("smile.netlib.NLMatrix");
-
-            try {
-                nlmatrixArray2D = nlmatrix.getConstructor(double[][].class);
-            } catch (NoSuchMethodException e) {
-                logger.error("NLMatrix(double[][]) does not exist");
-            }
-
-            try {
-                nlmatrixArray = nlmatrix.getConstructor(double[].class);
-            } catch (NoSuchMethodException e) {
-                logger.error("NLMatrix(double[]) does not exist");
-            }
-
-            try {
-                nlmatrixZeros = nlmatrix.getConstructor(Integer.TYPE, Integer.TYPE);
-            } catch (NoSuchMethodException e) {
-                logger.error("NLMatrix(int, int) does not exist");
-            }
-
-            try {
-                nlmatrixOnes = nlmatrix.getConstructor(Integer.TYPE, Integer.TYPE, Double.TYPE);
-            } catch (NoSuchMethodException e) {
-                logger.error("NLMatrix(int, int, double) does not exist");
-            }
-        } catch (ClassNotFoundException e) {
-            logger.info("smile-netlib module is not available in the classpath. Pure Java matrix library will be employed.");
-        }
-    }
-
     /** Creates a matrix initialized by A. */
     public static DenseMatrix matrix(double[][] A) {
         if (nlmatrixZeros != null) {
