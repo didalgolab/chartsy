@@ -3,6 +3,7 @@
 package one.chartsy.simulation.reporting;
 
 import one.chartsy.trade.Account;
+import one.chartsy.trade.BalanceState;
 import one.chartsy.trade.data.Position;
 import one.chartsy.trade.event.PositionValueChangeListener;
 
@@ -42,8 +43,8 @@ public interface EquityInformation {
 
     double years(ZoneId zone);
 
-    static Builder builder() {
-        return new StandardBuilder();
+    static Builder builder(BalanceState initial) {
+        return new StandardBuilder(initial);
     }
 
     interface Builder extends PositionValueChangeListener {
@@ -75,6 +76,10 @@ public interface EquityInformation {
             return (dataPoints == 0);
         }
 
+        public StandardBuilder(BalanceState initial) {
+            this.startingEquity = this.totalEquityHigh = this.totalEquityLow = this.currentEquity = initial.getEquity();
+        }
+
         @Override
         public void positionValueChanged(Account account, Position position) {
             add(position.getMarketTime(), account.getEquity());
@@ -82,10 +87,8 @@ public interface EquityInformation {
 
         @Override
         public void add(long time, double equity) {
-            if (dataPoints++ == 0) {
-                startingEquity = equity;
+            if (dataPoints++ == 0)
                 startingTime = time;
-            }
             currentEquity = equity;
             currentTime = time;
             if (equity > totalEquityHigh) {

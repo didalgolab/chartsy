@@ -24,6 +24,9 @@ public interface SimulatorOptions {
         return new Builder();
     }
 
-
-    class Builder extends ImmutableSimulatorOptions.Builder { }
+    class Builder extends ImmutableSimulatorOptions.Builder {
+        protected Builder() {
+            initialBalance(10_000.0);
+        }
+    }
 }

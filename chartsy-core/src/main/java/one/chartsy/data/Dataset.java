@@ -55,6 +55,10 @@ public interface Dataset<E> extends SequenceAlike<E, Dataset<E>> {
         return withRight(right.boxed());
     }
 
+    default Dataset<Pair<E, Integer>> withRight(IntDataset right) {
+        return withRight(right.boxed());
+    }
+
     @SuppressWarnings("unchecked")
     static <E> Dataset<E> empty() {
         return (Dataset<E>) PackedDataset.EMPTY;

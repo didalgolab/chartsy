@@ -98,11 +98,7 @@ public interface Candle extends Chronological {
         return SimpleCandle.of(time, open, high, low, close, volume, count);
     }
 
-    static double direction(Candle c) {
-        return Math.signum(c.close() - c.open());
-    }
-
-    static double nonZeroDirection(Candle c) {
-        return c.isBullish()? 1: -1;
+    static int direction(Candle c) {
+        return (c.close() > c.open())? 1 : 0;
     }
 }

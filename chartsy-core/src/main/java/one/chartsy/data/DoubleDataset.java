@@ -5,6 +5,7 @@ package one.chartsy.data;
 import one.chartsy.data.packed.PackedDoubleDataset;
 
 import java.util.function.DoubleFunction;
+import java.util.function.DoubleToIntFunction;
 import java.util.function.DoubleUnaryOperator;
 import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
@@ -64,6 +65,8 @@ public interface DoubleDataset extends SequenceAlike<Double, DoubleDataset> {
     }
 
     DoubleDataset ref(int n);
+
+    IntDataset mapToInt(DoubleToIntFunction mapper);
 
     <E> Dataset<E> mapToObject(DoubleFunction<E> mapper);
 

@@ -6,10 +6,7 @@ import one.chartsy.SymbolIdentity;
 import one.chartsy.core.event.ListenerList;
 import one.chartsy.simulation.engine.SimulationAccount;
 import one.chartsy.simulation.reporting.EquityInformation;
-import one.chartsy.trade.Account;
-import one.chartsy.trade.Direction;
-import one.chartsy.trade.Order;
-import one.chartsy.trade.OrderType;
+import one.chartsy.trade.*;
 import one.chartsy.trade.data.Position;
 import one.chartsy.trade.event.PositionValueChangeListener;
 import one.chartsy.trade.strategy.SimulatorOptions;
@@ -36,7 +33,7 @@ public class PositionValueChangeListenerBenchmarkTest {
 
     double positionResult = 0;
 
-    private EquityInformation.Builder equityBuilder = EquityInformation.builder();
+    private EquityInformation.Builder equityBuilder = EquityInformation.builder(BalanceState.ZERO);
 
     @Benchmark
     @Warmup(time = 3)

@@ -2,22 +2,21 @@
  * SPDX-License-Identifier: Apache-2.0 */
 package one.chartsy.data;
 
-import java.util.function.DoubleFunction;
-import java.util.function.DoubleToIntFunction;
+import java.util.function.IntFunction;
 
-public abstract class AbstractDoubleDataset implements DoubleDataset {
+public abstract class AbstractIntDataset implements IntDataset {
 
     @Override
-    public DoubleDataset ref(int n) {
+    public IntDataset ref(int n) {
         if (n == 0)
             return this;
         if (n > 0)
             throw new IllegalArgumentException("Periods `n` ("+n+") cannot be positive");
 
-        DoubleDataset dataset = this;
-        return new AbstractDoubleDataset() {
+        IntDataset dataset = this;
+        return new AbstractIntDataset() {
             @Override
-            public double get(int index) {
+            public int get(int index) {
                 return dataset.get(index - n);
             }
 
@@ -29,7 +28,7 @@ public abstract class AbstractDoubleDataset implements DoubleDataset {
     }
 
     @Override
-    public DoubleDataset take(int start, int count) {
+    public IntDataset take(int start, int count) {
         if (start < 0)
             throw new IllegalArgumentException("The `start` argument cannot be negative");
         if (count <= 0)
@@ -37,45 +36,30 @@ public abstract class AbstractDoubleDataset implements DoubleDataset {
         if (length() < count - start)
             throw new IllegalArgumentException("The take end index cannot exceed dataset length " + length());
 
-        return new AbstractDoubleDataset() {
+        return new AbstractIntDataset() {
             @Override
             public int length() {
                 return count;
             }
 
             @Override
-            public double get(int index) {
-                return AbstractDoubleDataset.this.get(start + Datasets.requireValidIndex(index, this));
-            }
-        };
-    }
-
-    @Override
-    public IntDataset mapToInt(DoubleToIntFunction mapper) {
-        return new AbstractIntDataset() {
-            @Override
             public int get(int index) {
-                return mapper.applyAsInt(AbstractDoubleDataset.this.get(index));
-            }
-
-            @Override
-            public int length() {
-                return AbstractDoubleDataset.this.length();
+                return AbstractIntDataset.this.get(start + Datasets.requireValidIndex(index, this));
             }
         };
     }
 
     @Override
-    public <E> Dataset<E> mapToObject(DoubleFunction<E> mapper) {
+    public <E> Dataset<E> mapToObject(IntFunction<E> mapper) {
         return new AbstractDataset<>() {
             @Override
             public E get(int index) {
-                return mapper.apply(AbstractDoubleDataset.this.get(index));
+                return mapper.apply(AbstractIntDataset.this.get(index));
             }
 
             @Override
             public int length() {
-                return AbstractDoubleDataset.this.length();
+                return AbstractIntDataset.this.length();
             }
         };
     }

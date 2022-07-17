@@ -8,6 +8,7 @@ import one.chartsy.data.packed.ByteBufferMutableHLCDataset;
 import one.chartsy.simulation.reporting.AbstractReportEngine;
 import one.chartsy.simulation.reporting.EquityInformation;
 import one.chartsy.simulation.reporting.Report;
+import one.chartsy.trade.BalanceState;
 import one.chartsy.trade.strategy.ReportOptions;
 import one.chartsy.trade.Account;
 import one.chartsy.trade.data.Position;
@@ -26,7 +27,7 @@ public class StandardReportEngine extends AbstractReportEngine {
     public StandardReportEngine(ReportOptions options, Account account) {
         super(options);
         this.account = account;
-        this.handler = new Handler(options);
+        this.handler = new Handler(options, account);
         installListeners(options);
     }
 
@@ -43,7 +44,7 @@ public class StandardReportEngine extends AbstractReportEngine {
     protected void installListeners(ReportOptions options) {
         var enabledOpts = options.getEnabled();
         if (enabledOpts.contains(ReportOptions.EQUITY))
-            account.addPositionValueChangeListener(equity = EquityInformation.builder());
+            account.addPositionValueChangeListener(equity = EquityInformation.builder(account));
 
         if (enabledOpts.contains(ReportOptions.EQUITY_CHART)) {
             equityEvolution = new ByteBufferMutableHLCDataset();
@@ -83,10 +84,10 @@ public class StandardReportEngine extends AbstractReportEngine {
         private EquityInformation.Builder equitySummary;
         private ByteBufferMutableHLCDataset equityEvolution;
 
-        private Handler(ReportOptions options) {
+        private Handler(ReportOptions options, BalanceState initial) {
             var enabledOpts = options.getEnabled();
             if (enabledOpts.contains(ReportOptions.EQUITY))
-                equitySummary = EquityInformation.builder();
+                equitySummary = EquityInformation.builder(initial);
             if (enabledOpts.contains(ReportOptions.EQUITY_CHART))
                 equityEvolution = new ByteBufferMutableHLCDataset();
         }

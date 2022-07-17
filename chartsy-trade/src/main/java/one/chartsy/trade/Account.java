@@ -11,7 +11,7 @@ import one.chartsy.trade.event.PositionValueChangeListener;
 import java.util.List;
 import java.util.Map;
 
-public interface Account {
+public interface Account extends BalanceState {
 
     String getId();
 

@@ -65,12 +65,12 @@ public abstract class AbstractTradingAlgorithm implements TradingAlgorithm {
 
     @Override
     public void onInit(TradingAlgorithmContext runtime) {
-        log.info("Algorithm {} initializing", getId());
+        log.debug("Algorithm {} initializing", getId());
     }
 
     @Override
     public void onAfterInit() {
-        log.info("Algorithm {} initialized", getId());
+        log.debug("Algorithm {} initialized", getId());
     }
 
     @Override

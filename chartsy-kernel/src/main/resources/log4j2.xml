@@ -22,13 +22,13 @@
 
     <Loggers>
         <!-- LOG everything at INFO level -->
-        <Root level="debug">
+        <Root level="info">
             <AppenderRef ref="Console" />
             <AppenderRef ref="RollingFile" />
         </Root>
 
         <!-- LOG "one.chartsy*" at TRACE level -->
-        <Logger name="one.chartsy" level="trace"/>
+        <Logger name="one.chartsy" level="info"/>
     </Loggers>
 
 </Configuration>
