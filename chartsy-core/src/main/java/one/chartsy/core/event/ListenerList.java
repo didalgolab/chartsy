@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -91,9 +92,29 @@ public class ListenerList<L> implements InvocationHandler, Serializable {
      *         not an interface.
      */
     public static <T> ListenerList<T> of(Class<T> listenerInterface) {
-        return new ListenerList<>(listenerInterface);
+        return new ListenerList<>((Class<T>)listenerInterface);
     }
-    
+
+    /**
+     * Creates an EventListenerSupport object which supports the specified
+     * listener type.
+     *
+     * @param <T> the type of the listener interface
+     * @param listenerInterface the type of listener interface that will receive
+     *        events posted using this class.
+     *
+     * @return an EventListenerSupport object which supports the specified
+     *         listener type.
+     *
+     * @throws NullPointerException if <code>listenerInterface</code> is
+     *         <code>null</code>.
+     * @throws IllegalArgumentException if <code>listenerInterface</code> is
+     *         not an interface.
+     */
+    public static <T> ListenerList<T> of(TypeToken<T> listenerInterface) {
+        return new ListenerList<>((Class<T>)listenerInterface.getType());
+    }
+
     /**
      * Creates an EventListenerSupport object which supports the provided
      * listener interface.
@@ -286,7 +307,7 @@ public class ListenerList<L> implements InvocationHandler, Serializable {
      *            the proxy object representing a listener on which the invocation
      *            was called; not used
      * @param method
-     *            the listener method that will be called on all of the listeners.
+     *            the listener method that will be called on all the listeners.
      * @param args
      *            event arguments to propagate to the listeners.
      * @return always {@code null}
@@ -305,7 +326,7 @@ public class ListenerList<L> implements InvocationHandler, Serializable {
     /**
      * Propagates the method call to all registered listeners in place of the proxy
      * listener object, intercepting any exceptions that could occur while
-     * processing. All catched exceptions (instances of {@code Exception} type) are
+     * processing. All caught exceptions (instances of {@code Exception} type) are
      * logged to the application logs and aren't further propagated to the caller.
      * The instances of {@code Error}'s are immediately propagated to the caller and
      * processed in a usual way.
@@ -314,7 +335,7 @@ public class ListenerList<L> implements InvocationHandler, Serializable {
      *            the proxy object representing a listener on which the invocation
      *            was called; not used
      * @param method
-     *            the listener method that will be called on all of the listeners.
+     *            the listener method that will be called on all the listeners.
      * @param args
      *            event arguments to propagate to the listeners.
      * @return always {@code null}
@@ -330,5 +351,21 @@ public class ListenerList<L> implements InvocationHandler, Serializable {
             }
         }
         return null;
+    }
+
+    public static abstract class TypeToken<T> {
+        private final Type type;
+
+        public TypeToken() {
+            Type superClass = getClass().getGenericSuperclass();
+            if (superClass instanceof Class) {
+                throw new RuntimeException("Missing type parameter.");
+            }
+            this.type = ((ParameterizedType) superClass).getActualTypeArguments()[0];
+        }
+
+        public final Type getType() {
+            return type;
+        }
     }
 }
