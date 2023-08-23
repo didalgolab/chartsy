@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2010 Haifeng Li
- * Copyright (c) -2022 Mariusz Bernacki <info@softignition.com>
+ * Copyright (c) -2022 Mariusz Bernacki <consulting@didalgo.com>
  * SPDX-License-Identifier: Apache-2.0
  */
 package one.chartsy.smile.neighbor;
