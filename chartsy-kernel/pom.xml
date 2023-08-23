@@ -33,11 +33,14 @@
                         <publicPackage>feign.*</publicPackage>
                         <publicPackage>io.netty.*</publicPackage>
                         <publicPackage>javax.annotation.*</publicPackage>
-                        <publicPackage>javax.persistence.*</publicPackage>
-                        <publicPackage>javax.xml.*</publicPackage>
+                        <publicPackage>jakarta.persistence.*</publicPackage>
+                        <publicPackage>jakarta.xml.*</publicPackage>
+                        <publicPackage>jakarta.xml.bind.*</publicPackage>
+                        <publicPackage>net.bytebuddy.*</publicPackage>
                         <publicPackage>one.chartsy.*</publicPackage>
                         <publicPackage>org.aopalliance.*</publicPackage>
                         <publicPackage>org.apache.*</publicPackage>
+                        <publicPackage>org.apache.logging.*</publicPackage>
                         <publicPackage>org.hibernate.*</publicPackage>
                         <publicPackage>org.immutables.*</publicPackage>
                         <publicPackage>org.springframework.*</publicPackage>
@@ -78,7 +81,7 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>${jackson.version}.2</version>
+            <version>${jackson.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -150,6 +153,11 @@
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-core</artifactId>
+            <version>${log4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
             <version>${log4j.version}</version>
         </dependency>
     </dependencies>

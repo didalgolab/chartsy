@@ -10,7 +10,7 @@ import org.hibernate.persister.entity.EntityPersister;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 
-import javax.persistence.EntityManagerFactory;
+import jakarta.persistence.EntityManagerFactory;
 
 public class HibernateEntityEventPublisher implements PostInsertEventListener, PostUpdateEventListener, PostDeleteEventListener {
 
@@ -46,7 +46,7 @@ public class HibernateEntityEventPublisher implements PostInsertEventListener, P
     }
 
     @Override
-    public boolean requiresPostCommitHanding(EntityPersister persister) {
+    public boolean requiresPostCommitHandling(EntityPersister persister) {
         return true;
     }
 }

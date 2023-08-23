@@ -9,11 +9,11 @@ import one.chartsy.data.provider.DataProvider;
 import one.chartsy.data.provider.DataProviderLoader;
 import one.chartsy.data.provider.HierarchicalConfiguration;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.*;
 
-import static javax.persistence.GenerationType.SEQUENCE;
+import static jakarta.persistence.GenerationType.SEQUENCE;
 import static one.chartsy.SymbolGroupContent.Type.DATA_PROVIDER_FOLDER;
 import static one.chartsy.SymbolGroupContent.Type.FOLDER;
 

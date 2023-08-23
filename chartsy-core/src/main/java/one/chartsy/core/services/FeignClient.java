@@ -46,7 +46,7 @@ public class FeignClient extends Feign {
                 })
                 .decoder(new GsonDecoder())
                 .client(new Http2Client())
-                .logger(new Log4j2Logger(getClass()))
+                //.logger(new Log4j2Logger(getClass()))
                 .logLevel(Logger.Level.FULL);
     }
 }

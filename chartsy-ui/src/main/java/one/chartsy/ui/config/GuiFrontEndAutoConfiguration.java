@@ -18,14 +18,15 @@ import one.chartsy.ui.json.gson.FontTypeAdapter;
 import one.chartsy.ui.reports.Report;
 import one.chartsy.ui.simulation.reports.ReportableSimulationResult;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.context.annotation.*;
 
 import java.awt.*;
 
-@Configuration
+@AutoConfiguration
 @ConditionalOnBean(FrontEndConfiguration.class)
-public class GuiFrontEndConfiguration {
+public class GuiFrontEndAutoConfiguration {
 
     @Bean
     @Primary

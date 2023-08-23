@@ -8,9 +8,9 @@ import one.chartsy.When;
 import one.chartsy.core.ThreadContext;
 import one.chartsy.trade.Execution;
 import one.chartsy.trade.MarketUniverseChangeEvent;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
+import java.lang.System.Logger;
+import java.lang.System.Logger.Level;
 import java.time.LocalDate;
 import java.util.Map;
 import java.util.Objects;
@@ -20,7 +20,7 @@ public abstract class AbstractTradingAlgorithm implements TradingAlgorithm {
     /** The unique identifier of the strategy. */
     private final UUID strategyUUID = UUID.randomUUID();
 
-    private final Logger log = LogManager.getLogger(getClass());
+    private final Logger log = System.getLogger(getClass().getName());
     protected final TradingAlgorithmContext context;
     private final Map<String, ?> parameters;
 
@@ -65,17 +65,17 @@ public abstract class AbstractTradingAlgorithm implements TradingAlgorithm {
 
     @Override
     public void onInit(TradingAlgorithmContext runtime) {
-        log.debug("Algorithm {} initializing", getId());
+        log.log(Level.DEBUG, "Algorithm {0} initializing", getId());
     }
 
     @Override
     public void onAfterInit() {
-        log.debug("Algorithm {} initialized", getId());
+        log.log(Level.DEBUG, "Algorithm {0} initialized", getId());
     }
 
     @Override
     public void onExecution(Execution execution) {
-        log().debug("Received Execution: {}", execution);
+        log().log(Level.DEBUG, "Received Execution: {0}", execution);
     }
 
     @Override
@@ -85,12 +85,12 @@ public abstract class AbstractTradingAlgorithm implements TradingAlgorithm {
 
     @Override
     public void onTradingDayStart(LocalDate date) {
-        log.debug("Algorithm's {} trading date {} started", getId(), date);
+        log.log(Level.DEBUG, "Algorithm's {0} trading date {1} started", getId(), date);
     }
 
     @Override
     public void onTradingDayEnd(LocalDate date) {
-        log.debug("Algorithm's {} trading date {} ended", getId(), date);
+        log.log(Level.DEBUG, "Algorithm's {0} trading date {1} ended", getId(), date);
     }
 
     @Override
@@ -106,9 +106,9 @@ public abstract class AbstractTradingAlgorithm implements TradingAlgorithm {
     @Override
     public void onMarketUniverseChange(MarketUniverseChangeEvent change) {
         if (change.hasRemovedSymbols())
-            log().debug("Algorithm {} has removed from market universe: {}", getId(), change.getRemovedSymbols());
+            log().log(Level.DEBUG, "Algorithm {0} has removed from market universe: {1}", getId(), change.getRemovedSymbols());
         if (change.hasAddedSymbols())
-            log().debug("Algorithm {} has added to market universe: {}", getId(), change.getAddedSymbols());
+            log().log(Level.DEBUG, "Algorithm {0} has added to market universe: {1}", getId(), change.getAddedSymbols());
     }
 
     private record Configuration(

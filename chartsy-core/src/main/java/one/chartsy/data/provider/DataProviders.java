@@ -15,8 +15,7 @@ import org.openide.util.lookup.ServiceProvider;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import static org.apache.commons.collections4.IterableUtils.transformedIterable;
+import java.util.stream.StreamSupport;
 
 public class DataProviders {
     private DataProviders() { }
@@ -26,9 +25,10 @@ public class DataProviders {
     }
 
     public static List<CandleSeries> getHistoricalCandles(DataProvider provider, TimeFrame timeFrame, Iterable<? extends SymbolIdentity> symbols) {
-        return getHistoricalCandles(provider, transformedIterable(symbols, symb -> SymbolResource.of(symb, timeFrame)));
+        return getHistoricalCandles(provider, StreamSupport.stream(symbols.spliterator(), false)
+                .map(symb -> SymbolResource.of(symb, timeFrame))
+                .toList());
     }
-
     public static List<CandleSeries> getHistoricalCandles(DataProvider provider, Iterable<SymbolResource<Candle>> resources) {
         return getSupport().getHistoricalCandles(provider, resources);
     }

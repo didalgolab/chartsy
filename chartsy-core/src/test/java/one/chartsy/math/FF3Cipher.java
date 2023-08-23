@@ -1,5 +1,5 @@
 /* Copyright (c) 2021 Schoening Consulting LLC
- * Copyright 2023 Comarch SA
+ * Copyright 2023 Mariusz Bernacki
  * SPDX-License-Identifier: Apache-2.0 */
 package one.chartsy.math;
 
@@ -10,9 +10,6 @@ import java.math.BigInteger;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Implements the FF3-1 format-preserving encryption algorithm.
@@ -143,7 +140,6 @@ public class FF3Cipher {
         // Split the message
         String A = plaintext.substring(0, u);
         String B = plaintext.substring(u);
-        logger.trace("r {} A {} B {}", this.radix, A, B);
 
         if ((this.tweakBytes.length != TWEAK_LEN) && (this.tweakBytes.length != TWEAK_LEN_NEW)) {
             throw new IllegalArgumentException(String.format("tweak length %d is invalid: tweak must be 56 or 64 bits",
@@ -151,8 +147,6 @@ public class FF3Cipher {
         }
 
         // Calculate the tweak
-        logger.trace("tweak: {}", () -> byteArrayToHexString(this.tweakBytes));
-
         byte[] tweak64 = (this.tweakBytes.length == TWEAK_LEN_NEW) ?
                 calculateTweak64_FF3_1(this.tweakBytes) : this.tweakBytes;
 
@@ -167,8 +161,6 @@ public class FF3Cipher {
 
         BigInteger modU = BigInteger.valueOf(this.radix).pow(u);
         BigInteger modV = BigInteger.valueOf(this.radix).pow(v);
-        logger.trace("u {} v {} modU: {} modV: {}", u, v, modU, modV);
-        logger.trace("tL: {} tR: {}", () -> byteArrayToHexString(Tl), () -> byteArrayToHexString(Tr));
 
         for (byte i = 0; i < NUM_ROUNDS; ++i) {
             int m;
@@ -191,7 +183,6 @@ public class FF3Cipher {
             // Calculate S by operating on P in place
             byte[] S = this.aesCipher.doFinal(P);
             reverseBytes(S);
-            logger.trace("\tS: {}", () -> byteArrayToHexString(S));
 
             BigInteger y = new BigInteger(byteArrayToHexString(S), 16);
 
@@ -206,14 +197,11 @@ public class FF3Cipher {
                 c = c.mod(modV);
             }
 
-            logger.trace("\tm: {} A: {} c: {} y: {}", m, A, c, y);
-
             String C = encode_int_r(c, this.alphabet, m);
 
             // Final steps
             A = B;
             B = C;
-            logger.trace("A: {} B: {}", A, B);
         }
         return A + B;
     }
@@ -262,8 +250,6 @@ public class FF3Cipher {
         }
 
         // Calculate the tweak
-        logger.trace("tweak: {}", () -> byteArrayToHexString(this.tweakBytes));
-
         byte[] tweak64 = (this.tweakBytes.length == TWEAK_LEN_NEW) ?
                 calculateTweak64_FF3_1(this.tweakBytes) : this.tweakBytes;
 
@@ -278,8 +264,6 @@ public class FF3Cipher {
 
         BigInteger modU = BigInteger.valueOf(this.radix).pow(u);
         BigInteger modV = BigInteger.valueOf(this.radix).pow(v);
-        logger.trace("modU: {} modV: {}", modU, modV);
-        logger.trace("tL: {} tR: {}", () -> byteArrayToHexString(Tl), () -> byteArrayToHexString(Tr));
 
         for (byte i = (byte) (NUM_ROUNDS - 1); i >= 0; --i) {
             int m;
@@ -302,7 +286,6 @@ public class FF3Cipher {
             // Calculate S by operating on P in place
             byte[] S = this.aesCipher.doFinal(P);
             reverseBytes(S);
-            logger.trace("\tS: {}", () -> byteArrayToHexString(S));
 
             BigInteger y = new BigInteger(byteArrayToHexString(S), 16);
 
@@ -317,14 +300,11 @@ public class FF3Cipher {
                 c = c.mod(modV);
             }
 
-            logger.trace("\tm: {} B: {} c: {} y: {}", m, B, c, y);
-
             String C = encode_int_r(c, this.alphabet, m);
 
             // Final steps
             B = A;
             A = C;
-            logger.trace("A: {} B: {}", A, B);
         }
         return A + B;
     }
@@ -377,7 +357,6 @@ public class FF3Cipher {
         byte[] bBytes = decode_int(B, alphabet).toByteArray();
 
         System.arraycopy(bBytes, 0, P, (BLOCK_SIZE - bBytes.length), bBytes.length);
-        logger.trace("round: {} W: {} P: {}", () -> i, () -> byteArrayToHexString(W), () -> byteArrayToIntString(P));
         return P;
     }
 
@@ -433,16 +412,6 @@ public class FF3Cipher {
             hexChars[j * 2 + 1] = (byte) HEX_ARRAY[v & 0x0F];
         }
         return new String(hexChars, StandardCharsets.UTF_8);
-    }
-
-    /**
-     * used for debugging output
-     *
-     * @param byteArray  a byte array
-     * @return           a decimal string encoding of a number
-     */
-    protected static String byteArrayToIntString(byte[] byteArray) {
-        return Arrays.toString(byteArray);
     }
 
     /**
@@ -524,7 +493,6 @@ public class FF3Cipher {
     private static final int TWEAK_LEN_NEW =  7;     // FF3-1 56-bit tweak length
     private static final int HALF_TWEAK_LEN = TWEAK_LEN/2;
     private static final int MAX_RADIX = 256;
-    private static final Logger logger = LogManager.getLogger(FF3Cipher.class.getName());
 
     /** The recommendation in Draft SP 800-38G was strengthened to a requirement in Draft SP 800-38G Revision 1:
        the minimum domain size for FF1 and FF3-1 is one million */
