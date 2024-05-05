@@ -281,8 +281,8 @@ public class Order implements java.io.Serializable, Cloneable, CustomValuesHolde
      * @return the calculated commission
      */
     public double getCommission(double price, double volume, Position position) {
-        if (position != null)
-            return 0.0003 * volume;
+        //if (position != null)
+        //    return 0.0003 * volume;
         //return 0.0039 * price * volume;
         //return 0.004 * price;
         //return 0.9;

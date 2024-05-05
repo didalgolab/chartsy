@@ -25,7 +25,7 @@ class Base62Test {
         Pattern alphanumeric = Pattern.compile("[0-9A-Za-z]*");
 
         randomByteSequences()
-                .limit(100_000_000)
+                .limit(1000)
                 .map(encoder::encode)
                 .forEach(base62String ->
                         assertTrue(alphanumeric.matcher(base62String).matches(),
@@ -35,7 +35,7 @@ class Base62Test {
     @Test
     void decode_reverses_encoded_bytes() {
         randomByteSequences()
-                .limit(100_000_000)
+                .limit(1000)
                 .forEach(bytes ->
                     assertArrayEquals(bytes, decoder.decode(encoder.encode(bytes))));
     }

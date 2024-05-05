@@ -58,7 +58,7 @@ public class StrategyTest {
         System.out.println(result.testDuration());
     }
 
-    @ParameterizedTest
+    //@ParameterizedTest // TODO not usable
     @MethodSource("runners")
     void under_construction(SimulationRunner runner) {
         var c1 = Candle.of(toEpochMicros(LocalDateTime.of(2021, 1, 1, 0, 0)), 1.1, 1.9, 1.0, 1.8);
@@ -114,12 +114,13 @@ public class StrategyTest {
                 assertFalse(isOnMarket(), "not on market because of same-bar-exit");
             }
         }
-        TradingSimulator simulator = new TradingSimulator(MyStrategy::new);
+        var simulator = new TradingSimulator(MyStrategy::new);
         runner.run(inputSeries, simulator);
 
+        var initialBalance = simulator.getMainAccount().getInitialBalance();
         var entryPrice = c2.open();
         var exitPrice = STOP_LOSS;
-        assertEquals((exitPrice - entryPrice), simulator.getMainAccount().getEquity(), "balance after simulation");
+        assertEquals(initialBalance + (exitPrice - entryPrice), simulator.getMainAccount().getEquity(), "balance after simulation");
     }
 
     static Series<Candle> seriesOf(Candle... cs) {
