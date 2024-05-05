@@ -98,6 +98,10 @@ public interface Candle extends Chronological {
         return SimpleCandle.of(time, open, high, low, close, volume, count);
     }
 
+    static Candle of(LocalDateTime dateTime, double open, double high, double low, double close, double volume) {
+        return of(Chronological.toEpochMicros(dateTime), open, high, low, close, volume);
+    }
+
     static int direction(Candle c) {
         return (c.close() > c.open())? 1 : 0;
     }

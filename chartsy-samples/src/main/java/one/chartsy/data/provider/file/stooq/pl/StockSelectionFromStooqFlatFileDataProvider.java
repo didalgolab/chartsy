@@ -29,7 +29,7 @@ public class StockSelectionFromStooqFlatFileDataProvider {
 
         //CandleSeries series = dataProvider.queryForCandles(query).collect(Batches.toCandleSeries());
         Map<Pair<Double, String>, String> counts = new TreeMap<>();
-        List<? extends SymbolIdentity> stocks = dataProvider.listSymbols(new SymbolGroup("/data/daily/pl/wse stocks"));
+        List<SymbolIdentity> stocks = dataProvider.listSymbols(new SymbolGroup("/data/daily/pl/wse stocks"));
         System.out.println("Stocks: " + stocks.size());
         for (SymbolIdentity stock : stocks) {
             DataQuery<Candle> query = DataQuery.resource(SymbolResource.of(stock, TimeFrame.Period.DAILY))

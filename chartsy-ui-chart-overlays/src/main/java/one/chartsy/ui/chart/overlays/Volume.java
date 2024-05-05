@@ -80,7 +80,7 @@ public class Volume extends AbstractOverlay {
         if (initial != null) {
             DoubleSeries volume = initial.volumes();
             Range range = Range.of(0, max(volume));
-            double factor = Math.pow(10, String.valueOf(Math.round(range.getMax())).length() - 1);
+            double factor = Math.pow(10, String.valueOf(Math.round(range.max())).length() - 1);
             volume = volume.div(factor);
             addPlot(VOLUME, new EmptyPlot(volume.values(), color));
             //addPlot(SMA, new EmptyPlot(volume.sma(properties.getSmaPeriod()), properties.getColor()));

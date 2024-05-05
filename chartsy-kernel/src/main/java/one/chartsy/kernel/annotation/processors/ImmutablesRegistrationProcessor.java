@@ -19,7 +19,7 @@ import org.openide.filesystems.annotations.LayerGenerationException;
 import org.openide.util.lookup.ServiceProvider;
 
 @ServiceProvider(service = Processor.class)
-@SupportedSourceVersion(SourceVersion.RELEASE_8)
+@SupportedSourceVersion(SourceVersion.RELEASE_17)
 public class ImmutablesRegistrationProcessor extends LayerGeneratingProcessor {
     /** The folder in a layer where the mapper specification is stored. */
     public static final String NAMESPACE = "Immutables/Generated";

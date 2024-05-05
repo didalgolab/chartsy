@@ -41,7 +41,7 @@ public class FillPlot extends AbstractTimeSeriesPlot {
         double max = Math.max(f, t);
         
         if (upper) {
-            max = Math.max(max, range.getMax());
+            max = Math.max(max, range.max());
         } else {
             min = Math.max(f, t);
             max = Math.min(f, t);

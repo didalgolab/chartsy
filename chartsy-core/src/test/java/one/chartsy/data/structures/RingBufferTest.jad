@@ -4,6 +4,7 @@
  */
 package one.chartsy.data.structures;
 
+import one.chartsy.base.ringbuffer.RingBuffer;
 import org.junit.jupiter.api.Test;
 
 import java.util.NoSuchElementException;
@@ -122,7 +123,8 @@ class RingBufferTests {
 
     @Test
     void populateAndRemoveManyTimes() {
-        RingBuffer<Integer> buffer = new RingBuffer<>();
+        final int CAPACITY = 8;
+        RingBuffer<Integer> buffer = new RingBuffer<>(CAPACITY);
 
         // This should result in the buffer always containing between 3 and 5 elements.
         buffer.addLast(-1);
@@ -143,7 +145,6 @@ class RingBufferTests {
         assertEquals(99, (int)buffer.getFromFirst(2));
 
         // Check that the buffer has not grown in capacity to some absurd size
-        // Will use 8 since my implementation will probably grow by doubling the backing array size.
-        assertTrue(buffer.capacity() <= 8);
+        assertTrue(buffer.capacity() <= CAPACITY);
     }
 }

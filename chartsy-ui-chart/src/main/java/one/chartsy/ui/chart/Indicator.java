@@ -144,8 +144,8 @@ public abstract class Indicator extends ChartPlugin<Indicator> {
         if (range.isEmpty())
             return new VisualRange(Range.of(0.0, Double.POSITIVE_INFINITY));
 
-        double margin = range.getLength() * 0.01;
-        return new VisualRange(rv.add(range.getMin() - margin).add(range.getMax() + margin).toRange());
+        double margin = range.length() * 0.01;
+        return new VisualRange(rv.add(range.min() - margin).add(range.max() + margin).toRange());
     }
     
     public void paint(Graphics2D g, ChartContext view, Rectangle bounds) {

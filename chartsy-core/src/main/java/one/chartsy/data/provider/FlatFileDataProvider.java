@@ -82,7 +82,7 @@ public class FlatFileDataProvider extends AbstractDataProvider implements Symbol
     }
 
     @Override
-    public List<? extends SymbolIdentity> listSymbols(SymbolGroup group) {
+    public List<SymbolIdentity> listSymbols(SymbolGroup group) {
         try {
             return asIdentifiers(Files.newDirectoryStream(asPath(group), Files::isRegularFile));
         } catch (IOException e) {
@@ -203,7 +203,7 @@ public class FlatFileDataProvider extends AbstractDataProvider implements Symbol
     }
 
     @Override
-    public List<? extends SymbolIdentity> listSymbols() {
+    public List<SymbolIdentity> listSymbols() {
         return getFileTreeMetadata().getAvailableSymbolsList();
     }
 
@@ -211,7 +211,7 @@ public class FlatFileDataProvider extends AbstractDataProvider implements Symbol
         private final Map<String, SymbolGroup> availableGroups;
         private final Map<SymbolIdentifier, Path> availableSymbols;
         private List<SymbolGroup> availableGroupsList;
-        private List<SymbolIdentifier> availableSymbolsList;
+        private List<SymbolIdentity> availableSymbolsList;
 
         private FileTreeMetadata(Map<String, SymbolGroup> availableGroups, Map<SymbolIdentifier, Path> availableSymbols) {
             this.availableGroups = availableGroups;
@@ -228,7 +228,7 @@ public class FlatFileDataProvider extends AbstractDataProvider implements Symbol
             return availableGroups.values().stream().filter(filter).toList();
         }
 
-        public List<SymbolIdentifier> getAvailableSymbolsList() {
+        public List<SymbolIdentity> getAvailableSymbolsList() {
             if (availableSymbolsList == null)
                 availableSymbolsList = List.copyOf(availableSymbols.keySet());
             return availableSymbolsList;

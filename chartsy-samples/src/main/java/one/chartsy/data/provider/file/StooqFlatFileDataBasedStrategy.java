@@ -32,7 +32,7 @@ public class StooqFlatFileDataBasedStrategy {
         FlatFileDataProvider dataProvider = FlatFileFormat.STOOQ
                 .newDataProvider(Path.of("C:/Downloads/d_pl_txt(6).zip"));
 
-        List<? extends SymbolIdentity> stocks = dataProvider.listSymbols(new SymbolGroup("/data/daily/pl/wse stocks"));
+        List<SymbolIdentity> stocks = dataProvider.listSymbols(new SymbolGroup("/data/daily/pl/wse stocks"));
         List<CandleSeries> seriesList = DataProviders.getHistoricalCandles(dataProvider, TimeFrame.Period.DAILY, stocks);
         System.out.println(seriesList.size());
 

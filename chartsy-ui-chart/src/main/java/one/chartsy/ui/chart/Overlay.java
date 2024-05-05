@@ -125,8 +125,8 @@ public abstract class Overlay extends ChartPlugin<Overlay> implements Serializab
         if (range.isEmpty())
             return Range.of(0.0, Double.POSITIVE_INFINITY);
 
-        double margin = range.getLength() * 0.01;
-        return rv.add(range.getMin() - margin).add(range.getMax() + margin).toRange();
+        double margin = range.length() * 0.01;
+        return rv.add(range.min() - margin).add(range.max() + margin).toRange();
     }
     
     public void paint(Graphics2D g, ChartContext cf, Rectangle bounds) {

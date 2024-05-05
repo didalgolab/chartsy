@@ -11,11 +11,11 @@ public record VisualRange(Range range, boolean isLogarithmic) {
     }
 
     public double getMin() {
-        return range().getMin();
+        return range().min();
     }
 
     public double getMax() {
-        return range().getMax();
+        return range().max();
     }
 
     public VisualRange asLogarithmic() {

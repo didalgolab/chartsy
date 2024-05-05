@@ -45,6 +45,10 @@ public interface DoubleSeries extends TimeSeriesAlike {
         return mapThread(DoubleSeriesSupport::subtract, y);
     }
 
+    default DoubleSeries mul(DoubleSeries y) {
+        return mapThread(DoubleSeriesSupport::multiply, y);
+    }
+
     /**
      * Multiplies the series by the specified constant value.
      *

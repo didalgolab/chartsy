@@ -47,7 +47,23 @@ public interface Series<E extends Chronological> extends IndexedSymbolResourceDa
         return Holder.INSTANCE;
     }
 
-    default <R> R query(Query<? super Series<? extends E>, R> query) {
+    /**
+     * Queries this series using the provided {@code SeriesQuery}.
+     * <p>
+     * This method allows for the application of a {@code SeriesQuery} strategy
+     * to this series. The query encapsulates the logic for extracting
+     * information from the series and returns a result.
+     * <p>
+     * Implementations of {@code SeriesQuery} are responsible for defining the
+     * query logic. This method simply delegates to the {@link SeriesQuery#queryFrom}
+     * method of the provided {@code SeriesQuery} instance.
+     *
+     * @param <R> the type of the result returned by the query
+     * @param query the {@code SeriesQuery} to apply to this series
+     * @return the result of the query
+     * @throws IllegalArgumentException if the query cannot be applied to this series
+     */
+    default <R> R query(SeriesQuery<? super Series<E>, R, ? super E> query) {
         return query.queryFrom(this);
     }
 

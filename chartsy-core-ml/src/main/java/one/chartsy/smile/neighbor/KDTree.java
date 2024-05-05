@@ -4,6 +4,7 @@
  */
 package one.chartsy.smile.neighbor;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.List;
 
@@ -16,14 +17,14 @@ import one.chartsy.smile.sort.HeapSelect;
  * a useful dataset structure for nearest neighbor searches. The kd-tree is a
  * binary tree in which every node is a k-dimensional point. Every non-leaf
  * node generates a splitting hyperplane that divides the space into two
- * subspaces. Points left to the hyperplane represent the left sub-tree of
- * that node and the points right to the hyperplane by the right sub-tree.
+ * subspaces. Points left to the hyperplane represent the left subtree of
+ * that node and the points right to the hyperplane by the right subtree.
  * The hyperplane direction is chosen in the following way: every node split
- * to sub-trees is associated with one of the k-dimensions, such that the
+ * to subtrees is associated with one of the k-dimensions, such that the
  * hyperplane is perpendicular to that dimension vector. So, for example, if
  * for a particular split the "x" axis is chosen, all points in the subtree
  * with a smaller "x" value than the node will appear in the left subtree and
- * all points with larger "x" value will be in the right sub tree.
+ * all points with larger "x" value will be in the right subtree.
  * <p>
  * KD-trees are not suitable for efficiently finding the nearest neighbor
  * in high dimensional spaces. As a general rule, if the dimensionality is D,
@@ -52,33 +53,39 @@ import one.chartsy.smile.sort.HeapSelect;
  * @author Haifeng Li
  */
 public class KDTree <E> implements NearestNeighborSearch<double[], E>, KNNSearch<double[], E>, RNNSearch<double[], E>, Serializable {
+    @Serial
     private static final long serialVersionUID = 1L;
 
     /**
      * The root in the KD-tree.
      */
-    class Node implements Serializable {
+    static class Node implements Serializable {
 
         /**
          * Number of dataset stored in this node.
          */
         int count;
+
         /**
          * The smallest point index stored in this node.
          */
         int index;
+
         /**
          * The index of coordinate used to split this node.
          */
         int split;
+
         /**
          * The cutoff used to split the specific coordinate.
          */
         double cutoff;
+
         /**
          * The child node which values of split coordinate is less than the cutoff value.
          */
         Node lower;
+
         /**
          * The child node which values of split coordinate is greater than or equal to the cutoff value.
          */
@@ -98,7 +105,7 @@ public class KDTree <E> implements NearestNeighborSearch<double[], E>, KNNSearch
     /**
      * The data objects.
      */
-    private E[] data;
+    private List<E> values;
     /**
      * The root node of KD-Tree.
      */
@@ -123,7 +130,7 @@ public class KDTree <E> implements NearestNeighborSearch<double[], E>, KNNSearch
         }
 
         this.keys = key;
-        this.data = data;
+        this.values = List.of(data);
 
         int n = key.length;
         index = new int[n];
@@ -133,6 +140,10 @@ public class KDTree <E> implements NearestNeighborSearch<double[], E>, KNNSearch
 
         // Build the tree
         root = buildNode(0, n);
+    }
+
+    public List<E> values() {
+        return values;
     }
 
     @Override
@@ -257,7 +268,7 @@ public class KDTree <E> implements NearestNeighborSearch<double[], E>, KNNSearch
                 double distance = Math.squaredDistance(q, keys[index[idx]]);
                 if (distance < neighbor.distance) {
                     neighbor.key = keys[index[idx]];
-                    neighbor.value = data[index[idx]];
+                    neighbor.value = values.get(index[idx]);
                     neighbor.index = index[idx];
                     neighbor.distance = distance;
                 }
@@ -305,7 +316,7 @@ public class KDTree <E> implements NearestNeighborSearch<double[], E>, KNNSearch
                     datum.distance = distance;
                     datum.index = index[idx];
                     datum.key = keys[index[idx]];
-                    datum.value = data[index[idx]];
+                    datum.value = values.get(index[idx]);
                     heap.heapify();
                 }
             }
@@ -348,7 +359,7 @@ public class KDTree <E> implements NearestNeighborSearch<double[], E>, KNNSearch
 
                 double distance = Math.distance(q, keys[index[idx]]);
                 if (distance <= radius) {
-                    neighbors.add(new Neighbor<>(keys[index[idx]], data[index[idx]], index[idx], distance));
+                    neighbors.add(new Neighbor<>(keys[index[idx]], values.get(index[idx]), index[idx], distance));
                 }
             }
         } else {

@@ -22,11 +22,11 @@ public interface DataProvider extends FinancialService {
         return List.of(SymbolGroup.BASE);
     }
 
-    default List<? extends SymbolIdentity> listSymbols() {
+    default List<SymbolIdentity> listSymbols() {
         return listSymbols(SymbolGroup.BASE);
     }
 
-    List<? extends SymbolIdentity> listSymbols(SymbolGroup group);
+    List<SymbolIdentity> listSymbols(SymbolGroup group);
 
     <T extends Chronological> Flux<T> query(Class<T> type, DataQuery<T> request);
 

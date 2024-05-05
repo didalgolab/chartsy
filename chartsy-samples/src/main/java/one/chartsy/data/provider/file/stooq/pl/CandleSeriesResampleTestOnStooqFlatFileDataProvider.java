@@ -25,7 +25,7 @@ public class CandleSeriesResampleTestOnStooqFlatFileDataProvider {
                 .newDataProvider(Path.of("C:/Downloads/d_pl_txt(6).zip"));
 
         Map<Pair<Double, String>, String> counts = new TreeMap<>();
-        List<? extends SymbolIdentity> stocks = dataProvider.listSymbols(new SymbolGroup("/data/daily/pl/wse stocks"));
+        List<SymbolIdentity> stocks = dataProvider.listSymbols(new SymbolGroup("/data/daily/pl/wse stocks"));
         log.info("Stocks: {}", stocks.size());
         for (SymbolIdentity stock : stocks) {
             DataQuery<Candle> query = DataQuery.resource(SymbolResource.of(stock, TimeFrame.Period.DAILY))

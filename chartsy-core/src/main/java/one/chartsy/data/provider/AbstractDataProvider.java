@@ -42,11 +42,11 @@ public abstract class AbstractDataProvider implements DataProvider {
     }
 
     @Override
-    public List<? extends SymbolIdentity> listSymbols(SymbolGroup group) {
+    public List<SymbolIdentity> listSymbols(SymbolGroup group) {
         throw new UnsupportedOperationException("listSymbols by SymbolGroup");
     }
 
-    public List<? extends SymbolIdentity> listSymbols(String... groups) {
+    public List<SymbolIdentity> listSymbols(String... groups) {
         if (groups.length == 0)
             return List.of();
         if (groups.length == 1)
@@ -55,7 +55,7 @@ public abstract class AbstractDataProvider implements DataProvider {
         return listSymbols(Stream.of(groups).map(SymbolGroup::new).toList());
     }
 
-    public List<? extends SymbolIdentity> listSymbols(Collection<SymbolGroup> groups) {
+    public List<SymbolIdentity> listSymbols(Collection<SymbolGroup> groups) {
         Set<SymbolIdentity> symbols = new TreeSet<>(SymbolIdentity.comparator());
         for (SymbolGroup group : groups)
             symbols.addAll(listSymbols(group));

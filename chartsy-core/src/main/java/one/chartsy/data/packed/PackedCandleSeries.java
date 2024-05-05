@@ -41,4 +41,15 @@ public class PackedCandleSeries extends AbstractCandleSeries<Candle, PackedDoubl
         }
         return DoubleSeries.of(result, getTimeline());
     }
+
+    @Override
+    public CandleSeries take(int count) {
+        if (count <= 0)
+            throw new IllegalArgumentException("The `count` argument must be positive");
+        if (count > length())
+            throw new IllegalArgumentException("The `count` argument cannot exceed series length " + length());
+
+        Dataset<Candle> subDataset = getData().take(0, count);
+        return new PackedCandleSeries(getResource(), subDataset);
+    }
 }

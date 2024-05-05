@@ -294,8 +294,8 @@ public class ChartData implements Serializable, ChartFrameListener {
         Range.Builder range = new Range.Builder();
         if (!isVisibleNull()) {
             Range di = getVisible().getRange(null).toRange();
-            double min = di.getMin();
-            double max = di.getMax();
+            double min = di.min();
+            double max = di.max();
             range.add(min - (max - min) * 0.00, max + (max - min) * 0.00);//TODO: changed
             
             if (!overlays.isEmpty())
@@ -304,10 +304,10 @@ public class ChartData implements Serializable, ChartFrameListener {
                     if (overlay.isIncludedInRange()) {
                         Range oRange = overlay.getRange(chartFrame);
                         if (oRange != null) {
-                            if (oRange.getMin() > 0)
-                                range.add(oRange.getMin());
-                            if (!Double.isInfinite(oRange.getMax()))
-                                range.add(oRange.getMax());
+                            if (oRange.min() > 0)
+                                range.add(oRange.min());
+                            if (!Double.isInfinite(oRange.max()))
+                                range.add(oRange.max());
                         }
                     }
                 }
@@ -449,8 +449,8 @@ public class ChartData implements Serializable, ChartFrameListener {
         while (((rectangle.height / count) < (fontHeight + 20)) && (count > -2))
             count--;
         
-        double rangeMin = range.getMin();
-        double rangeMax = range.getMax();
+        double rangeMin = range.min();
+        double rangeMax = range.max();
         
         double vRange = rangeMax - rangeMin;
         double rangeUnit = vRange / count;
@@ -496,16 +496,16 @@ public class ChartData implements Serializable, ChartFrameListener {
     public DoubleArray getPriceValues(Range range, Rectangle bounds, Insets insets) {
         DoubleArray values = new DoubleArray();
         
-        double diff = range.getMax() - range.getMin();
+        double diff = range.max() - range.min();
         if (diff > 10) {
             int step = (int) (diff / 10) + 1;
-            double low = Math.ceil(range.getMax() - (diff / 10) * 9);
+            double low = Math.ceil(range.max() - (diff / 10) * 9);
             
-            for (double i = low; i <= range.getMax(); i += step)
+            for (double i = low; i <= range.max(); i += step)
                 values.add(i);
         } else {
             double step = diff / 10;
-            for (double i = range.getMin(); i <= range.getMax(); i += step)
+            for (double i = range.min(); i <= range.max(); i += step)
                 values.add(i);
         }
         
@@ -537,22 +537,22 @@ public class ChartData implements Serializable, ChartFrameListener {
     }
     
     private double getY(double value, Rectangle2D rect, Range range) {
-        return rect.getY() + (range.getMax() - value) / (range.getMax() - range.getMin()) * rect.getHeight();
+        return rect.getY() + (range.max() - value) / (range.max() - range.min()) * rect.getHeight();
     }
     
     private double getY(double value, Range range, Rectangle2D bounds, Insets insets) {
         double height = bounds.getHeight() - insets.top - insets.bottom;
-        return bounds.getY() + insets.top + (range.getMax() - value) / (range.getMax() - range.getMin()) * height;
+        return bounds.getY() + insets.top + (range.max() - value) / (range.max() - range.min()) * height;
     }
     
     private double getReverseY(double y, Rectangle rect, Range range) {
-        double value = range.getMax() - (y - rect.getY()) * (range.getMax() - range.getMin()) / rect.getHeight();
+        double value = range.max() - (y - rect.getY()) * (range.max() - range.min()) / rect.getHeight();
         return value;
     }
     
     private double getReverseY(double y, Range range, Rectangle bounds, Insets insets) {
         double height = bounds.getHeight() - insets.top - insets.bottom;
-        double value = range.getMax() - (y - bounds.getY() - insets.top) * (range.getMax() - range.getMin()) / height;
+        double value = range.max() - (y - bounds.getY() - insets.top) * (range.max() - range.min()) / height;
         return value;
     }
     
@@ -588,43 +588,43 @@ public class ChartData implements Serializable, ChartFrameListener {
     
     private double getLogY(double value, Rectangle rect, Range range) {
         double base = 0;
-        if (range.getMin() < 0)
-            base = Math.abs(range.getMin()) + 1.0D;
-        double scale = (rect.getHeight() / (Math.log((range.getMax() + base)/(range.getMin() + base))));
-        return rect.getY() + (int)(0.5 + (Math.log((range.getMax() + base)/(value + base))) * scale);
+        if (range.min() < 0)
+            base = Math.abs(range.min()) + 1.0D;
+        double scale = (rect.getHeight() / (Math.log((range.max() + base)/(range.min() + base))));
+        return rect.getY() + (int)(0.5 + (Math.log((range.max() + base)/(value + base))) * scale);
     }
     
     private double getLogY(double value, Range range, Rectangle bounds, Insets insets) {
         double base = 0;
-        if (range.getMin() < 0)
-            base = Math.abs(range.getMin()) + 1.0D;
-        double scale = (bounds.height - insets.top - insets.bottom) / Math.log((range.getMax() + base)/(range.getMin() + base));
-        return bounds.getY() + insets.top + (int)(0.5 + scale*Math.log((range.getMax() + base)/(value + base)));
+        if (range.min() < 0)
+            base = Math.abs(range.min()) + 1.0D;
+        double scale = (bounds.height - insets.top - insets.bottom) / Math.log((range.max() + base)/(range.min() + base));
+        return bounds.getY() + insets.top + (int)(0.5 + scale*Math.log((range.max() + base)/(value + base)));
     }
     
     private double getLogY2(double value, Rectangle2D.Double rect, Range range) {
         double base = 0;
-        if (range.getMin() < 0)
-            base = Math.abs(range.getMin()) + 1.0D;
-        double scale = (rect.getHeight() / (Math.log((range.getMax() + base)/(range.getMin() + base))));
-        return rect.getY() + (Math.log((range.getMax() + base)/(value + base))) * scale;
+        if (range.min() < 0)
+            base = Math.abs(range.min()) + 1.0D;
+        double scale = (rect.getHeight() / (Math.log((range.max() + base)/(range.min() + base))));
+        return rect.getY() + (Math.log((range.max() + base)/(value + base))) * scale;
     }
     
     private double getLogReverseY(double y, Rectangle rect, Range range) {
         double base = 0;
-        if (range.getMin() < 0)
-            base = Math.abs(range.getMin()) + 1.0D;
-        double scale = (rect.getHeight() / (Math.log(range.getMax() + base) - Math.log(range.getMin() + base)));
-        double value = Math.exp(Math.log(range.getMax() + base) - (y - rect.getY())/scale) - base;
+        if (range.min() < 0)
+            base = Math.abs(range.min()) + 1.0D;
+        double scale = (rect.getHeight() / (Math.log(range.max() + base) - Math.log(range.min() + base)));
+        double value = Math.exp(Math.log(range.max() + base) - (y - rect.getY())/scale) - base;
         return value;
     }
     
     private double getLogReverseY(double y, Range range, Rectangle bounds, Insets insets) {
         double base = 0;
-        if (range.getMin() < 0)
-            base = Math.abs(range.getMin()) + 1.0D;
-        double scale = (bounds.getHeight() - insets.top - insets.bottom) / (Math.log(range.getMax() + base) - Math.log(range.getMin() + base));
-        double value = Math.exp(Math.log(range.getMax() + base) - (y - bounds.getY() - insets.top)/scale) - base;
+        if (range.min() < 0)
+            base = Math.abs(range.min()) + 1.0D;
+        double scale = (bounds.getHeight() - insets.top - insets.bottom) / (Math.log(range.max() + base) - Math.log(range.min() + base));
+        double value = Math.exp(Math.log(range.max() + base) - (y - bounds.getY() - insets.top)/scale) - base;
         return value;
     }
     

@@ -2,18 +2,13 @@
  * SPDX-License-Identifier: Apache-2.0 */
 package one.chartsy.data.structures;
 
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
-import java.util.AbstractList;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Deque;
-import java.util.Iterator;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.NoSuchElementException;
+import java.io.*;
+import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.IntFunction;
+import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
+import java.util.stream.Stream;
 
 /* Copyright (C) 2012 Kevin L. Stern.
  *
@@ -39,7 +34,7 @@ import java.util.NoSuchElementException;
 /**
  * A dynamically sized compact data structure implementing both the
  * <tt>Deque</tt> and <tt>List</tt> interfaces. Internally, this data structure
- * maintains multiple sublists each having size O(sqrt(this.size())), giving a
+ * maintains multiple sub-lists each having size O(sqrt(this.size())), giving a
  * reasonable upper bound on the size of any one contiguous memory block
  * consumed by an instance. Furthermore, the resizing approach taken by this
  * data structure guarantees a memory overhead of O(sqrt(this.size())) instead
@@ -900,7 +895,7 @@ public class ThriftyList<T> extends AbstractList<T> implements List<T>,
     }
 
     @Override
-    public T[] toArray() {
+    public Object[] toArray() {
         return toArray((T[])null);
     }
 
@@ -1847,6 +1842,262 @@ public class ThriftyList<T> extends AbstractList<T> implements List<T>,
             currentIndex = index;
             currentSublistIndex = sublistIndex;
             currentSublistOffset = sublistOffset;
+        }
+    }
+
+    @Override
+    public ThriftyList<T> reversed() {
+        return new ReverseOrderLinkedListView<>(this, super.reversed(), Deque.super.reversed());
+    }
+
+    @SuppressWarnings({"ExternalizableWithoutPublicNoArgConstructor"})
+    static class ReverseOrderLinkedListView<E> extends ThriftyList<E> implements java.io.Externalizable {
+        final ThriftyList<E> list;
+        final List<E> rlist;
+        final Deque<E> rdeque;
+
+        ReverseOrderLinkedListView(ThriftyList<E> list, List<E> rlist, Deque<E> rdeque) {
+            this.list = list;
+            this.rlist = rlist;
+            this.rdeque = rdeque;
+        }
+
+        public String toString() {
+            return rlist.toString();
+        }
+
+        public boolean retainAll(Collection<?> c) {
+            return rlist.retainAll(c);
+        }
+
+        public boolean removeAll(Collection<?> c) {
+            return rlist.removeAll(c);
+        }
+
+        public boolean containsAll(Collection<?> c) {
+            return rlist.containsAll(c);
+        }
+
+        public boolean isEmpty() {
+            return rlist.isEmpty();
+        }
+
+        public Stream<E> parallelStream() {
+            return rlist.parallelStream();
+        }
+
+        public Stream<E> stream() {
+            return rlist.stream();
+        }
+
+        public boolean removeIf(Predicate<? super E> filter) {
+            return rlist.removeIf(filter);
+        }
+
+        public <T> T[] toArray(IntFunction<T[]> generator) {
+            return rlist.toArray(generator);
+        }
+
+        public void forEach(Consumer<? super E> action) {
+            rlist.forEach(action);
+        }
+
+        public Iterator<E> iterator() {
+            return rlist.iterator();
+        }
+
+        public int hashCode() {
+            return rlist.hashCode();
+        }
+
+        public boolean equals(Object o) {
+            return rlist.equals(o);
+        }
+
+        public List<E> subList(int fromIndex, int toIndex) {
+            return rlist.subList(fromIndex, toIndex);
+        }
+
+        public ListIterator<E> listIterator() {
+            return rlist.listIterator();
+        }
+
+        public void sort(Comparator<? super E> c) {
+            rlist.sort(c);
+        }
+
+        @Override public void replaceAll(UnaryOperator<E> operator) {
+            rlist.replaceAll(operator);
+        }
+
+        @Override public ThriftyList<E> reversed() {
+            return list;
+        }
+
+        @Override public Spliterator<E> spliterator() {
+            return rlist.spliterator();
+        }
+
+        @Override public <T> T[] toArray(T[] a) {
+            return rlist.toArray(a);
+        }
+
+        @Override public Object[] toArray() {
+            return rlist.toArray();
+        }
+
+        @Override public Iterator<E> descendingIterator() {
+            return rdeque.descendingIterator();
+        }
+
+        @Override public ListIterator<E> listIterator(int index) {
+            return rlist.listIterator(index);
+        }
+
+        @Override public boolean removeLastOccurrence(Object o) {
+            return rdeque.removeLastOccurrence(o);
+        }
+
+        @Override public boolean removeFirstOccurrence(Object o) {
+            return rdeque.removeFirstOccurrence(o);
+        }
+
+        @Override public E pop() {
+            return rdeque.pop();
+        }
+
+        @Override public void push(E e) {
+            rdeque.push(e);
+        }
+
+        @Override public E pollLast() {
+            return rdeque.pollLast();
+        }
+
+        @Override public E pollFirst() {
+            return rdeque.pollFirst();
+        }
+
+        @Override public E peekLast() {
+            return rdeque.peekLast();
+        }
+
+        @Override public E peekFirst() {
+            return rdeque.peekFirst();
+        }
+
+        @Override public boolean offerLast(E e) {
+            return rdeque.offerLast(e);
+        }
+
+        @Override public boolean offerFirst(E e) {
+            return rdeque.offerFirst(e);
+        }
+
+        @Override public boolean offer(E e) {
+            return rdeque.offer(e);
+        }
+
+        @Override public E remove() {
+            return rdeque.remove();
+        }
+
+        @Override public E poll() {
+            return rdeque.poll();
+        }
+
+        @Override public E element() {
+            return rdeque.element();
+        }
+
+        @Override public E peek() {
+            return rdeque.peek();
+        }
+
+        @Override public int lastIndexOf(Object o) {
+            return rlist.lastIndexOf(o);
+        }
+
+        @Override public int indexOf(Object o) {
+            return rlist.indexOf(o);
+        }
+
+        @Override public E remove(int index) {
+            return rlist.remove(index);
+        }
+
+        @Override public void add(int index, E element) {
+            rlist.add(index, element);
+        }
+
+        @Override public E set(int index, E element) {
+            return rlist.set(index, element);
+        }
+
+        @Override public E get(int index) {
+            return rlist.get(index);
+        }
+
+        @Override public void clear() {
+            rlist.clear();
+        }
+
+        @Override public boolean addAll(int index, Collection<? extends E> c) {
+            return rlist.addAll(index, c);
+        }
+
+        @Override public boolean addAll(Collection<? extends E> c) {
+            return rlist.addAll(c);
+        }
+
+        @Override public boolean remove(Object o) {
+            return rlist.remove(o);
+        }
+
+        @Override public boolean add(E e) {
+            return rlist.add(e);
+        }
+
+        @Override public int size() {
+            return rlist.size();
+        }
+
+        @Override public boolean contains(Object o) {
+            return rlist.contains(o);
+        }
+
+        @Override public void addLast(E e) {
+            rdeque.addLast(e);
+        }
+
+        @Override public void addFirst(E e) {
+            rdeque.addFirst(e);
+        }
+
+        @Override public E removeLast() {
+            return rdeque.removeLast();
+        }
+
+        @Override public E removeFirst() {
+            return rdeque.removeFirst();
+        }
+
+        @Override public E getLast() {
+            return rdeque.getLast();
+        }
+
+        @Override public E getFirst() {
+            return rdeque.getFirst();
+        }
+
+        @Override
+        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            throw new java.io.InvalidObjectException("not serializable");
+        }
+
+        @Override
+        public void writeExternal(ObjectOutput out) throws IOException {
+            throw new java.io.InvalidObjectException("not serializable");
         }
     }
 }

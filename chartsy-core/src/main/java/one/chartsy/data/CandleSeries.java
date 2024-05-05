@@ -3,6 +3,7 @@
 package one.chartsy.data;
 
 import one.chartsy.Candle;
+import one.chartsy.HighLowCandle;
 import one.chartsy.SymbolResource;
 import one.chartsy.data.packed.PackedCandleSeries;
 import one.chartsy.data.packed.PackedDataset;
@@ -119,8 +120,24 @@ public interface CandleSeries extends Series<Candle> {
      */
     DoubleSeries trueRange();
 
+    CandleSeries take(int count);
+
     default DoubleSeries highestSince() {
         return highs().highestSince();
+    }
+
+    default HighLowCandle getHighLow(int startIndex, int endIndexExclusive) {
+        if (endIndexExclusive <= startIndex)
+            throw new IllegalArgumentException(String.format("endIndexExclusive: %n < startIndex: %n", startIndex, endIndexExclusive));
+
+        double high = Double.NEGATIVE_INFINITY, low = Double.POSITIVE_INFINITY;
+        long time = get(startIndex).getTime();
+        for (int index = endIndexExclusive; --index >= startIndex; ) {
+            Candle c = get(index);
+            high = Math.max(high, c.high());
+            low = Math.min(low, c.low());
+        }
+        return HighLowCandle.of(time, high, low);
     }
 
     /**

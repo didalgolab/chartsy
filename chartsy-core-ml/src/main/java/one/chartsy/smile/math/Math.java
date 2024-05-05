@@ -2190,9 +2190,7 @@ public class Math {
      * The squared Euclidean distance.
      */
     public static double squaredDistance(double[] x, double[] y) {
-        if (x.length != y.length) {
-            throw new IllegalArgumentException("Input vector sizes are different.");
-        }
+        checkDimensions(x, y);
 
         double sum = 0.0;
         for (int i = 0; i < x.length; i++) {
@@ -2200,6 +2198,12 @@ public class Math {
         }
 
         return sum;
+    }
+
+    private static void checkDimensions(double[] x, double[] y) {
+        if (x.length != y.length) {
+            throw new IllegalArgumentException("Input vector sizes are different.");
+        }
     }
 
     /**
@@ -2886,9 +2890,7 @@ public class Math {
      * Pearson cannot be used.
      */
     public static double spearman(double[] x, double[] y) {
-        if (x.length != y.length) {
-            throw new IllegalArgumentException("Input vector sizes are different.");
-        }
+        checkDimensions(x, y);
 
         int n = x.length;
         double[] wksp1 = new double[n];
@@ -3003,9 +3005,7 @@ public class Math {
      * are not equidistant. It is used with non-parametric data.
      */
     public static double kendall(double[] x, double[] y) {
-        if (x.length != y.length) {
-            throw new IllegalArgumentException("Input vector sizes are different.");
-        }
+        checkDimensions(x, y);
 
         int is = 0, n2 = 0, n1 = 0, n = x.length;
         double aa, a2, a1;

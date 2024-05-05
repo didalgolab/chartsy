@@ -23,7 +23,7 @@ public class SeriesSummaryFromStooqFlatFileDataProvider {
                 .newDataProvider(Path.of("C:/Downloads/d_pl_txt(4).zip"));
 
         // list all stocks contained in a file
-        List<? extends SymbolIdentity> stocks = dataProvider.listSymbols(new SymbolGroup("/data/daily/pl/wse stocks"));
+        List<SymbolIdentity> stocks = dataProvider.listSymbols(new SymbolGroup("/data/daily/pl/wse stocks"));
         int stockCount = stocks.size();
         log.info("Found {} stock(s)".replace("(s)", stockCount==1?"":"s"), stockCount);
         log.info("");
