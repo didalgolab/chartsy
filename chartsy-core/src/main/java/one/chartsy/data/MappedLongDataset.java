@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: Apache-2.0 */
 package one.chartsy.data;
 
-import one.chartsy.data.function.IndexedToLongFunction;
+import one.chartsy.base.function.IndexedToLongFunction;
 
 import java.util.function.ToIntFunction;
 

@@ -3,7 +3,7 @@
 package one.chartsy.data;
 
 import one.chartsy.data.packed.PackedDataset;
-import one.chartsy.data.function.IndexedToDoubleFunction;
+import one.chartsy.base.function.IndexedToDoubleFunction;
 import one.chartsy.util.Pair;
 
 import java.util.AbstractList;

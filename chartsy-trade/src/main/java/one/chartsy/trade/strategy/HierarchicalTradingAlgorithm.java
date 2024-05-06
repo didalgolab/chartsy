@@ -5,7 +5,7 @@
 package one.chartsy.trade.strategy;
 
 import one.chartsy.When;
-import one.chartsy.data.function.TriConsumer;
+import one.chartsy.base.function.TriConsumer;
 import one.chartsy.data.Series;
 import one.chartsy.data.structures.IntHashMap;
 import one.chartsy.data.structures.IntMap;

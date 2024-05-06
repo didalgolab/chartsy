@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: Apache-2.0 */
 package one.chartsy.data;
 
-import one.chartsy.data.function.IndexedToDoubleFunction;
+import one.chartsy.base.function.IndexedToDoubleFunction;
 
 import java.util.function.ToIntFunction;
 
