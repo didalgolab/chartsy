@@ -77,7 +77,7 @@ public class PackedSeries<E extends Chronological> implements Series<E>, Timelin
     }
 
     @Override
-    public final Timeline getTimeline() {
+    public Timeline getTimeline() {
         return this;
     }
 

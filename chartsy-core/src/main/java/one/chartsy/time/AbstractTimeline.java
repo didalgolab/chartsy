@@ -6,6 +6,18 @@ import one.chartsy.misc.BinarySearch;
 
 public abstract class AbstractTimeline implements Timeline {
 
+    private final Chronological.Order order;
+
+    protected AbstractTimeline(Chronological.Order order) {
+        this.order = order;
+    }
+
+
+    @Override
+    public final Chronological.Order getOrder() {
+        return order;
+    }
+
     @Override
     public int getTimeLocation(long time) {
         if (getOrder().isReversed())

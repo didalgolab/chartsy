@@ -8,16 +8,10 @@ import one.chartsy.time.Chronological;
 public class ChronologicalDatasetTimeline extends AbstractTimeline {
 
     private final ChronologicalDataset data;
-    private final Chronological.Order order;
 
     public ChronologicalDatasetTimeline(ChronologicalDataset data, Chronological.Order order) {
+        super(order);
         this.data = data;
-        this.order = order;
-    }
-
-    @Override
-    public final Chronological.Order getOrder() {
-        return order;
     }
 
     @Override
