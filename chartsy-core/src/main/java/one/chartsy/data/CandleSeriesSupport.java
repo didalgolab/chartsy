@@ -14,10 +14,13 @@ import one.chartsy.time.Timeline;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.TreeSet;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * This class provides utility methods for working with candle series data.
@@ -71,12 +74,12 @@ public class CandleSeriesSupport {
 	 * @param seriesCollection the collection of series
 	 * @return a unified timeline
 	 */
-	public static Timeline getUnifiedTimeline(Collection<? extends Series<? extends Chronological>> seriesCollection) {
+	public static Timeline getUnifiedTimeline(Iterable<? extends Series<? extends Chronological>> seriesCollection) {
 		var order = Chronological.Order.REVERSE_CHRONOLOGICAL;
-		var times = seriesCollection.stream()
+		var times = StreamSupport.stream(seriesCollection.spliterator(), false)
 				.mapMulti((Series<? extends Chronological> series, Consumer<Chronological> result) -> series.forEach(result))
-				.sorted(order.comparator())
-				.distinct()
+				.collect(Collectors.toCollection(() -> new TreeSet<>(order.comparator())))
+				.stream()
 				.toList();
 
 		return new AbstractTimeline(order) {
@@ -90,15 +93,20 @@ public class CandleSeriesSupport {
 	 * data points in the original series are filled with candles having the previous
 	 * candle's closing price and zero volume.
 	 *
+	 * <p>The method supports efficient streamed calculation without the need to
+	 * materialize the entire series data in memory, however the provided {@code Iterable}
+	 * is processed twice: once to compute the unified timeline and second time to iterate
+	 * through and calculate the aligned series.
+	 *
 	 * @param seriesCollection a collection of candle series to synchronize
-	 * @return a new collection of candle series with synchronized timelines
+	 * @return a stream of candle series with synchronized timelines
+	 * @see #getUnifiedTimeline(Iterable)
 	 */
-	public static <E extends Candle> List<Series<Candle>> synchronizeTimelines(Collection<? extends Series<? extends E>> seriesCollection) {
+	public static <E extends Candle> Stream<Series<Candle>> synchronizeTimelines(Iterable<? extends Series<? extends E>> seriesCollection) {
 		Timeline timeline = getUnifiedTimeline(seriesCollection);
 
-		return seriesCollection.stream()
-				.map(series -> synchronizeTimeline(series, timeline))
-				.toList();
+		return StreamSupport.stream(seriesCollection.spliterator(), false)
+				.map(series -> synchronizeTimeline(series, timeline));
 	}
 
 	/**

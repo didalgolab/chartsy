@@ -29,7 +29,7 @@ class CandleSeriesSupportTest {
 		);
 
 		// Synchronize the timelines
-		List<Series<Candle>> resultSeries = CandleSeriesSupport.synchronizeTimelines(List.of(series1, series2));
+		List<Series<Candle>> resultSeries = CandleSeriesSupport.synchronizeTimelines(List.of(series1, series2)).toList();
 
 		// Verify the results
 		assertEquals(2, resultSeries.size());
