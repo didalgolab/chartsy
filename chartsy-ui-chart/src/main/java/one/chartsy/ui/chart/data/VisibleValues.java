@@ -2,8 +2,8 @@
  * SPDX-License-Identifier: Apache-2.0 */
 package one.chartsy.ui.chart.data;
 
+import one.chartsy.base.DoubleDataset;
 import one.chartsy.core.Range;
-import one.chartsy.data.DoubleDataset;
 
 public class VisibleValues {
     /** The number of visible quotes. */

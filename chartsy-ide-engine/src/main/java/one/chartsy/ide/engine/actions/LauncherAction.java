@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: Apache-2.0 */
 package one.chartsy.ide.engine.actions;
 
-import one.chartsy.core.ThrowingRunnable;
+import one.chartsy.base.function.ThrowingRunnable;
 import one.chartsy.ide.engine.AutomaticRunner;
 import one.chartsy.kernel.runner.EmbeddedLauncher;
 import org.apache.logging.log4j.LogManager;

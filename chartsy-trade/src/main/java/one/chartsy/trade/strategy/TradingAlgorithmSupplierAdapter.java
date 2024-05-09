@@ -4,7 +4,7 @@
  */
 package one.chartsy.trade.strategy;
 
-import one.chartsy.core.ThreadContext;
+import one.chartsy.base.ThreadContext;
 
 import java.util.HashMap;
 import java.util.Map;

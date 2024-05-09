@@ -3,13 +3,14 @@
 package one.chartsy.data.packed;
 
 import one.chartsy.HLC;
-import one.chartsy.data.AbstractDataset;
+import one.chartsy.base.dataset.AbstractDataset;
 import one.chartsy.data.ChronologicalDataset;
 import one.chartsy.data.ChronologicalDatasetTimeline;
 import one.chartsy.time.Chronological;
 import one.chartsy.time.Timeline;
 
 import java.nio.ByteBuffer;
+import java.util.stream.Stream;
 
 public class ByteBufferMutableHLCDataset extends AbstractDataset<HLC> implements ChronologicalDataset {
     private static final int DEFAULT_CAPACITY = 512, RAW_BYTES = 32;
@@ -36,6 +37,7 @@ public class ByteBufferMutableHLCDataset extends AbstractDataset<HLC> implements
     }
 
     public ByteBufferMutableHLCDataset(ByteBuffer buffer, long downsampleMicros) {
+        super(Order.INDEX_DESC);
         this.downsampleMicros = downsampleMicros;
         this.buffer = buffer;
     }
@@ -61,6 +63,11 @@ public class ByteBufferMutableHLCDataset extends AbstractDataset<HLC> implements
         double low   = buffer.getDouble(offset += 8);
         double close = buffer.getDouble(offset += 8);
         return new HLC(time, high, low, close);
+    }
+
+    @Override
+    public Stream<HLC> stream() {
+        return null;
     }
 
     public long getTimeAt(int index) {

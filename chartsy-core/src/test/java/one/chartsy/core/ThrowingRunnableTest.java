@@ -2,6 +2,7 @@
  * SPDX-License-Identifier: Apache-2.0 */
 package one.chartsy.core;
 
+import one.chartsy.base.function.ThrowingRunnable;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;

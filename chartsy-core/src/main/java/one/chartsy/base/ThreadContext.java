@@ -1,6 +1,10 @@
 /* Copyright 2022 Mariusz Bernacki <consulting@didalgo.com>
  * SPDX-License-Identifier: Apache-2.0 */
-package one.chartsy.core;
+package one.chartsy.base;
+
+import one.chartsy.base.function.ThrowingFunction;
+import one.chartsy.base.function.ThrowingRunnable;
+import one.chartsy.base.function.ThrowingSupplier;
 
 import java.util.Collections;
 import java.util.Map;

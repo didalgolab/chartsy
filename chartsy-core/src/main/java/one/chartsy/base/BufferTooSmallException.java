@@ -4,7 +4,7 @@
  */
 package one.chartsy.base;
 
-public class BufferTooSmallException extends RuntimeException {
+public class BufferTooSmallException extends IndexOutOfBoundsException {
 	private final int actualCapacity;
 	private final int requiredCapacity;
 

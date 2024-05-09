@@ -1,26 +1,25 @@
 /* Copyright 2022 Mariusz Bernacki <consulting@didalgo.com>
  * SPDX-License-Identifier: Apache-2.0 */
-package one.chartsy.core;
+package one.chartsy.base.function;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.function.Function;
 
 /**
- * Represents a function that accepts one argument and returns a value. The function
+ * Represents an instance intended to be executed by a thread. The function
  * might throw a checked exception.
  *
  * @author Mariusz Bernacki
  */
 @FunctionalInterface
-public interface ThrowingFunction <P, R, T extends Throwable> {
+public interface ThrowingRunnable<T extends Throwable> {
 
-    R apply(P p) throws T;
+    void run() throws T;
 
-    static <P,R> Function<P,R> unchecked(ThrowingFunction<P,R,?> target) {
-        return p -> {
+    static Runnable unchecked(ThrowingRunnable<?> target) {
+        return () -> {
             try {
-                return target.apply(p);
+                target.run();
             } catch (RuntimeException | Error e) {
                 throw e;
             } catch (Throwable x) {

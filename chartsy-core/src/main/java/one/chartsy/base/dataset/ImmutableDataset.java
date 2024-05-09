@@ -38,12 +38,16 @@ public class ImmutableDataset<E> extends AbstractDataset<E> {
         return of(Order.INDEX_ASC, values, false);
     }
 
+    public static <E> ImmutableDataset<E> of(Collection<? extends E> values, boolean reverse) {
+        return of(reverse? Order.INDEX_DESC: Order.INDEX_ASC, values, reverse);
+    }
+
     public static <E> ImmutableDataset<E> ofReversedSameEncounterOrder(Collection<? extends E> values) {
-        return of(Order.INDEX_DESC, values, false);
+        return of(Order.INDEX_DESC, values, true);
     }
 
     public static <E> ImmutableDataset<E> ofReversedSameIndexingOrder(List<? extends E> values) {
-        return of(Order.INDEX_DESC, values, true);
+        return of(Order.INDEX_DESC, values, false);
     }
 
     @SuppressWarnings("unchecked")
@@ -80,6 +84,6 @@ public class ImmutableDataset<E> extends AbstractDataset<E> {
 
     @Override
     public Stream<E> stream() {
-        return getOrder().isIndexDescending() ? Arrays.asList(values).reversed().stream() : Arrays.stream(values);
+        return getOrder().isDescending() ? Arrays.asList(values).reversed().stream() : Arrays.stream(values);
     }
 }

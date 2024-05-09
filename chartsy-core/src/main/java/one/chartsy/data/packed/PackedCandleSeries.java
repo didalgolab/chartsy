@@ -4,6 +4,8 @@ package one.chartsy.data.packed;
 
 import one.chartsy.Candle;
 import one.chartsy.SymbolResource;
+import one.chartsy.base.Dataset;
+import one.chartsy.base.dataset.ImmutableDataset;
 import one.chartsy.data.*;
 
 public class PackedCandleSeries extends AbstractCandleSeries<Candle, PackedDoubleSeries> implements CandleSeries {
@@ -18,7 +20,7 @@ public class PackedCandleSeries extends AbstractCandleSeries<Candle, PackedDoubl
 
         @SuppressWarnings("unchecked")
         var cs = (Series<Candle>) series;
-        return new PackedCandleSeries(cs.getResource(), PackedDataset.from(cs.getData()));
+        return new PackedCandleSeries(cs.getResource(), ImmutableDataset.from(cs.getData()));
     }
 
     @Override
@@ -49,7 +51,7 @@ public class PackedCandleSeries extends AbstractCandleSeries<Candle, PackedDoubl
         if (count > length())
             throw new IllegalArgumentException("The `count` argument cannot exceed series length " + length());
 
-        Dataset<Candle> subDataset = getData().take(0, count);
+        Dataset<Candle> subDataset = getData().take(count);
         return new PackedCandleSeries(getResource(), subDataset);
     }
 }

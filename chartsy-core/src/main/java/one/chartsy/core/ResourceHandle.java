@@ -2,6 +2,8 @@
  * SPDX-License-Identifier: Apache-2.0 */
 package one.chartsy.core;
 
+import one.chartsy.base.function.ThrowingRunnable;
+
 import java.io.Closeable;
 import java.lang.ref.Cleaner;
 

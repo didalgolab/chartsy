@@ -2,7 +2,8 @@
  * SPDX-License-Identifier: Apache-2.0 */
 package one.chartsy.data.packed;
 
-import one.chartsy.data.DoubleDataset;
+import one.chartsy.base.DoubleDataset;
+import one.chartsy.base.dataset.ImmutableDoubleDataset;
 import one.chartsy.data.DoubleSeries;
 import one.chartsy.time.Timeline;
 
@@ -19,7 +20,7 @@ public class PackedDoubleSeries extends AbstractDoubleSeries<PackedDoubleSeries>
     }
 
     public static PackedDoubleSeries empty(Timeline timeline) {
-        return new PackedDoubleSeries(timeline, PackedDoubleDataset.of(new double[0]));
+        return new PackedDoubleSeries(timeline, ImmutableDoubleDataset.of(new double[0]));
     }
 
     @Override
@@ -68,7 +69,7 @@ public class PackedDoubleSeries extends AbstractDoubleSeries<PackedDoubleSeries>
 
     @Override
     public PackedDoubleSeries ref(int periods) {
-        return new PackedDoubleSeries(getTimeline(), values().ref(periods));
+        return new PackedDoubleSeries(getTimeline(), values().drop(-periods));
     }
 
     private static void requireSameTimeline(DoubleSeries a, DoubleSeries b) {

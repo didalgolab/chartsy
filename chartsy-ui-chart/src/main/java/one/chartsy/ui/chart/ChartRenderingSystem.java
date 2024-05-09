@@ -5,7 +5,7 @@
 package one.chartsy.ui.chart;
 
 import lombok.Getter;
-import one.chartsy.core.ThrowingRunnable;
+import one.chartsy.base.function.ThrowingRunnable;
 
 @Getter
 public class ChartRenderingSystem {

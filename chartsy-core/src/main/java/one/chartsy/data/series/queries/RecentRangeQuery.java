@@ -5,11 +5,11 @@
 package one.chartsy.data.series.queries;
 
 import one.chartsy.Candle;
+import one.chartsy.base.Dataset;
+import one.chartsy.base.dataset.ImmutableDataset;
 import one.chartsy.core.Range;
-import one.chartsy.data.Dataset;
 import one.chartsy.data.Series;
 import one.chartsy.data.SeriesQuery;
-import one.chartsy.data.packed.PackedDataset;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -41,7 +41,7 @@ public class RecentRangeQuery implements SeriesQuery<Series<Candle>, Dataset<Ran
             ranges.add(Range.of(tracker.getMin(), tracker.getMax()));
         }
 
-        return PackedDataset.of(ranges);
+        return ImmutableDataset.of(ranges);
     }
 
     /**

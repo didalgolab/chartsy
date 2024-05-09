@@ -3,7 +3,7 @@
 package one.chartsy.simulation.reporting;
 
 import one.chartsy.HLC;
-import one.chartsy.data.Dataset;
+import one.chartsy.base.Dataset;
 import one.chartsy.trade.strategy.ReportOptions;
 
 import java.util.Optional;

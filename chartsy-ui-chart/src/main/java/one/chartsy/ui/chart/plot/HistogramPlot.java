@@ -9,8 +9,8 @@ import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.geom.Rectangle2D;
 
+import one.chartsy.base.DoubleDataset;
 import one.chartsy.core.Range;
-import one.chartsy.data.DoubleDataset;
 import one.chartsy.ui.chart.ChartContext;
 import one.chartsy.ui.chart.ChartData;
 import one.chartsy.ui.chart.data.VisibleValues;

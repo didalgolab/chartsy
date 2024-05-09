@@ -3,8 +3,9 @@
 package one.chartsy.data;
 
 import one.chartsy.SymbolResource;
+import one.chartsy.base.Dataset;
+import one.chartsy.base.dataset.ImmutableDataset;
 import one.chartsy.data.market.Tick;
-import one.chartsy.data.packed.PackedDataset;
 import one.chartsy.data.packed.PackedTickSeries;
 import one.chartsy.time.Chronological;
 
@@ -14,7 +15,7 @@ public interface TickSeries extends Series<Tick> {
 
     static TickSeries of(SymbolResource<Tick> resource, Collection<? extends Tick> values) {
         boolean reverse = (Chronological.Order.CHRONOLOGICAL.isOrdered(values));
-        return new PackedTickSeries(resource, PackedDataset.of(values, reverse));
+        return new PackedTickSeries(resource, ImmutableDataset.of(values, reverse));
     }
 
     static <T extends Tick> TickSeries from(Series<T> series) {

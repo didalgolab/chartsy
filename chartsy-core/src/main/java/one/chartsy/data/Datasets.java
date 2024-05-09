@@ -2,6 +2,8 @@
  * SPDX-License-Identifier: Apache-2.0 */
 package one.chartsy.data;
 
+import one.chartsy.base.SequenceAlike;
+
 public class Datasets {
 
     public static int requireValidIndex(int index, SequenceAlike<?,?> dataset) {

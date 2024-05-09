@@ -4,8 +4,8 @@
  */
 package one.chartsy.core.ml;
 
-import one.chartsy.data.Dataset;
-import one.chartsy.data.DoubleDataset;
+import one.chartsy.base.Dataset;
+import one.chartsy.base.DoubleDataset;
 import one.chartsy.util.Pair;
 
 public final class Predictors {

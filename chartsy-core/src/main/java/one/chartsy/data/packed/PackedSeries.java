@@ -4,6 +4,7 @@ package one.chartsy.data.packed;
 
 import lombok.Getter;
 import one.chartsy.SymbolResource;
+import one.chartsy.base.Dataset;
 import one.chartsy.data.*;
 import one.chartsy.time.Chronological;
 import one.chartsy.time.Timeline;

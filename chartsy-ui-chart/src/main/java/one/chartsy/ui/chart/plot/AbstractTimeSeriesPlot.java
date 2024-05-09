@@ -4,7 +4,7 @@ package one.chartsy.ui.chart.plot;
 
 import java.awt.Color;
 
-import one.chartsy.data.DoubleDataset;
+import one.chartsy.base.DoubleDataset;
 import one.chartsy.ui.chart.ChartContext;
 import one.chartsy.ui.chart.data.VisibleValues;
 

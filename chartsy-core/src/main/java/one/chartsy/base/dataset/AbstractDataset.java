@@ -5,9 +5,14 @@
 package one.chartsy.base.dataset;
 
 import one.chartsy.base.Dataset;
+import one.chartsy.base.SequenceAlike;
+import one.chartsy.base.function.IndexedFunction;
 
 import java.util.Iterator;
 import java.util.Spliterator;
+import java.util.function.Function;
+import java.util.function.ToIntFunction;
+import java.util.stream.Stream;
 
 public abstract class AbstractDataset<E> implements Dataset<E> {
 
@@ -27,20 +32,6 @@ public abstract class AbstractDataset<E> implements Dataset<E> {
         return order;
     }
 
-    public static abstract class TransformedDataset<E, V> extends AbstractDataset<V> {
-        protected final Dataset<E> dataset;
-
-        protected TransformedDataset(Dataset<E> dataset) {
-            super(dataset.getOrder());
-            this.dataset = dataset;
-        }
-
-        @Override
-        public int length() {
-            return dataset.length();
-        }
-    }
-
     @Override
     public Iterator<E> iterator() {
         return stream().iterator();
@@ -49,5 +40,84 @@ public abstract class AbstractDataset<E> implements Dataset<E> {
     @Override
     public Spliterator<E> spliterator() {
         return stream().spliterator();
+    }
+
+    public static <E, T extends SequenceAlike<?, T>>
+    AbstractDataset<E> from(T origin, IndexedFunction<T, E> getter) {
+        return new From<>(origin) {
+            @Override
+            public E get(int index) {
+                return getter.apply(origin, index);
+            }
+        };
+    }
+
+    public static <E, T extends SequenceAlike<?, T>>
+    AbstractDataset<E> from(T origin, IndexedFunction<T, E> getter, Function<T, Stream<E>> stream) {
+        return new From<>(origin) {
+            @Override
+            public E get(int index) {
+                return getter.apply(origin, index);
+            }
+
+            @Override
+            public Stream<E> stream() {
+                return stream.apply(origin);
+            }
+        };
+    }
+
+    public static <E, T extends SequenceAlike<?, T>>
+    AbstractDataset<E> from(T origin, ToIntFunction<T> length, IndexedFunction<T, E> getter) {
+        return new From<>(origin) {
+            @Override
+            public int length() {
+                return length.applyAsInt(origin);
+            }
+
+            @Override
+            public E get(int index) {
+                return getter.apply(origin, index);
+            }
+        };
+    }
+
+    public static <E, T extends SequenceAlike<?, T>>
+    AbstractDataset<E> from(T origin, ToIntFunction<T> length, IndexedFunction<T, E> getter, Function<T, Stream<E>> stream) {
+        return new From<>(origin) {
+            @Override
+            public int length() {
+                return length.applyAsInt(origin);
+            }
+
+            @Override
+            public E get(int index) {
+                return getter.apply(origin, index);
+            }
+
+            @Override
+            public Stream<E> stream() {
+                return stream.apply(origin);
+            }
+        };
+    }
+
+    public static abstract class From<E, T extends SequenceAlike<?, T>> extends AbstractDataset<E> {
+        protected final T origin;
+
+        public From(T origin) {
+            super(origin.getOrder());
+            this.origin = origin;
+        }
+
+        @Override
+        public int length() {
+            return origin.length();
+        }
+
+        @Override
+        public Stream<E> stream() {
+            return getOrder().indexes(this).mapToObj(this::get);
+        }
     }
 }

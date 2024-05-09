@@ -14,7 +14,7 @@ import java.util.Map;
 
 import one.chartsy.core.Range;
 import one.chartsy.data.CandleSeries;
-import one.chartsy.data.DoubleDataset;
+import one.chartsy.base.DoubleDataset;
 import one.chartsy.ui.chart.data.VisibleValues;
 import one.chartsy.ui.chart.plot.AbstractTimeSeriesPlot;
 import one.chartsy.ui.chart.plot.TimeSeriesPlot;

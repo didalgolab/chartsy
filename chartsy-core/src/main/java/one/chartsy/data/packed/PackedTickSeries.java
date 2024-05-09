@@ -3,7 +3,7 @@
 package one.chartsy.data.packed;
 
 import one.chartsy.SymbolResource;
-import one.chartsy.data.Dataset;
+import one.chartsy.base.Dataset;
 import one.chartsy.data.TickSeries;
 import one.chartsy.data.market.Tick;
 

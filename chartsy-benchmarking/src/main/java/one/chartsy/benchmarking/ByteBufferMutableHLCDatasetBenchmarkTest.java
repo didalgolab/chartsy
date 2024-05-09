@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: Apache-2.0 */
 package one.chartsy.benchmarking;
 
-import one.chartsy.data.Dataset;
+import one.chartsy.base.Dataset;
 import one.chartsy.data.packed.ByteBufferMutableHLCDataset;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.runner.Runner;

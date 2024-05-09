@@ -6,7 +6,7 @@ package one.chartsy.trade.strategy;
 
 import one.chartsy.SymbolIdentity;
 import one.chartsy.core.LaunchableTarget;
-import one.chartsy.core.ThreadContext;
+import one.chartsy.base.ThreadContext;
 import one.chartsy.data.Series;
 import one.chartsy.naming.SymbolIdentifier;
 import one.chartsy.time.Chronological;

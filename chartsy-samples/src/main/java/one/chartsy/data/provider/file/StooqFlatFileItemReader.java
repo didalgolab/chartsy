@@ -5,9 +5,9 @@ package one.chartsy.data.provider.file;
 import one.chartsy.Candle;
 import one.chartsy.SymbolResource;
 import one.chartsy.TimeFrame;
+import one.chartsy.base.Dataset;
+import one.chartsy.base.DoubleDataset;
 import one.chartsy.data.CandleSeries;
-import one.chartsy.data.Dataset;
-import one.chartsy.data.DoubleDataset;
 import one.chartsy.data.SimpleCandle;
 import one.chartsy.util.Pair;
 
@@ -66,12 +66,12 @@ public class StooqFlatFileItemReader {
             System.out.println(series.mapToDouble(Candle::direction).values().subsequences(2).length());
             System.out.println(series.mapToDouble(Candle::direction));
             System.out.println(series.mapToDouble(Candle::direction).values().subsequences(2));
-            System.out.println(series.mapToDouble(Candle::direction).values().ref(-1).subsequences(2));
+            System.out.println(series.mapToDouble(Candle::direction).values().drop(1).subsequences(2));
             DoubleDataset target = series.getData().mapToDouble(Candle::direction);
-            Dataset<DoubleDataset> input = series.mapToDouble(Candle::direction).values().ref(-1).subsequences(2);
-            System.out.println(input.withRight(target).take(0, 100));
-            System.out.println(input.withRight(target).take(0, 100).subsequences(3));
-            Dataset<Dataset<Pair<DoubleDataset, Double>>> datasets = input.withRight(target).take(0, 100).subsequences(3);
+            Dataset<DoubleDataset> input = series.mapToDouble(Candle::direction).values().drop(1).subsequences(2);
+            System.out.println(input.withRight(target).take(100));
+            System.out.println(input.withRight(target).take(100).subsequences(3));
+            Dataset<Dataset<Pair<DoubleDataset, Double>>> datasets = input.withRight(target).take(100).subsequences(3);
             break;
         }
     }

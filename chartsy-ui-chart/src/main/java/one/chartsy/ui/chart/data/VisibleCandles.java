@@ -8,9 +8,9 @@ import java.time.LocalDateTime;
 import java.util.OptionalInt;
 
 import one.chartsy.*;
+import one.chartsy.base.DoubleDataset;
 import one.chartsy.core.Range;
 import one.chartsy.data.CandleSeries;
-import one.chartsy.data.DoubleDataset;
 import one.chartsy.time.Chronological;
 
 public class VisibleCandles {

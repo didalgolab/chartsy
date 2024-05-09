@@ -71,12 +71,12 @@ public class RingBuffer<E>
 
     @Override
     public E get(int offset) {
-        checkOffset(offset);
+        checkIndex(offset);
         return values[arrayIndex(offset)];
     }
 
     public void set(int offset, E value) {
-        checkOffset(offset);
+        checkIndex(offset);
         values[arrayIndex(offset)] = value;
     }
 
@@ -461,7 +461,7 @@ public class RingBuffer<E>
      */
     @SuppressWarnings("overloads")
     public static class OfInt extends RingBuffer.OfPrimitive<Integer, int[], IntConsumer>
-            implements IntConsumer, Dataset.OfInt {
+            implements IntConsumer, IntDataset {
         public OfInt() { }
 
         public OfInt(int capacity) {
@@ -505,12 +505,12 @@ public class RingBuffer<E>
 
         @Override
         public int get(int offset) {
-            checkOffset(offset);
+            checkIndex(offset);
             return values[arrayIndex(offset)];
         }
 
         public void set(int offset, int value) {
-            checkOffset(offset);
+            checkIndex(offset);
             values[arrayIndex(offset)] = value;
         }
 
@@ -553,7 +553,7 @@ public class RingBuffer<E>
      */
     @SuppressWarnings("overloads")
     public static class OfLong extends RingBuffer.OfPrimitive<Long, long[], LongConsumer>
-            implements LongConsumer, Dataset.OfLong {
+            implements LongConsumer, LongDataset {
         public OfLong() { }
 
         public OfLong(int capacity) {
@@ -597,12 +597,12 @@ public class RingBuffer<E>
 
         @Override
         public long get(int offset) {
-            checkOffset(offset);
+            checkIndex(offset);
             return values[arrayIndex(offset)];
         }
 
         public void set(int offset, long value) {
-            checkOffset(offset);
+            checkIndex(offset);
             values[arrayIndex(offset)] = value;
         }
 
@@ -645,7 +645,7 @@ public class RingBuffer<E>
      */
     @SuppressWarnings("overloads")
     public static class OfDouble extends RingBuffer.OfPrimitive<Double, double[], DoubleConsumer>
-            implements DoubleConsumer, Dataset.OfDouble {
+            implements DoubleConsumer, DoubleDataset {
         public OfDouble() { }
 
         public OfDouble(int capacity) {
@@ -689,12 +689,12 @@ public class RingBuffer<E>
 
         @Override
         public double get(int offset) {
-            checkOffset(offset);
+            checkIndex(offset);
             return values[arrayIndex(offset)];
         }
 
         public void set(int offset, double value) {
-            checkOffset(offset);
+            checkIndex(offset);
             values[arrayIndex(offset)] = value;
         }
 

@@ -7,7 +7,8 @@ package one.chartsy.data;
 import one.chartsy.SymbolIdentity;
 import one.chartsy.SymbolResource;
 import one.chartsy.TimeFrame;
-import one.chartsy.data.packed.PackedDataset;
+import one.chartsy.base.Dataset;
+import one.chartsy.base.dataset.ImmutableDataset;
 import one.chartsy.data.packed.PackedSeries;
 import one.chartsy.time.Chronological;
 import reactor.core.publisher.Mono;
@@ -94,7 +95,7 @@ public interface Series<E extends Chronological> extends IndexedSymbolResourceDa
 
     static <E extends Chronological> Series<E> of(SymbolResource<E> resource, List<E> data) {
         boolean reverse = (Chronological.Order.CHRONOLOGICAL.isOrdered(data));
-        return new PackedSeries<>(resource, PackedDataset.of(data, reverse));
+        return new PackedSeries<>(resource, ImmutableDataset.of(data, reverse));
     }
 
     /*----------------------------------------- PARTITIONING HELPER METHODS ------------------------------------------*/

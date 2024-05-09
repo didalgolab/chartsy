@@ -13,9 +13,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import one.chartsy.base.DoubleDataset;
 import one.chartsy.core.Range;
 import one.chartsy.data.CandleSeries;
-import one.chartsy.data.DoubleDataset;
 import one.chartsy.ui.chart.data.VisibleValues;
 import one.chartsy.ui.chart.data.VisualRange;
 import one.chartsy.ui.chart.plot.AbstractTimeSeriesPlot;

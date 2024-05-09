@@ -2,8 +2,8 @@
  * SPDX-License-Identifier: Apache-2.0 */
 package one.chartsy.core.ml;
 
-import one.chartsy.data.Dataset;
-import one.chartsy.data.DoubleDataset;
+import one.chartsy.base.Dataset;
+import one.chartsy.base.DoubleDataset;
 import one.chartsy.smile.regression.OLS;
 import one.chartsy.util.Pair;
 

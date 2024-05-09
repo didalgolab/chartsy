@@ -79,10 +79,10 @@ public abstract class AbstractRingBuffer {
 		return ((int)nextWrite - offset - 1) & mask;
 	}
 
-	protected final void checkOffset(int offset) {
-		if (offset >= capacity())
-			throw new BufferTooSmallException("RingBuffer too small", capacity(), offset + 1);
-		if (offset < 0 || offset >= length())
-			throw new IndexOutOfBoundsException(offset);
+	protected final void checkIndex(int index) {
+		if (index >= capacity())
+			throw new BufferTooSmallException("RingBuffer too small", capacity(), index + 1);
+		if (index < 0 || index >= length())
+			throw new IndexOutOfBoundsException(index);
 	}
 }

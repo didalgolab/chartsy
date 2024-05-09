@@ -5,8 +5,9 @@ package one.chartsy.data;
 import one.chartsy.Candle;
 import one.chartsy.HighLowCandle;
 import one.chartsy.SymbolResource;
+import one.chartsy.base.Dataset;
+import one.chartsy.base.dataset.ImmutableDataset;
 import one.chartsy.data.packed.PackedCandleSeries;
-import one.chartsy.data.packed.PackedDataset;
 import one.chartsy.random.RandomWalk;
 import one.chartsy.time.Chronological;
 import reactor.core.publisher.Mono;
@@ -31,7 +32,7 @@ public interface CandleSeries extends Series<Candle> {
 
     static CandleSeries of(SymbolResource<Candle> resource, Collection<? extends Candle> values) {
         boolean reverse = (Chronological.Order.CHRONOLOGICAL.isOrdered(values));
-        return new PackedCandleSeries(resource, PackedDataset.of(values, reverse));
+        return new PackedCandleSeries(resource, ImmutableDataset.of(values, reverse));
     }
 
     static <T extends Candle> CandleSeries from(Series<T> series) {

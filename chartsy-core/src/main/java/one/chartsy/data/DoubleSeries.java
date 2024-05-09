@@ -2,7 +2,8 @@
  * SPDX-License-Identifier: Apache-2.0 */
 package one.chartsy.data;
 
-import one.chartsy.data.packed.PackedDoubleDataset;
+import one.chartsy.base.DoubleDataset;
+import one.chartsy.base.dataset.ImmutableDoubleDataset;
 import one.chartsy.data.packed.PackedDoubleSeries;
 import one.chartsy.time.Timeline;
 
@@ -22,7 +23,7 @@ public interface DoubleSeries extends TimeSeriesAlike {
     double getLast();
 
     static PackedDoubleSeries of(double[] values, Timeline timeline) {
-        return new PackedDoubleSeries(timeline, PackedDoubleDataset.of(values));
+        return new PackedDoubleSeries(timeline, ImmutableDoubleDataset.of(values));
     }
 
     static PackedDoubleSeries empty(Timeline timeline) {

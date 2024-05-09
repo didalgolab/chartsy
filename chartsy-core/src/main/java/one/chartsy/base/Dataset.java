@@ -5,7 +5,11 @@
 package one.chartsy.base;
 
 import one.chartsy.base.dataset.AbstractDataset;
+import one.chartsy.base.dataset.AbstractDoubleDataset;
+import one.chartsy.base.dataset.AbstractIntDataset;
+import one.chartsy.base.dataset.AbstractLongDataset;
 import one.chartsy.base.dataset.ImmutableDataset;
+import one.chartsy.util.Pair;
 
 import java.util.AbstractList;
 import java.util.Iterator;
@@ -13,18 +17,24 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Spliterator;
 import java.util.function.Function;
-import java.util.stream.DoubleStream;
-import java.util.stream.IntStream;
-import java.util.stream.LongStream;
+import java.util.function.ToDoubleFunction;
+import java.util.function.ToIntFunction;
+import java.util.function.ToLongFunction;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
+/**
+ * An ordered sequence of arbitrary-type data elements.
+ *
+ * @author Mariusz Bernacki
+ *
+ * @param <E> the type of elements stored in this dataset
+ */
 public interface Dataset<E> extends SequenceAlike<E, Dataset<E>> {
 
     /**
      * Returns the element at the specified position in the dataset.  Depending
      * on the characteristic of the dataset, the index-ordering may or may not be
-     * an iterating order.
+     * an iterating order (see {@link #getOrder()}).
      *
      * @param index the index of the element to return
      * @return the element at the specified position
@@ -47,111 +57,100 @@ public interface Dataset<E> extends SequenceAlike<E, Dataset<E>> {
         return new Values<>(this);
     }
 
-    default Dataset<E> ref(int n) {
-        if (n == 0)
+    default Dataset<E> drop(int maxCount) {
+        if (maxCount == 0)
             return this;
-        if (n > 0)
-            throw new IllegalArgumentException("Periods `n` (" + n + ") cannot be positive");
+        if (maxCount < 0)
+            throw new IllegalArgumentException("Argument `maxCount` (" + maxCount + ") cannot be negative");
 
-        return new AbstractDataset.TransformedDataset<>(this) {
-            @Override
-            public E get(int index) {
-                return dataset.get(index - n);
-            }
-
-            @Override
-            public int length() {
-                return Math.max(0, dataset.length() + n);
-            }
-
-            @Override
-            public Stream<E> stream() {
-                return getOrder().shift(-n, dataset.stream(), dataset);
-            }
-        };
+        return AbstractDataset.from(this, dataset -> Math.max(0, dataset.length() - maxCount),
+                (dataset, index) -> dataset.get(index + maxCount),
+                dataset -> dataset.getOrder().drop(maxCount, dataset.stream(), dataset));
     }
 
-    default Dataset<E> take(int count) {
-        if (count <= 0)
-            throw new IllegalArgumentException("The `count` argument must be positive");
-
-        return new AbstractDataset.TransformedDataset<>(this) {
-            @Override
-            public int length() {
-                return Math.min(dataset.length(), count);
-            }
-
-            @Override
-            public E get(int index) {
-                return dataset.get(Objects.checkIndex(index, count));
-            }
-
-            @Override
-            public Stream<E> stream() {
-                return getOrder().take(count, dataset.stream(), dataset);
-            }
-        };
-    }
-
-    default Dataset<E> take(int maxCount, int fromIndex) {
+    default Dataset<E> take(int maxCount) {
         if (maxCount <= 0)
-            throw new IllegalArgumentException("The `maxCount` (" + maxCount + ") argument must be positive");
+            throw new IllegalArgumentException("The `maxCount` argument must be positive");
+
+        return AbstractDataset.from(this, dataset -> Math.min(dataset.length(), maxCount),
+                (dataset, index) -> dataset.get(Objects.checkIndex(index, maxCount)),
+                dataset -> dataset.getOrder().take(maxCount, dataset.stream(), dataset));
+    }
+
+    default Dataset<E> takeExact(int count) {
+        if (count > length())
+            throw new IllegalArgumentException("The `takeExact` end index cannot exceed dataset length " + length());
+
+        return take(count).toImmutable();
+    }
+
+    default Dataset<E> dropTake(int fromIndex, int maxCount) {
         if (fromIndex < 0)
             throw new IllegalArgumentException("The `fromIndex` (" + fromIndex + ") argument must be non-negative");
+        if (maxCount <= 0)
+            throw new IllegalArgumentException("The `maxCount` (" + maxCount + ") argument must be positive");
 
-        return new AbstractDataset.TransformedDataset<>(this) {
-            @Override
-            public int length() {
-                return Math.max(0, Math.min(dataset.length() - fromIndex, maxCount));
-            }
+        return AbstractDataset.from(this, dataset -> Math.max(0, Math.min(dataset.length() - fromIndex, maxCount)),
+                (dataset, index) -> dataset.get(fromIndex + Objects.checkIndex(index, maxCount)),
+                dataset -> dataset.getOrder().dropTake(fromIndex, maxCount, dataset.stream(), dataset)
+        );
+    }
 
-            @Override
-            public E get(int index) {
-                return dataset.get(fromIndex + Objects.checkIndex(index, maxCount));
-            }
+    default Dataset<E> dropTakeExact(int fromIndex, int count) {
+        if (length() < count - fromIndex)
+            throw new IllegalArgumentException("The `dropTakeExact` end index cannot exceed dataset length " + length());
 
-            @Override
-            public Stream<E> stream() {
-                return getOrder().take(maxCount, fromIndex, dataset.stream(), dataset);
-            }
-        };
+        return dropTake(fromIndex, count).toImmutable();
     }
 
     default <V> Dataset<V> map(Function<E, V> mapper) {
         Objects.requireNonNull(mapper);
-        return new AbstractDataset.TransformedDataset<>(this) {
-            @Override
-            public V get(int index) {
-                return mapper.apply(dataset.get(index));
-            }
+        return AbstractDataset.from(this,
+                (dataset, index) -> mapper.apply(dataset.get(index)),
+                dataset -> dataset.stream().map(mapper));
+    }
 
-            @Override
-            public Stream<V> stream() {
-                return dataset.stream().map(mapper);
-            }
-        };
+    default DoubleDataset mapToDouble(ToDoubleFunction<E> mapper) {
+        Objects.requireNonNull(mapper);
+        return AbstractDoubleDataset.from(this,
+                (dataset, index) -> mapper.applyAsDouble(dataset.get(index)),
+                dataset -> dataset.stream().mapToDouble(mapper));
+    }
+
+    default IntDataset mapToInt(ToIntFunction<E> mapper) {
+        Objects.requireNonNull(mapper);
+        return AbstractIntDataset.from(this,
+                (dataset, index) -> mapper.applyAsInt(dataset.get(index)),
+                dataset -> dataset.stream().mapToInt(mapper));
+    }
+
+    default LongDataset mapToLong(ToLongFunction<E> mapper) {
+        Objects.requireNonNull(mapper);
+        return AbstractLongDataset.from(this,
+                (dataset, index) -> mapper.applyAsLong(dataset.get(index)),
+                dataset -> dataset.stream().mapToLong(mapper));
+    }
+
+    default <R> Dataset<Pair<E, R>> withRight(Dataset<R> right) {
+        Objects.requireNonNull(right, "right");
+        return AbstractDataset.from(this, left -> Math.min(left.length(), right.length()),
+                (left, index) -> Pair.of(left.get(index), right.get(index)));
+    }
+
+    default Dataset<Pair<E, Double>> withRight(DoubleDataset right) {
+        return withRight(right.boxed());
+    }
+
+    default Dataset<Pair<E, Integer>> withRight(IntDataset right) {
+        return withRight(right.boxed());
     }
 
     default Dataset<Dataset<E>> subsequences(int len) {
         if (len <= 0)
             throw new IllegalArgumentException("subsequences length `" + len + "` must be positive");
 
-        return new AbstractDataset.TransformedDataset<>(this) {
-            @Override
-            public Dataset<E> get(int index) {
-                return dataset.take(len, index);
-            }
-
-            @Override
-            public int length() {
-                return Math.max(0, dataset.length() - len + 1);
-            }
-
-            @Override
-            public Stream<Dataset<E>> stream() {
-                return IntStream.range(0, length()).mapToObj(index -> dataset.take(len, index));
-            }
-        };
+        return AbstractDataset.from(this, dataset -> Math.max(0, dataset.length() - len + 1),
+                (dataset, index) -> dataset.dropTake(index, len));
     }
 
     @SuppressWarnings("unchecked")
@@ -174,96 +173,6 @@ public interface Dataset<E> extends SequenceAlike<E, Dataset<E>> {
         @Override
         public int size() {
             return dataset.length();
-        }
-    }
-
-    interface OfPrimitive<E,
-            T_SEQ extends OfPrimitive<E, T_SEQ, T_SPLITR>,
-            T_SPLITR extends Spliterator.OfPrimitive<E, ?, T_SPLITR>>
-            extends SequenceAlike<E, T_SEQ> {
-
-        /**
-         * Returns a primitive spliterator over the elements in the window.
-         *
-         * @return a primitive spliterator
-         */
-        @Override
-        T_SPLITR spliterator();
-
-    }
-
-    /**
-     * An ordered, sliding window of primitive {@code int} values.
-     */
-    interface OfInt extends OfPrimitive<Integer, OfInt, Spliterator.OfInt> {
-
-        /**
-         * Returns the element at the specified position in the window.
-         *
-         * @param index the index of the element to return
-         * @return the element at the specified position in the window
-         * @throws IndexOutOfBoundsException if the index is out of range
-         */
-        int get(int index);
-
-        /**
-         * Returns a sequential {@code IntStream} with the specified number of elements in the window.
-         *
-         * @return a sequential {@code IntStream} over the elements in the window
-         */
-        @Override
-        default IntStream stream() {
-            return StreamSupport.intStream(spliterator(), false);
-        }
-    }
-
-    /**
-     * An ordered, sliding window of primitive {@code long} values.
-     */
-    interface OfLong extends OfPrimitive<Long, OfLong, Spliterator.OfLong> {
-
-        /**
-         * Returns the element at the specified position in the window.
-         *
-         * @param index the index of the element to return
-         * @return the element at the specified position in the window
-         * @throws IndexOutOfBoundsException if the index is out of range
-         */
-        long get(int index);
-
-        /**
-         * Returns a sequential {@code LongStream} with the specified number of elements in the window.
-         *
-         * @return a sequential {@code LongStream} over the elements in the window
-         */
-        @Override
-        default LongStream stream() {
-            return StreamSupport.longStream(spliterator(), false);
-        }
-    }
-
-    /**
-     * An ordered, sliding window of primitive {@code double} values.
-     */
-    interface OfDouble extends OfPrimitive<Double, OfDouble, Spliterator.OfDouble> {
-
-        /**
-         * Returns the element at the specified position in the window.
-         *
-         * @param index the index of the element to return
-         * @return the element at the specified position in the window
-         * @throws IndexOutOfBoundsException if the index is out of range
-         */
-        double get(int index);
-
-        /**
-         * Returns a sequential {@code DoubleStream} with the specified number of elements in the window.
-         *
-         * @return a sequential {@code DoubleStream} over the elements in the window
-         */
-        @Override
-        default DoubleStream stream() {
-            return StreamSupport.doubleStream(spliterator(), false);
         }
     }
 }

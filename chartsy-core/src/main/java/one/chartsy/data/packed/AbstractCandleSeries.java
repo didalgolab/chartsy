@@ -4,7 +4,7 @@ package one.chartsy.data.packed;
 
 import one.chartsy.Candle;
 import one.chartsy.SymbolResource;
-import one.chartsy.data.Dataset;
+import one.chartsy.base.Dataset;
 
 import java.util.function.ToDoubleFunction;
 

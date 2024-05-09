@@ -5,12 +5,12 @@ package one.chartsy.random;
 import one.chartsy.Candle;
 import one.chartsy.SymbolIdentity;
 import one.chartsy.SymbolResource;
+import one.chartsy.base.dataset.ImmutableDataset;
 import one.chartsy.data.AdjustmentFunction;
 import one.chartsy.data.AdjustmentMethod;
 import one.chartsy.data.CandleSeries;
 import one.chartsy.data.Series;
 import one.chartsy.data.packed.PackedCandleSeries;
-import one.chartsy.data.packed.PackedDataset;
 import one.chartsy.time.Chronological;
 
 import java.time.Duration;
@@ -163,7 +163,7 @@ public class RandomWalk {
         }
         var resource = series.getResource();
         var symbol = resource.symbol();
-        return new PackedCandleSeries(resource.withSymbol(SymbolIdentity.of("~" + symbol.name() + "~", symbol.type().orElse(null))), PackedDataset.of(result));
+        return new PackedCandleSeries(resource.withSymbol(SymbolIdentity.of("~" + symbol.name() + "~", symbol.type().orElse(null))), ImmutableDataset.ofReversedSameIndexingOrder(result));
     }
 
     private RandomWalk() { }

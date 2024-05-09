@@ -4,8 +4,8 @@
  */
 package one.chartsy.core.ml;
 
-import one.chartsy.data.Dataset;
-import one.chartsy.data.DoubleDataset;
+import one.chartsy.base.Dataset;
+import one.chartsy.base.DoubleDataset;
 import one.chartsy.smile.classification.KNN;
 import one.chartsy.smile.math.distance.Distance;
 import one.chartsy.smile.math.distance.EuclideanDistance;

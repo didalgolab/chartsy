@@ -5,7 +5,7 @@
 package one.chartsy.trade.strategy;
 
 import one.chartsy.When;
-import one.chartsy.core.ThreadContext;
+import one.chartsy.base.ThreadContext;
 import one.chartsy.trade.Execution;
 import one.chartsy.trade.MarketUniverseChangeEvent;
 

@@ -6,8 +6,9 @@ package one.chartsy.data;
 
 import one.chartsy.Candle;
 import one.chartsy.SymbolResource;
+import one.chartsy.base.Dataset;
+import one.chartsy.base.dataset.ImmutableDataset;
 import one.chartsy.data.packed.PackedCandleSeries;
-import one.chartsy.data.packed.PackedDataset;
 import one.chartsy.time.AbstractTimeline;
 import one.chartsy.time.Chronological;
 import one.chartsy.time.Timeline;
@@ -64,7 +65,7 @@ public class CandleSeriesSupport {
 			index = -(index + 1);
 		}
 		int startIndex = Math.min(index, bars.length());
-		@SuppressWarnings("unchecked") var dataset = (Dataset<E>) bars.getData().take(startIndex, numBars);
+		@SuppressWarnings("unchecked") var dataset = (Dataset<E>) bars.getData().dropTake(startIndex, numBars);
 		return dataset;
 	}
 
@@ -157,7 +158,7 @@ public class CandleSeriesSupport {
 
 	@SuppressWarnings("unchecked")
 	private static PackedCandleSeries createSeries(Series<? extends Candle> series, List<Candle> bars, Timeline timeline) {
-		return new PackedCandleSeries((SymbolResource<Candle>) series.getResource(), PackedDataset.of(bars, true)) {
+		return new PackedCandleSeries((SymbolResource<Candle>) series.getResource(), ImmutableDataset.of(bars, true)) {
 			@Override
 			public Timeline getTimeline() {
 				return timeline;
