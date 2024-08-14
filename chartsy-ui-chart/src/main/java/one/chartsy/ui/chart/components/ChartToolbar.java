@@ -149,7 +149,7 @@ public class ChartToolbar extends JToolBar implements Serializable {
     
     final class VisualStyleController implements PropertyChangeListener {
         /** Indicates that the toolbar displays large icons. */
-        private boolean showLargeIcons = true;
+        private boolean showLargeIcons = false;
         
         @Override
         public void propertyChange(PropertyChangeEvent evt) {
@@ -258,9 +258,10 @@ public class ChartToolbar extends JToolBar implements Serializable {
         b.setVerticalAlignment(SwingConstants.TOP);
         b.setVerticalTextPosition(SwingConstants.BOTTOM);
         b.setHorizontalTextPosition(SwingConstants.CENTER);
-        b.setMargin(new Insets(6, 6, 6, 6));
+        b.setMargin(new Insets(4, 4, 4, 4));
         b.setBorderPainted(false);
         b.setFocusable(false);
+        b.setText(null);
         
         return b;
     }

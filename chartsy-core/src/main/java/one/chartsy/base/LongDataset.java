@@ -38,7 +38,6 @@ public interface LongDataset extends PrimitiveDataset<Long, LongDataset, Spliter
 	 */
 	long get(int index);
 
-	@Override
 	default LongStream stream() {
 		return StreamSupport.longStream(spliterator(), false);
 	}

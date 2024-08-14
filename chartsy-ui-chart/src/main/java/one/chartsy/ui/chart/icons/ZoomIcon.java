@@ -14,7 +14,7 @@ public class ZoomIcon extends VectorIcon {
     private final Type type;
 
     public ZoomIcon(Type type) {
-        super(24, 24);
+        super(16, 16);
         this.type = type;
     }
 

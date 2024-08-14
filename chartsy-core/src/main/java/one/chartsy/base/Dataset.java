@@ -12,6 +12,8 @@ import one.chartsy.base.dataset.ImmutableDataset;
 import one.chartsy.util.Pair;
 
 import java.util.AbstractList;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -29,7 +31,7 @@ import java.util.stream.Stream;
  *
  * @param <E> the type of elements stored in this dataset
  */
-public interface Dataset<E> extends SequenceAlike<E, Dataset<E>> {
+public interface Dataset<E> extends Iterable<E>, SequenceAlike {
 
     /**
      * Returns the element at the specified position in the dataset.  Depending
@@ -43,7 +45,7 @@ public interface Dataset<E> extends SequenceAlike<E, Dataset<E>> {
      */
     E get(int index);
 
-    @Override Stream<E> stream();
+    Stream<E> stream();
 
     @Override Iterator<E> iterator();
 
@@ -51,6 +53,12 @@ public interface Dataset<E> extends SequenceAlike<E, Dataset<E>> {
 
     default Dataset<E> toImmutable() {
         return ImmutableDataset.from(this);
+    }
+
+    default List<E> toImmutableList() {
+        List<E> list = new ArrayList<>(length());
+        forEach(list::add);
+        return Collections.unmodifiableList(list);
     }
 
     default List<E> values() {

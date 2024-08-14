@@ -4,10 +4,6 @@
  */
 package one.chartsy.base;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.BaseStream;
 import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
@@ -19,7 +15,7 @@ import java.util.stream.Stream;
  *
  * @author Mariusz Bernacki
  */
-public interface SequenceAlike<E, T_SEQ extends SequenceAlike<E, T_SEQ>> extends Iterable<E> {
+public interface SequenceAlike {
 
 	int length();
 
@@ -29,15 +25,7 @@ public interface SequenceAlike<E, T_SEQ extends SequenceAlike<E, T_SEQ>> extends
 		return index < 0 || index >= length();
 	}
 
-	BaseStream<E, ?> stream();
-
 	Order getOrder();
-
-	default List<E> toImmutableList() {
-		List<E> list = new ArrayList<>(length());
-		forEach(list::add);
-		return Collections.unmodifiableList(list);
-	}
 
 	enum Order {
 		/** Specifies that encounter order is guaranteed to be ascending index order. */
@@ -47,10 +35,14 @@ public interface SequenceAlike<E, T_SEQ extends SequenceAlike<E, T_SEQ>> extends
 		/** Indicates that encounter order is unspecified or not known. */
 		UNSPECIFIED;
 
-		public IntStream indexes(SequenceAlike<?, ?> seq) {
+		public IntStream indexes(SequenceAlike seq) {
 			int length = seq.length();
 			IntStream stream = IntStream.range(0, length);
 			return (this == INDEX_DESC) ? stream.map(i -> length - i - 1) : stream;
+		}
+
+		public boolean isAscending() {
+			return this == INDEX_ASC;
 		}
 
 		public boolean isDescending() {
@@ -101,7 +93,7 @@ public interface SequenceAlike<E, T_SEQ extends SequenceAlike<E, T_SEQ>> extends
 			}
 		}
 
-		public <E> Stream<E> drop(int n, Stream<E> s, SequenceAlike<E, ?> seq) {
+		public <E> Stream<E> drop(int n, Stream<E> s, SequenceAlike seq) {
 			return switch (this) {
 				case INDEX_ASC -> s.skip(n);
 				case INDEX_DESC -> s.limit(Math.max(0, seq.length() - n));
@@ -109,7 +101,7 @@ public interface SequenceAlike<E, T_SEQ extends SequenceAlike<E, T_SEQ>> extends
 			};
 		}
 
-		public DoubleStream drop(int n, DoubleStream s, SequenceAlike<Double, ?> seq) {
+		public DoubleStream drop(int n, DoubleStream s, SequenceAlike seq) {
 			return switch (this) {
 				case INDEX_ASC -> s.skip(n);
 				case INDEX_DESC -> s.limit(Math.max(0, seq.length() - n));
@@ -117,7 +109,7 @@ public interface SequenceAlike<E, T_SEQ extends SequenceAlike<E, T_SEQ>> extends
 			};
 		}
 
-		public IntStream drop(int n, IntStream s, SequenceAlike<Integer, ?> seq) {
+		public IntStream drop(int n, IntStream s, SequenceAlike seq) {
 			return switch (this) {
 				case INDEX_ASC -> s.skip(n);
 				case INDEX_DESC -> s.limit(Math.max(0, seq.length() - n));
@@ -125,7 +117,7 @@ public interface SequenceAlike<E, T_SEQ extends SequenceAlike<E, T_SEQ>> extends
 			};
 		}
 
-		public LongStream drop(int n, LongStream s, SequenceAlike<Long, ?> seq) {
+		public LongStream drop(int n, LongStream s, SequenceAlike seq) {
 			return switch (this) {
 				case INDEX_ASC -> s.skip(n);
 				case INDEX_DESC -> s.limit(Math.max(0, seq.length() - n));
@@ -133,7 +125,7 @@ public interface SequenceAlike<E, T_SEQ extends SequenceAlike<E, T_SEQ>> extends
 			};
 		}
 
-		public <E> Stream<E> take(int maxCount, Stream<E> s, SequenceAlike<E, ?> seq) {
+		public <E> Stream<E> take(int maxCount, Stream<E> s, SequenceAlike seq) {
 			return switch (this) {
 				case INDEX_ASC -> s.limit(maxCount);
 				case INDEX_DESC -> s.skip(Math.max(0, seq.length() - maxCount));
@@ -141,7 +133,7 @@ public interface SequenceAlike<E, T_SEQ extends SequenceAlike<E, T_SEQ>> extends
 			};
 		}
 
-		public DoubleStream take(int maxCount, DoubleStream s, SequenceAlike<Double, ?> seq) {
+		public DoubleStream take(int maxCount, DoubleStream s, SequenceAlike seq) {
 			return switch (this) {
 				case INDEX_ASC -> s.limit(maxCount);
 				case INDEX_DESC -> s.skip(Math.max(0, seq.length() - maxCount));
@@ -149,7 +141,7 @@ public interface SequenceAlike<E, T_SEQ extends SequenceAlike<E, T_SEQ>> extends
 			};
 		}
 
-		public IntStream take(int maxCount, IntStream s, SequenceAlike<Integer, ?> seq) {
+		public IntStream take(int maxCount, IntStream s, SequenceAlike seq) {
 			return switch (this) {
 				case INDEX_ASC -> s.limit(maxCount);
 				case INDEX_DESC -> s.skip(Math.max(0, seq.length() - maxCount));
@@ -157,7 +149,7 @@ public interface SequenceAlike<E, T_SEQ extends SequenceAlike<E, T_SEQ>> extends
 			};
 		}
 
-		public LongStream take(int maxCount, LongStream s, SequenceAlike<Long, ?> seq) {
+		public LongStream take(int maxCount, LongStream s, SequenceAlike seq) {
 			return switch (this) {
 				case INDEX_ASC -> s.limit(maxCount);
 				case INDEX_DESC -> s.skip(Math.max(0, seq.length() - maxCount));
@@ -165,7 +157,7 @@ public interface SequenceAlike<E, T_SEQ extends SequenceAlike<E, T_SEQ>> extends
 			};
 		}
 
-		public <E> Stream<E> dropTake(int fromIndex, int maxCount, Stream<E> s, SequenceAlike<E, ?> seq) {
+		public <E> Stream<E> dropTake(int fromIndex, int maxCount, Stream<E> s, SequenceAlike seq) {
 			return switch (this) {
 				case INDEX_ASC -> s.skip(fromIndex).limit(maxCount);
 				case INDEX_DESC -> {
@@ -176,7 +168,7 @@ public interface SequenceAlike<E, T_SEQ extends SequenceAlike<E, T_SEQ>> extends
 			};
 		}
 
-		public DoubleStream dropTake(int fromIndex, int maxCount, DoubleStream s, SequenceAlike<Double, ?> seq) {
+		public DoubleStream dropTake(int fromIndex, int maxCount, DoubleStream s, SequenceAlike seq) {
 			return switch (this) {
 				case INDEX_ASC -> s.skip(fromIndex).limit(maxCount);
 				case INDEX_DESC -> {
@@ -187,7 +179,7 @@ public interface SequenceAlike<E, T_SEQ extends SequenceAlike<E, T_SEQ>> extends
 			};
 		}
 
-		public IntStream dropTake(int fromIndex, int maxCount, IntStream s, SequenceAlike<Integer, ?> seq) {
+		public IntStream dropTake(int fromIndex, int maxCount, IntStream s, SequenceAlike seq) {
 			return switch (this) {
 				case INDEX_ASC -> s.skip(fromIndex).limit(maxCount);
 				case INDEX_DESC -> {
@@ -198,7 +190,7 @@ public interface SequenceAlike<E, T_SEQ extends SequenceAlike<E, T_SEQ>> extends
 			};
 		}
 
-		public LongStream dropTake(int fromIndex, int maxCount, LongStream s, SequenceAlike<Long, ?> seq) {
+		public LongStream dropTake(int fromIndex, int maxCount, LongStream s, SequenceAlike seq) {
 			return switch (this) {
 				case INDEX_ASC -> s.skip(fromIndex).limit(maxCount);
 				case INDEX_DESC -> {

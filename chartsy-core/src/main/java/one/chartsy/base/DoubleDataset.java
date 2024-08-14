@@ -38,7 +38,6 @@ public interface DoubleDataset extends PrimitiveDataset<Double, DoubleDataset, S
 	 */
 	double get(int index);
 
-	@Override
 	default DoubleStream stream() {
 		return StreamSupport.doubleStream(spliterator(), false);
 	}

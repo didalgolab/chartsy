@@ -42,7 +42,7 @@ public abstract class AbstractDataset<E> implements Dataset<E> {
         return stream().spliterator();
     }
 
-    public static <E, T extends SequenceAlike<?, T>>
+    public static <E, T extends SequenceAlike>
     AbstractDataset<E> from(T origin, IndexedFunction<T, E> getter) {
         return new From<>(origin) {
             @Override
@@ -52,7 +52,7 @@ public abstract class AbstractDataset<E> implements Dataset<E> {
         };
     }
 
-    public static <E, T extends SequenceAlike<?, T>>
+    public static <E, T extends SequenceAlike>
     AbstractDataset<E> from(T origin, IndexedFunction<T, E> getter, Function<T, Stream<E>> stream) {
         return new From<>(origin) {
             @Override
@@ -67,7 +67,7 @@ public abstract class AbstractDataset<E> implements Dataset<E> {
         };
     }
 
-    public static <E, T extends SequenceAlike<?, T>>
+    public static <E, T extends SequenceAlike>
     AbstractDataset<E> from(T origin, ToIntFunction<T> length, IndexedFunction<T, E> getter) {
         return new From<>(origin) {
             @Override
@@ -82,7 +82,7 @@ public abstract class AbstractDataset<E> implements Dataset<E> {
         };
     }
 
-    public static <E, T extends SequenceAlike<?, T>>
+    public static <E, T extends SequenceAlike>
     AbstractDataset<E> from(T origin, ToIntFunction<T> length, IndexedFunction<T, E> getter, Function<T, Stream<E>> stream) {
         return new From<>(origin) {
             @Override
@@ -102,7 +102,7 @@ public abstract class AbstractDataset<E> implements Dataset<E> {
         };
     }
 
-    public static abstract class From<E, T extends SequenceAlike<?, T>> extends AbstractDataset<E> {
+    public static abstract class From<E, T extends SequenceAlike> extends AbstractDataset<E> {
         protected final T origin;
 
         public From(T origin) {

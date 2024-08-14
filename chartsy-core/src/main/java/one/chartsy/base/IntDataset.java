@@ -38,7 +38,6 @@ public interface IntDataset extends PrimitiveDataset<Integer, IntDataset, Splite
 	 */
 	int get(int index);
 
-	@Override
 	default IntStream stream() {
 		return StreamSupport.intStream(spliterator(), false);
 	}

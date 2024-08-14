@@ -4,7 +4,7 @@
  */
 package one.chartsy.base;
 
-public abstract class AbstractRingBuffer {
+public abstract class AbstractRingBuffer implements SequenceAlike {
 
 	protected final int capacity;
 	protected final int mask;
@@ -23,8 +23,27 @@ public abstract class AbstractRingBuffer {
 		return 1 << -Integer.numberOfLeadingZeros(x - 1);
 	}
 
+	@Override
 	public final SequenceAlike.Order getOrder() {
 		return SequenceAlike.Order.INDEX_DESC;
+	}
+
+	/**
+	 * Gets the number of elements currently held in the buffer.
+	 *
+	 * @return the number of elements held in the buffer
+	 */
+	@Override
+	public int length() {
+		return (int) Math.min(capacity(), nextWrite);
+	}
+
+	/**
+	 * Is the buffer currently empty?
+	 */
+	@Override
+	public boolean isEmpty() {
+		return length() == 0;
 	}
 
 	/**
@@ -37,15 +56,6 @@ public abstract class AbstractRingBuffer {
 	}
 
 	/**
-	 * Gets the number of elements currently held in the buffer.
-	 *
-	 * @return the number of elements held in the buffer
-	 */
-	public int length() {
-		return (int) Math.min(capacity(), nextWrite);
-	}
-
-	/**
 	 * Returns the number of additional elements that this queue can ideally
 	 * accept without discarding the history.
 	 *
@@ -54,13 +64,6 @@ public abstract class AbstractRingBuffer {
 	public int remainingCapacity() {
 		int capacity = capacity();
 		return (capacity == Integer.MAX_VALUE) ? Integer.MAX_VALUE : capacity - length();
-	}
-
-	/**
-	 * Is the buffer currently empty?
-	 */
-	public boolean isEmpty() {
-		return length() == 0;
 	}
 
 	/**

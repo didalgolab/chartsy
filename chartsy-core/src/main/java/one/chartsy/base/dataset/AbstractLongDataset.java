@@ -32,7 +32,7 @@ public abstract class AbstractLongDataset implements LongDataset {
         return order;
     }
 
-    public static <T extends SequenceAlike<?, T>>
+    public static <T extends SequenceAlike>
     AbstractLongDataset from(T origin, IndexedToLongFunction<T> getter) {
         return new From<>(origin) {
             @Override
@@ -42,7 +42,7 @@ public abstract class AbstractLongDataset implements LongDataset {
         };
     }
 
-    public static <T extends SequenceAlike<?, T>>
+    public static <T extends SequenceAlike>
     AbstractLongDataset from(T origin, IndexedToLongFunction<T> getter, Function<T, LongStream> stream) {
         return new From<>(origin) {
             @Override
@@ -57,7 +57,7 @@ public abstract class AbstractLongDataset implements LongDataset {
         };
     }
 
-    public static <T extends SequenceAlike<?, T>>
+    public static <T extends SequenceAlike>
     AbstractLongDataset from(T origin, ToLongFunction<T> length, IndexedToLongFunction<T> getter) {
         return new From<>(origin) {
             @Override
@@ -72,7 +72,7 @@ public abstract class AbstractLongDataset implements LongDataset {
         };
     }
 
-    public static <T extends SequenceAlike<?, T>>
+    public static <T extends SequenceAlike>
     AbstractLongDataset from(T origin, ToLongFunction<T> length, IndexedToLongFunction<T> getter, Function<T, LongStream> stream) {
         return new From<>(origin) {
             @Override
@@ -92,7 +92,7 @@ public abstract class AbstractLongDataset implements LongDataset {
         };
     }
 
-    public static abstract class From<T extends SequenceAlike<?, T>> extends AbstractLongDataset {
+    public static abstract class From<T extends SequenceAlike> extends AbstractLongDataset {
         protected final T origin;
 
         public From(T origin) {

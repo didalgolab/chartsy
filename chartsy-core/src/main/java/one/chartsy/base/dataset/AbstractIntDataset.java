@@ -32,7 +32,7 @@ public abstract class AbstractIntDataset implements IntDataset {
         return order;
     }
 
-    public static <T extends SequenceAlike<?, T>>
+    public static <T extends SequenceAlike>
     AbstractIntDataset from(T origin, IndexedToIntFunction<T> getter) {
         return new From<>(origin) {
             @Override
@@ -42,7 +42,7 @@ public abstract class AbstractIntDataset implements IntDataset {
         };
     }
 
-    public static <T extends SequenceAlike<?, T>>
+    public static <T extends SequenceAlike>
     AbstractIntDataset from(T origin, IndexedToIntFunction<T> getter, Function<T, IntStream> stream) {
         return new From<>(origin) {
             @Override
@@ -57,7 +57,7 @@ public abstract class AbstractIntDataset implements IntDataset {
         };
     }
 
-    public static <T extends SequenceAlike<?, T>>
+    public static <T extends SequenceAlike>
     AbstractIntDataset from(T origin, ToIntFunction<T> length, IndexedToIntFunction<T> getter) {
         return new From<>(origin) {
             @Override
@@ -72,7 +72,7 @@ public abstract class AbstractIntDataset implements IntDataset {
         };
     }
 
-    public static <T extends SequenceAlike<?, T>>
+    public static <T extends SequenceAlike>
     AbstractIntDataset from(T origin, ToIntFunction<T> length, IndexedToIntFunction<T> getter, Function<T, IntStream> stream) {
         return new From<>(origin) {
             @Override
@@ -92,7 +92,7 @@ public abstract class AbstractIntDataset implements IntDataset {
         };
     }
 
-    public static abstract class From<T extends SequenceAlike<?, T>> extends AbstractIntDataset {
+    public static abstract class From<T extends SequenceAlike> extends AbstractIntDataset {
         protected final T origin;
 
         public From(T origin) {
