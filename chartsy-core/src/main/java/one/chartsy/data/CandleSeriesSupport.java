@@ -41,7 +41,7 @@ public class CandleSeriesSupport {
 	 * @throws IllegalArgumentException if {@code numBars} is negative
 	 */
 	public static <E extends Candle> Dataset<E> getBarsBefore(Series<? extends E> bars, LocalDateTime dateTime, int numBars) {
-		return getBarsBefore(bars, Chronological.toEpochMicros(dateTime), numBars);
+		return getBarsBefore(bars, Chronological.toEpochNanos(dateTime), numBars);
 	}
 
 	/**

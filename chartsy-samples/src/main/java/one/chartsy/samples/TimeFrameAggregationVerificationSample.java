@@ -74,7 +74,7 @@ public class TimeFrameAggregationVerificationSample {
                 Candle c1 = candles.get(i);
                 Candle c2 = SimpleCandle.from(result.get(i));
                 if ((timeFrame == TimeFrame.Period.DAILY || timeFrame == TimeFrame.Period.WEEKLY || timeFrame == TimeFrame.Period.MONTHLY || timeFrame == TimeFrame.Period.QUARTERLY || timeFrame == TimeFrame.Period.YEARLY) && c1.getTime() % 86_400_000_000L == 0) {
-                    c2 = Candle.of((c2.getTime() + 1), c2.open(), c2.high(), c2.low(), c2.close(), c2.volume(), c2.count());
+                    c2 = Candle.of((c2.getTime() + 1), c2.open(), c2.high(), c2.low(), c2.close(), c2.volume(), c2.turnover(), c2.trades());
                 }
                 if (!c1.equals(c2))
                     throw new RuntimeException(timeFrame + ": " + c1 + " vs " + c2);
@@ -130,8 +130,8 @@ public class TimeFrameAggregationVerificationSample {
             TimeFrame.Period.H12,
     };
 
-    /** The number of milliseconds elapsed since Monday, January 1st, 2001. */
-    private static final long reftime2 = Chronological.toEpochMicros(OffsetDateTime.of(LocalDateTime.of(2001, 1, 1, 0, 0), ZoneOffset.UTC));
+    /** The number of nanoseconds elapsed since Monday, January 1st, 2001. */
+    private static final long reftime2 = Chronological.toEpochNanos(OffsetDateTime.of(LocalDateTime.of(2001, 1, 1, 0, 0), ZoneOffset.UTC));
 
     public static CandleSeries bruteForceTimeFrameCompress(TimeFrame targetTF, CandleSeries quotes) {
         TimeFrame frame = quotes.getTimeFrame();
@@ -174,7 +174,7 @@ public class TimeFrameAggregationVerificationSample {
                 low = q.low();
                 close = q.close();
                 volume = q.volume();
-                openInterest = q.count();
+                openInterest = q.trades();
                 time = t;
             } else {
                 double h = q.high();
@@ -185,7 +185,7 @@ public class TimeFrameAggregationVerificationSample {
                     low = l;
                 close = q.close();
                 volume += q.volume();
-                openInterest = q.count();
+                openInterest = q.trades();
                 time = t;
             }
         }
@@ -230,7 +230,7 @@ public class TimeFrameAggregationVerificationSample {
                 low = q.low();
                 close = q.close();
                 volume = q.volume();
-                openInterest = q.count();
+                openInterest = q.trades();
             } else {
                 double h = q.high();
                 if (h > high)
@@ -240,7 +240,7 @@ public class TimeFrameAggregationVerificationSample {
                     low = l;
                 close = q.close();
                 volume += q.volume();
-                openInterest = q.count();
+                openInterest = q.trades();
             }
             cal1.setTimeInMillis((time = t) / 1000);
         }

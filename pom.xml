@@ -174,7 +174,7 @@
         <sonar.organization>chartsy</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <!-- Dependency versions -->
-        <assertj.version>3.24.2</assertj.version>
+        <assertj.version>3.26.3</assertj.version>
         <awaitility.version>4.2.0</awaitility.version>
         <bytebuddy.version>1.14.6</bytebuddy.version>
         <classmate.version>1.5.1</classmate.version>
@@ -203,7 +203,7 @@
         <lombok.version>1.18.30</lombok.version>
         <methanol.version>1.7.0</methanol.version>
         <mockito.version>5.4.0</mockito.version>
-        <netbeans.version>RELEASE210</netbeans.version>
+        <netbeans.version>RELEASE220</netbeans.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <reactor.core.version>3.5.9</reactor.core.version>
         <spotbugs.version>4.7.3</spotbugs.version>

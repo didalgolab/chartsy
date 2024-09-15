@@ -20,9 +20,9 @@ public class TradingDay {
     public TradingDay(ZoneId timeZone, LocalDate date, LocalTime alignment) {
         this.timeZone = timeZone;
         this.startDateTime = ZonedDateTime.of(date, alignment, timeZone);
-        this.startTime = Chronological.toEpochMicros(startDateTime);
+        this.startTime = Chronological.toEpochNanos(startDateTime);
         this.endDateTime = ZonedDateTime.of(date.plusDays(1), alignment, timeZone);
-        this.endTime = Chronological.toEpochMicros(endDateTime);
+        this.endTime = Chronological.toEpochNanos(endDateTime);
     }
 
     public boolean isAfter(long time) {
@@ -41,7 +41,7 @@ public class TradingDay {
         if (!contains(time))
             throw new IllegalArgumentException("`time` not within TradingDay[" + getStartTime() + "]");
 
-        long candleSizeInMicros = Math.multiplyExact(candleGranularity.toSeconds(), 1000_000L);
-        return startTime + ((time - startTime - 1)/candleSizeInMicros + 1)*candleSizeInMicros;
+        long candleSizeInNanos = Math.multiplyExact(candleGranularity.toSeconds(), 1_000_000_000L);
+        return startTime + ((time - startTime - 1)/candleSizeInNanos + 1)*candleSizeInNanos;
     }
 }

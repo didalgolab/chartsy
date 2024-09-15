@@ -4,13 +4,11 @@ package one.chartsy.ui.chart.overlays;
 
 import java.awt.Color;
 import java.awt.Stroke;
-import java.util.List;
+import java.util.function.ToDoubleFunction;
 
 import one.chartsy.data.CandleSeries;
-import one.chartsy.data.DoubleSeries;
-import one.chartsy.data.packed.PackedCandleSeries;
-import one.chartsy.finance.FinancialIndicators;
-import one.chartsy.finance.FinancialIndicators.Sfora.Properties;
+import one.chartsy.financial.ValueIndicatorSupport;
+import one.chartsy.financial.indicators.FramaTrendWhispers;
 import one.chartsy.ui.chart.BasicStrokes;
 import org.openide.util.lookup.ServiceProvider;
 
@@ -39,10 +37,19 @@ public class Sfora extends AbstractOverlay {
     public void calculate() {
         CandleSeries quotes = getDataset();
         if (quotes != null) {
-            List<DoubleSeries> result = FinancialIndicators.sfora(PackedCandleSeries.from(quotes), new Properties(framaPeriod, slowdownPeriod, numberOfEnvelops));
-            
-            for (int i = 0; i < numberOfEnvelops; i++)
-                addPlot(String.valueOf(i), new LinePlot(result.get(i), color, stroke));
+            var options = new FramaTrendWhispers.Options(numberOfEnvelops, framaPeriod, slowdownPeriod);
+
+            @SuppressWarnings("unchecked")
+            var indicatorPaths = (ToDoubleFunction<FramaTrendWhispers>[]) new ToDoubleFunction[numberOfEnvelops];
+            for (int index = 0; index < numberOfEnvelops; index++) {
+                final var pathNumber = index;
+                indicatorPaths[index] = indicator -> indicator.getPath(pathNumber).getLast();
+            }
+
+            var paths = ValueIndicatorSupport.calculate(quotes, new FramaTrendWhispers(options), indicatorPaths);
+            for (int index = 0; index < numberOfEnvelops; index++) {
+                addPlot(String.valueOf(index + 1), new LinePlot(paths.get(index), color, stroke));
+            }
         }
     }
     

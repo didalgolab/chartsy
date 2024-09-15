@@ -12,7 +12,7 @@ import java.time.*;
 import java.util.LinkedList;
 import java.util.function.Supplier;
 
-import static one.chartsy.time.Chronological.toEpochMicros;
+import static one.chartsy.time.Chronological.toEpochNanos;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class PeriodCandleAggregatorTest {
@@ -56,7 +56,7 @@ class PeriodCandleAggregatorTest {
 
         assertEquals(1, emitted.size(), "first hour candle");
         assertEquals(
-                Candle.of(toEpochMicros(LocalDateTime.of(2021, 10, 11, 0, 0)), 1, 3, 1, 3),
+                Candle.of(toEpochNanos(LocalDateTime.of(2021, 10, 11, 0, 0)), 1, 3, 1, 3),
                 emitted.getFirst(), "is first candle aggregated");
     }
 
@@ -72,7 +72,7 @@ class PeriodCandleAggregatorTest {
 
         assertEquals(1, emitted.size(), "first hour candle");
         assertEquals(
-                Candle.of(toEpochMicros(LocalDateTime.of(2021, 10, 11, 22, 0)), 1, 3, 1, 3),
+                Candle.of(toEpochNanos(LocalDateTime.of(2021, 10, 11, 22, 0)), 1, 3, 1, 3),
                 emitted.getFirst(), "first aggregated candle");
     }
 
@@ -89,7 +89,7 @@ class PeriodCandleAggregatorTest {
 
         assertEquals(1, emitted.size(), "first hour candle");
         assertEquals(
-                Candle.of(toEpochMicros(LocalDateTime.of(2021, 10, 16, 22, 0)), 1, 3, 1, 3),
+                Candle.of(toEpochNanos(LocalDateTime.of(2021, 10, 16, 22, 0)), 1, 3, 1, 3),
                 emitted.getFirst(), "first aggregated candle");
     }
 
@@ -106,7 +106,7 @@ class PeriodCandleAggregatorTest {
 
         assertEquals(1, emitted.size(), "first hour candle");
         assertEquals(
-                Candle.of(toEpochMicros(LocalDateTime.of(2021, 10, 17, 22, 0)), 1, 3, 1, 3),
+                Candle.of(toEpochNanos(LocalDateTime.of(2021, 10, 17, 22, 0)), 1, 3, 1, 3),
                 emitted.getFirst(), "first aggregated candle");
     }
 
@@ -123,11 +123,11 @@ class PeriodCandleAggregatorTest {
 
         assertEquals(1, emitted.size(), "first hour candle");
         assertEquals(
-                Candle.of(toEpochMicros(LocalDateTime.of(2021, 11, 1, 0, 0)), 1, 3, 1, 3),
+                Candle.of(toEpochNanos(LocalDateTime.of(2021, 11, 1, 0, 0)), 1, 3, 1, 3),
                 emitted.getFirst(), "first aggregated candle");
     }
 
     private static Candle newCandle(LocalDateTime datetime, double price) {
-        return Candle.of(toEpochMicros(datetime), price);
+        return Candle.of(toEpochNanos(datetime), price);
     }
 }

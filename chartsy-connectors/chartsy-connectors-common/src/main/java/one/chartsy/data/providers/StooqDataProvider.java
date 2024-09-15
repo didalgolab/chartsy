@@ -19,6 +19,7 @@ import java.util.*;
 import com.github.mizosoft.methanol.MoreBodyHandlers;
 import one.chartsy.*;
 import one.chartsy.Currency;
+import one.chartsy.context.ExecutionContext;
 import one.chartsy.data.DataQuery;
 import one.chartsy.data.provider.AbstractDataProvider;
 import one.chartsy.data.provider.DataProvider;
@@ -154,7 +155,7 @@ public class StooqDataProvider extends AbstractDataProvider implements SymbolPro
 
             //items.sort(Comparator.naturalOrder());
             if (query.endTime() != null) {
-                long endTime = Chronological.toEpochMicros(query.endTime());
+                long endTime = Chronological.toEpochNanos(query.endTime());
                 items.removeIf(item -> item.getTime() > endTime);
             }
 

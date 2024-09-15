@@ -7,7 +7,7 @@ package one.chartsy.simulation;
 import one.chartsy.data.structures.PriorityMap;
 import one.chartsy.data.TimedEntry;
 import one.chartsy.scheduling.EventScheduler;
-import one.chartsy.simulation.time.SimulationClock;
+import one.chartsy.simulation.time.PlaybackClock;
 import one.chartsy.time.Chronological;
 
 class EventCorrelator implements EventScheduler {
@@ -22,7 +22,7 @@ class EventCorrelator implements EventScheduler {
         timedEvents.put(event, handler);
     }
 
-    public void triggerEventsUpTo(long time, SimulationClock simClock) {
+    public void triggerEventsUpTo(long time, PlaybackClock simClock) {
         Chronological event;
         while (!timedEvents.isEmpty() && (event = timedEvents.peekKey()).getTime() <= time) {
             simClock.setTime(event);

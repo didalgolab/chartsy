@@ -47,7 +47,12 @@ public abstract class AbstractCandle<C extends Candle> implements Candle {
     }
 
     @Override
-    public int count() {
-        return baseCandle().count();
+    public double turnover() {
+        return baseCandle().turnover();
+    }
+
+    @Override
+    public int trades() {
+        return baseCandle().trades();
     }
 }

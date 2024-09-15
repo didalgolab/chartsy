@@ -113,7 +113,7 @@ public class SimpleTick implements Tick {
                     && key.charAt(10) == 'T') {
                 LocalDateTime dateTime = LocalDateTime.parse(key);
                 obj = obj.getAsJsonObject(key);
-                obj.addProperty("time", Chronological.toEpochMicros(dateTime));
+                obj.addProperty("time", Chronological.toEpochNanos(dateTime));
             }
             return formatter.fromJson(obj, valueType);
         }

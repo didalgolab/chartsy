@@ -7,6 +7,7 @@ import one.chartsy.SymbolResource;
 import one.chartsy.TimeFrame;
 import one.chartsy.base.Dataset;
 import one.chartsy.base.DoubleDataset;
+import one.chartsy.context.ExecutionContext;
 import one.chartsy.data.CandleSeries;
 import one.chartsy.data.SimpleCandle;
 import one.chartsy.util.Pair;

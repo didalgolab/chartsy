@@ -4,7 +4,7 @@
  */
 package one.chartsy.trade;
 
-import one.chartsy.naming.SymbolIdentifier;
+import one.chartsy.financial.SymbolIdentifier;
 
 import java.util.Set;
 

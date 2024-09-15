@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
-import static one.chartsy.time.Chronological.toEpochMicros;
+import static one.chartsy.time.Chronological.toEpochNanos;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class StrategyTest {
@@ -36,9 +36,9 @@ public class StrategyTest {
     @ParameterizedTest
     @MethodSource("runners")
     void gives_proper_SimulationResult_when_backtested(SimulationRunner runner) {
-        var c1 = Candle.of(toEpochMicros(LocalDateTime.of(2021, 1, 1, 0, 0)), 1.1, 1.9, 1.0, 1.8);
-        var c2 = Candle.of(toEpochMicros(LocalDateTime.of(2021, 1, 2, 0, 0)), 2.1, 2.9, 2.0, 2.8);
-        var c3 = Candle.of(toEpochMicros(LocalDateTime.of(2021, 1, 3, 0, 0)), 3.1, 3.9, 3.0, 3.8);
+        var c1 = Candle.of(toEpochNanos(LocalDateTime.of(2021, 1, 1, 0, 0)), 1.1, 1.9, 1.0, 1.8);
+        var c2 = Candle.of(toEpochNanos(LocalDateTime.of(2021, 1, 2, 0, 0)), 2.1, 2.9, 2.0, 2.8);
+        var c3 = Candle.of(toEpochNanos(LocalDateTime.of(2021, 1, 3, 0, 0)), 3.1, 3.9, 3.0, 3.8);
         var inputSeries = seriesOf(c3, c2, c1);
 
         class MyStrategy extends Strategy<Candle> {
@@ -61,9 +61,9 @@ public class StrategyTest {
     //@ParameterizedTest // TODO not usable
     @MethodSource("runners")
     void under_construction(SimulationRunner runner) {
-        var c1 = Candle.of(toEpochMicros(LocalDateTime.of(2021, 1, 1, 0, 0)), 1.1, 1.9, 1.0, 1.8);
-        var c2 = Candle.of(toEpochMicros(LocalDateTime.of(2021, 1, 2, 0, 0)), 2.1, 2.9, 2.0, 2.8);
-        var c3 = Candle.of(toEpochMicros(LocalDateTime.of(2021, 1, 3, 0, 0)), 3.1, 3.9, 3.0, 3.8);
+        var c1 = Candle.of(toEpochNanos(LocalDateTime.of(2021, 1, 1, 0, 0)), 1.1, 1.9, 1.0, 1.8);
+        var c2 = Candle.of(toEpochNanos(LocalDateTime.of(2021, 1, 2, 0, 0)), 2.1, 2.9, 2.0, 2.8);
+        var c3 = Candle.of(toEpochNanos(LocalDateTime.of(2021, 1, 3, 0, 0)), 3.1, 3.9, 3.0, 3.8);
         var inputSeries = seriesOf(c3, c2, c1);
 
         class MyStrategy extends Strategy<Candle> {
@@ -97,9 +97,9 @@ public class StrategyTest {
     @ParameterizedTest
     @MethodSource("runners")
     void can_open_positions_using_MarketOrder_with_stop_loss(SimulationRunner runner) {
-        var c1 = Candle.of(toEpochMicros(LocalDateTime.of(2021, 1, 1, 0, 0)), 1.1, 1.9, 1.0, 1.8);
-        var c2 = Candle.of(toEpochMicros(LocalDateTime.of(2021, 1, 2, 0, 0)), 2.1, 2.9, 2.0, 2.8);
-        var c3 = Candle.of(toEpochMicros(LocalDateTime.of(2021, 1, 3, 0, 0)), 3.1, 3.9, 3.0, 3.8);
+        var c1 = Candle.of(toEpochNanos(LocalDateTime.of(2021, 1, 1, 0, 0)), 1.1, 1.9, 1.0, 1.8);
+        var c2 = Candle.of(toEpochNanos(LocalDateTime.of(2021, 1, 2, 0, 0)), 2.1, 2.9, 2.0, 2.8);
+        var c3 = Candle.of(toEpochNanos(LocalDateTime.of(2021, 1, 3, 0, 0)), 3.1, 3.9, 3.0, 3.8);
         var inputSeries = seriesOf(c3, c2, c1);
         var STOP_LOSS = 2.05;
 

@@ -36,11 +36,11 @@ public record SimpleSessionFilter(
             ZonedDateTime dateTime = Chronological.toDateTime(time, timezone());
             ZonedDateTime start = dateTime.with(startDayOfWeek()).with(startTime());
             ZonedDateTime end = dateTime.with(endDayOfWeek()).with(endTime());
-            startTime = Chronological.toEpochMicros(start);
-            endTime = Chronological.toEpochMicros(end);
+            startTime = Chronological.toEpochNanos(start);
+            endTime = Chronological.toEpochNanos(end);
             if (endTime <= time) {
-                startTime = Chronological.toEpochMicros(start.plusDays(7));
-                endTime = Chronological.toEpochMicros(end.plusDays(7));
+                startTime = Chronological.toEpochNanos(start.plusDays(7));
+                endTime = Chronological.toEpochNanos(end.plusDays(7));
             }
             return (time > startTime && time <= endTime);
         }

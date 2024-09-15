@@ -8,7 +8,7 @@ import one.chartsy.Candle;
 import one.chartsy.data.structures.PriorityMap;
 import one.chartsy.data.*;
 import one.chartsy.random.RandomWalk;
-import one.chartsy.simulation.time.SimulationClock;
+import one.chartsy.simulation.time.PlaybackClock;
 import one.chartsy.time.Chronological;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.profile.StackProfiler;
@@ -65,7 +65,7 @@ public class Main4 {
         PriorityMap<Chronological, Candle> map = new PriorityMap<>();
         PriorityQueue<Chronological> queue = new PriorityQueue<>();
         int index;
-        SimulationClock simClock = new SimulationClock(ZoneId.systemDefault(), Chronological.now());
+        PlaybackClock simClock = new PlaybackClock(ZoneId.systemDefault(), Chronological.now());
         Class[] classes = new Class[] {Chronological.class, Candle.class, ExtendedCandle.class, SimpleCandle.class, AbstractCandle.class};
 
         @Setup(Level.Trial) public void

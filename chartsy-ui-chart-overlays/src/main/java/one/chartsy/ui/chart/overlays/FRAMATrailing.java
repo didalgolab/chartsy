@@ -6,8 +6,8 @@ import java.awt.Color;
 import java.awt.Stroke;
 
 import one.chartsy.data.CandleSeries;
-import one.chartsy.data.DoubleSeries;
-import one.chartsy.finance.FinancialIndicators;
+import one.chartsy.financial.ValueIndicatorSupport;
+import one.chartsy.financial.indicators.FramaTrendEquilibrium;
 import one.chartsy.ui.chart.BasicStrokes;
 import org.openide.util.lookup.ServiceProvider;
 
@@ -36,8 +36,8 @@ public class FRAMATrailing extends AbstractOverlay {
     public void calculate() {
         CandleSeries quotes = getDataset();
         if (quotes != null) {
-            DoubleSeries smudge = FinancialIndicators.trailingFrama(quotes);
-            addPlot("frama", new LinePlot(smudge, color, stroke));
+            var values = ValueIndicatorSupport.calculate(quotes.closes(), new FramaTrendEquilibrium(), FramaTrendEquilibrium::getAverage);
+            addPlot("frama", new LinePlot(values, color, stroke));
         }
     }
     

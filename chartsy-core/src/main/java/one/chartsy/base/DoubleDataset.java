@@ -171,6 +171,40 @@ public interface DoubleDataset extends PrimitiveDataset<Double, DoubleDataset, S
         return mapToObject(Double::valueOf);
     }
 
+    /**
+     * Calculates the fractal dimension index (FDI) at a specific position in the series.
+     *
+     * @param n the number of periods to use in the calculation
+     * @param index the index at which to calculate the FDI
+     * @return the FDI value at the specified index
+     * @throws IllegalArgumentException if periods is not positive or index is out of bounds
+     */
+    default double fdi(int n, int index) {
+        if (n <= 0)
+            throw new IllegalArgumentException("The period-n argument " + n + " must be positive");
+
+        double max = Double.NEGATIVE_INFINITY, min = Double.POSITIVE_INFINITY;
+        for (int i = 0; i < n; i++) {
+            max = Math.max(max, get(index + i));
+            min = Math.min(min, get(index + i));
+        }
+        if (max - min == 0.0)
+            return 1.5; // Default value when there's no price movement
+
+        double prev = 0.0;
+        double length = 0.0;
+        double nPow = 1.0 / Math.pow(n - 1.0, 2.0);
+        for (int i = 0; i < n; i++) {
+            double diff = (get(index + i) - min) / (max - min);
+            if (i > 0) {
+                length += Math.sqrt((diff - prev) * (diff - prev) + nPow);
+            }
+            prev = diff;
+        }
+
+        return 1.0 + (Math.log(length) + Math.log(2)) / Math.log(2.0 * (n - 1));
+    }
+
     static DoubleDataset empty() {
         return ImmutableDoubleDataset.EMPTY;
     }

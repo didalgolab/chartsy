@@ -96,7 +96,7 @@ public class HostTradingAlgorithmContext implements TradingAlgorithmContext {
         @Override
         public void schedule(long triggerTime, Runnable event) {
             long delay = triggerTime - hostClock.time();
-            executor.schedule(event, delay, TimeUnit.MICROSECONDS);
+            executor.schedule(event, delay, TimeUnit.NANOSECONDS);
         }
 
         static final class DaemonThreadFactory implements ThreadFactory {

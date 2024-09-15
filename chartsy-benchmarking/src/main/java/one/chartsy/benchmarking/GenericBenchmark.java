@@ -10,7 +10,7 @@ import one.chartsy.data.AbstractCandle;
 import one.chartsy.data.ExtendedCandle;
 import one.chartsy.data.SimpleCandle;
 import one.chartsy.random.RandomWalk;
-import one.chartsy.simulation.time.SimulationClock;
+import one.chartsy.simulation.time.PlaybackClock;
 import one.chartsy.time.Chronological;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.profile.StackProfiler;
@@ -69,7 +69,7 @@ public class GenericBenchmark {
         PriorityMap<Chronological, Candle> map = new PriorityMap<>();
         PriorityQueue<Chronological> queue = new PriorityQueue<>();
         volatile int index;
-        SimulationClock simClock = new SimulationClock(ZoneId.systemDefault(), Chronological.now());
+        PlaybackClock simClock = new PlaybackClock(ZoneId.systemDefault(), Chronological.now());
         Class[] classes = new Class[] {Chronological.class, Candle.class, ExtendedCandle.class, SimpleCandle.class, AbstractCandle.class};
 
         @Setup(Level.Trial) public void

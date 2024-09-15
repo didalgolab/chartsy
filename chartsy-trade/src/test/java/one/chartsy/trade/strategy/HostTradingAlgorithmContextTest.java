@@ -55,7 +55,7 @@ class HostTradingAlgorithmContextTest {
         EventScheduler scheduler = local.scheduler();
 
         Semaphore sync = new Semaphore(0);
-        scheduler.schedule((Chronological.now() + 1000L), sync::release);
+        scheduler.schedule((Chronological.now() + 1000_000L), sync::release);
         assertTrue(sync.tryAcquire(50, TimeUnit.MILLISECONDS), "Scheduled event triggered");
     }
 }

@@ -8,7 +8,7 @@ import one.chartsy.SymbolIdentity;
 import one.chartsy.core.LaunchableTarget;
 import one.chartsy.base.ThreadContext;
 import one.chartsy.data.Series;
-import one.chartsy.naming.SymbolIdentifier;
+import one.chartsy.financial.SymbolIdentifier;
 import one.chartsy.time.Chronological;
 import one.chartsy.trade.*;
 import one.chartsy.trade.data.Position;

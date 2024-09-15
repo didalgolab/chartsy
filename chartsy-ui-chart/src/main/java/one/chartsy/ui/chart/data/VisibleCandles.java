@@ -121,7 +121,7 @@ public class VisibleCandles {
      * @return index of the search key, see #b.
      */
     public int binarySearch(LocalDateTime datetime) {
-        return binarySearch(Chronological.toEpochMicros(datetime));
+        return binarySearch(Chronological.toEpochNanos(datetime));
     }
     
     /**

@@ -12,7 +12,6 @@ public abstract class Clock extends java.time.Clock {
     @Override
     public abstract Clock withZone(ZoneId zone);
 
-
     public static Clock systemUTC() {
         return ProxyClock.SYSTEM_UTC;
     }
@@ -36,7 +35,7 @@ public abstract class Clock extends java.time.Clock {
         @Override
         public long time() {
             Instant in = source.instant();
-            return Math.multiplyExact(in.getEpochSecond(), 1000_000) + in.getNano()/1000;
+            return Math.multiplyExact(in.getEpochSecond(), 1000_000_000L) + in.getNano();
         }
 
         @Override

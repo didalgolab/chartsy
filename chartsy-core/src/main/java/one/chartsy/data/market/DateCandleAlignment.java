@@ -30,6 +30,6 @@ public record DateCandleAlignment(
         while (candleEndTime.isBefore(timeAtZone))
             candleEndTime = candleEndTime.plus(candlePeriod);
 
-        return Chronological.toEpochMicros(candleEndTime);
+        return Chronological.toEpochNanos(candleEndTime);
     }
 }

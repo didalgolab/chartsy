@@ -4,7 +4,7 @@ package one.chartsy.simulation.engine;
 
 import one.chartsy.*;
 import one.chartsy.core.event.ListenerList;
-import one.chartsy.naming.SymbolIdentifier;
+import one.chartsy.financial.SymbolIdentifier;
 import one.chartsy.trade.strategy.SimulatorOptions;
 import one.chartsy.trade.Account;
 import one.chartsy.trade.Execution;

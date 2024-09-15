@@ -10,7 +10,7 @@ import one.chartsy.data.TimedEntry;
 import one.chartsy.simulation.engine.SimpleMatchingEngine;
 import one.chartsy.simulation.platform.BacktestPlatformServices;
 import one.chartsy.simulation.reporting.ReportEngine;
-import one.chartsy.simulation.time.SimulationClock;
+import one.chartsy.simulation.time.PlaybackClock;
 import one.chartsy.time.Chronological;
 import one.chartsy.trade.*;
 import one.chartsy.trade.data.Position;
@@ -26,7 +26,7 @@ import java.util.function.Supplier;
 
 public class TradingSimulator extends TradingAlgorithmHandle implements TradingService, SimulationDriver {
 
-    private final SimulationClock clock = new SimulationClock(ZoneId.systemDefault(), 0);
+    private final PlaybackClock clock = new PlaybackClock(ZoneId.systemDefault(), 0);
     private final EventCorrelator eventCorrelator = new EventCorrelator();
     private int currentDayNumber;
 
@@ -196,11 +196,11 @@ public class TradingSimulator extends TradingAlgorithmHandle implements TradingS
     }
 
     public <T> void addReminder(LocalDateTime datetime, T state, Consumer<T> onReminder) {
-        addReminder(Chronological.toEpochMicros(datetime), state, onReminder);
+        addReminder(Chronological.toEpochNanos(datetime), state, onReminder);
     }
 
     public <T> void addReminder(LocalDateTime datetime, T state, BiConsumer<LocalDateTime, T> onReminder) {
-        addReminder(Chronological.toEpochMicros(datetime), state, __ -> onReminder.accept(datetime, state));
+        addReminder(Chronological.toEpochNanos(datetime), state, __ -> onReminder.accept(datetime, state));
     }
 
     public void onReminder(LocalDateTime time, Object state) {

@@ -6,7 +6,7 @@ package one.chartsy.trade;
 
 import one.chartsy.When;
 import one.chartsy.core.event.ListenerList;
-import one.chartsy.naming.SymbolIdentifier;
+import one.chartsy.financial.SymbolIdentifier;
 
 import java.util.*;
 

@@ -3,12 +3,12 @@
 package one.chartsy.data.provider.file.stooq.pl;
 
 import one.chartsy.*;
-import one.chartsy.core.collections.DoubleMinMaxList;
 import one.chartsy.data.*;
 import one.chartsy.data.packed.PackedCandleSeries;
 import one.chartsy.data.provider.FlatFileDataProvider;
 import one.chartsy.data.provider.file.FlatFileFormat;
-import one.chartsy.finance.FinancialIndicators;
+import one.chartsy.financial.ValueIndicatorSupport;
+import one.chartsy.financial.indicators.FramaTrendWhispers;
 import one.chartsy.util.Pair;
 
 import java.io.IOException;
@@ -39,8 +39,8 @@ public class StockSelectionFromHourlyStooqFlatFileDataProvider {
                 System.out.println("Empty series: " + stock);
                 continue;
             }
-            DoubleMinMaxList bands = FinancialIndicators.Sfora.bands(PackedCandleSeries.from(series));
-            DoubleSeries width = bands.getMaximum().sub(bands.getMinimum());
+            DoubleSeries width = ValueIndicatorSupport.calculate(series, new FramaTrendWhispers(), FramaTrendWhispers::getRange);
+
             DoubleSeries highestSince = PackedCandleSeries.from(series).highestSince();
             if (width.length() == 0)
                 continue;
@@ -53,8 +53,7 @@ public class StockSelectionFromHourlyStooqFlatFileDataProvider {
             for (int i = 0; i < n; i++) {
                 Series<Candle> newSeries = series.resample(AdjustmentMethod.RELATIVE);
 
-                DoubleMinMaxList newBands = FinancialIndicators.Sfora.bands(PackedCandleSeries.from(newSeries));
-                DoubleSeries newWidth = newBands.getMaximum().sub(newBands.getMinimum());
+                DoubleSeries newWidth = ValueIndicatorSupport.calculate(newSeries, new FramaTrendWhispers(), FramaTrendWhispers::getRange);
                 DoubleSeries newHighestSince = PackedCandleSeries.from(newSeries).highestSince();
                 double newLastClose = newSeries.getLast().close();
                 double newWidthLast = newWidth.getLast();

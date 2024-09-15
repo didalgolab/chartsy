@@ -23,7 +23,7 @@ public interface DoubleSeries extends TimeSeriesAlike {
     double getLast();
 
     static PackedDoubleSeries of(double[] values, Timeline timeline) {
-        return new PackedDoubleSeries(timeline, ImmutableDoubleDataset.of(values));
+        return new PackedDoubleSeries(timeline, ImmutableDoubleDataset.ofReversedSameIndexingOrder(values));
     }
 
     static PackedDoubleSeries empty(Timeline timeline) {

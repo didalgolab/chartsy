@@ -21,7 +21,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static one.chartsy.time.Chronological.toEpochMicros;
+import static one.chartsy.time.Chronological.toEpochNanos;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.inOrder;
@@ -88,7 +88,7 @@ class SimulationRunnerTest {
     }
 
     static Candle candle() {
-        return Candle.of(toEpochMicros(LocalDateTime.of(2021, 12, 2, 0, 0)), 1.0);
+        return Candle.of(toEpochNanos(LocalDateTime.of(2021, 12, 2, 0, 0)), 1.0);
     }
 
     static Series<Candle> seriesOf(Candle... cs) {

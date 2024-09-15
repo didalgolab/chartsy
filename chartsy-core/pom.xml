@@ -59,6 +59,11 @@
     </build>
     <dependencies>
         <dependency>
+            <groupId>com.ethlo.time</groupId>
+            <artifactId>itu</artifactId>
+            <version>1.10.2</version>
+        </dependency>
+        <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
             <version>${jackson.version}</version>
@@ -110,6 +115,12 @@
             <groupId>org.glassfish</groupId>
             <artifactId>jakarta.json</artifactId>
             <version>2.0.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.immutables</groupId>
+            <artifactId>value</artifactId>
+            <version>2.10.1</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>jakarta.json</groupId>

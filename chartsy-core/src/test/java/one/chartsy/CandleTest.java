@@ -16,7 +16,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.UnaryOperator;
 
 import static java.time.LocalDate.parse;
-import static one.chartsy.time.Chronological.toEpochMicros;
+import static one.chartsy.time.Chronological.toEpochNanos;
 import static org.junit.jupiter.api.Assertions.*;
 
 class CandleTest {
@@ -28,7 +28,7 @@ class CandleTest {
         assertInstanceOf(SimpleCandle.class, Candle.of(0L, 1, 3, 0, 2, 100, 10));
     }
 
-    static final long time = toEpochMicros(parse("2001-01-01").atStartOfDay());
+    static final long time = toEpochNanos(parse("2001-01-01").atStartOfDay());
 
     @Test
     void toString_gives_Json_representation_of_a_Candle() {
@@ -40,9 +40,9 @@ class CandleTest {
                 Candle.of(time, 2.2, 3.3, 2.0, 3.0).toString(), "Candle with wicks");
         assertEquals("{\"2001-01-01\": {OHLC:[0.0], V:5.5}}",
                 Candle.of(time, 0, 0, 0, 0, 5.5).toString(), "Candle with volume");
-        assertEquals("{\"2001-01-01\": {OHLC:[0.0], count:5}}",
+        assertEquals("{\"2001-01-01\": {OHLC:[0.0], trades:5}}",
                 Candle.of(time, 0, 0, 0, 0, 0, 5).toString(), "Candle with `count`");
-        assertEquals("{\"2001-01-01\": {OHLC:[2.2, 3.3, 2.0, 3.0], V:4.0, count:5}}",
+        assertEquals("{\"2001-01-01\": {OHLC:[2.2, 3.3, 2.0, 3.0], V:4.0, trades:5}}",
                 Candle.of(time, 2.2, 3.3, 2.0, 3.0, 4, 5).toString(), "Full Candle representation");
     }
 
@@ -64,7 +64,7 @@ class CandleTest {
 
     private static long time(UnaryOperator<LocalDateTime> op) {
         LocalDateTime dateTime = op.apply(Chronological.toDateTime(time));
-        return toEpochMicros(dateTime);
+        return toEpochNanos(dateTime);
     }
 
     private static Candle randCandle() {

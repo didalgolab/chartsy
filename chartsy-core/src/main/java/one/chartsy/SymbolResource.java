@@ -4,6 +4,7 @@ package one.chartsy;
 
 import one.chartsy.data.SimpleCandle;
 import one.chartsy.data.SymbolResourceFactory;
+import one.chartsy.financial.IdentityType;
 import org.openide.util.Lookup;
 
 import java.util.Map;
@@ -29,7 +30,7 @@ public interface SymbolResource<E> {
         return of(SymbolIdentity.of(name), timeFrame);
     }
 
-    static SymbolResource<Candle> of(String name, TimeFrame timeFrame, AssetClass type) {
+    static SymbolResource<Candle> of(String name, TimeFrame timeFrame, IdentityType type) {
         return of(SymbolIdentity.of(name, type), timeFrame);
     }
 

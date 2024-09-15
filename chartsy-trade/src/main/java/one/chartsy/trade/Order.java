@@ -455,7 +455,7 @@ public class Order implements java.io.Serializable, Cloneable, CustomValuesHolde
         if (expirationDate == null)
             throw new IllegalArgumentException("expirationDate cannot be NULL");
 
-        this.expirationTime = Chronological.toEpochMicros(expirationDate);
+        this.expirationTime = Chronological.toEpochNanos(expirationDate);
         this.timeInForce = TimeInForce.GTD;
     }
 

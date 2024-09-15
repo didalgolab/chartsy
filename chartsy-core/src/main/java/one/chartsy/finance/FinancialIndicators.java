@@ -7,65 +7,12 @@ import one.chartsy.data.CandleSeries;
 import one.chartsy.data.DoubleSeries;
 import one.chartsy.data.packed.PackedDoubleSeries;
 import one.chartsy.data.packed.PackedCandleSeries;
+import one.chartsy.math.MathHelper;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class FinancialIndicators {
-
-    public static List<DoubleSeries> sfora(PackedCandleSeries series) {
-        return sfora(series, new Sfora.Properties());
-    }
-
-    public static List<DoubleSeries> sfora(PackedCandleSeries series, Sfora.Properties props) {
-        List<DoubleSeries> resultList = new ArrayList<>();
-        Sfora.calculate(series, props, resultList);
-        return resultList;
-    }
-
-    public static DoubleSeries trailingFrama(CandleSeries quotes) {
-        DoubleMinMaxList bands = Frama.calculateSmudgeBands(quotes);
-        return bands.getMaximum().add(bands.getMinimum()).mul(0.5);
-    }
-
-    public static PackedDoubleSeries leadingFrama(CandleSeries quotes, int framaPeriods) {
-        var frama = frama(quotes, framaPeriods);
-        var atr = quotes.atr(15);
-        return frama.add(atr);
-    }
-
-    public static PackedDoubleSeries frama(CandleSeries quotes, int periods) {
-        return frama(quotes, periods, quotes.length() - 1, Double.NaN);
-    }
-
-    public static PackedDoubleSeries frama(CandleSeries quotes, int periods, int firstBarNo, double firstValue) {
-        final double compliance = 5.0;
-        final int k = 3;
-        final double alpha = 2.0/(1.0 + k*periods);
-
-        DoubleSeries closes = quotes.closes();
-        DoubleSeries fdi = fastFdi(closes, periods);
-        if (fdi.length() == 0)
-            return DoubleSeries.empty(quotes.getTimeline());
-
-        int length = Math.min(fdi.length(), firstBarNo + 1);
-        double[] z = new double[length];
-        double previousValue = closes.get(z.length - 1);
-        if (firstValue == firstValue)
-            previousValue = firstValue;
-        for (int i = z.length - 1; i >= 0; i--) {
-            double weight = fdi.get(i);
-            if (weight > 1.7)
-                weight = 1.7;
-            else if (weight < 1.3)
-                weight = 1.3;
-
-            double coeff = alpha * Math.exp(-compliance*(weight - 1.5));
-            z[i] = previousValue = (closes.get(i) - previousValue)*coeff + previousValue;
-        }
-
-        return DoubleSeries.of(z, quotes.getTimeline());
-    }
 
     public static DoubleSeries frama(CandleSeries quotes, int periods, double maPeriods) {
         return frama(quotes, periods, quotes.length() - 1, Double.NaN, maPeriods);
@@ -81,7 +28,7 @@ public class FinancialIndicators {
         final double alpha = 2.0/(1.0 + maPeriods);
 
         DoubleSeries closes = quotes.closes();
-        DoubleSeries fdi = fastFdi(closes, periods);
+        DoubleSeries fdi = fdi(closes, periods);
         if (fdi.length() == 0)
             return DoubleSeries.empty(quotes.getTimeline());
 
@@ -190,46 +137,10 @@ public class FinancialIndicators {
         resultList.add(frama);
     }
 
-    public static final class Sfora {
-
-        public static record Properties(int framaPeriod, int slowdownPeriod, int numberOfEnvelops) {
-            private static final int DEFAULT_FRAMA_PERIOD = 45;
-            private static final int DEFAULT_SLOWDOWN_PERIOD = 16;
-            private static final int DEFAULT_NUMBER_OF_ENVELOPS = 8;
-
-            public Properties() {
-                this(DEFAULT_FRAMA_PERIOD, DEFAULT_SLOWDOWN_PERIOD, DEFAULT_NUMBER_OF_ENVELOPS);
-            }
-        }
-
-        public static DoubleMinMaxList bands(PackedCandleSeries series) {
-            return bands(series, new Properties());
-        }
-
-        public static DoubleMinMaxList bands(CandleSeries series, Properties props) {
-            DoubleMinMaxList resultList = new DoubleMinMaxList();
-            calculate(series, props, resultList);
-            return resultList;
-        }
-
-        public static void calculate(CandleSeries series, Properties props, List<DoubleSeries> resultList) {
-            for (int i = 1; i <= props.numberOfEnvelops; i++) {
-                var frama = leadingFrama(series, props.framaPeriod + 1 - i);
-                resultList.add(frama.sma(i * props.slowdownPeriod));
-            }
-        }
-    }
-
     public static final class Frama {
 
         public static DoubleMinMaxList calculateSmudgeBands(CandleSeries quotes) {
             DoubleMinMaxList result = new DoubleMinMaxList();
-            calculateSmudges(quotes, result);
-            return result;
-        }
-
-        public static List<DoubleSeries> calculateSmudges(CandleSeries quotes) {
-            List<DoubleSeries> result = new ArrayList<>();
             calculateSmudges(quotes, result);
             return result;
         }

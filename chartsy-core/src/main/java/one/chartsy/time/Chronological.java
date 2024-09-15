@@ -10,8 +10,8 @@ import java.util.Iterator;
  * Interface represents an item that is defined, in part, by a point in time.
  * <p>
  * This software internally, across the entire library, uses a machine
- * representation of the time stored as a {@code long} number based on a number
- * of microseconds elapsed since the Epoch, measured using UTC clock.
+ * representation of the time expressed as a {@code long} number based on a number
+ * of nanoseconds elapsed since the Epoch, measured using UTC clock.
  *
  * @author Mariusz Bernacki
  *
@@ -25,64 +25,84 @@ public interface Chronological extends Comparable<Chronological> {
     ZoneId TIME_ZONE = ZoneId.systemDefault();
 
     /**
-     * Converts the specified epoch microseconds to a {@code LocalDateTime} in UTC.
-     * The method is performance efficient and always gives date expressed in the
+     * Converts the specified epoch nanoseconds to a {@code LocalDateTime} in UTC.
+     * <p>
+     * The method is performance efficient but always gives date expressed in the
      * Coordinated Universal Time (UTC). To get the date and time expressed in the
-     * system default time zone (e.g. your wall clock time) use the
+     * system default time zone (e.g. your wall clock) use the
      * {@link #toDateTime(long, ZoneId)} method instead. The result may be converted
-     * back to timestamp using the method {@link #toEpochMicros(LocalDateTime)}.
+     * back to timestamp using the method {@link #toEpochNanos(LocalDateTime)}.
      *
-     * @param epochMicros
-     *            the number of microseconds elapsed since the "epoch"
-     * @return the {@code LocalDateTime}
+     * @param epochNanos
+     *            the number of nanoseconds elapsed since the "epoch"
+     * @return the {@code LocalDateTime} in the Coordinated Universal Time (UTC)
      */
-    static LocalDateTime toDateTime(long epochMicros) {
-        return LocalDateTime.ofEpochSecond(Math.floorDiv(epochMicros, 1000_000L),
-                (int) Math.floorMod(epochMicros, 1000_000L) * 1000, ZoneOffset.UTC);
+    static LocalDateTime toDateTime(long epochNanos) {
+        return LocalDateTime.ofEpochSecond(Math.floorDiv(epochNanos, 1_000_000_000L),
+                (int) Math.floorMod(epochNanos, 1_000_000_000L), ZoneOffset.UTC);
     }
 
     /**
-     * Converts the specified epoch microseconds to an {@code Instant}.
+     * Returns an object's date and time as a {@code LocalDateTime} instance.
      *
-     * @param epochMicros
-     *            the number of microseconds elapsed since the "epoch"
+     * @return the {@code LocalDateTime} in the Coordinated Universal Time (UTC)
+     * @see #toDateTime(long)
+     */
+    default LocalDateTime getDateTime() {
+        return toDateTime(getTime());
+    }
+
+    /**
+     * Returns an object's date as a {@code LocalDate} instance.
+     *
+     * @return the {@code LocalDate} in the Coordinated Universal Time (UTC)
+     * @see #toDateTime(long)
+     */
+    default LocalDate getDate() {
+        return toDateTime(getTime() - 1).toLocalDate();
+    }
+
+    /**
+     * Converts the specified epoch nanoseconds to an {@code Instant}.
+     *
+     * @param epochNanos
+     *            the number of nanoseconds elapsed since the "epoch"
      * @return the {@code Instant}
      */
-    static Instant toInstant(long epochMicros) {
-        return Instant.ofEpochSecond(Math.floorDiv(epochMicros, 1000_000L),
-                Math.floorMod(epochMicros, 1000_000L) * 1000);
+    static Instant toInstant(long epochNanos) {
+        return Instant.ofEpochSecond(0, epochNanos);
     }
 
     /**
-     * Converts the specified epoch microseconds to a {@code ZonedDateTime} at the
+     * Converts the specified epoch nanoseconds to a {@code ZonedDateTime} at the
      * specified time zone.
      *
-     * @param epochMicros
-     *            the number of microseconds elapsed since the "epoch", i.e.
+     * @param epochNanos
+     *            the number of nanoseconds elapsed since the "epoch", i.e.
      *            1970-01-01Z
      * @param zone
      *            the target time zone of the result, if {@code null} the system
      *            default time-zone is used instead
      * @return the {@code ZonedDateTime}
      */
-    static ZonedDateTime toDateTime(long epochMicros, ZoneId zone) {
-        return ZonedDateTime.ofInstant(toInstant(epochMicros), (zone == null) ? TIME_ZONE : zone);
+    static ZonedDateTime toDateTime(long epochNanos, ZoneId zone) {
+        return ZonedDateTime.ofInstant(toInstant(epochNanos), (zone == null) ? TIME_ZONE : zone);
     }
 
     /**
-     * Converts the specified epoch microseconds to an {@code OffsetDateTime} using
+     * Converts the specified epoch nanoseconds to an {@code OffsetDateTime} using
      * the specified time zone offset.
      *
-     * @param epochMicros
-     *            the number of microseconds elapsed since the "epoch", i.e.
+     * @param epochNanos
+     *            the number of nanoseconds elapsed since the "epoch", i.e.
      *            1970-01-01Z
      * @param offset
      *            the target time zone offset of the result
      * @return the {@code OffsetDateTime}
      */
-    static OffsetDateTime toDateTime(long epochMicros, ZoneOffset offset) {
-        LocalDateTime dateTime = LocalDateTime.ofEpochSecond(Math.floorDiv(epochMicros, 1000_000L),
-                (int) Math.floorMod(epochMicros, 1000_000L) * 1000, offset);
+    static OffsetDateTime toDateTime(long epochNanos, ZoneOffset offset) {
+        LocalDateTime dateTime = LocalDateTime.ofEpochSecond(Math.floorDiv(epochNanos, 1_000_000_000L),
+                (int) Math.floorMod(epochNanos, 1_000_000_000L), offset);
         return OffsetDateTime.of(dateTime, offset);
     }
 
@@ -92,76 +112,83 @@ public interface Chronological extends Comparable<Chronological> {
      * using the method {@link #toDateTime(long)}.
      * <p>
      * If the {@code datetime} represents a point in time too far in the future or
-     * past to fit in a {@code long} microseconds, then an
+     * past to fit in a {@code long} nanoseconds, then an
      * {@code ArithmeticException} is thrown. If the {@code datetime} has greater
-     * than microsecond precision, then the conversion will drop any excess
-     * precision information as though the amount in nanoseconds was subject to
-     * integer division by one thousand.
+     * than nanosecond precision, then the conversion will drop any excess
+     * precision information.
      *
      * @param datetime
      *            the date and time to convert
-     * @return the number of microseconds elapsed since the epoch, i.e.: 1970-01-01Z
+     * @return the number of nanoseconds elapsed since the epoch, i.e.: 1970-01-01Z
+     * @throws ArithmeticException if the result overflows a {@code long},
+     *         i.e. {@code instant} is before 1677-09-21Z or after 2262-04-11Z
      */
-    static long toEpochMicros(LocalDateTime datetime) {
-        return toEpochMicros(datetime.toInstant(ZoneOffset.UTC));
+    static long toEpochNanos(LocalDateTime datetime) {
+        return toEpochNanos(datetime.toInstant(ZoneOffset.UTC));
     }
 
     /**
-     * Converts the specified {@code OffsetDateTime} to the epoch microseconds.
+     * Converts the specified {@code OffsetDateTime} to the epoch nanoseconds.
      *
      * @param datetime
      *            the date, time and zone offset to convert
-     * @return the number of microseconds elapsed since the epoch, i.e.: 1970-01-01Z
+     * @return the number of nanoseconds elapsed since the epoch, i.e.: 1970-01-01Z
+     * @throws ArithmeticException if the result overflows a {@code long},
+     *         i.e. {@code instant} is before 1677-09-21Z or after 2262-04-11Z
      */
-    static long toEpochMicros(OffsetDateTime datetime) {
-        return toEpochMicros(datetime.toInstant());
+    static long toEpochNanos(OffsetDateTime datetime) {
+        return toEpochNanos(datetime.toInstant());
     }
 
     /**
-     * Converts the specified {@code ZonedDateTime} to the epoch microseconds.
+     * Converts the specified {@code ZonedDateTime} to the epoch nanoseconds.
      *
      * @param datetime
      *            the date, time and time zone to convert
-     * @return the number of microseconds elapsed since the epoch, i.e.: 1970-01-01Z
+     * @return the number of nanoseconds elapsed since the epoch, i.e.: 1970-01-01Z
+     * @throws ArithmeticException if the result overflows a {@code long},
+     *         i.e. {@code instant} is before 1677-09-21Z or after 2262-04-11Z
      */
-    static long toEpochMicros(ZonedDateTime datetime) {
-        return toEpochMicros(datetime.toInstant());
+    static long toEpochNanos(ZonedDateTime datetime) {
+        return toEpochNanos(datetime.toInstant());
     }
 
     /**
-     * Converts the specified {@code Instant} to the epoch microseconds.
+     * Converts the specified {@code Instant} to the epoch nanoseconds.
      *
      * @param instant
      *            the instant on the time-line
-     * @return the number of microseconds elapsed since the epoch, i.e.: 1970-01-01Z
+     * @return the number of nanoseconds elapsed since the epoch, i.e.: 1970-01-01Z
+     * @throws ArithmeticException if the result overflows a {@code long},
+     *         i.e. {@code instant} is before 1677-09-21Z or after 2262-04-11Z
      */
-    static long toEpochMicros(Instant instant) {
-        return Math.addExact(Math.multiplyExact(instant.getEpochSecond(), 1000_000L), instant.getNano()/1000);
+    static long toEpochNanos(Instant instant) {
+        return Math.addExact(Math.multiplyExact(instant.getEpochSecond(), 1_000_000_000L), instant.getNano());
     }
 
     /**
-     * Converts the specified {@code Duration} to number of microseconds suitable for adding to or removing from
-     * the epoch-micros based timestamps.
+     * Converts the specified {@code Duration} to number of nanoseconds suitable for adding to or removing from
+     * the epoch-nanos based timestamps.
      *
      * @param duration
      *            the time duration
-     * @return the number of microseconds in {@code duration}
+     * @return the number of nanoseconds in {@code duration}
      */
-    static long toMicros(Duration duration) {
-        return duration.toNanos() / 1000L;
+    static long toNanos(Duration duration) {
+        return duration.toNanos();
     }
 
     /**
      * Gives current time.
      *
-     * @return the current time's epoch microseconds
+     * @return the current time's epoch nanoseconds
      */
     static long now() {
-        return toEpochMicros(Instant.now());
+        return toEpochNanos(Instant.now());
     }
 
     /**
-     * Returns an object's time as a number of microseconds elapsed since the epoch
+     * Returns an object's time as a number of nanoseconds elapsed since the epoch
      * measured with a UTC clock.
      *
      * @return the object's time, i.e. the quote ending time when using with the
@@ -170,47 +197,8 @@ public interface Chronological extends Comparable<Chronological> {
     long getTime();
 
     /**
-     * Returns an objects's date and time as a {@code LocalDateTime} instance. The
-     * method is performance efficient and always gives date expressed in the UTC
-     * (Coordinated Universal Time). To get the date and time expressed in the
-     * system default time zone (e.g. your wall clock time) use the
-     * {@link #getDateTime(ZoneId)} method instead.
-     * <p>
-     * The method is equivalent to:
-     *
-     * <pre>
-     * {@code Chronological.toDateTime(this.getTime())}
-     * </pre>
-     *
-     * @return the {@code LocalDateTime} in UTC
-     */
-    default LocalDateTime getDateTime() {
-        return toDateTime(getTime());
-    }
-
-    /**
-     * Returns an object's date as a {@code LocalDate} instance. The method is
-     * performance efficient and always gives date expressed in the UTC (Coordinated
-     * Universal Time). The time component present in the current date-time is
-     * ignored. The method is equivalent to:
-     *
-     * <pre>
-     * {@code this.getDateTime().toLocalDate()}
-     * </pre>
-     *
-     * @return the {@code LocalDate} in UTC
-     */
-    default LocalDate getDate() {
-        return toDateTime(getTime()-1).toLocalDate();
-    }
-
-    /**
      * Returns an object's date and time as a {@code ZonedDateTime} instance
-     * converted to the specified time-zone. The method is equivalent to:
-     *
-     * <pre>
-     * {@code Chronological.toDateTime(this.getTime(), zone)}
-     * </pre>
+     * converted to the specified time-zone.
      *
      * @param zone
      *            the target time zone of the result, if {@code null} the system

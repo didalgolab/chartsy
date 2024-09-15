@@ -17,7 +17,8 @@ public abstract class AbstractCandleBuilder<C extends Candle, T extends Tick> im
     protected double low;
     protected double close;
     protected double volume;
-    protected int count;
+    protected double turnover;
+    protected int trades;
     protected int formedElementsCount;
 
     public final double highPrice() {
@@ -45,7 +46,7 @@ public abstract class AbstractCandleBuilder<C extends Candle, T extends Tick> im
     @Nullable
     public final SimpleCandle getAsSimpleCandle() {
         if (isPresent())
-            return SimpleCandle.of(time, open, high, low, close, volume, count);
+            return SimpleCandle.of(time, open, high, low, close, volume, turnover, trades);
         else
             return null;
     }
@@ -73,7 +74,8 @@ public abstract class AbstractCandleBuilder<C extends Candle, T extends Tick> im
             low = c.low();
             close = c.close();
             volume = c.volume();
-            count = c.count();
+            turnover = c.turnover();
+            trades = c.trades();
             formedElementsCount = 1;
             setPresent();
         } else {
@@ -81,7 +83,8 @@ public abstract class AbstractCandleBuilder<C extends Candle, T extends Tick> im
             low = Math.min(low, c.low());
             close = c.close();
             volume += c.volume();
-            count += c.count();
+            turnover += c.turnover();
+            trades += c.trades();
             formedElementsCount++;
         }
     }
@@ -92,7 +95,8 @@ public abstract class AbstractCandleBuilder<C extends Candle, T extends Tick> im
         if (!isPresent()) {
             open = high = low = close = t.price();
             volume = t.size();
-            count = 1;
+            turnover = volume * t.price();
+            trades = 1;
             formedElementsCount = 1;
             setPresent();
         } else {
@@ -101,8 +105,9 @@ public abstract class AbstractCandleBuilder<C extends Candle, T extends Tick> im
             low = Math.min(low, price);
             close = price;
             volume += t.size();
+            turnover += t.size() * t.price();
             formedElementsCount++;
-            count++;
+            trades++;
         }
     }
 }

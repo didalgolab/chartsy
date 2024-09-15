@@ -12,6 +12,7 @@ import one.chartsy.core.Range;
 import one.chartsy.data.CandleSeries;
 import one.chartsy.data.DoubleSeries;
 import one.chartsy.finance.FinancialIndicators;
+import one.chartsy.financial.ValueIndicatorSupport;
 import one.chartsy.ui.chart.BasicStrokes;
 import one.chartsy.ui.chart.data.VisualRange;
 import org.openide.util.lookup.ServiceProvider;
@@ -84,7 +85,7 @@ public class FractalDimension extends AbstractIndicator {
         if (quotes != null) {
             DoubleSeries values = quotes.mapToDouble(priceBase);
             DoubleSeries result = FinancialIndicators.fdi(values, periods);
-            
+
             if (insideVisibility) {
                 addPlot("fill", new FillPlot(result, 1.4, 1.6, true, insideNeutralColor));
                 addPlot("fill2", new FillPlot(result, 1.6, 1.6, true, insideHighColor));

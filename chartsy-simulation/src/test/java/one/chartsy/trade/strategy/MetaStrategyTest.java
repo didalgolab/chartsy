@@ -26,7 +26,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Stream;
 
-import static one.chartsy.time.Chronological.toEpochMicros;
+import static one.chartsy.time.Chronological.toEpochNanos;
 import static one.chartsy.trade.strategy.StrategyUtils.probeDataType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -78,7 +78,7 @@ public class MetaStrategyTest {
 
 
     static Candle candle() {
-        return Candle.of(toEpochMicros(LocalDateTime.of(2021, 12, 2, 0, 0)), 1.0);
+        return Candle.of(toEpochNanos(LocalDateTime.of(2021, 12, 2, 0, 0)), 1.0);
     }
 
     static Series<Candle> seriesOf(Candle... cs) {

@@ -16,7 +16,7 @@ public class IntArrayDeque {
     
     private int[] elements;
     private int head, tail;
-    
+
     public IntArrayDeque(int size) {
         allocateElements(size);
     }
@@ -54,6 +54,7 @@ public class IntArrayDeque {
         elements[tail] = e;
         if ((tail = (tail + 1) & (elements.length - 1)) == head)
             expandCapacity();
+
         return true;
     }
     
@@ -84,7 +85,7 @@ public class IntArrayDeque {
         return result;
     }
     
-    public boolean isEmpty() {
+    public final boolean isEmpty() {
         return head == tail;
     }
     

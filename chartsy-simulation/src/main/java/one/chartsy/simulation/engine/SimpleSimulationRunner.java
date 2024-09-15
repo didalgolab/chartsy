@@ -37,7 +37,7 @@ public class SimpleSimulationRunner implements SimulationRunner {
         if (!map.isEmpty()) {
             LocalDate currDate = map.peekKey().getDate();
             strategy.onTradingDayChange(null, currDate);
-            long nextDayTime = Chronological.toEpochMicros(currDate.plusDays(1).atStartOfDay());
+            long nextDayTime = Chronological.toEpochNanos(currDate.plusDays(1).atStartOfDay());
             long eventTime = 0;
             while (!map.isEmpty()) {
                 // This is a forehand quote, not yet reflected in ChronologicalIterator
@@ -55,7 +55,7 @@ public class SimpleSimulationRunner implements SimulationRunner {
                 // Check for a trading day boundary
                 if (eventTime > nextDayTime) {
                     strategy.onTradingDayChange(currDate, currDate = event.getDate());
-                    nextDayTime = Chronological.toEpochMicros(currDate.plusDays(1).atStartOfDay());
+                    nextDayTime = Chronological.toEpochNanos(currDate.plusDays(1).atStartOfDay());
                 }
 
                 // Shift When pointer

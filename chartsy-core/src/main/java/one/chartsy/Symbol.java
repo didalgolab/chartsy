@@ -4,6 +4,7 @@ package one.chartsy;
 
 import one.chartsy.data.provider.DataProvider;
 import one.chartsy.data.provider.DataProviderLoader;
+import one.chartsy.financial.IdentityType;
 
 import java.util.List;
 import java.util.Optional;
@@ -111,7 +112,7 @@ public class Symbol implements SymbolIdentity, SymbolGroupContent {
     }
 
     @Override
-    public Optional<AssetClass> type() {
+    public IdentityType type() {
         return identifier.type();
     }
 

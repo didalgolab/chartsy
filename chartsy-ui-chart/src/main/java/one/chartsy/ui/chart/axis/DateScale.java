@@ -30,7 +30,7 @@ public abstract class DateScale implements AxisScale {
     
     @Override
     public double mapMark(int i) {
-        return Chronological.toEpochMicros(dates[i]);
+        return Chronological.toEpochNanos(dates[i]);
     }
     
     @Override

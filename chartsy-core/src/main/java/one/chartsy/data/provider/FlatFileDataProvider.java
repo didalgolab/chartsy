@@ -3,13 +3,20 @@
 package one.chartsy.data.provider;
 
 import one.chartsy.*;
+import one.chartsy.api.messages.ImmutableBarMessage;
+import one.chartsy.context.ExecutionContext;
 import one.chartsy.core.ResourceHandle;
 import one.chartsy.data.DataQuery;
 import one.chartsy.data.SimpleCandle;
 import one.chartsy.data.UnsupportedDataQueryException;
 import one.chartsy.data.provider.file.*;
-import one.chartsy.naming.SymbolIdentifier;
+import one.chartsy.financial.IdentityType;
+import one.chartsy.financial.InstrumentType;
+import one.chartsy.financial.SymbolIdentifier;
+import one.chartsy.messaging.MarketMessage;
+import one.chartsy.messaging.MarketMessageSource;
 import one.chartsy.time.Chronological;
+import one.chartsy.util.CloseHelper;
 import org.apache.commons.lang3.StringUtils;
 import org.openide.util.Lookup;
 import org.openide.util.lookup.Lookups;
@@ -27,7 +34,6 @@ public class FlatFileDataProvider extends AbstractDataProvider implements Symbol
     private final FlatFileFormat fileFormat;
     private final ResourceHandle<FileSystem> fileSystem;
     private final Iterable<Path> baseDirectories;
-    private final ExecutionContext context;
 
     public FlatFileDataProvider(FlatFileFormat fileFormat, Path archiveFile) throws IOException {
         this(fileFormat, FileSystemCache.getGlobal().getFileSystem(archiveFile, Map.of()), fileName(archiveFile));
@@ -46,7 +52,6 @@ public class FlatFileDataProvider extends AbstractDataProvider implements Symbol
         this.fileFormat = Objects.requireNonNull(fileFormat, "fileFormat");
         this.fileSystem = Objects.requireNonNull(fileSystem, "fileSystem");
         this.baseDirectories = Objects.requireNonNull(baseDirectories, "baseDirectories");
-        this.context = new ExecutionContext();
     }
 
     protected static boolean isCloseable(ResourceHandle<FileSystem> ref) {
@@ -105,7 +110,7 @@ public class FlatFileDataProvider extends AbstractDataProvider implements Symbol
         if (file == null)
             throw new DataProviderException(String.format("Symbol '%s' not found", identifier));
 
-        ExecutionContext context = new ExecutionContext(this.context);
+        ExecutionContext context = new ExecutionContext();
         context.put("TimeFrame", request.resource().timeFrame());
 
         FlatFileItemReader<T> itemReader = new FlatFileItemReader<>();
@@ -118,7 +123,7 @@ public class FlatFileDataProvider extends AbstractDataProvider implements Symbol
             List<T> items = itemReader.readAll();
             //items.sort(Comparator.naturalOrder());
             if (request.endTime() != null) {
-                long endTime = Chronological.toEpochMicros(request.endTime());
+                long endTime = Chronological.toEpochNanos(request.endTime());
                 items.removeIf(item -> item.getTime() > endTime);
             }
 
@@ -132,8 +137,46 @@ public class FlatFileDataProvider extends AbstractDataProvider implements Symbol
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         } finally {
-            itemReader.close();
+            CloseHelper.closeQuietly(itemReader);
         }
+    }
+
+    public MarketMessageSource iterator(DataQuery<?> request, ExecutionContext context) {
+        SymbolIdentifier identifier = new SymbolIdentifier(request.resource().symbol());
+        Path file = getFileTreeMetadata().availableSymbols.get(identifier);
+        if (file == null)
+            throw new DataProviderException(String.format("Symbol '%s' not found", identifier));
+
+        context.put("TimeFrame", request.resource().timeFrame());
+
+        FlatFileItemReader<Candle> itemReader = new FlatFileItemReader<>();
+        itemReader.setLineMapper((LineMapper<Candle>) fileFormat.getLineMapper().createLineMapper(context));
+        itemReader.setLinesToSkip(fileFormat.getSkipFirstLines());
+        itemReader.setInputStreamSource(() -> Files.newInputStream(file));
+        itemReader.open();
+
+        return new MarketMessageSource() {
+            @Override
+            public MarketMessage getMessage() {
+                try {
+                    var bar = itemReader.read();
+                    return (bar == null) ? null : new ImmutableBarMessage(identifier, bar);
+                }
+                catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            }
+
+            @Override
+            public boolean isOpen() {
+                return itemReader.isOpen();
+            }
+
+            @Override
+            public void close() {
+                itemReader.close();
+            }
+        };
     }
 
     public final FileSystem getFileSystem() {
@@ -164,8 +207,8 @@ public class FlatFileDataProvider extends AbstractDataProvider implements Symbol
         return getFileFormat().isCaseSensitiveSymbols()? name : name.toUpperCase();
     }
 
-    protected Optional<AssetClass> asAssetType(Path path) {
-        return Optional.empty();
+    protected IdentityType asAssetType(Path path) {
+        return InstrumentType.CUSTOM;
     }
 
     protected List<SymbolIdentity> asIdentifiers(Iterable<Path> paths) {

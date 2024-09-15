@@ -9,7 +9,7 @@ import one.chartsy.When;
 import one.chartsy.data.Series;
 import one.chartsy.data.structures.IntHashMap;
 import one.chartsy.data.structures.IntMap;
-import one.chartsy.naming.SymbolIdentifier;
+import one.chartsy.financial.SymbolIdentifier;
 import one.chartsy.time.Chronological;
 import one.chartsy.trade.data.Position;
 import org.junit.jupiter.api.Test;

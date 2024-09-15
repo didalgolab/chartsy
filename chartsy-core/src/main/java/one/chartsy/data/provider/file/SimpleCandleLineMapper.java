@@ -4,9 +4,11 @@ package one.chartsy.data.provider.file;
 
 import one.chartsy.Candle;
 import one.chartsy.TimeFrame;
+import one.chartsy.context.ExecutionContext;
 import one.chartsy.data.SimpleCandle;
+import one.chartsy.text.FromString;
+import one.chartsy.text.MutableStringFragmentIterator;
 import one.chartsy.time.Chronological;
-import one.chartsy.util.Pair;
 
 import java.time.Duration;
 import java.time.LocalDate;
@@ -87,13 +89,14 @@ public class SimpleCandleLineMapper implements LineMapper<SimpleCandle> {
 
     private final Type type;
     private final long timeShift;
-    private Pair<String, LocalDate> cachedLastDateParsed;
+    private final ExecutionContext context;
     private Candle last;
 
 
     public SimpleCandleLineMapper(Type type, ExecutionContext context) {
         this.type = type;
-        this.timeShift = type.hasTimeAtOpen ? getCandleTimeShift((TimeFrame)context.get("TimeFrame")) : 0;
+        this.timeShift = type.hasTimeAtOpen ? getCandleTimeShift((TimeFrame) context.get("TimeFrame")) : 0;
+        this.context = context;
     }
 
     protected static long getCandleTimeShift(TimeFrame timeFrame) {
@@ -111,23 +114,13 @@ public class SimpleCandleLineMapper implements LineMapper<SimpleCandle> {
         return type;
     }
 
-    protected String[] tokenize(String line, char delimiter) {
-        int tokenCount = 1;
-        for (int i = 0, j; (j = line.indexOf(delimiter, i)) >= 0; i = j+1)
-            tokenCount++;
-
-        String[] tokens = new String[tokenCount];
-        int index = 0, i = 0;
-        for (int j; (j = line.indexOf(delimiter, i)) >= 0; i = j+1)
-            tokens[index++] = line.substring(i, j);
-        tokens[index] = line.substring(i);
-
-        return tokens;
+    protected MutableStringFragmentIterator tokenize(String line, char delimiter) {
+        return MutableStringFragmentIterator.forSplit(line, delimiter);
     }
 
     @Override
     public SimpleCandle mapLine(String line, int lineNumber) {
-        String[] tokens = tokenize(line, type.delimiter);
+        var iter = tokenize(line, type.delimiter);
 
         double open = 0.0, high = 0.0, low = 0.0, close = 0.0, volume = 0.0;
         int count = 0;
@@ -137,7 +130,7 @@ public class SimpleCandleLineMapper implements LineMapper<SimpleCandle> {
         long timeShift = 0;
         for (int i = 0, fieldCount = type.fields.size(); i < fieldCount; i++) {
             String field = type.fields.get(i);
-            String token = tokens[i];
+            CharSequence token = iter.next();
             switch (field) {
                 case "DATE" -> date = readDate(token);
                 case "DATE_TIME" -> {
@@ -178,36 +171,32 @@ public class SimpleCandleLineMapper implements LineMapper<SimpleCandle> {
         if (!type.hasHighAndLow)
             high = low = close;
 
-        SimpleCandle candle = SimpleCandle.of(Chronological.toEpochMicros(dateTime) + timeShift, open, high, low, close, volume, count);
-        if (last != null && !candle.isAfter(last))
+        var candleTime = Chronological.toEpochNanos(dateTime) + timeShift;
+        if (last != null && candleTime <= last.getTime())
             throw new FlatFileParseException(String.format("Invalid candle order at line %s following candle %s", lineNumber, last), line);
+
+        var candle = SimpleCandle.of(candleTime, open, high, low, close, volume, count);
         last = candle;
         return candle;
     }
 
-    protected LocalDate readDate(String token) {
-        Pair<String, LocalDate> cachedDate = this.cachedLastDateParsed;
-        if (cachedDate != null && cachedDate.getLeft().equals(token))
-            return cachedDate.getRight();
-
-        LocalDate result = LocalDate.parse(token, type.dateFormat);
-        cachedLastDateParsed = Pair.of(token, result);
-        return result;
+    protected LocalDate readDate(CharSequence str) {
+        return context.getCachedLocalDate(str, type.dateFormat);
     }
 
-    protected LocalDateTime readDateTime(CharSequence token) {
-        return LocalDateTime.parse(token, type.dateTimeFormat);
+    protected LocalTime readTime(CharSequence str) {
+        return context.getCachedLocalTime(str, type.timeFormat);
     }
 
-    protected LocalTime readTime(CharSequence token) {
-        return LocalTime.parse(token, type.timeFormat);
+    protected LocalDateTime readDateTime(CharSequence str) {
+        return LocalDateTime.parse(str, type.dateTimeFormat);
     }
 
-    protected double readDouble(CharSequence s) {
-        return Double.parseDouble(s.toString());
+    protected double readDouble(CharSequence str) {
+        return FromString.toDouble(str);
     }
 
-    protected int readInt(CharSequence s) {
-        return Integer.parseInt(s, 0, s.length(), 10);
+    protected int readInt(CharSequence str) {
+        return FromString.toInt(str);
     }
 }

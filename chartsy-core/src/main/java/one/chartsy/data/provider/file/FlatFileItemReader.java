@@ -5,10 +5,12 @@ package one.chartsy.data.provider.file;
 import lombok.Getter;
 import lombok.Setter;
 import one.chartsy.core.io.InputStreamSource;
+import one.chartsy.util.CloseHelper;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -17,7 +19,7 @@ import static java.util.Objects.requireNonNull;
 
 @Getter
 @Setter
-public class FlatFileItemReader<T> {
+public class FlatFileItemReader<T> implements AutoCloseable {
 
     public static final String[] NO_COMMENT_PREFIXES = new String[0];
 
@@ -30,7 +32,7 @@ public class FlatFileItemReader<T> {
     private String encoding = "UTF-8";
     private LineMapper<? extends T> lineMapper;
 
-    private BufferedReader input;
+    private BufferedReader lineReader;
     private int lineCount;
 
     public FlatFileItemReader() { }
@@ -42,28 +44,32 @@ public class FlatFileItemReader<T> {
         setIgnoreEmptyLines(fileFormat.isIgnoreEmptyLines());
     }
 
-    public void open() throws IOException {
-        if (input != null)
+    public void open() {
+        if (lineReader != null)
             throw new IllegalStateException("FlatFileReader already open");
         if (lineMapper == null)
             throw new IllegalStateException("LineMapper not set");
         if (inputStreamSource == null)
             throw new IllegalStateException("InputStreamSource not set");
 
-        lineCount = 0;
-        input = createReader(inputStreamSource);
-        for (int i = 0; i < linesToSkip; i++) {
-            String line = readLine();
-            if (skippedLinesHandler != null)
-                skippedLinesHandler.accept(line);
+        try {
+            lineCount = 0;
+            lineReader = createLineReader(inputStreamSource);
+            for (int i = 0; i < linesToSkip; i++) {
+                String line = readLine();
+                if (skippedLinesHandler != null)
+                    skippedLinesHandler.accept(line);
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 
     public boolean isOpen() {
-        return input != null;
+        return lineReader != null;
     }
 
-    protected BufferedReader createReader(InputStreamSource iss) throws IOException {
+    protected BufferedReader createLineReader(InputStreamSource iss) throws IOException {
         return new BufferedReader(new InputStreamReader(requireNonNull(iss.getInputStream()), encoding));
     }
 
@@ -77,7 +83,7 @@ public class FlatFileItemReader<T> {
 
     protected String readLine() throws IOException {
         while (true) {
-            String line = input.readLine();
+            String line = lineReader.readLine();
             if (line == null)
                 return null;
 
@@ -113,13 +119,9 @@ public class FlatFileItemReader<T> {
         return resultList;
     }
 
+    @Override
     public void close() {
-        var input = this.input;
-        if (input != null) {
-            this.input = null;
-            try {
-                input.close();
-            } catch (IOException e) { e.printStackTrace(); }
-        }
+        CloseHelper.closeQuietly(lineReader);
+        this.lineReader = null;
     }
 }

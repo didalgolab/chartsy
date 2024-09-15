@@ -306,7 +306,7 @@ class KagiIndicatorTest {
     static Candle c(boolean inverted, String ohlc) {
         Candle c = SimpleCandle.JsonFormat.fromJson(ohlc);
         if (inverted)
-            c = Candle.of(c.getTime(), -c.open(), -c.low(), -c.high(), -c.close(), c.volume(), c.count());
+            c = Candle.of(c.getTime(), -c.open(), -c.low(), -c.high(), -c.close(), c.volume(), c.turnover(), c.trades());
         return c;
     }
 

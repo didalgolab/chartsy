@@ -23,8 +23,7 @@ public class CandleAggregationWithTimeZoneAlignment {
         Collections.reverse(list);
 
         TimeFrame timeFrame = TimeFrame.Period.DAILY.withTimeZone(ZoneId.of("Europe/Warsaw"));
-        List<Candle> dailyList = timeFrame.getAggregator()
-                .aggregate(list);
+        List<Candle> dailyList = timeFrame.getAggregator().aggregate(list);
         Collections.reverse(dailyList);
         CandleSeries daily = CandleSeries.of(series.getResource().withTimeFrame(timeFrame), dailyList);
 

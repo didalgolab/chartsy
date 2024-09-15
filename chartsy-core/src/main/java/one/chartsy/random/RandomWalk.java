@@ -61,10 +61,10 @@ public class RandomWalk {
     }
 
     public static Stream<Candle> candles(LocalDateTime startTime, double referencePrice, Duration granularity, RandomCandleSpecification spec, RandomGenerator rnd) {
-        var timeStepMicros = Chronological.toMicros(granularity);
-        var seedEndTime = Chronological.toEpochMicros(startTime) + timeStepMicros;
+        var timeStepNanos = Chronological.toNanos(granularity);
+        var seedEndTime = Chronological.toEpochNanos(startTime) + timeStepNanos;
         var seed = candle(seedEndTime, referencePrice, spec.withGappiness(0.0), rnd);
-        return Stream.iterate(seed, c -> candle(c.getTime() + timeStepMicros, c.close(), spec, rnd));
+        return Stream.iterate(seed, c -> candle(c.getTime() + timeStepNanos, c.close(), spec, rnd));
     }
 
     /**
@@ -163,7 +163,7 @@ public class RandomWalk {
         }
         var resource = series.getResource();
         var symbol = resource.symbol();
-        return new PackedCandleSeries(resource.withSymbol(SymbolIdentity.of("~" + symbol.name() + "~", symbol.type().orElse(null))), ImmutableDataset.ofReversedSameIndexingOrder(result));
+        return new PackedCandleSeries(resource.withSymbol(SymbolIdentity.of("~" + symbol.name() + "~", symbol.type())), ImmutableDataset.ofReversedSameIndexingOrder(result));
     }
 
     private RandomWalk() { }

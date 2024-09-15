@@ -11,7 +11,7 @@ import java.time.*;
 import java.util.LinkedList;
 import java.util.function.Supplier;
 
-import static one.chartsy.time.Chronological.toEpochMicros;
+import static one.chartsy.time.Chronological.toEpochNanos;
 import static org.junit.jupiter.api.Assertions.*;
 
 class TimeCandleAggregatorTest {
@@ -54,7 +54,7 @@ class TimeCandleAggregatorTest {
 
         assertEquals(1, emitted.size(), "first hour candle");
         assertEquals(
-                Candle.of(toEpochMicros(LocalDateTime.of(2021, 12, 31, 2, 0)), 1, 3, 1, 3),
+                Candle.of(toEpochNanos(LocalDateTime.of(2021, 12, 31, 2, 0)), 1, 3, 1, 3),
                 emitted.getFirst(), "is first candle aggregated");
     }
 
@@ -70,11 +70,11 @@ class TimeCandleAggregatorTest {
 
         assertEquals(1, emitted.size(), "first hour candle");
         assertEquals(
-                Candle.of(toEpochMicros(LocalDateTime.of(2021, 10, 10, 22, 0)), 1, 3, 1, 3),
+                Candle.of(toEpochNanos(LocalDateTime.of(2021, 10, 10, 22, 0)), 1, 3, 1, 3),
                 emitted.getFirst(), "first aggregated candle");
     }
 
     private static Candle newCandle(LocalDateTime datetime, double price) {
-        return Candle.of(toEpochMicros(datetime), price);
+        return Candle.of(toEpochNanos(datetime), price);
     }
 }

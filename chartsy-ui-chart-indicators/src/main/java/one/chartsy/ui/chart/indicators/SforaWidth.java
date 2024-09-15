@@ -4,9 +4,9 @@
  */
 package one.chartsy.ui.chart.indicators;
 
-import one.chartsy.core.collections.DoubleMinMaxList;
 import one.chartsy.data.DoubleSeries;
-import one.chartsy.finance.FinancialIndicators;
+import one.chartsy.financial.ValueIndicatorSupport;
+import one.chartsy.financial.indicators.FramaTrendWhispers;
 import one.chartsy.ui.chart.AbstractIndicator;
 import one.chartsy.ui.chart.ChartContext;
 import one.chartsy.ui.chart.Indicator;
@@ -81,9 +81,9 @@ public class SforaWidth extends AbstractIndicator {
             addPlot("ATR%60 *2", new LinePlot(atr1.mul(2.0), atrColor, BasicStrokes.DOTTED));
             addPlot("ATR%60 2/2", new LinePlot(quotes.closes().wilders(atrPeriods).sma(atrPeriods).mul(0.5), Color.BLACK, BasicStrokes.DOTTED));
 
-            DoubleMinMaxList bands = FinancialIndicators.Sfora.bands(quotes, new FinancialIndicators.Sfora.Properties(framaPeriod, slowdownPeriod, numberOfEnvelops));
-            DoubleSeries width = bands.getMaximum().sub(bands.getMinimum());
-            
+            var options = new FramaTrendWhispers.Options(numberOfEnvelops, framaPeriod, slowdownPeriod);
+            var width = ValueIndicatorSupport.calculate(quotes, new FramaTrendWhispers(options), FramaTrendWhispers::getRange);
+
             addPlot("RPMA %1", new LinePlot(width, rpma1Color, style));
         }
     }

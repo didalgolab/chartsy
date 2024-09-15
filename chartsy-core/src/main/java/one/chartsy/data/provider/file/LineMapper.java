@@ -16,6 +16,8 @@
 
 package one.chartsy.data.provider.file;
 
+import java.util.List;
+
 /**
  * Interface for mapping lines (strings) to domain objects typically used to map lines read from a file to domain objects
  * on a per line basis.  Implementations of this interface perform the actual
