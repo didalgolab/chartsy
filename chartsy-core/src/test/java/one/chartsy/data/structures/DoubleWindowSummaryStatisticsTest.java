@@ -91,6 +91,24 @@ class DoubleWindowSummaryStatisticsTest {
         assertEquals(3.0, stats.add(6.0));
     }
 
+    @Test
+    void getFirst_gives_correct_element() {
+        var stats = new DoubleWindowSummaryStatistics(5);
+        stats.add(1.0);
+        assertEquals(1.0, stats.getFirst());
+
+        stats.add(2.0);
+        stats.add(3.0);
+        assertEquals(1.0, stats.getFirst());
+
+        stats.add(4.0);
+        stats.add(5.0);
+        assertEquals(1.0, stats.getFirst());
+
+        stats.add(6.0); // Window slides, first should now be 2.0
+        assertEquals(2.0, stats.getFirst());
+    }
+
     @ParameterizedTest
     @MethodSource("provideEdgeCaseValues")
     @DisplayName("Edge case values should be handled correctly")
@@ -127,7 +145,7 @@ class DoubleWindowSummaryStatisticsTest {
     }
 
     @ParameterizedTest
-    @ValueSource(ints = {1, 5, 10, 100})
+    @ValueSource(ints = {2, 5, 10, 100})
     @DisplayName("Window size should be respected")
     void windowSizeShouldBeRespected(int windowSize) {
         var stats = new DoubleWindowSummaryStatistics(windowSize);
@@ -147,7 +165,7 @@ class DoubleWindowSummaryStatisticsTest {
         stats.add(3.0);
 
         assertThat(stats.toString())
-                .contains("1,0", "2,0", "3,0"); // Min|Average|Max
+                .contains("1.000000", "2.000000", "3.000000"); // Min|Average|Max
     }
 
     @Test

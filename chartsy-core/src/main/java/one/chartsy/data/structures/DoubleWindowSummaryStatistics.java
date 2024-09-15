@@ -5,7 +5,9 @@ package one.chartsy.data.structures;
 
 import one.chartsy.collections.IntArrayDeque;
 
+import java.util.Arrays;
 import java.util.DoubleSummaryStatistics;
+import java.util.Locale;
 import java.util.function.DoubleConsumer;
 
 /**
@@ -48,13 +50,14 @@ public class DoubleWindowSummaryStatistics implements DoubleConsumer {
      * and zero average.
      *
      * @param windowSize the size of the sliding window
-     * @throws IllegalArgumentException if windowSize is less than or equal to zero
+     * @throws IllegalArgumentException if windowSize is less than two
      */
     public DoubleWindowSummaryStatistics(int windowSize) {
-        if (windowSize <= 0)
-            throw new IllegalArgumentException("Window size must be positive");
+        if (windowSize < 2)
+            throw new IllegalArgumentException("Window size must >= 2, but was: " + windowSize);
 
         this.windowSize = windowSize;
+        this.lastIndex = windowSize - 1;
         this.values = new double[windowSize];
         this.minDeque = new IntArrayDeque(windowSize);
         this.maxDeque = new IntArrayDeque(windowSize);
@@ -217,14 +220,16 @@ public class DoubleWindowSummaryStatistics implements DoubleConsumer {
     /**
      * Returns the first (oldest) element in the sliding window.
      *
-     * <p>If the window is not yet full, this method returns the first element
-     * that was added to the window. If the window is full, it returns the
-     * oldest element currently in the window. If the window is empty, it
+     * <p>If the window is not yet full, this method returns the first element that was added to the window.
+     * If the window is full, it returns the oldest element currently in the window. If the window is empty, it
      * returns 0.
      *
      * @return the first (oldest) element in the sliding window, or 0 if the window is empty
      */
     public double getFirst() {
+        if (!isFull()) {
+            return values[0];
+        }
         int firstValueIndex = lastIndex + 1;
         return values[(firstValueIndex >= windowSize) ? firstValueIndex - windowSize : firstValueIndex];
     }
@@ -268,11 +273,28 @@ public class DoubleWindowSummaryStatistics implements DoubleConsumer {
      * added elements to the window. If the window contains one element, it
      * returns its value. If the window is empty, it returns 0.
      *
-     * @return the difference between the last and second-to-last value
+     * @return the difference between the last and second-to-last value,
+     *         or the last value if only one element is present,
+     *         or 0 if the window is empty
      */
     public double getLastDifference() {
         int secondLastIndex = (lastIndex == 0) ? windowSize - 1 : lastIndex - 1;
         return values[lastIndex] - values[secondLastIndex];
+    }
+
+    /**
+     * Resets the statistics to their initial state.
+     */
+    public void reset() {
+        lastIndex = windowSize - 1;
+        sum = 0.0;
+        sumCompensation = 0.0;
+        simpleSum = 0.0;
+        countTotal = 0;
+        minDeque.clear();
+        maxDeque.clear();
+        // importantly, reset the values array
+        Arrays.fill(values, 0.0);
     }
 
     /**
@@ -284,7 +306,7 @@ public class DoubleWindowSummaryStatistics implements DoubleConsumer {
      */
     @Override
     public String toString() {
-        return String.format(
+        return String.format(Locale.US,
                 "%s{count=%d, sum=%f, min=%f, average=%f, max=%f}",
                 this.getClass().getSimpleName(),
                 getCount(),
