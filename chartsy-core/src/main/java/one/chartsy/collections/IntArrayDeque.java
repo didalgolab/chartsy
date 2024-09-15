@@ -4,8 +4,9 @@
  */
 package one.chartsy.collections;
 
-import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.PrimitiveIterator;
+import java.util.StringJoiner;
 
 /**
  * A custom efficient deque (double-ended queue) implementation specialized for primitive integers.
@@ -17,6 +18,9 @@ import java.util.NoSuchElementException;
  *
  * <p><strong>Note:</strong> This implementation is not thread-safe. If multiple threads access
  * an {@code IntArrayDeque} instance concurrently, external synchronization is required.
+ *
+ * <p>This class implements {@link Iterable}, but its {@code iterator()} method returns a
+ * {@link PrimitiveIterator.OfInt} to allow for efficient primitive iteration without boxing.
  *
  * @author Mariusz Bernacki
  */
@@ -214,13 +218,14 @@ public class IntArrayDeque implements Iterable<Integer> {
     }
 
     /**
-     * Returns an iterator over the elements in this deque from front to back.
+     * Returns a primitive iterator over the elements in this deque from front to back.
+     * The iterator does not support modification operations.
      *
-     * @return an iterator over the elements in this deque
+     * @return a {@link PrimitiveIterator.OfInt} over the elements in this deque
      */
     @Override
-    public Iterator<Integer> iterator() {
-        return new Iterator<>() {
+    public PrimitiveIterator.OfInt iterator() {
+        return new PrimitiveIterator.OfInt() {
             private int current = head;
             private int remaining = size();
 
@@ -230,7 +235,7 @@ public class IntArrayDeque implements Iterable<Integer> {
             }
 
             @Override
-            public Integer next() {
+            public int nextInt() {
                 if (!hasNext()) {
                     throw new NoSuchElementException();
                 }
@@ -240,5 +245,21 @@ public class IntArrayDeque implements Iterable<Integer> {
                 return result;
             }
         };
+    }
+
+    /**
+     * Returns a string representation of this deque.
+     * The string representation consists of a list of the deque's elements in order,
+     * enclosed in square brackets ("[]"). Adjacent elements are separated by ", " (comma and space).
+     *
+     * @return a string representation of this deque
+     */
+    @Override
+    public String toString() {
+        var sj = new StringJoiner(", ", "[", "]");
+        for (var it = iterator(); it.hasNext(); )
+            sj.add(String.valueOf(it.nextInt()));
+
+        return sj.toString();
     }
 }

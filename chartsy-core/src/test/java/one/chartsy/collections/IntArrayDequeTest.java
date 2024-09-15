@@ -263,4 +263,27 @@ class IntArrayDequeTest {
         assertEquals(2, iterator.next());
         assertFalse(iterator.hasNext());
     }
+
+    @Test
+    void toString_gives_standardized_textual_representation() {
+        assertEquals("[]", deque.toString());
+
+        deque.offerLast(1);
+        assertEquals("[1]", deque.toString());
+
+        deque.offerFirst(2);
+        assertEquals("[2, 1]", deque.toString());
+
+        deque.offerLast(3);
+        assertEquals("[2, 1, 3]", deque.toString());
+
+        deque.pollFirst();
+        assertEquals("[1, 3]", deque.toString());
+
+        deque.pollLast();
+        assertEquals("[1]", deque.toString());
+
+        deque.clear();
+        assertEquals("[]", deque.toString());
+    }
 }
