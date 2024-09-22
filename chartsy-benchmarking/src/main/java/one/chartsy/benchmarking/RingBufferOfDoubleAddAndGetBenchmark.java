@@ -4,7 +4,7 @@
  */
 package one.chartsy.benchmarking;
 
-import one.chartsy.base.RingBuffer;
+import one.chartsy.data.structures.RingBuffer;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Level;

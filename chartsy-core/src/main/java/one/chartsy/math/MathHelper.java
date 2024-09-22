@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: Apache-2.0 */
 package one.chartsy.math;
 
-import one.chartsy.collections.IntArrayDeque;
+import one.chartsy.data.structures.IntArrayDeque;
 
 public final class MathHelper {
 

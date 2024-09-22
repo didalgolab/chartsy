@@ -1,4 +1,6 @@
-package one.chartsy.data.structures;
+/* Copyright 2024 Mariusz Bernacki <consulting@didalgo.com>
+ * SPDX-License-Identifier: Apache-2.0 */
+package one.chartsy.math;
 
 import java.util.NoSuchElementException;
 import java.util.function.BiFunction;
@@ -10,6 +12,7 @@ import java.util.function.DoubleConsumer;
  * This class provides specialized implementations for different data types.
  *
  * @param <T> the type of elements maintained by this median calculator
+ * @author Mariusz Bernacki
  */
 public class MovingMedian<T extends Comparable<? super T>> extends AbstractMovingMedian implements Consumer<T> {
     /** The circular queue of values. */
@@ -39,7 +42,8 @@ public class MovingMedian<T extends Comparable<? super T>> extends AbstractMovin
      * {@code windowSize} elements, using the natural order comparator and no mean function.
      *
      * @param windowSize the size of the moving median window
-     * @throws IllegalArgumentException if {@code windowSize} is less than 1, or if {@code windowSize} is even and {@code meanFunction} is null
+     * @throws IllegalArgumentException if {@code windowSize} is less than 1, or if {@code windowSize} is even and,
+     *         as a direct result of using this small constructor, the internally used {@code meanFunction} is null
      */
     public MovingMedian(int windowSize) {
         this(windowSize, null);

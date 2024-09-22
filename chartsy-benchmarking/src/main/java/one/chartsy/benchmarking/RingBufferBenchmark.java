@@ -5,8 +5,8 @@
 package one.chartsy.benchmarking;
 
 import one.chartsy.Candle;
-import one.chartsy.base.RingBuffer;
 import one.chartsy.base.function.IndexedConsumer;
+import one.chartsy.data.structures.RingBuffer;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 

@@ -1,4 +1,4 @@
-package one.chartsy.data.structures;
+package one.chartsy.math;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -24,8 +24,8 @@ class MovingMedianTest {
     }
 
     private <T extends Comparable<T>> void testMedian(AbstractMovingMedian medianCalculator, Consumer<T> acceptFunction,
-                                Supplier<T> getMedianFunction, List<T> dataStream,
-                                BiFunction<T, T, T> meanFunction) {
+                                                      Supplier<T> getMedianFunction, List<T> dataStream,
+                                                      BiFunction<T, T, T> meanFunction) {
         var window = new LinkedList<T>();
 
         for (T data : dataStream) {

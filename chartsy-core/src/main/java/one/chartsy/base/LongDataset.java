@@ -38,6 +38,13 @@ public interface LongDataset extends PrimitiveDataset<Long, LongDataset, Spliter
 	 */
 	long get(int index);
 
+	/**
+	 * Returns the number of elements in this dataset.
+	 *
+	 * @return the dataset's size
+	 */
+	@Override int length();
+
 	default LongStream stream() {
 		return StreamSupport.longStream(spliterator(), false);
 	}

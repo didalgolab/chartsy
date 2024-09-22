@@ -2,7 +2,7 @@
  * Copyright 2024 Mariusz Bernacki <consulting@didalgo.com>
  * SPDX-License-Identifier: Apache-2.0
  */
-package one.chartsy.collections;
+package one.chartsy.data.structures;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

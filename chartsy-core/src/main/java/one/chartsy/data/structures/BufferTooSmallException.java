@@ -2,7 +2,7 @@
  * Copyright 2024 Mariusz Bernacki <consulting@didalgo.com>
  * SPDX-License-Identifier: Apache-2.0
  */
-package one.chartsy.base;
+package one.chartsy.data.structures;
 
 public class BufferTooSmallException extends IndexOutOfBoundsException {
 	private final int actualCapacity;

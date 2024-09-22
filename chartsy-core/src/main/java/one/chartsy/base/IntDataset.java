@@ -38,6 +38,13 @@ public interface IntDataset extends PrimitiveDataset<Integer, IntDataset, Splite
 	 */
 	int get(int index);
 
+	/**
+	 * Returns the number of elements in this dataset.
+	 *
+	 * @return the dataset's size
+	 */
+	@Override int length();
+
 	default IntStream stream() {
 		return StreamSupport.intStream(spliterator(), false);
 	}

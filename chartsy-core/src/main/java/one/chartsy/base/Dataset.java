@@ -45,6 +45,13 @@ public interface Dataset<E> extends Iterable<E>, SequenceAlike {
      */
     E get(int index);
 
+    /**
+     * Returns the number of elements in this dataset.
+     *
+     * @return the dataset's size
+     */
+    @Override int length();
+
     Stream<E> stream();
 
     @Override Iterator<E> iterator();

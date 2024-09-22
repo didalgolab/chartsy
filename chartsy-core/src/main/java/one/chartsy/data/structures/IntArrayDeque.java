@@ -2,7 +2,7 @@
  * Copyright 2022 Mariusz Bernacki <consulting@didalgo.com>
  * SPDX-License-Identifier: Apache-2.0
  */
-package one.chartsy.collections;
+package one.chartsy.data.structures;
 
 import java.util.NoSuchElementException;
 import java.util.PrimitiveIterator;

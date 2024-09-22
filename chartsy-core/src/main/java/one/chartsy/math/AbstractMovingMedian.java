@@ -1,8 +1,12 @@
-package one.chartsy.data.structures;
+/* Copyright 2024 Mariusz Bernacki <consulting@didalgo.com>
+ * SPDX-License-Identifier: Apache-2.0 */
+package one.chartsy.math;
 
 /**
  * An abstract class for computing the moving median over a sliding window of values.
  * This class contains the common logic and structure for different data types.
+ *
+ * @author Mariusz Bernacki
  */
 abstract class AbstractMovingMedian {
     /** The index into the heap for each value. */

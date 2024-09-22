@@ -2,7 +2,12 @@
  * Copyright 2024 Mariusz Bernacki <consulting@didalgo.com>
  * SPDX-License-Identifier: Apache-2.0
  */
-package one.chartsy.base;
+package one.chartsy.data.structures;
+
+import one.chartsy.base.Dataset;
+import one.chartsy.base.DoubleDataset;
+import one.chartsy.base.IntDataset;
+import one.chartsy.base.LongDataset;
 
 import java.util.ArrayList;
 import java.util.Arrays;

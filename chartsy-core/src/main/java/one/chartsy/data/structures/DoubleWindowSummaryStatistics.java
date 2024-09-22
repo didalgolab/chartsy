@@ -3,8 +3,6 @@
  */
 package one.chartsy.data.structures;
 
-import one.chartsy.collections.IntArrayDeque;
-
 import java.util.Arrays;
 import java.util.DoubleSummaryStatistics;
 import java.util.Locale;

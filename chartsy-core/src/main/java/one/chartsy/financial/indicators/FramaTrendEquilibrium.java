@@ -3,7 +3,7 @@
  */
 package one.chartsy.financial.indicators;
 
-import one.chartsy.base.RingBuffer;
+import one.chartsy.data.structures.RingBuffer;
 import one.chartsy.financial.ValueIndicator;
 
 import java.util.ArrayList;
