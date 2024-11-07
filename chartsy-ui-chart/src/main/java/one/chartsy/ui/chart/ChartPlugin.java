@@ -2,6 +2,7 @@
  * SPDX-License-Identifier: Apache-2.0 */
 package one.chartsy.ui.chart;
 
+import java.beans.PropertyEditor;
 import java.io.Serial;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -21,6 +22,8 @@ public abstract class ChartPlugin<T extends ChartPlugin<T>> extends NamedPlugin<
         String description() default "";
         /** The custom property editor class. */
         Stereotype stereotype() default Stereotype.NONE;
+        /** The custom property editor class. */
+        Class<? extends PropertyEditor> propertyEditorClass() default PropertyEditor.class;
     }
 
     public enum Stereotype {

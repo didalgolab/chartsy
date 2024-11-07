@@ -735,9 +735,7 @@ public class ChartStackPanel extends JLayeredPane {
     
     public List<Indicator> getIndicatorsList() {
         Indicator[] inds = getIndicators();
-        List<Indicator> list = new ArrayList<>();
-        list.addAll(Arrays.asList(inds));
-        return list;
+        return new ArrayList<>(Arrays.asList(inds));
     }
     
     public int getIndicatorsCount() {

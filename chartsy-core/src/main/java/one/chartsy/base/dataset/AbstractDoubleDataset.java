@@ -4,10 +4,13 @@
  */
 package one.chartsy.base.dataset;
 
+import one.chartsy.base.Dataset;
 import one.chartsy.base.DoubleDataset;
 import one.chartsy.base.SequenceAlike;
+import one.chartsy.base.function.DoubleBiPredicate;
 import one.chartsy.base.function.IndexedToDoubleFunction;
 
+import java.util.Objects;
 import java.util.PrimitiveIterator;
 import java.util.Spliterator;
 import java.util.function.Function;
@@ -40,6 +43,20 @@ public abstract class AbstractDoubleDataset implements DoubleDataset {
     @Override
     public Spliterator.OfDouble spliterator() {
         return stream().spliterator();
+    }
+
+    @Override
+    public Dataset<Boolean> crosses(DoubleBiPredicate crossingCondition) {
+        Objects.requireNonNull(crossingCondition);
+        return AbstractDataset.from(this, (dataset, index) -> {
+            int prevIndex = dataset.getOrder().previousIndex(dataset, index);
+            if (prevIndex == -1)
+                return false;
+
+            double prevValue = dataset.get(prevIndex);
+            double currValue = dataset.get(index);
+            return crossingCondition.test(prevValue, currValue);
+        });
     }
 
     public static <T extends SequenceAlike>

@@ -33,6 +33,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.List;
 
 public class ChartFrame extends JPanel implements ChartContext, MouseWheelListener {
 
@@ -181,6 +182,15 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
             // if the chart is not yet displayed use default bar width from the template
             chartProperties.setBarWidth(chartTemplate.getChartProperties().getBarWidth());
         }
+    }
+
+    public void setIndicators(List<Indicator> newIndicators) {
+        Indicator[] current = getMainStackPanel().getIndicators();
+        for (Indicator i : current)
+            indicatorRemoved(i);
+
+        for (Indicator i : newIndicators)
+            fireIndicatorAdded(i);
     }
 
     @Override

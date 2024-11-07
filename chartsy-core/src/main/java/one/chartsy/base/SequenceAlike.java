@@ -49,6 +49,15 @@ public interface SequenceAlike {
 			return this == INDEX_DESC;
 		}
 
+		public int previousIndex(SequenceAlike seq, int index) {
+            return switch (this) {
+                case INDEX_ASC -> (index > 0) ? index - 1 : -1;
+                case INDEX_DESC -> (index < seq.length() - 1) ? index + 1 : -1;
+                default ->
+						throw new UnsupportedOperationException("Operation `previousIndex` not implemented for order " + this);
+            };
+		}
+
 		public static void reverse(Object[] arr) {
 			int start = 0;
 			int end = arr.length - 1;

@@ -40,6 +40,8 @@ public interface Series<E extends Chronological> extends IndexedSymbolResourceDa
         return chronologicalIterator(iteratorContext());
     }
 
+    Dataset<E> getData();
+
     private static ChronologicalIteratorContext iteratorContext() {
         class Holder {
             private static final ChronologicalIteratorContext INSTANCE = new ChronologicalIteratorContext(-1);

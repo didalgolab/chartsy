@@ -9,6 +9,7 @@ import one.chartsy.base.dataset.AbstractDoubleDataset;
 import one.chartsy.base.dataset.AbstractIntDataset;
 import one.chartsy.base.dataset.AbstractLongDataset;
 import one.chartsy.base.dataset.ImmutableDoubleDataset;
+import one.chartsy.base.function.DoubleBiPredicate;
 
 import java.util.Objects;
 import java.util.Spliterator;
@@ -37,6 +38,34 @@ public interface DoubleDataset extends PrimitiveDataset<Double, DoubleDataset, S
 	 *                                   (index < 0 || index >= size())
 	 */
 	double get(int index);
+
+    /**
+     * Returns a dataset indicating where the series crosses over the specified value.
+     *
+     * @param value the value to check crossings against
+     * @return a {@code Dataset} of {@code Boolean} indicating crossings over the value
+     */
+    default Dataset<Boolean> crossesOver(double value) {
+        return crosses((prev, curr) -> prev <= value && curr > value);
+    }
+
+    /**
+     * Returns a dataset indicating where the series crosses under the specified value.
+     *
+     * @param value the value to check crossings against
+     * @return a {@code Dataset} of {@code Boolean} indicating crossings over the value
+     */
+    default Dataset<Boolean> crossesUnder(double value) {
+        return crosses((prev, curr) -> prev >= value && curr < value);
+    }
+
+    /**
+     * Determines the dataset's crossings based on the provided crossing condition.
+     *
+     * @param crossingCondition a {@code DoubleBiPredicate} that defines the crossing condition
+     * @return a {@code Dataset} of {@code Boolean} indicating crossings based on the condition
+     */
+    Dataset<Boolean> crosses(DoubleBiPredicate crossingCondition);
 
 	default DoubleStream stream() {
 		return StreamSupport.doubleStream(spliterator(), false);

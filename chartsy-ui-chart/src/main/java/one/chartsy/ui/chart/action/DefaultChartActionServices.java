@@ -4,11 +4,15 @@ package one.chartsy.ui.chart.action;
 
 import one.chartsy.ui.chart.ChartFrame;
 import one.chartsy.ui.chart.IconResource;
+import one.chartsy.ui.chart.Indicator;
+import one.chartsy.ui.chart.IndicatorManager;
+import one.chartsy.ui.chart.components.IndicatorChooserDialog;
 import org.openide.util.NbBundle;
 import org.openide.util.lookup.ServiceProvider;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
+import java.util.Collection;
 
 @ServiceProvider(service = ChartActionServices.class)
 public class DefaultChartActionServices implements ChartActionServices {
@@ -81,6 +85,23 @@ public class DefaultChartActionServices implements ChartActionServices {
         @Override
         public void actionPerformed(ActionEvent e) {
             chart.zoomOut();
+        }
+    }
+
+    public static class IndicatorsOpen extends AbstractChartFrameAction {
+        public IndicatorsOpen(ChartFrame chart) {
+            super(chart);
+        }
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            Collection<Indicator> allPlugins = IndicatorManager.getDefault().getIndicatorsList();
+            Collection<Indicator> selectedPlugins = chart.getMainStackPanel().getIndicatorsList();
+
+            IndicatorChooserDialog dialog = new IndicatorChooserDialog(chart, chart::setIndicators);
+            dialog.setLocationRelativeTo(chart);
+            dialog.initForm(allPlugins, selectedPlugins);
+            dialog.setVisible(true);
         }
     }
 

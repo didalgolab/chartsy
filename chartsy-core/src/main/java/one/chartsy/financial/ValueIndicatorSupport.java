@@ -7,6 +7,7 @@ import one.chartsy.data.DoubleSeries;
 import one.chartsy.data.Series;
 import one.chartsy.data.packed.PackedDoubleSeries;
 import one.chartsy.time.Chronological;
+import one.chartsy.time.Timeline;
 
 import java.util.Arrays;
 import java.util.List;
@@ -29,6 +30,12 @@ public final class ValueIndicatorSupport {
         return calculate(data, indicator, ValueIndicator.OfDouble::getLast);
     }
 
+    private static PackedDoubleSeries createSeries(double[] values, Timeline timeline) {
+        return (values == null)
+                ? DoubleSeries.empty(timeline)
+                : DoubleSeries.of(values, timeline);
+    }
+
     public static <V extends ValueIndicator & DoubleConsumer>
     PackedDoubleSeries calculate(DoubleSeries data, V indicator, ToDoubleFunction<V> output) {
         double[] values = null;
@@ -41,7 +48,7 @@ public final class ValueIndicatorSupport {
             if (values != null)
                 values[index] = output.applyAsDouble(indicator);
         }
-        return DoubleSeries.of(values, data.getTimeline());
+        return createSeries(values, data.getTimeline());
     }
 
     public static <E extends Chronological, V extends ValueIndicator.OfDouble & Consumer<E>>
@@ -61,7 +68,7 @@ public final class ValueIndicatorSupport {
             if (values != null)
                 values[index] = output.applyAsDouble(indicator);
         }
-        return (values == null) ? DoubleSeries.empty(data.getTimeline()) : DoubleSeries.of(values, data.getTimeline());
+        return createSeries(values, data.getTimeline());
     }
 
     public static <E extends Chronological, V extends ValueIndicator & Consumer<E>>

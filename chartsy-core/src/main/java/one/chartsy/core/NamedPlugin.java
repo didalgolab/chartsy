@@ -19,6 +19,8 @@ public abstract class NamedPlugin<T extends NamedPlugin<T>> extends AbstractHand
         return name;
     }
 
+    public abstract String getLabel();
+
     public <R> R query(NamedPluginQuery<R, T> query) {
         return query.queryFrom(this);
     }
