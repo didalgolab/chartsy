@@ -3,13 +3,24 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>one.chartsy</groupId>
-        <artifactId>chartsy-repository</artifactId>
+        <artifactId>chartsy-desktop</artifactId>
         <version>0.2-SNAPSHOT</version>
     </parent>
-    <artifactId>chartsy-incubator</artifactId>
-    <packaging>jar</packaging>
+    <artifactId>chartsy-exploration</artifactId>
+    <packaging>nbm</packaging>
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.netbeans.utilities</groupId>
+                <artifactId>nbm-maven-plugin</artifactId>
+                <extensions>true</extensions>
+                <configuration>
+                    <codeNameBase>one.chartsy.exploration</codeNameBase>
+                    <publicPackages>
+                        <publicPackage>one.chartsy.exploration.*</publicPackage>
+                    </publicPackages>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
@@ -18,33 +29,6 @@
                         <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
                     </archive>
                 </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.netbeans.utilities</groupId>
-                <artifactId>nbm-maven-plugin</artifactId>
-                <extensions>true</extensions>
-                <configuration>
-                    <codeNameBase>one.chartsy.incubator</codeNameBase>
-                    <publicPackages>
-                        <publicPackage>one.chartsy.*</publicPackage>
-                    </publicPackages>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>nbm-manifest</id>
-                        <phase>process-classes</phase>
-                        <goals>
-                            <goal>manifest</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>nbm-package</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>nbm</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
         </plugins>
     </build>
@@ -56,15 +40,20 @@
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>chartsy-ui-chart</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>chartsy-ui-common</artifactId>
+            <artifactId>chartsy-ui</artifactId>
             <version>${project.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.netbeans.api</groupId>
+            <artifactId>org-netbeans-swing-outline</artifactId>
+            <version>${netbeans.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.netbeans.api</groupId>
+            <artifactId>org-openide-filesystems</artifactId>
+            <version>${netbeans.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.netbeans.api</groupId>
             <artifactId>org-openide-util</artifactId>
@@ -77,8 +66,15 @@
         </dependency>
         <dependency>
             <groupId>org.netbeans.api</groupId>
-            <artifactId>org-openide-util-ui</artifactId>
+            <artifactId>org-openide-windows</artifactId>
             <version>${netbeans.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>${lombok.version}</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 </project>

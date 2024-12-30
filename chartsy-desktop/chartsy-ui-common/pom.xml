@@ -3,10 +3,10 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>one.chartsy</groupId>
-        <artifactId>chartsy-repository</artifactId>
+        <artifactId>chartsy-desktop</artifactId>
         <version>0.2-SNAPSHOT</version>
     </parent>
-    <artifactId>chartsy-incubator</artifactId>
+    <artifactId>chartsy-ui-common</artifactId>
     <packaging>jar</packaging>
     <build>
         <plugins>
@@ -24,9 +24,10 @@
                 <artifactId>nbm-maven-plugin</artifactId>
                 <extensions>true</extensions>
                 <configuration>
-                    <codeNameBase>one.chartsy.incubator</codeNameBase>
+                    <codeNameBase>one.chartsy.ui.common</codeNameBase>
                     <publicPackages>
-                        <publicPackage>one.chartsy.*</publicPackage>
+                        <publicPackage>net.miginfocom.swing.*</publicPackage>
+                        <publicPackage>one.chartsy.ui.common.*</publicPackage>
                     </publicPackages>
                 </configuration>
                 <executions>
@@ -54,26 +55,11 @@
             <artifactId>chartsy-kernel-frontend</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>chartsy-ui-chart</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>chartsy-ui-common</artifactId>
-            <version>${project.version}</version>
-        </dependency>
 
         <dependency>
-            <groupId>org.netbeans.api</groupId>
-            <artifactId>org-openide-util</artifactId>
-            <version>${netbeans.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.netbeans.api</groupId>
-            <artifactId>org-openide-util-lookup</artifactId>
-            <version>${netbeans.version}</version>
+            <groupId>com.miglayout</groupId>
+            <artifactId>miglayout-swing</artifactId>
+            <version>11.0</version>
         </dependency>
         <dependency>
             <groupId>org.netbeans.api</groupId>

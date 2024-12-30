@@ -5,22 +5,15 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>one.chartsy</groupId>
-        <artifactId>chartsy-repository</artifactId>
+        <artifactId>chartsy-desktop</artifactId>
         <version>0.2-SNAPSHOT</version>
     </parent>
 
-    <artifactId>kernel</artifactId>
+    <artifactId>chartsy-ui-logging</artifactId>
     <packaging>pom</packaging>
     <modules>
-        <module>chartsy-connectors</module>
-        <module>chartsy-core</module>
-        <module>chartsy-core-ml</module>
-        <module>chartsy-kernel</module>
-        <module>chartsy-kernel-libs</module>
-        <module>chartsy-kernel-persistence</module>
-        <module>chartsy-misc</module>
-        <module>chartsy-simulation</module>
-        <module>chartsy-trade</module>
+        <module>slf4j-api</module>
+        <module>slf4j-jdk14</module>
     </modules>
 
     <properties>

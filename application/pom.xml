@@ -5,7 +5,7 @@
     <parent>
         <groupId>one.chartsy</groupId>
         <artifactId>chartsy-repository</artifactId>
-        <version>0.1-SNAPSHOT</version>
+        <version>0.2-SNAPSHOT</version>
     </parent>
 
     <artifactId>chartsy-app</artifactId>
@@ -35,12 +35,7 @@
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>chartsy-connectors-common</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>chartsy-desktop</artifactId>
+            <artifactId>chartsy-nb-frontend</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -60,17 +55,7 @@
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>chartsy-kernel-boot</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>chartsy-persistence</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>chartsy-ui</artifactId>
+            <artifactId>chartsy-kernel-frontend</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -81,6 +66,11 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>slf4j-jdk14</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>chartsy-ui</artifactId>
             <version>${project.version}</version>
         </dependency>
 

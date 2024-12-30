@@ -4,7 +4,7 @@
     <parent>
         <groupId>one.chartsy</groupId>
         <artifactId>chartsy-repository</artifactId>
-        <version>0.1-SNAPSHOT</version>
+        <version>0.2-SNAPSHOT</version>
     </parent>
     <artifactId>chartsy-samples</artifactId>
     <packaging>jar</packaging>
@@ -47,12 +47,12 @@
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>chartsy-persistence</artifactId>
+            <artifactId>chartsy-kernel-persistence</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>chartsy-kernel-boot</artifactId>
+            <artifactId>chartsy-kernel-frontend</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
