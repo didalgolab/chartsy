@@ -9,11 +9,10 @@
         <version>0.2-SNAPSHOT</version>
     </parent>
 
-    <artifactId>chartsy-misc</artifactId>
+    <artifactId>chartsy-libs</artifactId>
     <packaging>pom</packaging>
     <modules>
-        <module>chartsy-misc-bcprov-lib</module>
-        <module>chartsy-misc-captcha-automation</module>
+        <module>slf4j-api</module>
     </modules>
 
     <properties>

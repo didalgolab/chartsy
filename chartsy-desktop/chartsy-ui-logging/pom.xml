@@ -12,7 +12,6 @@
     <artifactId>chartsy-ui-logging</artifactId>
     <packaging>pom</packaging>
     <modules>
-        <module>slf4j-api</module>
         <module>slf4j-jdk14</module>
     </modules>
 

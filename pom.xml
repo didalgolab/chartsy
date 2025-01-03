@@ -182,6 +182,7 @@
         <lightbend.config.version>1.4.2</lightbend.config.version>
         <liquibase.version>4.30.0</liquibase.version>
         <log4j.version>2.24.3</log4j.version><!-- Synchronize with 'spring-boot-starter-log4j2'-injected version -->
+        <logback.version>1.5.15</logback.version>
         <lombok.version>1.18.36</lombok.version>
         <methanol.version>1.7.0</methanol.version>
         <mockito.version>5.4.0</mockito.version>

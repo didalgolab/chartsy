@@ -73,7 +73,7 @@ public class SimpleOhlcvReplayDataSet extends OhlcvDataSet implements Iterable<I
         setInputSource(dataInput);
         fillTestData(period, timeRange, tt, replayFrom, addons); // NOPMD
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.atDebug().addArgument(SimpleOhlcvReplayDataSet.class.getSimpleName()).log("started '{}'");
+            LOGGER.debug("started '{}'", SimpleOhlcvReplayDataSet.class.getSimpleName());
         }
     }
 

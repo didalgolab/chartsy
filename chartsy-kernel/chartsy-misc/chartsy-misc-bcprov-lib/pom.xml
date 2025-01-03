@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project
+        xmlns="http://maven.apache.org/POM/4.0.0"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="
+        http://maven.apache.org/POM/4.0.0
+        http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>one.chartsy</groupId>
+        <artifactId>chartsy-misc</artifactId>
+        <version>0.2-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>chartsy-misc-bcprov-lib</artifactId>
+
+    <packaging>pom</packaging>
+
+    <properties>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <dependency.plugin.version>3.5.0</dependency.plugin.version>
+        <jar.plugin.version>3.3.0</jar.plugin.version>
+        <install.plugin.version>3.0.1</install.plugin.version>
+        <antrun.plugin.version>3.1.0</antrun.plugin.version>
+        <bcprov.version>1.78.1</bcprov.version>
+    </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>${dependency.plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>unpack-bcprov</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>unpack</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>org.bouncycastle</groupId>
+                                    <artifactId>bcprov-jdk18on</artifactId>
+                                    <version>${bcprov.version}</version>
+                                    <type>jar</type>
+                                    <overWrite>true</overWrite>
+                                    <outputDirectory>${project.build.directory}/bcprov-jdk18on-unpacked</outputDirectory>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- 2) Remove the original MANIFEST.MF (and optionally signature files)
+                   before repackaging -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>${antrun.plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>strip-old-manifest</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <delete file="${project.build.directory}/bcprov-jdk18on-unpacked/META-INF/MANIFEST.MF"/>
+                                <delete>
+                                    <fileset dir="${project.build.directory}/bcprov-jdk18on-unpacked/META-INF"
+                                             includes="*.SF,*.DSA,*.RSA"/>
+                                </delete>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>${jar.plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>repack-bcprov</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <classesDirectory>${project.build.directory}/bcprov-jdk18on-unpacked</classesDirectory>
+                            <finalName>${project.artifactId}-${project.version}</finalName>
+                            <outputDirectory>${project.build.directory}</outputDirectory>
+
+                            <archive>
+                                <index>false</index>
+                                <manifest>
+                                    <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                                    <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+                                    <!-- You can add additional custom entries here if desired -->
+                                </manifest>
+                            </archive>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Install the modified JAR back into the local repository
+                   using the same GAV coordinates, overriding the original -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-install-plugin</artifactId>
+                <version>${install.plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>install-bcprov</id>
+                        <phase>install</phase>
+                        <goals>
+                            <goal>install-file</goal>
+                        </goals>
+                        <configuration>
+                            <file>${project.build.directory}/${project.artifactId}-${project.version}.jar</file>
+                            <groupId>${project.groupId}</groupId>
+                            <artifactId>${project.artifactId}</artifactId>
+                            <version>${project.version}</version>
+                            <packaging>jar</packaging>
+                            <generatePom>true</generatePom>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

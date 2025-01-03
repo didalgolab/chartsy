@@ -21,6 +21,7 @@
         <module>chartsy-misc</module>
         <module>chartsy-simulation</module>
         <module>chartsy-trade</module>
+        <module>chartsy-libs</module>
     </modules>
 
     <properties>

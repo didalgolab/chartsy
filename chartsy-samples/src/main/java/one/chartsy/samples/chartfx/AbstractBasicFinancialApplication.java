@@ -125,7 +125,7 @@ public abstract class AbstractBasicFinancialApplication extends Application {
 
     protected void closeDemo(final WindowEvent evt) {
         if (evt.getEventType().equals(WindowEvent.WINDOW_CLOSE_REQUEST) && LOGGER.isInfoEnabled()) {
-            LOGGER.atInfo().log("requested demo to shut down");
+            LOGGER.info("requested demo to shut down");
         }
         stopTimer();
         Platform.exit();

@@ -51,7 +51,7 @@ public class PositionFinancialDataSet extends AbstractDataSet<PositionFinancialD
         this.ohlcvDataSet = ohlcvDataSet;
         fillDataSet(context.getRequiredAttribute(POSITIONS));
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.atDebug().addArgument(PositionFinancialDataSet.class.getSimpleName()).log("started '{}'");
+            LOGGER.debug("started '{}'", PositionFinancialDataSet.class.getSimpleName());
         }
     }
 

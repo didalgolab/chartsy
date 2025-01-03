@@ -34,12 +34,6 @@
     </build>
     <dependencies>
         <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>chartsy-kernel-frontend</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
             <groupId>org.netbeans.api</groupId>
             <artifactId>org-netbeans-modules-gradle</artifactId>
             <version>${netbeans.version}</version>
@@ -111,11 +105,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.netbeans.external</groupId>
-            <artifactId>bcprov</artifactId>
-            <version>RELEASE113</version>
-        </dependency>
-        <dependency>
             <groupId>org.netbeans.modules</groupId>
             <artifactId>org-netbeans-libs-freemarker</artifactId>
             <version>${netbeans.version}</version>
@@ -140,6 +129,12 @@
             <groupId>org.netbeans.modules</groupId>
             <artifactId>org-netbeans-modules-projectapi-nb</artifactId>
             <version>${netbeans.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>chartsy-kernel-frontend</artifactId>
+            <version>${project.version}</version>
         </dependency>
 
         <dependency>
