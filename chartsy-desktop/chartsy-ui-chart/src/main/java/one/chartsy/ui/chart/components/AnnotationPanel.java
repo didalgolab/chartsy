@@ -21,7 +21,6 @@ import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.text.DecimalFormat;
 import java.util.*;
-import java.util.logging.Level;
 
 import javax.swing.Action;
 import javax.swing.JPanel;
@@ -34,7 +33,7 @@ import one.chartsy.core.Range;
 import one.chartsy.data.CandleSeries;
 import one.chartsy.ui.chart.*;
 import one.chartsy.ui.chart.action.ChartActions;
-import one.chartsy.ui.chart.annotation.AnnotationHolder;
+import one.chartsy.ui.chart.annotation.ChartAnnotator;
 import one.chartsy.ui.chart.annotation.GraphicLayer;
 import one.chartsy.ui.chart.annotation.GraphicModel;
 import one.chartsy.ui.chart.annotation.GraphicModelListener;
@@ -302,7 +301,7 @@ public class AnnotationPanel extends JPanel implements OrganizedViewInteractorCo
             if (getCursor().getType() == Cursor.N_RESIZE_CURSOR)
                 getParent().requestFocusInWindow();
             
-            if (!AnnotationHolder.current().hasNew()) {
+            if (!ChartAnnotator.getGlobal().hasDrawing()) {
                 //				chartFrame.deselectAll();
                 Annotation graphic = model.getGraphic(e.getPoint(), coordinateSystem);
                 if (graphic != null) {
@@ -370,9 +369,9 @@ public class AnnotationPanel extends JPanel implements OrganizedViewInteractorCo
                 if (getCursor().getType() == Cursor.N_RESIZE_CURSOR)
                     getParent().requestFocusInWindow();
                 
-                if (AnnotationHolder.current().hasNew()) {
+                if (ChartAnnotator.getGlobal().hasDrawing()) {
                     chartFrame.getMainPanel().deselectAll();
-                    Annotation ann = AnnotationHolder.current().getNewAnnotation(this);
+                    Annotation ann = ChartAnnotator.getGlobal().getCurrentDrawing(this);
                     // add newly created annotation to the model
                     addAnnotation(ann);
                     // and make it immediately selected

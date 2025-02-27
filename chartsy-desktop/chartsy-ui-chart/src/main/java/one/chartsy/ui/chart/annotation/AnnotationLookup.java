@@ -5,6 +5,7 @@ package one.chartsy.ui.chart.annotation;
 import one.chartsy.ui.chart.Annotation;
 import org.openide.util.Lookup;
 
+import java.util.Collection;
 import java.util.Optional;
 
 public interface AnnotationLookup {
@@ -15,5 +16,9 @@ public interface AnnotationLookup {
 
     static Optional<Annotation> getAnnotation(Annotation.Key key) {
         return Optional.ofNullable(service().getKeyAnnotations().get(key.value()));
+    }
+
+    static Collection<Annotation> getAnnotations() {
+        return service().getKeyAnnotations().values();
     }
 }

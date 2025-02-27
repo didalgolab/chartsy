@@ -47,6 +47,14 @@ public final class ChartActions {
         return ChartAction.find("AnnotationPopup", chartFrame);
     }
 
+    public static Action drawAnnotation(ChartFrame chartFrame, Annotation graphic) {
+        return ChartAction.find("DrawAnnotation", chartFrame, graphic);
+    }
+
+    public static Action removeAllAnnotations(ChartFrame chartFrame) {
+        return ChartAction.find("RemoveAllAnnotations", chartFrame);
+    }
+
     public static Action toggleMarker(ChartFrame chartFrame) {
         return ChartAction.find("MarkerToggle", chartFrame);
     }

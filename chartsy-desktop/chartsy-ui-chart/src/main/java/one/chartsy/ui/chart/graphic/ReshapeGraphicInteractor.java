@@ -110,9 +110,8 @@ public class ReshapeGraphicInteractor implements GraphicInteractor {
     
     protected void reshapeGraphic(RectangularSelection selection, Rectangle2D bbox, CoordinateSystem coords) {
         Annotation graphic = selection.getGraphic();
-        if (selection.getGraphic() instanceof RectangularShapeAware) {
-            RectangularShapeAware rectGraphic = (RectangularShapeAware) selection.getGraphic();
-            
+        if (selection.getGraphic() instanceof RectangularShapeAware rectGraphic) {
+
             GraphicBag bag = graphic.getGraphicBag();
             if (bag != null)
                 bag.applyManipulator(selection, null, (sel, nul) -> rectGraphic.setDefinitionFrame(bbox, coords));
@@ -121,12 +120,10 @@ public class ReshapeGraphicInteractor implements GraphicInteractor {
     
     @Override
     public boolean processEvent(AWTEvent event, Annotation graphic, OrganizedViewInteractorContext context) {
-        if (event instanceof MouseEvent) {
-            if (!(graphic instanceof RectangularSelection))
+        if (event instanceof MouseEvent e) {
+            if (!(graphic instanceof RectangularSelection selection))
                 return false;
-            
-            RectangularSelection selection = (RectangularSelection) graphic;
-            MouseEvent e = (MouseEvent) event;
+
             switch (e.getID()) {
             case MouseEvent.MOUSE_PRESSED:
                 if (e.getButton() == MouseEvent.BUTTON1)

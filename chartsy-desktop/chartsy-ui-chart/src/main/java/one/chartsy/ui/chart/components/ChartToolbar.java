@@ -67,7 +67,7 @@ public class ChartToolbar extends JToolBar implements Serializable {
 //        add(createButton(ChartActions.intervalPopup(chartFrame)));
 //        add(createButton(ChartActions.chartPopup(chartFrame)));
 //        add(createButton(ChartActions.openOverlays(chartFrame)));
-//        add(annotationButton = createButton(ChartActions.annotationPopup(chartFrame)));
+        add(annotationButton = createButton(ChartActions.annotationPopup(chartFrame)));
 //        JToggleButton markerButton = createToggleButton(ChartActions.toggleMarker(chartFrame));
         //add(markerButton);
 //        add(createButton(ChartActions.exportImage(chartFrame)));

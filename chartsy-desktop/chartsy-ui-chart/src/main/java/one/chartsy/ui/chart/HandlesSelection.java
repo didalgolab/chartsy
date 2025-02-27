@@ -42,7 +42,7 @@ public abstract class HandlesSelection extends Selection {
     public Rectangle2D getBoundingBox(CoordinateSystem coords) {
         int h = getHandleSize();
         Rectangle2D rect = getGraphic().getBoundingBox(coords);
-        rect.setRect(rect.getX() - h/2.0, rect.getY() - h/2.0, rect.getWidth() + h, rect.getHeight() + h);
+        rect.setRect(rect.getX() - h/2.0 - 0.5, rect.getY() - h/2.0 - 0.5, rect.getWidth() + h + 1.0, rect.getHeight() + h + 1.0);
         return rect;
     }
     

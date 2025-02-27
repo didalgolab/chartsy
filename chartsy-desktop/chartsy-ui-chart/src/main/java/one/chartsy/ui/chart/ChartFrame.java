@@ -2,6 +2,7 @@
  * SPDX-License-Identifier: Apache-2.0 */
 package one.chartsy.ui.chart;
 
+import lombok.Getter;
 import one.chartsy.Candle;
 import one.chartsy.SymbolIdentity;
 import one.chartsy.SymbolResource;
@@ -9,8 +10,10 @@ import one.chartsy.TimeFrame;
 import one.chartsy.core.event.ListenerList;
 import one.chartsy.data.CandleSeries;
 import one.chartsy.data.Series;
+import one.chartsy.ui.chart.components.AnnotationPanel;
 import one.chartsy.ui.chart.components.ChartStackPanel;
 import one.chartsy.ui.chart.components.ChartToolbar;
+import one.chartsy.ui.chart.components.IndicatorPanel;
 import one.chartsy.ui.chart.components.MainPanel;
 import one.chartsy.ui.chart.data.SymbolResourceLoaderTask;
 import one.chartsy.ui.chart.internal.ChartFrameDropTarget;
@@ -30,6 +33,7 @@ import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
 import java.beans.PropertyChangeEvent;
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicReference;
@@ -40,6 +44,7 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
     private final transient Logger log = LogManager.getLogger(getClass());
     private final JLayer<JPanel> chartLayer = new JLayer<>();
 
+    @Getter
     private ChartToolbar chartToolbar;
     private MainPanel mainPanel;
     private JScrollBar scrollBar;
@@ -159,8 +164,9 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
     }
 
     public ChartStackPanel getMainStackPanel() {
-        if (mainPanel != null)
+        if (mainPanel != null) {
             return mainPanel.getStackPanel();
+        }
         return null;
     }
 
@@ -268,6 +274,37 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
         return chartData;
     }
 
+    public boolean hasCurrentAnnotation() {
+        for (var annotationPanel : getAnnotationPanels())
+            if (annotationPanel.getSelectionCount() > 0)
+                return true;
+
+        return false;
+    }
+
+    public Annotation getCurrentAnnotation() {
+        for (var annotationPanel : getAnnotationPanels())
+            if (annotationPanel.getSelectionCount() > 0)
+                return annotationPanel.getSelectedGraphics().iterator().next();
+
+        return null;
+    }
+
+    /**
+     * Returns the collection of annotation panels currently opened.
+     *
+     * @return all currently opened annotation panels
+     */
+    public List<AnnotationPanel> getAnnotationPanels() {
+        List<IndicatorPanel> indicatorPanels = getMainStackPanel().getIndicatorPanels();
+
+        List<AnnotationPanel> panels = new ArrayList<>(1 + indicatorPanels.size());
+        panels.add(getMainStackPanel().getChartPanel().getAnnotationPanel());
+        for (IndicatorPanel indicatorPanel : indicatorPanels)
+            panels.add(indicatorPanel.getAnnotationPanel());
+
+        return panels;
+    }
 
     /**
      * Changes {@code ChartData} associated with this chart frame.

@@ -72,7 +72,7 @@ public class RectangularSelection extends HandlesSelection {
         int h = getHandleSize();
         Rectangle2D rect = getGraphic().getBoundingBox(coords);
         rect = rect.createUnion(getHandleRoutingRect(coords));
-        rect.setRect(rect.getX() - h/2.0, rect.getY() - h/2.0, rect.getWidth() + h, rect.getHeight() + h);
+        rect.setRect(rect.getX() - h/2.0 - 0.5, rect.getY() - h/2.0 - 0.5, rect.getWidth() + h + 1.0, rect.getHeight() + h + 1.0);
         return rect;
     }
     
@@ -145,7 +145,6 @@ public class RectangularSelection extends HandlesSelection {
             case BOTTOM       -> new Point2D.Double(rect.getCenterX(), rect.getMaxY());
             case BOTTOM_LEFT  -> new Point2D.Double(rect.getMinX(), rect.getMaxY());
             case LEFT         -> new Point2D.Double(rect.getMinX(), rect.getCenterY());
-            default           -> throw new IllegalArgumentException("Anchor: " + anchor);
         };
     }
 }

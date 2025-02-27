@@ -1,0 +1,6 @@
+<svg width="16" height="16" xmlns="http://www.w3.org/2000/svg">
+    <!-- Eraser Icon -->
+    <rect x="2" y="7" width="9" height="5" transform="rotate(-45 6.5 9.5)" fill="#e74c3c"/>
+    <rect x="9" y="10" width="5" height="2" fill="#95a5a6"/>
+    <polyline points="1,15 15,15" stroke="#7f8c8d" stroke-width="2" fill="none"/>
+</svg>
