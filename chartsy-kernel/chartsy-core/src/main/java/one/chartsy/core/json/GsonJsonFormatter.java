@@ -1,4 +1,4 @@
-/* Copyright 2022 Mariusz Bernacki <consulting@didalgo.com>
+/* Copyright 2025 Mariusz Bernacki <consulting@didalgo.com>
  * SPDX-License-Identifier: Apache-2.0 */
 package one.chartsy.core.json;
 
@@ -9,6 +9,15 @@ import com.google.gson.JsonObject;
 import org.openide.util.lookup.ServiceProvider;
 import org.openide.util.lookup.ServiceProviders;
 
+/**
+ * A JSON formatter implementation that utilizes Google's Gson library for serialization
+ * and deserialization of Java objects to and from JSON.
+ * <p>
+ * This formatter can be customized with specific Gson configurations through its constructors.
+ * </p>
+ *
+ * @author Mariusz Bernacki
+ */
 @ServiceProviders({
         @ServiceProvider(service = JsonFormatter.class),
         @ServiceProvider(service = GsonJsonFormatter.class)})
