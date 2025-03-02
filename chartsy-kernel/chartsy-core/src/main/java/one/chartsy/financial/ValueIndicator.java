@@ -10,7 +10,7 @@ package one.chartsy.financial;
  * <b>not thread-safe</b>.</p>
  *
  * @author Mariusz Bernacki
- *
+ * @see BandValueIndicator
  */
 public interface ValueIndicator {
 
