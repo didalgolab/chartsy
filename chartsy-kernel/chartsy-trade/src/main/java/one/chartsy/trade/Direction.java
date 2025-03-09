@@ -2,13 +2,15 @@
  * SPDX-License-Identifier: Apache-2.0 */
 package one.chartsy.trade;
 
+import one.chartsy.DirectionInformation;
+
 /**
  * Indicates whether a position is long or short.
  * 
  * @author Mariusz Bernacki
  * 
  */
-public enum Direction {
+public enum Direction implements DirectionInformation {
     /** Represents off the market position. */
     FLAT(0),
     /** Represents a long position. */
@@ -17,20 +19,33 @@ public enum Direction {
     SHORT(-1);
     
     /** Internally used unique tag number of the direction constant. */
-    public final int tag;
+    private final int intValue;
     
-    Direction(int tag) {
-        this.tag = tag;
+    Direction(int intValue) {
+        this.intValue = intValue;
     }
-    
-    /**
-     * Reverses the current {@code Direction}.
-     * 
-     * @return the reversed direction
-     */
-    public final Direction reverse() {
-        if (tag == 0)
-            return this;
-        return (tag > 0)? SHORT : LONG;
+
+    @Override
+    public boolean isLong() {
+        return this == LONG;
+    }
+
+    @Override
+    public boolean isShort() {
+        return this == SHORT;
+    }
+
+    @Override
+    public int intValue() {
+        return intValue;
+    }
+
+    @Override
+    public Direction reversed() {
+        return switch (this) {
+            case LONG -> SHORT;
+            case SHORT -> LONG;
+            default -> this;
+        };
     }
 }

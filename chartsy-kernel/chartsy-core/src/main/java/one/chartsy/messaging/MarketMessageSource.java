@@ -6,18 +6,18 @@ package one.chartsy.messaging;
 import one.chartsy.data.stream.MessageSource;
 
 /**
- * A specialized interface representing a source of {@link MarketMessage} instances.
+ * A specialized interface representing a source of {@link MarketEvent} instances.
  * This interface extends {@link MessageSource} specifically for market messages.
  */
-public interface MarketMessageSource extends MessageSource<MarketMessage> {
+public interface MarketMessageSource extends MessageSource<MarketEvent> {
 
     /**
-     * Retrieves the next {@link MarketMessage} from the source.
+     * Retrieves the next {@link MarketEvent} from the source.
      *
-     * @return the next {@link MarketMessage}, or {@code null} if no more messages are available
+     * @return the next {@link MarketEvent}, or {@code null} if no more messages are available
      */
     @Override
-    MarketMessage getMessage();
+    MarketEvent getMessage();
 
     /**
      * Checks if the message source is open and available for providing messages.

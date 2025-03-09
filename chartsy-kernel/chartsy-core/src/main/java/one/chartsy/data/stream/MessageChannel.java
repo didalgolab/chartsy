@@ -3,19 +3,29 @@
  */
 package one.chartsy.data.stream;
 
-import one.chartsy.Manageable;
+import one.chartsy.base.Disposable;
 
 /**
- *  A message sink that consumes messages.
+ * A message sink that consumes messages.
  */
-public interface MessageChannel<T> extends Manageable {
+public interface MessageChannel<T> extends Disposable {
 
     /**
-     *  This method is invoked to send a message to the channel.
+     * This method is invoked to send a message to the channel.
      * 
-     *  @param msg  A temporary buffer with the message.
-     *              By convention, the message is only valid for the duration 
-     *              of this call.
+     * @param message the payload
      */
-    void send(T msg);
+    void send(T message);
+
+    /**
+     * Sends multiple messages through the channel.
+     * <p>
+     * Default implementation sends each message individually but subclasses are encouraged
+     * to provide more performant implementations if possible.
+     *
+     * @param messages iterable of messages to send
+     */
+    default void sendAll(Iterable<T> messages) {
+        messages.forEach(this::send);
+    }
 }

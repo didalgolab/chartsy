@@ -573,7 +573,7 @@ public class Order implements java.io.Serializable, Cloneable, CustomValuesHolde
      * @return the order entry risk, or {@code Double.NaN} if undefined
      */
     public double getEntryRisk() {
-        int directionTag = side.getDirection().tag;
+        int directionTag = side.getDirection().intValue();
         return (getFillPrice() - getExitStop()) * directionTag;
     }
     

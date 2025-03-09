@@ -77,25 +77,18 @@ public interface ServiceWorkerAware extends ExceptionHandler {
      */
     @Override
     default void onException(Throwable e) {
-        rethrowAsUnchecked(e);
+        throw rethrowAsUnchecked(e);
     }
 
     /**
-     * Rethrows the given throwable as an unchecked exception. If the throwable is
-     * already an unchecked exception, it is thrown as is. Otherwise, it is wrapped
-     * in a {@link RuntimeException} and thrown.
+     * Rethrows the given throwable as an unchecked exception.
      *
-     * @param e the throwable to rethrow
-     * @throws RuntimeException if the throwable is a checked exception
+     * @param t the throwable to rethrow
+     * @throws T the {@code t} rethrown
      */
-    static void rethrowAsUnchecked(Throwable e) {
-        if (e instanceof RuntimeException) {
-            throw (RuntimeException) e;
-        } else if (e instanceof Error) {
-            throw (Error) e;
-        } else {
-            throw new RuntimeException(e);
-        }
+    @SuppressWarnings("unchecked")
+    private static <T extends Throwable> T rethrowAsUnchecked(Throwable t) throws T {
+        throw (T) t;
     }
 
     /**

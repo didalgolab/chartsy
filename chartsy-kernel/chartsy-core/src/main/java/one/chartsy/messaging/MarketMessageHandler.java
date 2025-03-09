@@ -5,5 +5,5 @@ package one.chartsy.messaging;
 
 public interface MarketMessageHandler {
 
-    void onMarketMessage(MarketMessage msg);
+    void onMarketMessage(MarketEvent msg);
 }

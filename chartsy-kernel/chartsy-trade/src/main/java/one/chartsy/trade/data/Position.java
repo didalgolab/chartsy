@@ -87,7 +87,7 @@ public class Position implements Cloneable {
         double delta = -profit - swap;
         marketPrice = price;
         this.marketTime = marketTime;
-        profit = (price - entryPrice) * quantity * direction.tag;
+        profit = (price - entryPrice) * quantity * direction.intValue();
         maxFavorableExcursion = Math.max(profit, maxFavorableExcursion);
         maxAdverseExcursion = Math.min(profit, maxAdverseExcursion);
         // TODO

@@ -6,13 +6,13 @@ package one.chartsy.api.messages;
 import one.chartsy.Candle;
 import one.chartsy.SymbolIdentity;
 
-public record ImmutableBarMessage(
+public record ImmutableBarEvent(
         SymbolIdentity symbol,
         Candle bar,
         long getTime
-) implements BarMessage {
+) implements BarEvent {
 
-    public ImmutableBarMessage(SymbolIdentity symbol, Candle bar) {
+    public ImmutableBarEvent(SymbolIdentity symbol, Candle bar) {
         this(symbol, bar, bar.getTime());
     }
 }

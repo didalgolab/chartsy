@@ -4,9 +4,9 @@
 package one.chartsy.api.messages;
 
 import one.chartsy.Candle;
-import one.chartsy.messaging.MarketMessage;
+import one.chartsy.messaging.MarketEvent;
 
-public interface BarMessage extends MarketMessage {
+public interface BarEvent extends MarketEvent {
 
     Candle bar();
 

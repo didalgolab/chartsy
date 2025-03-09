@@ -3,7 +3,7 @@
 package one.chartsy.data.provider;
 
 import one.chartsy.*;
-import one.chartsy.api.messages.ImmutableBarMessage;
+import one.chartsy.api.messages.ImmutableBarEvent;
 import one.chartsy.context.ExecutionContext;
 import one.chartsy.core.ResourceHandle;
 import one.chartsy.data.DataQuery;
@@ -13,7 +13,7 @@ import one.chartsy.data.provider.file.*;
 import one.chartsy.financial.IdentityType;
 import one.chartsy.financial.InstrumentType;
 import one.chartsy.financial.SymbolIdentifier;
-import one.chartsy.messaging.MarketMessage;
+import one.chartsy.messaging.MarketEvent;
 import one.chartsy.messaging.MarketMessageSource;
 import one.chartsy.time.Chronological;
 import one.chartsy.util.CloseHelper;
@@ -157,10 +157,10 @@ public class FlatFileDataProvider extends AbstractDataProvider implements Symbol
 
         return new MarketMessageSource() {
             @Override
-            public MarketMessage getMessage() {
+            public MarketEvent getMessage() {
                 try {
                     var bar = itemReader.read();
-                    return (bar == null) ? null : new ImmutableBarMessage(identifier, bar);
+                    return (bar == null) ? null : new ImmutableBarEvent(identifier, bar);
                 }
                 catch (IOException e) {
                     throw new UncheckedIOException(e);

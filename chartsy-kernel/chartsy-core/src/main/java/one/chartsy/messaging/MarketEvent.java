@@ -6,7 +6,7 @@ package one.chartsy.messaging;
 import one.chartsy.SymbolIdentity;
 import one.chartsy.time.Chronological;
 
-public interface MarketMessage extends Chronological {
+public interface MarketEvent extends Chronological {
 
     SymbolIdentity symbol();
 }

@@ -23,7 +23,7 @@ public class SentimentBandsOverlay extends AbstractOverlay {
     public Color lowerBandColor = new Color(0xEF4444);
 
     @Parameter(name = "Band Stroke")
-    public Stroke bandStroke = BasicStrokes.THIN_SOLID;
+    public Stroke bandStroke = BasicStrokes.THICK_SOLID;
 
     @Parameter(name = "Fill Bands")
     public boolean fillBands = true;

@@ -188,7 +188,7 @@ public class SimpleMatchingEngine extends OrderStatusUpdater implements OrderBro
         int orderCount = orders.size();
         Position position = instrument.position();
         if (position != null) {
-            int type = position.getDirection().tag;
+            int type = position.getDirection().intValue();
             double sl = position.getExitStop(), tp = position.getExitLimit();
             // check position stop loss hit
             if (sl == sl && (type > 0 && ohlc.low() <= sl || type < 0 && ohlc.high() >= sl - spread)) {
@@ -249,7 +249,7 @@ public class SimpleMatchingEngine extends OrderStatusUpdater implements OrderBro
         Order.Side exitOrderSide = (position.getDirection() == Direction.LONG)? Order.Side.SELL : Order.Side.BUY_TO_COVER;
         Order exitOrder = new Order(position.getSymbol(), OrderType.MARKET, exitOrderSide, position.getQuantity());
         //
-        Direction side = position.getDirection().reverse();
+        Direction side = position.getDirection().reversed();
         String executionId = String.valueOf(executionIds.incrementAndGet());
         SimulatedExecution execution = new SimulatedExecution(executionId, exitOrder, ohlc.getTime(), price, position.getQuantity());
         execution.setScaleOut(true);
@@ -289,7 +289,7 @@ public class SimpleMatchingEngine extends OrderStatusUpdater implements OrderBro
         double tradeVolume = volume;
         SimulatedExecution execution;
         if (position != null) {
-            if (position.getDirection().tag == order.getSide().tag) { // scale-in
+            if (position.getDirection().intValue() == order.getSide().tag) { // scale-in
                 positionType = position.getDirection();
                 positionSize = position.getQuantity() + volume;
                 openingCommission = order.getCommission(price, volume, null);
@@ -299,8 +299,8 @@ public class SimpleMatchingEngine extends OrderStatusUpdater implements OrderBro
                 execution.setScaleIn(true);
                 execution.setOpeningCommission(order.getCommission(price, volume, null));
 
-            } else if (position.getDirection().tag == -order.getSide().tag) { // stop and reverse
-                positionType = position.getDirection().reverse();
+            } else if (position.getDirection().intValue() == -order.getSide().tag) { // stop and reverse
+                positionType = position.getDirection().reversed();
                 positionSize = volume;
                 openingCommission = order.getCommission(price, volume, null);
                 tradeVolume += position.getQuantity();
@@ -311,7 +311,7 @@ public class SimpleMatchingEngine extends OrderStatusUpdater implements OrderBro
                 execution.setOpeningCommission(order.getCommission(price, volume, null));
                 execution.setClosingCommission(order.getCommission(price, position.getQuantity(), position));
 
-            } else if (position.getDirection().tag * order.getSide().tag < 0) { // scale-out
+            } else if (position.getDirection().intValue() * order.getSide().tag < 0) { // scale-out
                 positionType = position.getDirection();
                 positionSize = position.getQuantity() - volume;
                 openingCommission = 0.0;

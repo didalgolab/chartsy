@@ -9,7 +9,7 @@ import one.chartsy.data.DataQuery;
 import one.chartsy.data.DataSubscription;
 import one.chartsy.data.provider.FlatFileDataProvider;
 import one.chartsy.data.structures.PriorityMap;
-import one.chartsy.messaging.MarketMessage;
+import one.chartsy.messaging.MarketEvent;
 import one.chartsy.messaging.MarketMessageHandler;
 import one.chartsy.messaging.MarketMessageSource;
 import one.chartsy.simulation.time.PlaybackClock;
@@ -24,7 +24,7 @@ public class FlatFileDataMarketSupplier implements MarketSupplier {
     private final DataSubscription subscription;
     private final PlaybackClock clock;
 
-    private final PriorityMap<MarketMessage, MarketMessageSource> subscribers;
+    private final PriorityMap<MarketEvent, MarketMessageSource> subscribers;
 
     public FlatFileDataMarketSupplier(FlatFileDataProvider dataProvider, DataSubscription subscription) {
         this(dataProvider, subscription, new PlaybackClock());
