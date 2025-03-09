@@ -5,6 +5,11 @@ package one.chartsy.trade.algorithm;
 
 import one.chartsy.api.messages.handlers.ShutdownResponseHandler;
 import one.chartsy.core.event.ListenerList;
+import one.chartsy.data.stream.MessageChannel;
+import one.chartsy.kernel.data.stream.csv.CsvResourceMessageChannel;
+import one.chartsy.kernel.data.stream.json.JsonlResourceMessageChannel;
+
+import java.nio.file.Path;
 
 public abstract class AbstractAlgorithmContext implements AlgorithmContext {
     private final ListenerList<ShutdownResponseHandler> shutdownResponseHandlers = ListenerList.of(ShutdownResponseHandler.class);
@@ -40,5 +45,18 @@ public abstract class AbstractAlgorithmContext implements AlgorithmContext {
     @Override
     public final boolean isShutdown() {
         return shutdown;
+    }
+
+    @Override
+    public <T> MessageChannel<T> createOutputChannel(Path path, Class<T> type) {
+        String fileName = path.getFileName().toString().toLowerCase();
+
+        if (fileName.endsWith(".jsonl")) {
+            return JsonlResourceMessageChannel.forResource(path);
+        } else if (fileName.endsWith(".csv")) {
+            return CsvResourceMessageChannel.forResource(path, type);
+        } else {
+            throw new IllegalArgumentException("Unsupported file extension: " + fileName);
+        }
     }
 }

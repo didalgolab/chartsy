@@ -8,6 +8,8 @@ import one.chartsy.data.stream.Message;
 import one.chartsy.data.stream.MessageChannel;
 import one.chartsy.time.Clock;
 
+import java.nio.file.Path;
+
 /**
  * Provides the context necessary to configure and run an {@link Algorithm}.
  * The context typically includes configuration parameters, identifiers,
@@ -34,5 +36,20 @@ public interface AlgorithmContext {
     ShutdownResponseHandler getShutdownResponseHandler();
 
     boolean isShutdown();
+
+    /**
+     * Creates a message channel for writing messages to the file specified by the given path.
+     * Currently, the only supported extensions are:
+     * <ul>
+     * <li><b>".jsonl":</b> JSON Lines format</li>
+     * <li><b>".csv":</b> CSV format</li>
+     * </ul>
+     *
+     * @param path the file path where messages will be written
+     * @param type the class type of messages that will be written to the channel
+     * @return a new {@code MessageChannel} for output
+     * @throws IllegalArgumentException if the file extension is unsupported
+     */
+    <T> MessageChannel<T> createOutputChannel(Path path, Class<T> type);
 
 }

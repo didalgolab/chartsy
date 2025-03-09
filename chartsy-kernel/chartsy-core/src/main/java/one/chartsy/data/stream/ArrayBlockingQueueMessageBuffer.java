@@ -33,7 +33,6 @@ public class ArrayBlockingQueueMessageBuffer<T extends Message>
      * Opens the message buffer, allowing it to accept new messages and process
      * existing ones. This method should be called before the buffer is used.
      */
-    @Override
     public void open() {
         this.open = true;
     }

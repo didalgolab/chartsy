@@ -8,13 +8,16 @@ import one.chartsy.data.stream.Message;
 import one.chartsy.data.stream.MessageChannel;
 import one.chartsy.time.Clock;
 
+/**
+ * A standard implementation of the AlgorithmContext.
+ */
 @Getter
-public class AlgorithmContextImpl extends AbstractAlgorithmContext {
+public class StandardAlgorithmContext extends AbstractAlgorithmContext {
 
     private final Clock clock;
     private final MessageChannel<Message> messageChannel;
 
-    public AlgorithmContextImpl(String name, Clock clock, MessageChannel<Message> messageChannel) {
+    public StandardAlgorithmContext(String name, Clock clock, MessageChannel<Message> messageChannel) {
         super(name);
         this.clock = clock;
         this.messageChannel = messageChannel;

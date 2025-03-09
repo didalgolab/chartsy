@@ -62,7 +62,7 @@ public class JsonlResourceMessageChannel<T> extends AbstractFormattedMessageChan
      * @param <T>  the type of messages being handled
      * @return a new JsonlResourceMessageChannel instance
      */
-    public static <T> JsonlResourceMessageChannel<T> fromPath(Path path) {
+    public static <T> JsonlResourceMessageChannel<T> forResource(Path path) {
         Objects.requireNonNull(path, "path");
         try {
             Writer writer = Files.newBufferedWriter(path, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
