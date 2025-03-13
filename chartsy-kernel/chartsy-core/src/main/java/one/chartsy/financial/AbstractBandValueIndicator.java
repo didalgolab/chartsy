@@ -31,9 +31,11 @@ public abstract class AbstractBandValueIndicator<V extends BandValues> implement
     /**
      * Updates the band positional side (bullish, bearish, neutral) based on a given price.
      * The method calculates and sets:
-     * - the most recent {@code lastSide}
-     * - the previous {@code previousSide},
-     * - the last non-neutral side {@code lastNonNeutralSide}.
+     * <ul>
+     *   <li>the most recent side: {@link #getLastSide()},</li>
+     *   <li>the previous side: {@link #getPreviousSide()},</li>
+     *   <li>the last non-neutral side: {@link #getLastNonNeutralSide()}.</li>
+     * </ul>
      *
      * @param price the current price to evaluate against the upper and lower band values
      */

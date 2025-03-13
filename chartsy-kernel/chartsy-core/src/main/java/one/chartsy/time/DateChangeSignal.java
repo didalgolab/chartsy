@@ -14,7 +14,7 @@ import java.time.LocalDate;
 public class DateChangeSignal {
     /**
      * The last date for which the signal was triggered.
-     * Initialized to yesterday so that the very first check signals today.
+     * Initialized to a "far-past" date so that the very first check signals today.
      */
     private LocalDate due = LocalDate.MIN;
 

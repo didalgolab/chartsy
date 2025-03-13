@@ -48,13 +48,13 @@ public abstract class AbstractAlgorithmContext implements AlgorithmContext {
     }
 
     @Override
-    public <T> MessageChannel<T> createOutputChannel(Path path, Class<T> type) {
+    public <T> MessageChannel<T> createOutputChannel(Path path, Class<T> messageType) {
         String fileName = path.getFileName().toString().toLowerCase();
 
         if (fileName.endsWith(".jsonl")) {
             return JsonlResourceMessageChannel.forResource(path);
         } else if (fileName.endsWith(".csv")) {
-            return CsvResourceMessageChannel.forResource(path, type);
+            return CsvResourceMessageChannel.forResource(path, messageType);
         } else {
             throw new IllegalArgumentException("Unsupported file extension: " + fileName);
         }

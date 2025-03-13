@@ -96,11 +96,17 @@ public interface BandValueIndicator<V extends BandValueIndicator.BandValues> ext
      */
     enum BandSide {
         /** Indicates a bullish sentiment (typically price above upper band). */
-        BULLISH,
+        BULLISH(1),
         /** Indicates a bearish sentiment (typically price below lower band). */
-        BEARISH,
+        BEARISH(-1),
         /** Indicates a neutral sentiment (typically price between upper and lower bands). */
-        NEUTRAL;
+        NEUTRAL(0);
+
+        private final int intValue;
+
+        BandSide(int intValue) {
+        this.intValue = intValue;
+    }
 
         /**
          * Determines if the current band side represents a non-neutral sentiment (BULLISH or BEARISH).
@@ -109,6 +115,33 @@ public interface BandValueIndicator<V extends BandValueIndicator.BandValues> ext
          */
         public boolean isNonNeutral() {
             return this != NEUTRAL;
+        }
+
+        /**
+         * Checks if the current sentiment side is bullish.
+         *
+         * @return {@code true} if the side is bullish, {@code false} otherwise
+         */
+        public boolean isBullish() {
+            return this == BULLISH;
+        }
+
+        /**
+         * Checks if the current sentiment side is bearish.
+         *
+         * @return {@code true} if the side is bearish, {@code false} otherwise
+         */
+        public boolean isBearish() {
+            return this == BEARISH;
+        }
+
+        /**
+         * Returns a numeric representation of the band side.
+         *
+         * @return {@code 1} for BULLISH, {@code -1} for BEARISH, {@code 0} for NEUTRAL
+         */
+        public int intValue() {
+            return intValue;
         }
     }
 

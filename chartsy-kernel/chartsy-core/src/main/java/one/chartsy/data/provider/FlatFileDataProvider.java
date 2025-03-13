@@ -3,7 +3,7 @@
 package one.chartsy.data.provider;
 
 import one.chartsy.*;
-import one.chartsy.api.messages.ImmutableBarEvent;
+import one.chartsy.api.messages.ImmutableBarMessage;
 import one.chartsy.context.ExecutionContext;
 import one.chartsy.core.ResourceHandle;
 import one.chartsy.data.DataQuery;
@@ -160,7 +160,7 @@ public class FlatFileDataProvider extends AbstractDataProvider implements Symbol
             public MarketEvent getMessage() {
                 try {
                     var bar = itemReader.read();
-                    return (bar == null) ? null : new ImmutableBarEvent(identifier, bar);
+                    return (bar == null) ? null : new ImmutableBarMessage(identifier, bar);
                 }
                 catch (IOException e) {
                     throw new UncheckedIOException(e);

@@ -2,9 +2,14 @@
  * SPDX-License-Identifier: Apache-2.0 */
 package one.chartsy.kernel.json;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import one.chartsy.core.json.JsonFormatter;
+import org.openide.util.lookup.ServiceProvider;
 
 /**
  * A JSON formatter implementation that utilizes the Jackson library for serialization
@@ -15,19 +20,27 @@ import one.chartsy.core.json.JsonFormatter;
  *
  * @author Mariusz Bernacki
  */
+@ServiceProvider(service = JacksonJsonFormatter.class)
 public class JacksonJsonFormatter implements JsonFormatter {
+
+    public static final ObjectMapper OBJECT_MAPPER = JsonMapper.builder()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
+            .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+            .addModule(new JavaTimeModule())
+            .build();
 
     private final ObjectMapper objectMapper;
 
     public JacksonJsonFormatter() {
-        this(new ObjectMapper());
+        this(OBJECT_MAPPER);
     }
 
     public JacksonJsonFormatter(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
     }
 
-    public ObjectMapper getObjectMapper() {
+    public final ObjectMapper getObjectMapper() {
         return objectMapper;
     }
 
