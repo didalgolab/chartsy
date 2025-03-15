@@ -70,22 +70,19 @@ public interface BandValueIndicator<V extends BandValueIndicator.BandValues> ext
     BandSide getLastNonNeutralSide();
 
     /**
+     * Checks if a non-neutral sentiment side change has occurred (BULLISH to BEARISH or vice versa).
+     *
+     * @return {@code true} if a non-neutral sentiment side changed; otherwise, {@code false}
+     */
+    boolean isNonNeutralSideChanged();
+
+    /**
      * Checks if the sentiment side has changed since the previous candle update.
      *
      * @return {@code true} if the sentiment side changed; otherwise, {@code false}
      */
     default boolean isSideChanged() {
         return getPreviousSide() != getLastSide();
-    }
-
-    /**
-     * Checks if a non-neutral sentiment side change has occurred (BULLISH to BEARISH or vice versa).
-     *
-     * @return {@code true} if a non-neutral sentiment side changed; otherwise, {@code false}
-     */
-    default boolean isNonNeutralSideChanged() {
-        var lastSide = getLastSide();
-        return lastSide.isNonNeutral() && lastSide != getLastNonNeutralSide();
     }
 
     /**

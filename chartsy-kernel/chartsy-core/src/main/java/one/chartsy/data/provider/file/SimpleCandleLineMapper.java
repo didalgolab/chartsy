@@ -4,6 +4,7 @@ package one.chartsy.data.provider.file;
 
 import one.chartsy.Candle;
 import one.chartsy.TimeFrame;
+import one.chartsy.TimeFrameHelper;
 import one.chartsy.context.ExecutionContext;
 import one.chartsy.data.SimpleCandle;
 import one.chartsy.text.FromString;
@@ -89,13 +90,16 @@ public class SimpleCandleLineMapper implements LineMapper<SimpleCandle> {
 
     private final Type type;
     private final long timeShift;
+    private boolean isIntraday;
     private final ExecutionContext context;
     private Candle last;
 
 
     public SimpleCandleLineMapper(Type type, ExecutionContext context) {
+        var timeFrame = (TimeFrame) context.get("TimeFrame");
         this.type = type;
-        this.timeShift = type.hasTimeAtOpen ? getCandleTimeShift((TimeFrame) context.get("TimeFrame")) : 0;
+        this.isIntraday = TimeFrameHelper.isIntraday(timeFrame);
+        this.timeShift = type.hasTimeAtOpen ? getCandleTimeShift(timeFrame) : 0;
         this.context = context;
     }
 
@@ -166,6 +170,8 @@ public class SimpleCandleLineMapper implements LineMapper<SimpleCandle> {
 
         if (dateTime == null)
             dateTime = LocalDateTime.of(date, time);
+        if (!isIntraday)
+            dateTime = dateTime.plusDays(1);
         if (!type.hasOpen)
             open = close;
         if (!type.hasHighAndLow)

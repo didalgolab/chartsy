@@ -19,14 +19,17 @@ import one.chartsy.financial.BandValueIndicator.BandValues;
  */
 public abstract class AbstractBandValueIndicator<V extends BandValues> implements BandValueIndicator<V> {
 
-    /** The most recent computed band side. */
+    /** The current band side. */
     protected @Getter BandSide lastSide = BandSide.NEUTRAL;
 
-    /** The previous computed band side. */
+    /** The previous band side. */
     protected @Getter BandSide previousSide = BandSide.NEUTRAL;
 
-    /** The last non-neutral computed band side (either BULLISH or BEARISH). */
+    /** The last non-neutral band side (either BULLISH or BEARISH). */
     protected @Getter BandSide lastNonNeutralSide = BandSide.NEUTRAL;
+
+    /** The last non-neutral band side changed (i.e. BULLISH to BEARISH or vice versa). */
+    protected @Getter boolean nonNeutralSideChanged;
 
     /**
      * Updates the band positional side (bullish, bearish, neutral) based on a given price.
@@ -51,6 +54,7 @@ public abstract class AbstractBandValueIndicator<V extends BandValues> implement
         }
 
         if (lastSide != BandSide.NEUTRAL) {
+            nonNeutralSideChanged = (lastSide != lastNonNeutralSide);
             lastNonNeutralSide = lastSide;
         }
     }

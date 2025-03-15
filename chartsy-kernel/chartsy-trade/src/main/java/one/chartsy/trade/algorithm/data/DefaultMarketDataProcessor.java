@@ -5,7 +5,6 @@ package one.chartsy.trade.algorithm.data;
 
 import one.chartsy.SymbolIdentity;
 import one.chartsy.messaging.MarketEvent;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -60,7 +59,7 @@ public class DefaultMarketDataProcessor<T extends InstrumentData> implements Mar
     }
 
     @Override
-    public @NotNull Iterator<T> iterator() {
+    public Iterator<T> iterator() {
         return instruments.values().iterator();
     }
 

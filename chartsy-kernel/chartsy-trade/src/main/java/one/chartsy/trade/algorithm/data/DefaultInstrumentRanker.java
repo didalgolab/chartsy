@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 /**
  * Default implementation of the {@code InstrumentRanker} encapsulating ranking of instrument data
@@ -83,7 +84,12 @@ public class DefaultInstrumentRanker<I extends InstrumentData> implements Instru
     }
 
     @Override
-    public List<I> getRankedInstruments() {
+    public final List<I> getRankedInstruments() {
         return rankedInstrumentsView;
+    }
+
+    @Override
+    public final Stream<I> rankedInstruments() {
+        return rankedInstruments.stream();
     }
 }

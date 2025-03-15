@@ -123,7 +123,7 @@ public class QuoteHoverStatusLineComponent extends JComponent
             else if (dailyAlignmentTimeZone != null)
                 date = eodDateFormat.format(candle.getDateTime(dailyAlignmentTimeZone));
             else
-                date = DateTimeFormatter.ISO_LOCAL_DATE.format(candle.getDateTime());
+                date = DateTimeFormatter.ISO_LOCAL_DATE.format(candle.getDate());
             
             FontMetrics fm1 = getFontMetrics(getFont());
             FontMetrics fm2 = getFontMetrics(getStrongFont());

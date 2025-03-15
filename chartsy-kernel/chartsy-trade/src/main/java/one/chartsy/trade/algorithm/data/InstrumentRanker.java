@@ -6,6 +6,7 @@ package one.chartsy.trade.algorithm.data;
 import one.chartsy.messaging.MarketEvent;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 public interface InstrumentRanker<T extends InstrumentData> {
 
@@ -19,4 +20,8 @@ public interface InstrumentRanker<T extends InstrumentData> {
     boolean isUpdated();
 
     List<T> getRankedInstruments();
+
+    default Stream<T> rankedInstruments() {
+        return getRankedInstruments().stream();
+    }
 }
