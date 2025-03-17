@@ -2,11 +2,17 @@
  * SPDX-License-Identifier: Apache-2.0 */
 package one.chartsy.exploration.ui;
 
+import one.chartsy.TimeFrame;
+import one.chartsy.kernel.ExplorationFragment;
+import one.chartsy.ui.ChartManager;
+import org.openide.util.Lookup;
 import org.openide.util.lookup.Lookups;
 import org.openide.windows.TopComponent;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.util.Arrays;
 
 /**
  * The component displaying results of the exploration action.
@@ -32,6 +38,7 @@ public class ExplorationResultTab extends TopComponent {
         initComponents();
         setName(name);
         resultTable.setName(name);
+        resultTable.setComponentPopupMenu(constructPopupMenu());
         scrollPane.setViewportView(resultTable);
         scrollPane.setBorder(null);
         scrollPane.setViewportBorder(null);
@@ -50,5 +57,29 @@ public class ExplorationResultTab extends TopComponent {
         scrollPane.setVerticalScrollBarPolicy(javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
         add(scrollPane, BorderLayout.CENTER);
     }
+
     private JScrollPane scrollPane;
+
+    protected JPopupMenu constructPopupMenu() {
+        JPopupMenu popupMenu = new JPopupMenu();
+        popupMenu.putClientProperty(JTable.class, this.resultTable);
+        popupMenu.add(new AbstractAction("Open Chart") {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                var selectedSymbols = Arrays.stream(resultTable.getSelectedRows())
+                        .map(resultTable::convertRowIndexToModel)
+                        .mapToObj(rowId -> resultTable.getModel().getRowAt(rowId))
+                        .map(ExplorationFragment::symbol)
+                        .toList();
+
+                Lookup.getDefault().lookup(ChartManager.class)
+                        .open(selectedSymbols, TimeFrame.Period.DAILY, null);
+            }
+        });
+        //popupMenu.add(org.openide.awt.Actions.forID("File", "com.softignition.chartsy.actions.ChartsyActions.TabDelimitedExportAction"));
+        //popupMenu.add(org.openide.awt.Actions.forID("File", "com.softignition.chartsy.actions.ChartsyActions.ExcelCSVExportAction"));
+        //popupMenu.add(TableActions.rowCountAction);
+
+        return popupMenu;
+    }
 }

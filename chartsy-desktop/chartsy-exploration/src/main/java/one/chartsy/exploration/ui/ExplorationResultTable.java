@@ -15,6 +15,7 @@ import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.TableCellRenderer;
+import javax.swing.table.TableModel;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -39,6 +40,11 @@ public class ExplorationResultTable extends ETable implements ExplorationListene
         setShowGrid(true);
         setGridColor(new Color(230, 230, 230));
         installEventListeners();
+    }
+
+    @Override
+    public final ExplorationResult getModel() {
+        return (ExplorationResult) super.getModel();
     }
 
     @Override
