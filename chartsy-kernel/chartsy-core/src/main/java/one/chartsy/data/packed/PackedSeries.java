@@ -83,8 +83,8 @@ public class PackedSeries<E extends Chronological> implements Series<E>, Timelin
     }
 
     @Override
-    public final Chronological.Order getOrder() {
-        return Chronological.Order.REVERSE_CHRONOLOGICAL;
+    public final Chronological.ChronoOrder getOrder() {
+        return Chronological.ChronoOrder.REVERSE_CHRONOLOGICAL;
     }
 
     @Override

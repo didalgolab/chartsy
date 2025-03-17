@@ -16,7 +16,7 @@ import java.util.Arrays;
 @Builder(builderClassName = "Builder")
 public class FlatFileFormat {
     private final String fileNamePattern;
-    private final Chronological.Order dataOrder;
+    private final Chronological.ChronoOrder dataOrder;
     private final String encoding;
     private final int skipFirstLines;
     private final boolean ignoreEmptyLines;
@@ -25,7 +25,7 @@ public class FlatFileFormat {
     private final LineMapperType<?> lineMapper;
 
     public static class Builder {
-        Chronological.Order dataOrder = Chronological.Order.CHRONOLOGICAL;
+        Chronological.ChronoOrder dataOrder = Chronological.ChronoOrder.CHRONOLOGICAL;
         String encoding = "ISO-8859-2";
     }
 

@@ -31,7 +31,7 @@ public interface CandleSeries extends Series<Candle> {
     }
 
     static CandleSeries of(SymbolResource<Candle> resource, Collection<? extends Candle> values) {
-        boolean reverse = (Chronological.Order.CHRONOLOGICAL.isOrdered(values));
+        boolean reverse = (Chronological.ChronoOrder.CHRONOLOGICAL.isOrdered(values));
         return new PackedCandleSeries(resource, ImmutableDataset.of(values, reverse));
     }
 

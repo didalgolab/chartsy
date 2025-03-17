@@ -8,7 +8,7 @@ import one.chartsy.simulation.engine.SimulationAccount;
 import one.chartsy.simulation.reporting.EquityInformation;
 import one.chartsy.trade.*;
 import one.chartsy.trade.data.Position;
-import one.chartsy.trade.event.PositionValueChangeListener;
+import one.chartsy.trade.event.LegacyPositionValueChangeListener;
 import one.chartsy.trade.strategy.SimulatorOptions;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.runner.Runner;
@@ -29,7 +29,7 @@ public class PositionValueChangeListenerBenchmarkTest {
     long time = 0;
     Account account = new SimulationAccount(SimulatorOptions.builder().build());
     Position[] positions = new Position[10];
-    ListenerList<PositionValueChangeListener> listeners = ListenerList.of(PositionValueChangeListener.class);
+    ListenerList<LegacyPositionValueChangeListener> listeners = ListenerList.of(LegacyPositionValueChangeListener.class);
 
     double positionResult = 0;
 
@@ -71,7 +71,7 @@ public class PositionValueChangeListenerBenchmarkTest {
             SymbolIdentity symb = SymbolIdentity.of("S." + i);
             positions[i] = new Position(1, symb, Direction.LONG, 1.0, 2.0, new Order(symb, OrderType.MARKET, Order.Side.BUY), 0.0, -1);
         }
-        listeners = ListenerList.of(PositionValueChangeListener.class);
+        listeners = ListenerList.of(LegacyPositionValueChangeListener.class);
         listeners.addListener(equityBuilder);
 //        ByteBufferMutableHLCDataset equityDS = new ByteBufferMutableHLCDataset(1L, ByteBuffer.allocate(256_000));
 //        listeners.addListener(new PositionValueChangeListener2() {
@@ -88,7 +88,7 @@ public class PositionValueChangeListenerBenchmarkTest {
 //        });
         for (int i = 0; i < 1; i++) {
             int k = i;
-            listeners.addListener(new PositionValueChangeListener() {
+            listeners.addListener(new LegacyPositionValueChangeListener() {
                 @Override
                 public void positionValueChanged(Account account, Position position) {
                     positionResult += k * k/2 * position.getProfit();
@@ -117,7 +117,7 @@ public class PositionValueChangeListenerBenchmarkTest {
         new Runner(opt).run();
     }
 
-    public static interface PositionValueChangeListener2 extends PositionValueChangeListener {
+    public static interface LegacyPositionValueChangeListener2 extends LegacyPositionValueChangeListener {
         void positionValueChanged(Account account, Position position);
     }
 }

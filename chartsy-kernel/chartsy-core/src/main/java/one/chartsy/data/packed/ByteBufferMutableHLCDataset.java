@@ -126,6 +126,6 @@ public class ByteBufferMutableHLCDataset extends AbstractDataset<HLC> implements
     }
 
     protected Timeline createTimeline() {
-        return new ChronologicalDatasetTimeline(this, Chronological.Order.REVERSE_CHRONOLOGICAL);
+        return new ChronologicalDatasetTimeline(this, Chronological.ChronoOrder.REVERSE_CHRONOLOGICAL);
     }
 }

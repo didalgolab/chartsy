@@ -96,7 +96,7 @@ public interface Series<E extends Chronological> extends IndexedSymbolResourceDa
     }
 
     static <E extends Chronological> Series<E> of(SymbolResource<E> resource, List<E> data) {
-        boolean reverse = (Chronological.Order.CHRONOLOGICAL.isOrdered(data));
+        boolean reverse = (Chronological.ChronoOrder.CHRONOLOGICAL.isOrdered(data));
         return new PackedSeries<>(resource, ImmutableDataset.of(data, reverse));
     }
 

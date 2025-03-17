@@ -9,7 +9,7 @@ public class ChronologicalDatasetTimeline extends AbstractTimeline {
 
     private final ChronologicalDataset data;
 
-    public ChronologicalDatasetTimeline(ChronologicalDataset data, Chronological.Order order) {
+    public ChronologicalDatasetTimeline(ChronologicalDataset data, Chronological.ChronoOrder order) {
         super(order);
         this.data = data;
     }

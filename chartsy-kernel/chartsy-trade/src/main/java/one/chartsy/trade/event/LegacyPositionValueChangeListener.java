@@ -2,7 +2,8 @@
  * SPDX-License-Identifier: Apache-2.0 */
 package one.chartsy.trade.event;
 
-import one.chartsy.trade.account.AccountBalanceEntry;
+import one.chartsy.trade.Account;
+import one.chartsy.trade.data.Position;
 
 /**
  * Receives notifications of changed position value as a result of market price change
@@ -11,7 +12,7 @@ import one.chartsy.trade.account.AccountBalanceEntry;
  * @author Mariusz Bernacki
  */
 @FunctionalInterface
-public interface PositionValueChangeListener {
+public interface LegacyPositionValueChangeListener {
 
-    void positionValueChanged(AccountBalanceEntry.Position position);
+    void positionValueChanged(Account account, Position position);
 }

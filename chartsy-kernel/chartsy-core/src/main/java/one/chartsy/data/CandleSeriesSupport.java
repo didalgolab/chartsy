@@ -76,7 +76,7 @@ public class CandleSeriesSupport {
 	 * @return a unified timeline
 	 */
 	public static Timeline getUnifiedTimeline(Iterable<? extends Series<? extends Chronological>> seriesCollection) {
-		var order = Chronological.Order.REVERSE_CHRONOLOGICAL;
+		var order = Chronological.ChronoOrder.REVERSE_CHRONOLOGICAL;
 		var times = StreamSupport.stream(seriesCollection.spliterator(), false)
 				.mapMulti((Series<? extends Chronological> series, Consumer<Chronological> result) -> series.forEach(result))
 				.collect(Collectors.toCollection(() -> new TreeSet<>(order.comparator())))

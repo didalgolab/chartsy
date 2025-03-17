@@ -19,7 +19,7 @@ public class DataQuery<T> {
     private final LocalDateTime endTime;
     private final Currency currency;
     private final int limit;
-    private final Chronological.Order order;
+    private final Chronological.ChronoOrder order;
 
     public static <T> DataQuery.Builder<T> resource(SymbolResource<T> resource) {
         return DataQuery.<T>builder().resource(resource);

@@ -5,6 +5,7 @@ package one.chartsy.simulation.engine;
 import one.chartsy.*;
 import one.chartsy.core.event.ListenerList;
 import one.chartsy.financial.SymbolIdentifier;
+import one.chartsy.trade.event.LegacyPositionValueChangeListener;
 import one.chartsy.trade.strategy.SimulatorOptions;
 import one.chartsy.trade.Account;
 import one.chartsy.trade.Execution;
@@ -12,7 +13,6 @@ import one.chartsy.trade.Order;
 import one.chartsy.trade.data.Position;
 import one.chartsy.trade.data.TransactionData;
 import one.chartsy.trade.event.PositionChangeListener;
-import one.chartsy.trade.event.PositionValueChangeListener;
 
 import java.util.*;
 
@@ -186,7 +186,7 @@ public class SimulationAccount implements Account {
     /** The list of registered position change listeners. */
     private final ListenerList<PositionChangeListener> positionChangeListeners = ListenerList.of(PositionChangeListener.class);
     /** The list of registered position value change listeners. */
-    private final ListenerList<PositionValueChangeListener> positionValueChangeListeners = ListenerList.of(PositionValueChangeListener.class);
+    private final ListenerList<LegacyPositionValueChangeListener> positionValueChangeListeners = ListenerList.of(LegacyPositionValueChangeListener.class);
 
     @Override
     public void addPositionChangeListener(PositionChangeListener listener) {
@@ -199,12 +199,12 @@ public class SimulationAccount implements Account {
     }
 
     @Override
-    public void addPositionValueChangeListener(PositionValueChangeListener listener) {
+    public void addPositionValueChangeListener(LegacyPositionValueChangeListener listener) {
         positionValueChangeListeners.addListener(listener);
     }
 
     @Override
-    public void removePositionValueChangeListener(PositionValueChangeListener listener) {
+    public void removePositionValueChangeListener(LegacyPositionValueChangeListener listener) {
         positionValueChangeListeners.removeListener(listener);
     }
 }

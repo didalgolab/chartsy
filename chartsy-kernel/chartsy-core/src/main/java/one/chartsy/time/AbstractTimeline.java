@@ -6,15 +6,15 @@ import one.chartsy.misc.BinarySearch;
 
 public abstract class AbstractTimeline implements Timeline {
 
-    private final Chronological.Order order;
+    private final Chronological.ChronoOrder order;
 
-    protected AbstractTimeline(Chronological.Order order) {
+    protected AbstractTimeline(Chronological.ChronoOrder order) {
         this.order = order;
     }
 
 
     @Override
-    public final Chronological.Order getOrder() {
+    public final Chronological.ChronoOrder getOrder() {
         return order;
     }
 

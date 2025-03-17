@@ -5,8 +5,8 @@ package one.chartsy.trade;
 import one.chartsy.Candle;
 import one.chartsy.SymbolIdentity;
 import one.chartsy.trade.data.Position;
+import one.chartsy.trade.event.LegacyPositionValueChangeListener;
 import one.chartsy.trade.event.PositionChangeListener;
-import one.chartsy.trade.event.PositionValueChangeListener;
 
 import java.util.List;
 import java.util.Map;
@@ -89,7 +89,7 @@ public interface Account extends BalanceState {
 
     void removePositionChangeListener(PositionChangeListener listener);
 
-    void addPositionValueChangeListener(PositionValueChangeListener listener);
+    void addPositionValueChangeListener(LegacyPositionValueChangeListener listener);
 
-    void removePositionValueChangeListener(PositionValueChangeListener listener);
+    void removePositionValueChangeListener(LegacyPositionValueChangeListener listener);
 }

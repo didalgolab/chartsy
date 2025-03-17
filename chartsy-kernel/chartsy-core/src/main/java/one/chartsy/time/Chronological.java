@@ -252,7 +252,7 @@ public interface Chronological extends Comparable<Chronological> {
      * @author Mariusz Bernacki
      *
      */
-    enum Order {
+    enum ChronoOrder {
         /** The elements are in natural chronological order. */
         CHRONOLOGICAL,
         /** The elements are in reverse chronological order - the most recent first. */

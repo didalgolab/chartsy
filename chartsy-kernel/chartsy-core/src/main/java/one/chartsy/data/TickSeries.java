@@ -14,7 +14,7 @@ import java.util.Collection;
 public interface TickSeries extends Series<Tick> {
 
     static TickSeries of(SymbolResource<Tick> resource, Collection<? extends Tick> values) {
-        boolean reverse = (Chronological.Order.CHRONOLOGICAL.isOrdered(values));
+        boolean reverse = (Chronological.ChronoOrder.CHRONOLOGICAL.isOrdered(values));
         return new PackedTickSeries(resource, ImmutableDataset.of(values, reverse));
     }
 

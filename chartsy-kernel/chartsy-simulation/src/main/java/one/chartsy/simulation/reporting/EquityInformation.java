@@ -5,7 +5,7 @@ package one.chartsy.simulation.reporting;
 import one.chartsy.trade.Account;
 import one.chartsy.trade.BalanceState;
 import one.chartsy.trade.data.Position;
-import one.chartsy.trade.event.PositionValueChangeListener;
+import one.chartsy.trade.event.LegacyPositionValueChangeListener;
 
 import java.time.ZoneId;
 
@@ -47,7 +47,7 @@ public interface EquityInformation {
         return new StandardBuilder(initial);
     }
 
-    interface Builder extends PositionValueChangeListener {
+    interface Builder extends LegacyPositionValueChangeListener {
 
         void add(long time, double equity);
 

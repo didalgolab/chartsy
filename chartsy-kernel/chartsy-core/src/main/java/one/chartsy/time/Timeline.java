@@ -16,7 +16,7 @@ public interface Timeline {
      * Returns the chronological ordering of points on this timeline which can be
      * either natural or reverse.
      */
-    Chronological.Order getOrder();
+    Chronological.ChronoOrder getOrder();
 
     /**
      * Returns the length of the timeline.

@@ -12,7 +12,7 @@ import one.chartsy.trade.BalanceState;
 import one.chartsy.trade.strategy.ReportOptions;
 import one.chartsy.trade.Account;
 import one.chartsy.trade.data.Position;
-import one.chartsy.trade.event.PositionValueChangeListener;
+import one.chartsy.trade.event.LegacyPositionValueChangeListener;
 
 import java.util.Optional;
 
@@ -80,7 +80,7 @@ public class StandardReportEngine extends AbstractReportEngine {
         return new StandardReport(this);
     }
 
-    private class Handler implements PositionValueChangeListener {
+    private class Handler implements LegacyPositionValueChangeListener {
         private EquityInformation.Builder equitySummary;
         private ByteBufferMutableHLCDataset equityEvolution;
 
