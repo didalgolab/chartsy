@@ -8,20 +8,14 @@ import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 /**
  * Collects and summarizes equity statistics (e.g., equity highs, lows, drawdowns, returns)
  * based on a series of equity data points. Additionally, it computes an incremental (streaming)
- * annual Sharpe and Sortino ratios for daily returns derived from the incoming timestamps.
- *
- * <p>This class maintains statistics over a series of equity values and timestamps. Each time
- * a new data point is added, it updates:
- * <ul>
- *   <li>The running values for highest equity, lowest equity, maximum drawdown, average drawdown,</li>
- *   <li>Daily returns based on time granularity to compute Sharpe and Sortino ratios incrementally</li>
- * </ul>
+ * annual Sharpe and Sortino ratios for daily returns derived from the incoming timestamped
+ * equity changes.
  *
  * <p><strong>Timestamp Granularity:</strong>
- * The add method converts incoming timestamps (in nanoseconds since the epoch) to a day boundary.
- * Whenever the day changes, a new daily return is computed using the ratio of the current equity
- * to the previous day's closing equity. These daily returns are pushed into a streaming
- * statistical accumulators.
+ * The {@code add} method converts incoming timestamps (in nanoseconds since the epoch) to a day
+ * boundary. Whenever the day changes, a new daily return is computed using the ratio of the
+ * current equity to the previous day's closing equity. These daily returns are pushed into
+ * a streaming statistical accumulators.
  *
  * <p><strong>Annual Sharpe Ratio Calculation:</strong>
  * <pre>
@@ -50,7 +44,7 @@ import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
  * System.out.println("Highest Equity:      " + finalStats.getTotalEquityHigh());
  * System.out.println("Lowest Equity:       " + finalStats.getTotalEquityLow());
  * System.out.println("Max Drawdown:        " + finalStats.getMaxDrawdown());
- * System.out.println("Avg Drawdown:        " + finalStats.getAvgDrawdown());
+ * System.out.println("Average Drawdown:    " + finalStats.getAverageDrawdown());
  * System.out.println("Annual Sharpe Ratio: " + finalStats.getAnnualSharpeRatio());
  * // etc.
  * }</pre>
@@ -64,6 +58,8 @@ public class EquitySummaryStatistics {
 
     /** The initial equity value when tracking started. */
     private final double startingEquity;
+    /** The annualized risk-free rate (e.g., 0.01 for 1%). */
+    private final double annualRiskFreeRate;
     /** The highest equity value reached in the data points. */
     private double totalEquityHigh;
     /** The lowest equity value reached in the data points. */
@@ -75,13 +71,9 @@ public class EquitySummaryStatistics {
     /** The maximum drawdown as a percentage of the highest equity. */
     private double maxDrawdownPercent;
     /** The cumulative sum of all observed drawdowns, used for computing the average drawdown. */
-    private double sumDrawdown;
+    private double drawdownTotals;
     /** The cumulative sum of all observed drawdowns as a percentage. */
-    private double sumDrawdownPercent;
-    /** The average drawdown observed, updated incrementally. */
-    private double avgDrawdown;
-    /** The average drawdown percentage observed, updated incrementally. */
-    private double avgDrawdownPercent;
+    private double drawdownPercentTotals;
     /** The longest drawdown duration in nanoseconds. */
     private long longestDrawdownDuration;
     /** The current drawdown start time. */
@@ -98,8 +90,6 @@ public class EquitySummaryStatistics {
     private final SummaryStatistics dailyReturnStats = new SummaryStatistics();
     /** The sum of squared negative deviations from the daily risk-free rate. */
     private double dailyDownsideSumOfSquares;
-    /** The annualized risk-free rate (e.g., 0.01 for 1%). */
-    private final double annualRiskFreeRate;
     /** The last day we updated, in epoch days. */
     private long lastDay;
     /** The previous day's closing equity (for computing daily returns). */
@@ -107,8 +97,6 @@ public class EquitySummaryStatistics {
 
     /**
      * Constructs an {@code EquitySummaryStatistics} object initialized with the given equity.
-     *
-     * <p>This constructor also sets the initial values for the highest and lowest equities.
      *
      * @param initialEquity the starting equity value
      * @param annualRiskFreeRate the assumed annual risk-free rate (e.g. 0.01 for 1%)
@@ -172,12 +160,8 @@ public class EquitySummaryStatistics {
             currentDrawdownStartTime = time;
         }
         longestDrawdownDuration = Math.max(longestDrawdownDuration, time - currentDrawdownStartTime);
-        sumDrawdown += currentDrawdown;
-        sumDrawdownPercent += currentDrawdownPercent;
-        if (dataPoints > 0) {
-            this.avgDrawdown = sumDrawdown / dataPoints;
-            this.avgDrawdownPercent = sumDrawdownPercent / dataPoints;
-        }
+        drawdownTotals += currentDrawdown;
+        drawdownPercentTotals += currentDrawdownPercent;
     }
 
     private void maybeAddDailyReturn(long time) {
@@ -246,6 +230,15 @@ public class EquitySummaryStatistics {
     }
 
     /**
+     * Returns the net profit as the difference between the ending equity and the starting equity.
+     *
+     * @return the net profit
+     */
+    public double getNetProfit() {
+        return endingEquity - startingEquity;
+    }
+
+    /**
      * Returns the maximum drawdown observed in absolute terms.
      *
      * @return the maximum drawdown in absolute terms
@@ -268,8 +261,9 @@ public class EquitySummaryStatistics {
      *
      * @return the average drawdown
      */
-    public double getAvgDrawdown() {
-        return avgDrawdown;
+    public double getAverageDrawdown() {
+        var dataPoints = getDataPoints();
+        return (dataPoints == 0) ? 0 : drawdownTotals / dataPoints;
     }
 
     /**
@@ -277,8 +271,9 @@ public class EquitySummaryStatistics {
      *
      * @return the average drawdown percentage
      */
-    public double getAvgDrawdownPercent() {
-        return avgDrawdownPercent;
+    public double getAverageDrawdownPercent() {
+        var dataPoints = getDataPoints();
+        return (dataPoints == 0) ? 0 : drawdownPercentTotals / dataPoints;
     }
 
     /**
@@ -336,6 +331,16 @@ public class EquitySummaryStatistics {
      */
     public long getDataPoints() {
         return dataPoints;
+    }
+
+    /**
+     * Returns the average daily return computed from the accumulated daily returns.
+     *
+     * @return the average daily return, or {@code Double.NaN} if no daily returns have been recorded
+     */
+    public double getAverageDailyReturn() {
+        long n = dailyReturnStats.getN();
+        return (dailyReturnStats.getMean() * n + getLastDayReturn()) / (n + 1);
     }
 
     /**
@@ -411,7 +416,7 @@ public class EquitySummaryStatistics {
                 "EquitySummaryStatistics{" +
                         "startingEquity=%.2f, totalEquityHigh=%.2f, totalEquityLow=%.2f, " +
                         "endingEquity=%.2f, maxDrawdown=%.2f, maxDrawdownPercent=%.2f, " +
-                        "avgDrawdown=%.2f, avgDrawdownPercent=%.2f, dataPoints=%d, " +
+                        "averageDrawdown=%.2f, averageDrawdownPercent=%.2f, dataPoints=%d, " +
                         "annualSharpeRatio=%.4f, annualSortinoRatio=%.4f}",
                 startingEquity,
                 totalEquityHigh,
@@ -419,8 +424,8 @@ public class EquitySummaryStatistics {
                 endingEquity,
                 maxDrawdown,
                 maxDrawdownPercent,
-                avgDrawdown,
-                avgDrawdownPercent,
+                getAverageDrawdown(),
+                getAverageDrawdownPercent(),
                 dataPoints,
                 getAnnualSharpeRatio(),
                 getAnnualSortinoRatio()
