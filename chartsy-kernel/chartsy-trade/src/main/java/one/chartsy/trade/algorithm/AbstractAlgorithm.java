@@ -5,7 +5,9 @@ package one.chartsy.trade.algorithm;
 
 import one.chartsy.api.messages.ShutdownRequest;
 import one.chartsy.messaging.MarketEvent;
+import one.chartsy.time.Chronological;
 import one.chartsy.time.Clock;
+import one.chartsy.time.DateChangeSignal;
 import one.chartsy.trade.algorithm.data.DefaultInstrumentRanker;
 import one.chartsy.trade.algorithm.data.DefaultMarketDataProcessor;
 import one.chartsy.trade.algorithm.data.InstrumentData;
@@ -25,6 +27,7 @@ public abstract class AbstractAlgorithm<I extends InstrumentData> implements Alg
     protected final String name;
     protected final MarketDataProcessor<I> marketDataProcessor;
     protected final List<InstrumentRanker<I>> rankers = new ArrayList<>();
+    private final DateChangeSignal dateChange = DateChangeSignal.create();
 
 
     public AbstractAlgorithm(AlgorithmContext context) {
@@ -97,13 +100,20 @@ public abstract class AbstractAlgorithm<I extends InstrumentData> implements Alg
         return ranker;
     }
 
+    protected void onDateChange(Chronological event) {
+        // nothing to do here
+    }
+
     @Override
-    public void onMarketMessage(MarketEvent msg) {
+    public void onMarketMessage(MarketEvent event) {
+        if (dateChange.poll(event))
+            onDateChange(event);
+
         if (!rankers.isEmpty())
             for (var ranker : rankers)
-                ranker.onMarketMessage(msg);
+                ranker.onMarketMessage(event);
 
-        marketDataProcessor.onMarketMessage(msg);
+        marketDataProcessor.onMarketMessage(event);
     }
 
     /**

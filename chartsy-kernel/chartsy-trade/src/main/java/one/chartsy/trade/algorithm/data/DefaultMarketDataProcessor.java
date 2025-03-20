@@ -54,8 +54,8 @@ public class DefaultMarketDataProcessor<T extends InstrumentData> implements Mar
     }
 
     @Override
-    public void onMarketMessage(MarketEvent msg) {
-        getOrCreate(msg.symbol()).onMarketMessage(msg);
+    public void onMarketMessage(MarketEvent event) {
+        getOrCreate(event.symbol()).onMarketMessage(event);
     }
 
     @Override
