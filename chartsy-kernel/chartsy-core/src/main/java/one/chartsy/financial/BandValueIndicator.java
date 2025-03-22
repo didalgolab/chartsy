@@ -3,6 +3,8 @@
  */
 package one.chartsy.financial;
 
+import one.chartsy.context.Directional;
+
 /**
  * A generic interface representing indicators characterized by dynamically calculated upper and lower bands.
  *
@@ -53,45 +55,45 @@ public interface BandValueIndicator<V extends BandValueIndicator.BandValues> ext
      *
      * @return the last computed band side
      */
-    BandSide getLastSide();
+    BandSide getLastMode();
 
     /**
      * Gives the market sentiment side from the previous candle update.
      *
      * @return the previously computed band side
      */
-    BandSide getPreviousSide();
+    BandSide getPreviousMode();
 
     /**
      * Gives the last recorded non-neutral sentiment side (BULLISH or BEARISH).
      *
      * @return the last non-neutral sentiment side
      */
-    BandSide getLastNonNeutralSide();
+    BandSide getLastSide();
 
     /**
      * Checks if a non-neutral sentiment side change has occurred (BULLISH to BEARISH or vice versa).
      *
      * @return {@code true} if a non-neutral sentiment side changed; otherwise, {@code false}
      */
-    boolean isNonNeutralSideChanged();
+    boolean isSideChanged();
 
     /**
-     * Checks if the sentiment side has changed since the previous candle update.
+     * Checks if the sentiment neutral-aware side has changed since the previous candle update.
      *
-     * @return {@code true} if the sentiment side changed; otherwise, {@code false}
+     * @return {@code true} if the sentiment netrual-aware side changed; otherwise, {@code false}
      */
-    default boolean isSideChanged() {
-        return getPreviousSide() != getLastSide();
+    default boolean isModeChanged() {
+        return getPreviousMode() != getLastMode();
     }
 
     /**
      * Enumerates possible market sentiment or positional sides derived from band indicator values.
      *
      * <p>This enum typically represents the position of a price series relative to the calculated bands,
-     * commonly indicating a bullish, bearish, or neutral market condition.</p>
+     * commonly indicating a bullish, bearish, or neutral market condition.
      */
-    enum BandSide {
+    enum BandSide implements Directional {
         /** Indicates a bullish sentiment (typically price above upper band). */
         BULLISH(1),
         /** Indicates a bearish sentiment (typically price below lower band). */
@@ -102,8 +104,8 @@ public interface BandValueIndicator<V extends BandValueIndicator.BandValues> ext
         private final int intValue;
 
         BandSide(int intValue) {
-        this.intValue = intValue;
-    }
+            this.intValue = intValue;
+        }
 
         /**
          * Determines if the current band side represents a non-neutral sentiment (BULLISH or BEARISH).
@@ -137,8 +139,29 @@ public interface BandValueIndicator<V extends BandValueIndicator.BandValues> ext
          *
          * @return {@code 1} for BULLISH, {@code -1} for BEARISH, {@code 0} for NEUTRAL
          */
+        @Override
         public int intValue() {
             return intValue;
+        }
+
+        /**
+         * Returns the opposite sentiment side.
+         *
+         * <p>The reversal mapping is as follows:
+         * <ul>
+         *   <li>{@code BULLISH} reverses to {@code BEARISH}</li>
+         *   <li>{@code BEARISH} reverses to {@code BULLISH}</li>
+         *   <li>{@code NEUTRAL} remains {@code NEUTRAL}</li>
+         * </ul>
+         *
+         * @return the reversed {@code BandSide}
+         */
+        public BandSide reversed() {
+            return switch (this) {
+                case BULLISH -> BEARISH;
+                case BEARISH -> BULLISH;
+                case NEUTRAL -> NEUTRAL;
+            };
         }
     }
 
@@ -163,5 +186,14 @@ public interface BandValueIndicator<V extends BandValueIndicator.BandValues> ext
          * @return the calculated lower band value
          */
         double lowerBand();
+
+        /**
+         * Gives the width of the band as the difference between the upper and lower band values.
+         *
+         * @return the calculated band width
+         */
+        default double bandWidth() {
+            return upperBand() - lowerBand();
+        }
     }
 }

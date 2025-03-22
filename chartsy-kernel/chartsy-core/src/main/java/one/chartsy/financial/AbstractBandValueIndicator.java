@@ -19,43 +19,43 @@ import one.chartsy.financial.BandValueIndicator.BandValues;
  */
 public abstract class AbstractBandValueIndicator<V extends BandValues> implements BandValueIndicator<V> {
 
-    /** The current band side. */
-    protected @Getter BandSide lastSide = BandSide.NEUTRAL;
+    /** The current neutral-aware band side. */
+    protected @Getter BandSide lastMode = BandSide.NEUTRAL;
 
-    /** The previous band side. */
-    protected @Getter BandSide previousSide = BandSide.NEUTRAL;
+    /** The previous neutral-aware band side. */
+    protected @Getter BandSide previousMode = BandSide.NEUTRAL;
 
     /** The last non-neutral band side (either BULLISH or BEARISH). */
-    protected @Getter BandSide lastNonNeutralSide = BandSide.NEUTRAL;
+    protected @Getter BandSide lastSide = BandSide.NEUTRAL;
 
     /** The last non-neutral band side changed (i.e. BULLISH to BEARISH or vice versa). */
-    protected @Getter boolean nonNeutralSideChanged;
+    protected @Getter boolean sideChanged;
 
     /**
      * Updates the band positional side (bullish, bearish, neutral) based on a given price.
      * The method calculates and sets:
      * <ul>
-     *   <li>the most recent side: {@link #getLastSide()},</li>
-     *   <li>the previous side: {@link #getPreviousSide()},</li>
-     *   <li>the last non-neutral side: {@link #getLastNonNeutralSide()}.</li>
+     *   <li>the most recent neutral-aware side: {@link #getLastMode()},</li>
+     *   <li>the previous neutral-aware side: {@link #getPreviousMode()},</li>
+     *   <li>the last non-neutral side: {@link #getLastSide()}.</li>
      * </ul>
      *
      * @param price the current price to evaluate against the upper and lower band values
      */
     protected void updateBandSide(double price) {
-        this.previousSide = lastSide;
+        this.previousMode = lastMode;
 
         if (price > getUpperBand()) {
-            lastSide = BandSide.BULLISH;
+            lastMode = BandSide.BULLISH;
         } else if (price < getLowerBand()) {
-            lastSide = BandSide.BEARISH;
+            lastMode = BandSide.BEARISH;
         } else {
-            lastSide = BandSide.NEUTRAL;
+            lastMode = BandSide.NEUTRAL;
         }
 
-        if (lastSide != BandSide.NEUTRAL) {
-            nonNeutralSideChanged = (lastSide != lastNonNeutralSide);
-            lastNonNeutralSide = lastSide;
+        if (lastMode.isNonNeutral()) {
+            sideChanged = (lastMode != lastSide);
+            lastSide = lastMode;
         }
     }
 }

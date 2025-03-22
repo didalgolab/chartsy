@@ -6,10 +6,12 @@ package one.chartsy.trade.account;
 import one.chartsy.SymbolIdentity;
 import one.chartsy.api.messages.BarMessage;
 import one.chartsy.core.event.ListenerList;
+import one.chartsy.time.Chronological;
 import one.chartsy.trade.Direction;
 import one.chartsy.trade.Order;
 import one.chartsy.trade.event.PositionValueChangeListener;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -45,6 +47,10 @@ public class AccountBalanceEntry {
 
     public double getEquity() {
         return getBalance() + getUnrealizedPnL();
+    }
+
+    public boolean hasPosition(SymbolIdentity symbol) {
+        return instruments.containsKey(symbol);
     }
 
     public Position getPosition(SymbolIdentity symbol) {
@@ -124,6 +130,7 @@ public class AccountBalanceEntry {
         position.updateProfit(tradePrice, tradeTime);
         balance += position.getProfit() - position.getExtraCommission();
         instruments.remove(position.getSymbol());
+        position.setClosed();
         firePositionValueChanged(position);
     }
 
@@ -217,6 +224,8 @@ public class AccountBalanceEntry {
         private double maxFavorableExcursion;
         /** Measures the largest loss suffered by this position while it is open (negative number). */
         private double maxAdverseExcursion;
+        /** Indicates whether this position has been closed. */
+        private boolean closed;
 
         public Position(AccountBalanceEntry balanceEntry, SymbolIdentity symbol, Direction direction, double quantity, double entryPrice, long entryTime) {
             this.balanceEntry = balanceEntry;
@@ -239,8 +248,16 @@ public class AccountBalanceEntry {
             return direction;
         }
 
-        public double getEntryPrice() {
+        public final double getEntryPrice() {
             return entryPrice;
+        }
+
+        public final long getEntryTime() {
+            return entryTime;
+        }
+
+        public final LocalDateTime getEntryDateTime() {
+            return Chronological.toDateTime(getEntryTime());
         }
 
         public double getQuantity() {
@@ -263,16 +280,36 @@ public class AccountBalanceEntry {
             return marketPrice;
         }
 
-        public long getMarketTime() {
+        public final long getMarketTime() {
             return marketTime;
+        }
+
+        public final LocalDateTime getMarketDateTime() {
+            return Chronological.toDateTime(getMarketTime());
         }
 
         public double getExtraCommission() {
             return extraCommission;
         }
 
-        public double getProfit() {
+        public final double getProfit() {
             return profit;
+        }
+
+        public final double getMaxFavorableExcursion() {
+            return maxFavorableExcursion;
+        }
+
+        public final double getMaxAdverseExcursion() {
+            return maxAdverseExcursion;
+        }
+
+        public final boolean isClosed() {
+            return closed;
+        }
+
+        protected void setClosed() {
+            this.closed = true;
         }
 
         /**

@@ -3,54 +3,48 @@
  */
 package one.chartsy;
 
+import one.chartsy.context.Directional;
+
 /**
- * A generalized interface providing insight for a directional trading state.
+ * A specialized interface providing detailed insights about a directional trading state.
  * <p>
- * Implementations encapsulate positional attributes (e.g. long, short, flat) 
- * and offer detailed inspection and analytical properties for directional decisions.
- * This abstraction promotes loose coupling, versatility, and generalized directionality 
- * semantics applicable across diverse trading algorithms and market strategies.
+ * Extending {@link Directional}, implementations enrich numeric direction encoding
+ * with methods allowing explicit directional checks and the ability to reverse direction.
+ * This facilitates expressive, clear, and maintainable trading logic in algorithms and analytics.
  *
  * @author Mariusz Bernacki
- *
  */
-public interface DirectionInformation {
+public interface DirectionInformation extends Directional {
 
     /**
-     * Verifies whether the directional state is neutral or off-market.
-     * 
-     * @return {@code true} if the direction is flat; {@code false} if it is either long or short
+     * Checks if the current directional state is neutral or off-market.
+     *
+     * @return {@code true} if direction is flat; {@code false} if biased (long or short)
      */
     default boolean isFlat() {
         return !isLong() && !isShort();
     }
 
     /**
-     * Indicates whether the direction is positively biased.
+     * Checks if the direction is positively biased (e.g., long).
      *
      * @return {@code true} if the direction is long; {@code false} otherwise.
      */
     boolean isLong();
 
     /**
-     * Indicates whether the direction is negatively biased.
+     * Checks if the direction is negatively biased (e.g., short).
      *
      * @return {@code true} if the direction is short; {@code false} otherwise.
      */
     boolean isShort();
 
     /**
-     * Unique numeric tag identifying the direction.
+     * Returns a new directional instance representing the opposite state.
+     * <p>
+     * For example, long becomes short, short becomes long, and flat remains flat.
      *
-     * @return the direction tag
-     */
-    int intValue();
-
-    /**
-     * Returns the inversed (or mirrored) directional state.
-     *
-     * @return the inverted direction
+     * @return the inverted directional state
      */
     DirectionInformation reversed();
-
 }
