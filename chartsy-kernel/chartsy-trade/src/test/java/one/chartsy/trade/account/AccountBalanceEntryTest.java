@@ -19,7 +19,7 @@ import static one.chartsy.time.Chronological.now;
 import static org.junit.jupiter.api.Assertions.*;
 
 class AccountBalanceEntryTest {
-    static final double EPSILON = 1e-13;
+    static final double EPSILON = 1E-13;
     static final double INITIAL_BALANCE = 1000.0;
     static final SymbolIdentity SYMBOL = SymbolIdentity.of("USD");
 
@@ -30,8 +30,8 @@ class AccountBalanceEntryTest {
         final double INITIAL_BALANCE = 1000.0;
         var newlyCreated = new AccountBalanceEntry(INITIAL_BALANCE);
 
-        assertEquals(INITIAL_BALANCE, newlyCreated.getInitialBalance());
-        assertEquals(INITIAL_BALANCE, newlyCreated.getBalance());
+        assertEquals(INITIAL_BALANCE, newlyCreated.getStartingBalance());
+        assertEquals(0, newlyCreated.getRealizedPnL());
         assertNull(newlyCreated.getPosition(SYMBOL), "Position is NULL");
     }
 
@@ -41,8 +41,8 @@ class AccountBalanceEntryTest {
 
         assertNotNull(holding.getPosition(SYMBOL), "Position is NOT NULL");
         assertEquals(Direction.LONG, holding.getPosition(SYMBOL).getDirection());
-        assertEquals(INITIAL_BALANCE, holding.getInitialBalance());
-        assertEquals(INITIAL_BALANCE, holding.getBalance());
+        assertEquals(INITIAL_BALANCE, holding.getStartingBalance());
+        assertEquals(0, holding.getRealizedPnL());
     }
 
     @Test
@@ -53,8 +53,8 @@ class AccountBalanceEntryTest {
         }));
         holding.onBarEvent(aBar(102.0)); // +4 unrealized profit
 
-        assertEquals(INITIAL_BALANCE, holding.getInitialBalance());
-        assertEquals(INITIAL_BALANCE, holding.getBalance());
+        assertEquals(INITIAL_BALANCE, holding.getStartingBalance());
+        assertEquals(0, holding.getRealizedPnL());
         assertEquals(4.0, holding.getUnrealizedPnL());
         var position = holding.getPosition(SYMBOL);
         assertEquals(100.0, position.getEntryPrice());
@@ -73,8 +73,8 @@ class AccountBalanceEntryTest {
             p.tradeQuantity(-2.0);
         })); // +8 realized profit
 
-        assertEquals(INITIAL_BALANCE, holding.getInitialBalance());
-        assertEquals(INITIAL_BALANCE + 8.0, holding.getBalance());
+        assertEquals(INITIAL_BALANCE, holding.getStartingBalance());
+        assertEquals(8.0, holding.getRealizedPnL());
         assertEquals(0.0, holding.getUnrealizedPnL());
         assertNull(holding.getPosition(SYMBOL), "Position is NULL");
     }
@@ -103,8 +103,8 @@ class AccountBalanceEntryTest {
         })); // +2 unrealized profit and scale-in
         holding.onBarEvent(aBar(110.0)); //  +10 + 16 unrealized profit
 
-        assertEquals(INITIAL_BALANCE, holding.getInitialBalance());
-        assertEquals(INITIAL_BALANCE, holding.getBalance());
+        assertEquals(INITIAL_BALANCE, holding.getStartingBalance());
+        assertEquals(0, holding.getRealizedPnL());
         assertEquals(26.0, holding.getUnrealizedPnL(), EPSILON);
     }
 
@@ -122,8 +122,8 @@ class AccountBalanceEntryTest {
         })); // +2 realized profit + 2 unrealized profit and scaled-out
         holding.onBarEvent(aBar(110.0)); //  +2 realized profit + 10 unrealized profit
 
-        assertEquals(INITIAL_BALANCE, holding.getInitialBalance());
-        assertEquals(INITIAL_BALANCE + 2.0, holding.getBalance());
+        assertEquals(INITIAL_BALANCE, holding.getStartingBalance());
+        assertEquals(2.0, holding.getRealizedPnL());
         assertEquals(10.0, holding.getUnrealizedPnL(), EPSILON);
     }
 
@@ -141,7 +141,7 @@ class AccountBalanceEntryTest {
         })); // +2 realized profit and reverse with doubling the position
         holding.onBarEvent(aBar(112.0)); //  +2 realized profit - 20 loss
 
-        assertEquals(INITIAL_BALANCE + 2.0, holding.getBalance(), EPSILON);
+        assertEquals(2.0, holding.getRealizedPnL(), EPSILON);
         assertEquals(-20.0, holding.getUnrealizedPnL(), EPSILON);
     }
 
@@ -158,7 +158,7 @@ class AccountBalanceEntryTest {
             p.tradeQuantity(4.0);
         })); // +40 realized profit + 60 unrealized profit
 
-        assertEquals(INITIAL_BALANCE + 40.0, holding.getBalance(), EPSILON);
+        assertEquals(40.0, holding.getRealizedPnL(), EPSILON);
         assertEquals(60.0, holding.getUnrealizedPnL(), EPSILON);
         assertNotNull(holding.getPosition(SYMBOL), "Position still open with reduced quantity");
         assertEquals(6.0, holding.getPosition(SYMBOL).getQuantity(), EPSILON);
@@ -171,8 +171,8 @@ class AccountBalanceEntryTest {
 
         assertNotNull(holding.getPosition(SYMBOL), "Position is NOT NULL");
         assertEquals(Direction.SHORT, holding.getPosition(SYMBOL).getDirection());
-        assertEquals(INITIAL_BALANCE, holding.getInitialBalance());
-        assertEquals(INITIAL_BALANCE, holding.getBalance());
+        assertEquals(INITIAL_BALANCE, holding.getStartingBalance());
+        assertEquals(0, holding.getRealizedPnL());
     }
 
     @Test
@@ -184,8 +184,8 @@ class AccountBalanceEntryTest {
         }));
         holding.onBarEvent(aBar(98.0));
 
-        assertEquals(INITIAL_BALANCE, holding.getInitialBalance());
-        assertEquals(INITIAL_BALANCE, holding.getBalance());
+        assertEquals(INITIAL_BALANCE, holding.getStartingBalance());
+        assertEquals(0, holding.getRealizedPnL());
         assertEquals(4.0, holding.getUnrealizedPnL());
         var position = holding.getPosition(SYMBOL);
         assertEquals(100.0, position.getEntryPrice());
@@ -207,8 +207,8 @@ class AccountBalanceEntryTest {
         })); // -2 realized loss - 2 unrealized loss and scaled-out
         holding.onBarEvent(aBar(110.0)); // -2 realized loss - 10 unrealized loss
 
-        assertEquals(INITIAL_BALANCE, holding.getInitialBalance());
-        assertEquals(INITIAL_BALANCE - 2.0, holding.getBalance());
+        assertEquals(INITIAL_BALANCE, holding.getStartingBalance());
+        assertEquals(-2.0, holding.getRealizedPnL());
         assertEquals(-10.0, holding.getUnrealizedPnL(), EPSILON);
     }
 
@@ -226,8 +226,8 @@ class AccountBalanceEntryTest {
             p.tradeQuantity(2.0);
         }));
 
-        assertEquals(INITIAL_BALANCE, holding.getInitialBalance());
-        assertEquals(INITIAL_BALANCE + 8.0, holding.getBalance());
+        assertEquals(INITIAL_BALANCE, holding.getStartingBalance());
+        assertEquals(8.0, holding.getRealizedPnL());
         assertEquals(0.0, holding.getUnrealizedPnL());
         assertNull(holding.getPosition(SYMBOL), "Position is NULL");
     }
@@ -247,7 +247,7 @@ class AccountBalanceEntryTest {
         })); // -2 realized loss
         holding.onBarEvent(aBar(112.0)); // -2 realized loss + 20 unrealized profit
 
-        assertEquals(INITIAL_BALANCE - 2.0, holding.getBalance(), EPSILON);
+        assertEquals(-2.0, holding.getRealizedPnL(), EPSILON);
         assertEquals(20.0, holding.getUnrealizedPnL(), EPSILON);
     }
 
@@ -266,7 +266,7 @@ class AccountBalanceEntryTest {
         })); // +2 realized profit
         holding.onBarEvent(aBar(88.0)); // +2 realized profit -20 unrealized loss
 
-        assertEquals(INITIAL_BALANCE + 2.0, holding.getBalance(), EPSILON);
+        assertEquals(2.0, holding.getRealizedPnL(), EPSILON);
         assertEquals(-20.0, holding.getUnrealizedPnL(), EPSILON);
     }
 
@@ -295,9 +295,9 @@ class AccountBalanceEntryTest {
         assertEquals(Direction.LONG, position.getDirection());
         assertEquals(newQuantity, position.getQuantity(), EPSILON);
         assertEquals(newPrice, position.getAveragePrice(), EPSILON);
-        assertEquals(expectedBalanceAfter, holding.getBalance(), EPSILON);
+        assertEquals(expectedBalanceAfter, holding.getEquity(), EPSILON);
         assertEquals(0.0, holding.getUnrealizedPnL(), EPSILON);
-        assertEquals(INITIAL_BALANCE + expectedRealizedProfit, holding.getBalance(), EPSILON);
+        assertEquals(expectedRealizedProfit, holding.getRealizedPnL(), EPSILON);
     }
 
     @ParameterizedTest(name = "{index} - Entering SHORT from {0}")
@@ -325,9 +325,9 @@ class AccountBalanceEntryTest {
         assertEquals(Direction.SHORT, position.getDirection());
         assertEquals(newQuantity, position.getQuantity(), EPSILON);
         assertEquals(newPrice, position.getAveragePrice(), EPSILON);
-        assertEquals(expectedBalanceAfter, holding.getBalance(), EPSILON);
+        assertEquals(expectedBalanceAfter, holding.getEquity(), EPSILON);
         assertEquals(0.0, holding.getUnrealizedPnL(), EPSILON);
-        assertEquals(INITIAL_BALANCE + expectedRealizedProfit, holding.getBalance(), EPSILON);
+        assertEquals(expectedRealizedProfit, holding.getRealizedPnL(), EPSILON);
     }
 
     @ParameterizedTest(name = "{index} - Exiting {0} position results in realized profit: {4}")
@@ -349,9 +349,9 @@ class AccountBalanceEntryTest {
         holding.exitPosition(SYMBOL, exitPrice, now() + 1);
 
         assertNull(holding.getPosition(SYMBOL), "Position should be fully exited");
-        assertEquals(expectedFinalBalance, holding.getBalance(), EPSILON);
+        assertEquals(expectedFinalBalance, holding.getEquity(), EPSILON);
         assertEquals(0.0, holding.getUnrealizedPnL(), EPSILON);
-        assertEquals(INITIAL_BALANCE + expectedRealizedProfit, holding.getBalance(), EPSILON);
+        assertEquals(expectedRealizedProfit, holding.getRealizedPnL(), EPSILON);
     }
     
     static TradeExecutionEvent aFill() {

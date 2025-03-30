@@ -3,56 +3,101 @@
  */
 package one.chartsy.trade.account;
 
+import one.chartsy.DirectionInformation;
 import one.chartsy.SymbolIdentity;
 import one.chartsy.api.messages.BarMessage;
 import one.chartsy.core.event.ListenerList;
 import one.chartsy.time.Chronological;
 import one.chartsy.trade.Direction;
-import one.chartsy.trade.Order;
 import one.chartsy.trade.event.PositionValueChangeListener;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Represents an account balance entry, tracking positions, PnL and equity for a single currency.
+ * This class acts as the core logic unit within an {@code Account} for handling trading activities.
+ * It maintains the state of open positions and recalculates equity based on market data.
+ *
+ * @author Mariusz Bernacki
+ */
 public class AccountBalanceEntry {
-    /** */
-    private static final double QUANTITY_EPSILON = 0.000001;
-    /** The initial account balance. */
-    private final double initialBalance;
-    /** The current account balance. */
-    private double balance;
-    /** The current profit of the account. */
+    /** A small value used for floating-point comparisons involving negligible quantities. */
+    private static final double QUANTITY_EPSILON = 0.000000005;
+    /** The starting/initial account capital. */
+    private final double startingBalance;
+    /** The current total realized profit/loss for the account. */
+    private double realizedPnL;
+    /** The current total unrealized profit/loss across all open positions. */
     private double unrealizedPnL;
-    /** The collection of traded instruments. */
+    /** The collection of currently open positions, mapped by symbol. */
     private final Map<SymbolIdentity, Position> instruments = new HashMap<>();
     /** The list of registered position value change listeners. */
     private final ListenerList<PositionValueChangeListener> positionValueChangeListeners = ListenerList.of(PositionValueChangeListener.class);
 
-    public AccountBalanceEntry(double initialBalance) {
-        this.balance = this.initialBalance = initialBalance;
+    public AccountBalanceEntry(double startingBalance) {
+        this.startingBalance = startingBalance;
     }
 
-    public double getInitialBalance() {
-        return initialBalance;
+    /**
+     * Gets the capital the account started with at a particular point in time.
+     *
+     * @return the starting/initial balance
+     */
+    public final double getStartingBalance() {
+        return startingBalance;
     }
 
-    public double getBalance() {
-        return balance;
+    /**
+     * Gets the current cash balance of the account.
+     * This is the running total of initial balance plus any {@link #getRealizedPnL() realized PnL}.
+     * It represents the liquid cash available, excluding any open (unrealized) profit or loss
+     * from positions not yet closed.
+     *
+     * @return the current cash balance
+     */
+    public final double getCashBalance() {
+        return startingBalance + realizedPnL;
     }
 
-    public double getUnrealizedPnL() {
+    /**
+     * Gets the running total of realized profits and losses from closed or scaled-out positions.
+     *
+     * @return the sum of profit/loss from closed positions
+     */
+    public final double getRealizedPnL() {
+        return realizedPnL;
+    }
+
+    /**
+     * Gets the running total of unrealized profits and losses from positions not yet closed.
+     *
+     * @return the sum of profit/loss from open positions
+     */
+    public final double getUnrealizedPnL() {
         return unrealizedPnL;
     }
 
-    public double getEquity() {
-        return getBalance() + getUnrealizedPnL();
+    /**
+     * Gives the total value of the account if all open positions were liquidated immediately.
+     *
+     * @return the current equity (or net liquidation value)
+     */
+    public final double getEquity() {
+        return getCashBalance() + getUnrealizedPnL();
     }
 
     public boolean hasPosition(SymbolIdentity symbol) {
         return instruments.containsKey(symbol);
     }
 
+    /**
+     * Returns the position associated with the given symbol, if one exists.
+     *
+     * @param symbol the symbol identity
+     * @return the position, or {@code null} if no position exists for the symbol
+     */
     public Position getPosition(SymbolIdentity symbol) {
         return instruments.get(symbol);
     }
@@ -69,7 +114,14 @@ public class AccountBalanceEntry {
         positionValueChangeListeners.fire().positionValueChanged(position);
     }
 
-    public void updateProfit(SymbolIdentity symbol, double marketPrice, long marketTime) {
+    /**
+     * Updates the unrealized PnL for a specific symbol based on the latest market price.
+     *
+     * @param symbol the symbol identity
+     * @param marketPrice the current market price
+     * @param marketTime the time of the market price update
+     */
+    public void updateMarketData(SymbolIdentity symbol, double marketPrice, long marketTime) {
         Position position = getPosition(symbol);
         if (position != null) {
             unrealizedPnL += position.updateProfit(marketPrice, marketTime);
@@ -77,10 +129,20 @@ public class AccountBalanceEntry {
         }
     }
 
+    /**
+     * Convenience method to update market data from a BarMessage.
+     *
+     * @param message the bar message containing symbol, price, and time info
+     */
     public void onBarEvent(BarMessage message) {
-        updateProfit(message.symbol(), message.bar().close(), message.getTime());
+        updateMarketData(message.symbol(), message.bar().close(), message.getTime());
     }
 
+    /**
+     * Processes a trade execution event, updating positions, balance, and PnL accordingly.
+     *
+     * @param event the trade execution event
+     */
     public void onOrderFill(TradeExecutionEvent event) {
         long tradeTime = event.getTime();
         Position position = getPosition(event.symbol());
@@ -88,32 +150,39 @@ public class AccountBalanceEntry {
         double tradeQuantity = event.tradeQuantity();
 
         if (position == null) {
-            Direction direction = !event.isBuy() ? Direction.SHORT : Direction.LONG;
+            Direction direction = event.isBuy() ? Direction.LONG : Direction.SHORT;
             position = new Position(this, event.symbol(), direction, tradeQuantity, tradePrice, tradeTime);
             openPosition(position, tradePrice, tradeTime);
         } else {
             double tradeQuantityDelta = tradeQuantity * (position.getDirection().isLong() == event.isBuy() ? 1 : -1);
             double oldQuantity = position.getQuantity();
             double newQuantity = oldQuantity + tradeQuantityDelta;
-            if (newQuantity < QUANTITY_EPSILON) {
+
+            if (newQuantity < -QUANTITY_EPSILON) { // Position reversal
                 closePosition(position, tradePrice, tradeTime);
-                if (Math.abs(newQuantity) < QUANTITY_EPSILON)
-                    return;
 
                 Direction direction = position.getDirection().reversed();
                 position = new Position(this, event.symbol(), direction, -newQuantity, tradePrice, tradeTime);
                 openPosition(position, tradePrice, tradeTime);
-            } else {
-                if (tradeQuantityDelta > 0) {
-                    double oldAvgPrice = position.getAveragePrice();
-                    double newAvgPrice = ((oldQuantity * oldAvgPrice) + (tradeQuantityDelta * tradePrice)) / newQuantity;
-                    position.setAveragePrice(newAvgPrice);
-                    position.setQuantity(newQuantity);
-                } else {
-                    scaleOutPosition(position, tradePrice, tradeTime, newQuantity);
-                }
+            } else if (newQuantity < QUANTITY_EPSILON) { // Position closed
+                closePosition(position, tradePrice, tradeTime);
+            } else if (tradeQuantityDelta < 0) { // Scale out
+                scaleOutPosition(position, tradePrice, tradeTime, newQuantity);
+            } else { // Scale in
+                scaleInPosition(position, tradePrice, tradeTime, newQuantity);
             }
         }
+    }
+
+    private void scaleInPosition(Position position, double tradePrice, long tradeTime, double newQuantity) {
+        double oldQuantity = position.getQuantity();
+        double oldQtyRatio = oldQuantity / newQuantity;
+        double oldAvgPrice = position.getAveragePrice();
+        double newAvgPrice = oldQtyRatio * oldAvgPrice + (1 - oldQtyRatio) * tradePrice;
+        position.setAveragePrice(newAvgPrice);
+        position.setQuantity(newQuantity);
+        unrealizedPnL += position.updateProfit(tradePrice, tradeTime);
+        firePositionValueChanged(position);
     }
 
     private void scaleOutPosition(Position position, double tradePrice, long tradeTime, double newQuantity) {
@@ -121,79 +190,86 @@ public class AccountBalanceEntry {
         position.setQuantity(newQuantity);
         double realizedProfit = -position.updateProfit(tradePrice, tradeTime);
         unrealizedPnL -= realizedProfit;
-        balance += realizedProfit;
+        realizedPnL += realizedProfit;
         firePositionValueChanged(position);
     }
 
     private void closePosition(Position position, double tradePrice, long tradeTime) {
         unrealizedPnL -= position.getProfit();
         position.updateProfit(tradePrice, tradeTime);
-        balance += position.getProfit() - position.getExtraCommission();
+        realizedPnL += position.getProfit() - position.getExtraCommission();
         instruments.remove(position.getSymbol());
         position.setClosed();
         firePositionValueChanged(position);
     }
 
-    protected void openPosition(Position position, double tradePrice, long tradeTime) {
+    private void openPosition(Position position, double tradePrice, long tradeTime) {
         instruments.put(position.getSymbol(), position);
         unrealizedPnL += position.updateProfit(tradePrice, tradeTime);
         firePositionValueChanged(position);
     }
 
-    public void enterLong(SymbolIdentity symbol, double tradeQuantity, double tradePrice, long tradeTime) {
-        closeOrReduceExistingPosition(symbol, tradeQuantity, tradePrice, tradeTime, Direction.LONG);
-        scalePosition(symbol, tradeQuantity, tradePrice, tradeTime, Order.Side.BUY);
+    public void enterLong(SymbolIdentity symbol, double desiredQuantity, double tradePrice, long tradeTime) {
+        enterPosition(symbol, Direction.LONG, desiredQuantity, tradePrice, tradeTime);
     }
 
-    public void enterShort(SymbolIdentity symbol, double tradeQuantity, double tradePrice, long tradeTime) {
-        closeOrReduceExistingPosition(symbol, tradeQuantity, tradePrice, tradeTime, Direction.SHORT);
-        scalePosition(symbol, tradeQuantity, tradePrice, tradeTime, Order.Side.SELL_SHORT);
+    public void enterShort(SymbolIdentity symbol, double desiredQuantity, double tradePrice, long tradeTime) {
+        enterPosition(symbol, Direction.SHORT, desiredQuantity, tradePrice, tradeTime);
     }
 
-    protected void closeOrReduceExistingPosition(SymbolIdentity symbol, double qty, double price, long time, Direction desired) {
-        Position pos = getPosition(symbol);
-        if (pos == null) return;
-        double currentQty = pos.getQuantity();
-        boolean opposite = pos.getDirection() != desired;
-        double closeQty = opposite ? currentQty : Math.max(0, currentQty - qty);
-        if (closeQty > QUANTITY_EPSILON) {
-            boolean isBuy = pos.getDirection().isShort();
-            onOrderFill(TradeExecutionEvent.builder()
-                    .time(time)
-                    .symbol(symbol)
-                    .side(isBuy ? Order.Side.BUY_TO_COVER : Order.Side.SELL)
-                    .tradePrice(price)
-                    .tradeQuantity(closeQty)
-                    .build());
-        }
-    }
-
-    protected void scalePosition(SymbolIdentity symbol, double qty, double price, long time, Order.Side side) {
-        Position pos = getPosition(symbol);
-        double existing = (pos != null) ? pos.getQuantity() : 0.0;
-        double needed = qty - existing;
-        if (needed > QUANTITY_EPSILON) {
-            onOrderFill(TradeExecutionEvent.builder()
-                    .time(time)
-                    .symbol(symbol)
-                    .side(side)
-                    .tradePrice(price)
-                    .tradeQuantity(needed)
-                    .build());
-        }
-    }
-
-    public void exitPosition(SymbolIdentity symbol, double tradePrice, long tradeTime) {
+    /**
+     * Exits any open position for the specified symbol.
+     *
+     * @param symbol    the symbol identity
+     * @param exitPrice the price at which to exit the position
+     * @param exitTime  the time at which the exit occurs
+     */
+    public void exitPosition(SymbolIdentity symbol, double exitPrice, long exitTime) {
         Position position = getPosition(symbol);
-        if (position != null) {
-            boolean isLong = position.getDirection().isLong();
-            onOrderFill(TradeExecutionEvent.builder()
-                    .symbol(symbol)
-                    .side(isLong ? Order.Side.SELL : Order.Side.BUY_TO_COVER)
-                    .tradePrice(tradePrice)
-                    .tradeQuantity(position.getQuantity())
-                    .time(tradeTime)
-                    .build());
+        if (position != null)
+            closePosition(position, exitPrice, exitTime);
+    }
+
+    /**
+     * Enters or modifies a position to match the desired quantity and direction.
+     *
+     * @param symbol           the symbol identity
+     * @param desiredDirection the target direction (LONG or SHORT)
+     * @param desiredQuantity  the target quantity for the position
+     * @param tradePrice       the price for any required trades
+     * @param tradeTime        the time for any required trades
+     * @throws IllegalArgumentException if {@code desiredQuantity} is negative, or
+     *                                  if {@code desiredDirection} is FLAT and {@code desiredQuantity} is non-zero.
+     */
+    public void enterPosition(SymbolIdentity symbol, DirectionInformation desiredDirection, double desiredQuantity, double tradePrice, long tradeTime) {
+        if (desiredQuantity < -QUANTITY_EPSILON)
+            throw new IllegalArgumentException("`desiredQuantity` must be non-negative but was " + desiredQuantity);
+        if (desiredDirection.isFlat() && desiredQuantity > QUANTITY_EPSILON)
+            throw new IllegalArgumentException("Cannot specify a non-zero desired quantity (" + desiredQuantity
+                    + ") with a FLAT direction. Use LONG or SHORT, or set quantity to 0 for FLAT.");
+
+        // Exit case: if desired quantity is effectively zero, exit any existing position.
+        if (desiredQuantity <= QUANTITY_EPSILON) {
+            exitPosition(symbol, tradePrice, tradeTime);
+            return;
+        }
+
+        // Proceed with entering or modifying the position.
+        Direction direction = desiredDirection.isLong() ? Direction.LONG : Direction.SHORT;
+        Position position = getPosition(symbol);
+        if (position == null || position.getDirection() != direction) {
+            if (position != null)
+                closePosition(position, tradePrice, tradeTime);
+            if (desiredQuantity > QUANTITY_EPSILON) {
+                Position newPosition = new Position(this, symbol, direction, desiredQuantity, tradePrice, tradeTime);
+                openPosition(newPosition, tradePrice, tradeTime);
+            }
+        } else {
+            double qtyDifference = desiredQuantity - position.getQuantity();
+            if (qtyDifference > QUANTITY_EPSILON)
+                scaleInPosition(position, tradePrice, tradeTime, desiredQuantity);
+            else if (qtyDifference < -QUANTITY_EPSILON)
+                scaleOutPosition(position, tradePrice, tradeTime, desiredQuantity);
         }
     }
 
@@ -204,9 +280,9 @@ public class AccountBalanceEntry {
         private final SymbolIdentity symbol;
         /** The position direction. */
         private final Direction direction;
-        /** The position open price in points. */
+        /** The position initial open price in points. */
         private final double entryPrice;
-        /** The position open time. */
+        /** The position initial open time. */
         private final long entryTime;
         /** The current quantity of this position. */
         private double quantity;
@@ -224,7 +300,7 @@ public class AccountBalanceEntry {
         private double maxFavorableExcursion;
         /** Measures the largest loss suffered by this position while it is open (negative number). */
         private double maxAdverseExcursion;
-        /** Indicates whether this position has been closed. */
+        /** Indicates if the position is fully closed. */
         private boolean closed;
 
         public Position(AccountBalanceEntry balanceEntry, SymbolIdentity symbol, Direction direction, double quantity, double entryPrice, long entryTime) {
@@ -232,8 +308,8 @@ public class AccountBalanceEntry {
             this.symbol = symbol;
             this.direction = direction;
             this.quantity = quantity;
-            this.entryPrice = this.averagePrice = entryPrice;
-            this.entryTime = entryTime;
+            this.marketPrice = this.entryPrice = this.averagePrice = entryPrice;
+            this.marketTime = this.entryTime = entryTime;
         }
 
         public AccountBalanceEntry getBalanceEntry() {
@@ -264,7 +340,7 @@ public class AccountBalanceEntry {
             return quantity;
         }
 
-        public void setQuantity(double quantity) {
+        protected void setQuantity(double quantity) {
             this.quantity = quantity;
         }
 
@@ -272,7 +348,7 @@ public class AccountBalanceEntry {
             return averagePrice;
         }
 
-        public void setAveragePrice(double averagePrice) {
+        protected void setAveragePrice(double averagePrice) {
             this.averagePrice = averagePrice;
         }
 
@@ -292,6 +368,11 @@ public class AccountBalanceEntry {
             return extraCommission;
         }
 
+        /**
+         * Gets the current unrealized profit/loss of the position based on the last known market price.
+         *
+         * @return the unrealized PnL
+         */
         public final double getProfit() {
             return profit;
         }
@@ -313,14 +394,14 @@ public class AccountBalanceEntry {
         }
 
         /**
-         * Calculates open position profit based on the given quotation and calculator.
+         * Calculates and updates the unrealized PnL based on the given market price.
+         * Also updates market price/time, MFE, and MAE.
          *
-         * @param marketPrice
-         *            the current marketPrice
-         * @param marketTime
-         *            the current time
+         * @param marketPrice the current market price
+         * @param marketTime  the current market time
+         * @return the <i>change</i> in unrealized PnL since the last update
          */
-        public double updateProfit(double marketPrice, long marketTime) {
+        protected double updateProfit(double marketPrice, long marketTime) {
             double delta = -profit;
             this.marketPrice = marketPrice;
             this.marketTime = marketTime;
