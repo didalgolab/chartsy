@@ -4,6 +4,7 @@
 package one.chartsy.simulation.reporting;
 
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
+import org.apache.commons.math3.stat.regression.SimpleRegression;
 
 /**
  * Collects and summarizes equity statistics (e.g., equity highs, lows, drawdowns, returns)
@@ -94,6 +95,10 @@ public class EquitySummaryStatistics {
     private long lastDay;
     /** The previous day's closing equity (for computing daily returns). */
     private double yesterdayClose;
+    /** The regression used to track correlation(time, equity). */
+    private final SimpleRegression timeEquityRegression = new SimpleRegression(true);
+    /** The regression used to track correlation(time, log(equity)). */
+    private final SimpleRegression timeLogEquityRegression = new SimpleRegression(true);
 
     /**
      * Constructs an {@code EquitySummaryStatistics} object initialized with the given equity.
@@ -125,6 +130,7 @@ public class EquitySummaryStatistics {
      *   <li>Ending equity</li>
      *   <li>Timestamp tracking for major events</li>
      *   <li>Daily return calculation for incremental Sharpe/Sortino ratio</li>
+     *   <li>Correlation regressions (time vs equity, time vs log(equity))</li>
      * </ul>
      *
      * @param equity the new equity value to add
@@ -139,6 +145,10 @@ public class EquitySummaryStatistics {
         maybeAddDailyReturn(time);
         dataPoints++;
         endingEquity = equity;
+        timeEquityRegression.addData(time, equity);
+        if (equity > 0.0) {
+            timeLogEquityRegression.addData(time, Math.log(equity));
+        }
         if (equity > totalEquityHigh) {
             totalEquityHigh = equity;
             totalEquityHighTime = time;
@@ -405,10 +415,30 @@ public class EquitySummaryStatistics {
     }
 
     /**
+     * Returns the correlation coefficient between time (nanoseconds) and the equity values.
+     * Uses standard Pearson correlation from a linear regression fit with intercept.
+     *
+     * @return correlation coefficient or {@code NaN} if fewer than 2 data points
+     */
+    public double getTimeEquityCorrelation() {
+        return (timeEquityRegression.getN() < 2) ? Double.NaN : timeEquityRegression.getR();
+    }
+
+    /**
+     * Returns the correlation coefficient between time (nanoseconds) and log(equity).
+     * If equity was ever 0.0, that data point is skipped due to undefined logarith.
+     *
+     * @return correlation coefficient or {@code NaN} if fewer than 2 data points
+     */
+    public double getTimeLogEquityCorrelation() {
+        return (timeLogEquityRegression.getN() < 2) ? Double.NaN : timeLogEquityRegression.getR();
+    }
+
+    /**
      * Returns a string representation of this statistics object, suitable for debugging.
      *
      * @return a string containing key metrics like starting equity, highest equity,
-     *         max drawdown, sharpe ratio, and so on
+     *         max drawdown, sharpe ratio, equity linearity, and so on
      */
     @Override
     public String toString() {
@@ -417,7 +447,8 @@ public class EquitySummaryStatistics {
                         "startingEquity=%.2f, totalEquityHigh=%.2f, totalEquityLow=%.2f, " +
                         "endingEquity=%.2f, maxDrawdown=%.2f, maxDrawdownPercent=%.2f, " +
                         "averageDrawdown=%.2f, averageDrawdownPercent=%.2f, dataPoints=%d, " +
-                        "annualSharpeRatio=%.4f, annualSortinoRatio=%.4f}",
+                        "annualSharpeRatio=%.4f, annualSortinoRatio=%.4f, " +
+                        "timeEquityCorrelation=%.4f}",
                 startingEquity,
                 totalEquityHigh,
                 totalEquityLow,
@@ -428,7 +459,8 @@ public class EquitySummaryStatistics {
                 getAverageDrawdownPercent(),
                 dataPoints,
                 getAnnualSharpeRatio(),
-                getAnnualSortinoRatio()
+                getAnnualSortinoRatio(),
+                Math.max(getTimeEquityCorrelation(), getTimeLogEquityCorrelation())
         );
     }
 }

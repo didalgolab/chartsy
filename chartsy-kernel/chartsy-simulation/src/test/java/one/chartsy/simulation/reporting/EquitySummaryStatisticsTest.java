@@ -45,6 +45,30 @@ class EquitySummaryStatisticsTest {
         );
     }
 
+    @Test
+    void getTimeEquityCorrelation_gives_maximum_correlation_when_equity_grows_linearly_over_time() {
+        var stats = aStatistics(100, 110, 120, 130, 140);
+
+        assertEquals(1.0, stats.getTimeEquityCorrelation());
+        assertEquals(0.9993551143064855, stats.getTimeLogEquityCorrelation());
+    }
+
+    @Test
+    void getTimeEquityCorrelation_gives_maximum_correlation_when_equity_grows_exponentially_over_time() {
+        var stats = aStatistics(100, 200, 400, 800);
+
+        assertEquals(0.9819805060619657, stats.getTimeEquityCorrelation());
+        assertEquals(1.0, stats.getTimeLogEquityCorrelation());
+    }
+
+    @Test
+    void getTimeEquityCorrelation_gives_minimum_correlation_when_equity_decreases_linearly_over_time() {
+        var stats = aStatistics(130, 120, 110, 100);
+
+        assertEquals(-1.0, stats.getTimeEquityCorrelation());
+        assertEquals(-0.9996548731684168, stats.getTimeLogEquityCorrelation());
+    }
+
     static EquitySummaryStatistics aStatistics(double startingBalance, double... values) {
         var stats = new EquitySummaryStatistics(startingBalance, 0.0);
         int dayNumber = 1;
