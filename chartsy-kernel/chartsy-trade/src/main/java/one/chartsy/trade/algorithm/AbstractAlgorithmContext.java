@@ -15,6 +15,11 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.zip.GZIPOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -24,6 +29,10 @@ import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 
 public abstract class AbstractAlgorithmContext implements AlgorithmContext {
+
+    private static final Pattern PLACEHOLDER_PATTERN =
+            Pattern.compile("\\$\\{(now\\?([^}]+)|uuid)}");
+
     private final ListenerList<ShutdownResponseHandler> shutdownResponseHandlers = ListenerList.of(ShutdownResponseHandler.class);
     private final String name;
     private volatile boolean shutdown;
@@ -57,6 +66,12 @@ public abstract class AbstractAlgorithmContext implements AlgorithmContext {
     @Override
     public final boolean isShutdown() {
         return shutdown;
+    }
+
+    @Override
+    public <T> MessageChannel<T> createOutputChannel(String filePath, Class<T> messageType) {
+        String resolvedPath = expandPlaceholders(filePath);
+        return createOutputChannel(Path.of(resolvedPath), messageType);
     }
 
     @Override
@@ -112,5 +127,42 @@ public abstract class AbstractAlgorithmContext implements AlgorithmContext {
         } else {
             return Files.newBufferedWriter(path, UTF_8, CREATE, TRUNCATE_EXISTING);
         }
+    }
+
+    /**
+     * Expand supported placeholders in the given file path.
+     * Currently supports:
+     *   - ${now?pattern} for timestamp insertion
+     *   - ${uuid} for a random UUID insertion
+     */
+    protected String expandPlaceholders(String path) {
+        if (path == null || !path.contains("${"))
+            return path;
+
+        Matcher matcher = PLACEHOLDER_PATTERN.matcher(path);
+        StringBuilder result = new StringBuilder();
+        LocalDateTime now = null;
+
+        while (matcher.find()) {
+            String replacement;
+            String placeholder = matcher.group(1);
+
+            if (placeholder.startsWith("now?")) {
+                if (now == null) {
+                    now = LocalDateTime.now(); // capture once
+                }
+                String pattern = matcher.group(2);
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern(pattern);
+                replacement = now.format(formatter);
+            } else if ("uuid".equals(placeholder)) {
+                replacement = UUID.randomUUID().toString();
+            } else {
+                replacement = matcher.group(); // unhandled placeholder, leave unchanged
+            }
+
+            matcher.appendReplacement(result, Matcher.quoteReplacement(replacement));
+        }
+        matcher.appendTail(result);
+        return result.toString();
     }
 }
