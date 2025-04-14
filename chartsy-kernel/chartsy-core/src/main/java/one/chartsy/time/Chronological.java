@@ -220,16 +220,6 @@ public interface Chronological extends Comparable<Chronological> {
     }
 
     /**
-     * Checks if this chronological is before the specified time.
-     *
-     * @param other the other chronological event to compare to, not null
-     * @return {@code true} if and only if {@code this.getTime() < other.getTime()}
-     */
-    default boolean isBefore(Chronological other) {
-        return getTime() < other.getTime();
-    }
-
-    /**
      * Checks if this chronological is after the specified local date-time.
      * The comparison is performed by converting the given {@code LocalDateTime}
      * to epoch nanoseconds assuming UTC via {@link #toEpochNanos(LocalDateTime)}.
@@ -241,6 +231,16 @@ public interface Chronological extends Comparable<Chronological> {
      */
     default boolean isAfter(LocalDateTime dateTime) {
         return getTime() > Chronological.toEpochNanos(dateTime);
+    }
+
+    /**
+     * Checks if this chronological is before the specified time.
+     *
+     * @param other the other chronological event to compare to, not null
+     * @return {@code true} if and only if {@code this.getTime() < other.getTime()}
+     */
+    default boolean isBefore(Chronological other) {
+        return getTime() < other.getTime();
     }
 
     /**

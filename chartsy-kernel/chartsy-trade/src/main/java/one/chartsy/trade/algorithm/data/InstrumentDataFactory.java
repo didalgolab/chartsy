@@ -17,7 +17,7 @@ public interface InstrumentDataFactory<T extends InstrumentData> {
      * Creates a new instance of InstrumentData for the given instrument symbol.
      *
      * @param symbol the instrument's symbol
-     * @return a newly created instance of {@code I}
+     * @return a newly created instance of {@code T}
      */
     T create(SymbolIdentity symbol);
 }

@@ -12,12 +12,9 @@ import one.chartsy.messaging.MarketMessageHandler;
  * This interface provides the essential properties for an instrument, such as its symbol and type.
  * Implementations of this interface are used to hold state and indicators for trading algorithms,
  * and they are expected to process market messages and instrument update events.
- * </p>
- *
  * <p>
  * Implementations of {@code InstrumentData} must provide fast access to its identifying properties,
  * as these are used frequently within performance-sensitive trading loops.
- * </p>
  *
  * @see MarketMessageHandler
  * @see InstrumentUpdateHandler

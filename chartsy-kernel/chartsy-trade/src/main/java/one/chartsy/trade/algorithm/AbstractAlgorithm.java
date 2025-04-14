@@ -17,6 +17,8 @@ import one.chartsy.trade.algorithm.data.MarketDataProcessor;
 import one.chartsy.trade.algorithm.data.RankingPostProcessor;
 import one.chartsy.trade.algorithm.data.RankingStrategy;
 import one.chartsy.trade.algorithm.data.RankingStrategy.RankingOrder;
+import org.springframework.beans.PropertyAccessor;
+import org.springframework.beans.PropertyAccessorFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,6 +29,7 @@ public abstract class AbstractAlgorithm<I extends InstrumentData> implements Alg
     protected final String name;
     protected final MarketDataProcessor<I> marketDataProcessor;
     protected final List<InstrumentRanker<I>> rankers = new ArrayList<>();
+    private PropertyAccessor propertyAccessor;
     private final DateChangeSignal dateChange = DateChangeSignal.create();
 
 
@@ -42,6 +45,13 @@ public abstract class AbstractAlgorithm<I extends InstrumentData> implements Alg
 
     public final Clock clock() {
         return context.getClock();
+    }
+
+    protected PropertyAccessor getPropertyAccessor() {
+        if (propertyAccessor == null) {
+            propertyAccessor = PropertyAccessorFactory.forDirectFieldAccess(this);
+        }
+        return propertyAccessor;
     }
 
     @Override

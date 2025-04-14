@@ -25,10 +25,8 @@ import one.chartsy.time.Chronological;
  * Implementations extend {@code MarketEvent} to include specific attributes relevant to their
  * domain (such as price levels, volumes, indicators, sentiment scores, or order book snapshots).
  * The generality of this interface allows uniform handling of diverse market events within the
- * processing pipeline.
- * <p>
- * {@code MarketEvent} objects are consumed sequentially by {@link MarketMessageHandler} implementations,
- * forming the basis for strategies, analytical modules, and real-time decision-making components.
+ * processing pipeline. {@code MarketEvent}'s are consumed sequentially by {@link MarketMessageHandler}
+ * implementations, forming the basis for strategies, analytical modules, and real-time decision-making.
  *
  * @see Chronological
  * @see SymbolIdentity

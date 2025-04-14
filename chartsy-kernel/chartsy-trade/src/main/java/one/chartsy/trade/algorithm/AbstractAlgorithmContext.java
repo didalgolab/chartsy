@@ -9,6 +9,8 @@ import one.chartsy.data.stream.MessageChannel;
 import one.chartsy.data.stream.MessageChannelException;
 import one.chartsy.kernel.data.stream.csv.CsvResourceMessageChannel;
 import one.chartsy.kernel.data.stream.json.JsonlResourceMessageChannel;
+import org.springframework.beans.InvalidPropertyException;
+import org.springframework.beans.PropertyAccessor;
 
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -31,7 +33,7 @@ import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 public abstract class AbstractAlgorithmContext implements AlgorithmContext {
 
     private static final Pattern PLACEHOLDER_PATTERN =
-            Pattern.compile("\\$\\{(now\\?([^}]+)|uuid)}");
+            Pattern.compile("\\$\\{(now\\?([^}]+)|uuid|[^}]+)}");
 
     private final ListenerList<ShutdownResponseHandler> shutdownResponseHandlers = ListenerList.of(ShutdownResponseHandler.class);
     private final String name;
@@ -69,8 +71,9 @@ public abstract class AbstractAlgorithmContext implements AlgorithmContext {
     }
 
     @Override
-    public <T> MessageChannel<T> createOutputChannel(String filePath, Class<T> messageType) {
-        String resolvedPath = expandPlaceholders(filePath);
+    public <T> MessageChannel<T> createOutputChannel(String filePath, Class<T> messageType,
+                                                     PropertyAccessor propertyAccessor) {
+        String resolvedPath = expandPlaceholders(filePath, propertyAccessor);
         return createOutputChannel(Path.of(resolvedPath), messageType);
     }
 
@@ -130,12 +133,16 @@ public abstract class AbstractAlgorithmContext implements AlgorithmContext {
     }
 
     /**
-     * Expand supported placeholders in the given file path.
-     * Currently supports:
-     *   - ${now?pattern} for timestamp insertion
-     *   - ${uuid} for a random UUID insertion
+     * Expand supported placeholders in the given file path. Currently supports:
+     *   - ${now?pattern} => inserts a timestamp
+     *   - ${uuid}        => inserts a random UUID
+     *   - ${any.other}   => attempts to read 'any.other' from the provided PropertyAccessor (if not null)
+     *
+     * @param path the original file path that may contain placeholders
+     * @param propertyAccessor optional accessor for reading property values
+     * @return the path with placeholders expanded
      */
-    protected String expandPlaceholders(String path) {
+    protected String expandPlaceholders(String path, PropertyAccessor propertyAccessor) {
         if (path == null || !path.contains("${"))
             return path;
 
@@ -156,10 +163,16 @@ public abstract class AbstractAlgorithmContext implements AlgorithmContext {
                 replacement = now.format(formatter);
             } else if ("uuid".equals(placeholder)) {
                 replacement = UUID.randomUUID().toString();
+            } else if (propertyAccessor != null) {
+                try {
+                    Object value = propertyAccessor.getPropertyValue(placeholder);
+                    replacement = (value == null ? "" : value.toString());
+                } catch (InvalidPropertyException e) {
+                    replacement = matcher.group();
+                }
             } else {
                 replacement = matcher.group(); // unhandled placeholder, leave unchanged
             }
-
             matcher.appendReplacement(result, Matcher.quoteReplacement(replacement));
         }
         matcher.appendTail(result);

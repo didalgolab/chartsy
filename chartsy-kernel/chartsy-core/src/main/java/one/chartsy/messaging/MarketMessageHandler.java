@@ -18,9 +18,6 @@ package one.chartsy.messaging;
  *     <li>Generating trading decisions or alerts based on processed data</li>
  * </ul>
  *
- * This design encourages a clear separation between the market-data ingestion layer (e.g., {@code MarketSupplier})
- * and strategy execution logic, allowing each handler to remain focused solely on event-processing concerns.
- *
  * @see MarketEvent
  */
 public interface MarketMessageHandler {
