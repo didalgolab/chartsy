@@ -13,7 +13,7 @@ import one.chartsy.SymbolIdentity;
  */
 public abstract class AbstractInstrumentData implements InstrumentData {
     /** The unique identity of the instrument. */
-    private final SymbolIdentity symbol;
+    protected final SymbolIdentity symbol;
 
     protected AbstractInstrumentData(SymbolIdentity symbol) {
         this.symbol = symbol;

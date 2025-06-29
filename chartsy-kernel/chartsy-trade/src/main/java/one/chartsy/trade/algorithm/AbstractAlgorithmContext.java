@@ -71,14 +71,10 @@ public abstract class AbstractAlgorithmContext implements AlgorithmContext {
     }
 
     @Override
-    public <T> MessageChannel<T> createOutputChannel(String filePath, Class<T> messageType,
+    public <T> MessageChannel<T> createOutputChannel(String channelId, Class<T> messageType,
                                                      PropertyAccessor propertyAccessor) {
-        String resolvedPath = expandPlaceholders(filePath, propertyAccessor);
-        return createOutputChannel(Path.of(resolvedPath), messageType);
-    }
-
-    @Override
-    public <T> MessageChannel<T> createOutputChannel(Path path, Class<T> messageType) {
+        String resolvedPath = expandPlaceholders(channelId, propertyAccessor);
+        Path path = Path.of(resolvedPath);
         var baseFileName = getBaseFileName(path);
         try {
             var writer = createWriter(path);

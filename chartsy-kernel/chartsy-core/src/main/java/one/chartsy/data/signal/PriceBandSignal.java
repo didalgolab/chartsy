@@ -260,6 +260,20 @@ public final class PriceBandSignal {
     }
 
     /**
+     * Convenience method to arm the signal with symmetric bands around an entry price.
+     * Both lower and upper distances are set to {@code entryDistance}.
+     *
+     * <p>Equivalent to: {@code armAroundEntry(entryPrice, entryDistance, entryDistance)}
+     *
+     * @param entryPrice the reference entry price
+     * @param entryDistance the positive distance above and below the entry price for the bands
+     * @throws IllegalArgumentException if {@code entryDistance <= 0}
+     */
+    public void armAroundEntry(double entryPrice, double entryDistance) {
+        armAroundEntry(entryPrice, entryDistance, entryDistance);
+    }
+
+    /**
      * Disarms the signal, making it inactive.
      * {@link #poll(Candle)} will have no effect while disarmed.
      * Triggered flags are NOT reset by this method.
