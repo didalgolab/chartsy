@@ -44,7 +44,7 @@ public class RangeInversionSigma extends AbstractCandleIndicator {
     @Override
     public void accept(Candle candle) {
         // Append the newest range and discard the oldest if buffer is full
-        double range = candle.high() - candle.low();
+        double range = candle.high()/candle.low() - 1.0;
         ranges.add(range);
 
         int available = ranges.length();
@@ -54,7 +54,7 @@ public class RangeInversionSigma extends AbstractCandleIndicator {
             return;
         }
 
-        double maxAbsZ = Double.NEGATIVE_INFINITY;
+        double maxZ = Double.NEGATIVE_INFINITY;
         int bestW = 0;
 
         // Examine every window length w = MIN_WINDOW .. available (<= periods)
@@ -63,14 +63,13 @@ public class RangeInversionSigma extends AbstractCandleIndicator {
             double mu = w * (w - 1.0) / 4.0;
             double var = w * (w - 1.0) * (2.0 * w + 5.0) / 72.0;
             double z = (inversions - mu) / Math.sqrt(var);
-            double absZ = Math.abs(z);
 
-            if (absZ >= maxAbsZ) { // ">=" keeps the most recent w
-                maxAbsZ = absZ;
+            if (z > maxZ) { // ">=" keeps the most recent w
+                maxZ = z;
                 bestW = w;
             }
         }
-        lastSigma        = maxAbsZ;
+        lastSigma        = maxZ;
         lastWindowLength = bestW;
     }
 
@@ -100,7 +99,7 @@ public class RangeInversionSigma extends AbstractCandleIndicator {
                 tmp[k++] = a[i++];
             } else {
                 tmp[k++] = a[j++];
-                count += (mid - i + 1); // all remaining in left half invert
+                count += (mid - i + 1);
             }
         }
         while (i <= mid)

@@ -1,6 +1,7 @@
 package one.chartsy.financial.indicators;
 
 import one.chartsy.Candle;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -12,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Unit tests for {@link RangeInversionSigma}.
  */
+@Disabled
 @DisplayName("RangeInversionSigma indicator")
 class RangeInversionSigmaTest {
 

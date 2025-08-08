@@ -13,9 +13,9 @@ import one.chartsy.DirectionInformation;
 public enum Direction implements DirectionInformation {
     /** Represents off the market position. */
     FLAT(0),
-    /** Represents a long position. */
+    /** Represents a long position, expecting price appreciation. */
     LONG(1),
-    /** Represents a short position. */
+    /** Represents a short position, expecting price depreciation. */
     SHORT(-1);
     
     /** Internally used unique tag number of the direction constant. */
