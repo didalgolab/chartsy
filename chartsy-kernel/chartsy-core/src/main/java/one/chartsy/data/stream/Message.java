@@ -10,18 +10,19 @@ package one.chartsy.data.stream;
 public interface Message {
 
     /**
-     * Returns the message type.
-     *
-     * @return the message type
-     */
-    MessageType type();
-
-    /**
      * Returns the timestamp of the message, typically representing the time the
      * message was created or received. The time is expressed as a long value,
-     * usually in milliseconds since the Unix epoch.
+     * in nanoseconds since the epoch.
      *
      * @return the timestamp of the message
      */
     long time();
+
+    default String sourceId() {
+        return null;
+    }
+
+    default String destinationId() {
+        return null;
+    }
 }

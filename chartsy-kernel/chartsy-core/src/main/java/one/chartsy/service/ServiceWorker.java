@@ -3,7 +3,7 @@
  */
 package one.chartsy.service;
 
-public abstract class ServiceWorker<T extends ManageableService> {
+public abstract class ServiceWorker<T extends Service> {
 
     protected final T service;
     protected final ServiceWorkerAware workerAware;

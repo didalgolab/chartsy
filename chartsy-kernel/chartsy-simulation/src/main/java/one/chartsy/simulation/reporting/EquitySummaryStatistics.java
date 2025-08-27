@@ -3,8 +3,11 @@
  */
 package one.chartsy.simulation.reporting;
 
+import one.chartsy.time.Chronological;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.apache.commons.math3.stat.regression.SimpleRegression;
+
+import java.time.Instant;
 
 /**
  * Collects and summarizes equity statistics (e.g., equity highs, lows, drawdowns, returns)
@@ -56,9 +59,14 @@ import org.apache.commons.math3.stat.regression.SimpleRegression;
  */
 public class EquitySummaryStatistics {
     private static final long NANOS_PER_DAY = 86_400_000_000_000L;
+    private static final double DAYS_PER_YEAR = 365.2425;
 
     /** The initial equity value when tracking started. */
     private final double startingEquity;
+    /** The start time of the statistics period (in nanoseconds since epoch). */
+    private long startTime = Long.MIN_VALUE;
+    /** The end time of the statistics period (in nanoseconds since epoch). */
+    private long endTime = Long.MIN_VALUE;
     /** The annualized risk-free rate (e.g., 0.01 for 1%). */
     private final double annualRiskFreeRate;
     /** The highest equity value reached in the data points. */
@@ -141,6 +149,11 @@ public class EquitySummaryStatistics {
         if (equity < 0) {
             throw new IllegalArgumentException("Equity cannot be negative: " + equity);
         }
+        if (startTime == Long.MIN_VALUE) {
+            startTime = time;
+        }
+        endTime = Math.max(endTime, time);
+
         // If we've crossed into a new day, compute daily return.
         maybeAddDailyReturn(time);
         dataPoints++;
@@ -176,22 +189,26 @@ public class EquitySummaryStatistics {
 
     private void maybeAddDailyReturn(long time) {
         long currentDay = time / NANOS_PER_DAY;
-        if (lastDay == 0) {
+        if (lastDay == 0) { // first data point
             lastDay = currentDay;
             return;
         }
 
         if (currentDay > lastDay) {
             double dailyReturn = getLastDayReturn();
-            dailyReturnStats.addValue(dailyReturn);
-            double dailyRf = annualRiskFreeRate / 252.0;
-            double diff = dailyRf - dailyReturn;
-            if (diff > 0.0) {
-                dailyDownsideSumOfSquares += diff * diff;
-            }
-            lastDay = currentDay;
-            yesterdayClose = endingEquity;
+            pushDailyReturn(dailyReturn, currentDay);
         }
+    }
+
+    private void pushDailyReturn(double dailyReturn, long currentDay) {
+        dailyReturnStats.addValue(dailyReturn);
+        double dailyRf = annualRiskFreeRate / 252.0;
+        double diff = dailyRf - dailyReturn;
+        if (diff > 0.0) {
+            dailyDownsideSumOfSquares += diff * diff;
+        }
+        lastDay = currentDay;
+        yesterdayClose = endingEquity;
     }
 
     /**
@@ -201,6 +218,46 @@ public class EquitySummaryStatistics {
      */
     public double getLastDayReturn() {
         return (endingEquity - yesterdayClose) / yesterdayClose;
+    }
+
+    public Instant getStartTime() {
+        return Chronological.toInstant(startTime);
+    }
+
+    public Instant getEndTime() {
+        return Chronological.toInstant(endTime);
+    }
+
+    public double getYearsElapsed() {
+        if (startTime == Long.MIN_VALUE || endTime == Long.MIN_VALUE)
+            return Double.NaN;
+
+        double days = (endTime - startTime) / (double)NANOS_PER_DAY;
+        return days / DAYS_PER_YEAR;
+    }
+
+    public double getCAGR() {
+        double years = getYearsElapsed();
+        if (Double.isNaN(years) || years <= 0.0)
+            return Double.NaN;
+        if (startingEquity <= 0.0 || endingEquity <= 0.0)
+            return Double.NaN;
+
+        return Math.pow(endingEquity / startingEquity, 1.0 / years) - 1.0;
+    }
+
+    public double getAnnualizedVolatility() {
+        if (dailyReturnStats.getN() < 2)
+            return Double.NaN;
+
+        return Math.sqrt(252.0) * dailyReturnStats.getStandardDeviation();
+    }
+
+    public double getCalmarRatio() {
+        if (maxDrawdownPercent <= 0.0)
+            return Double.NaN;
+
+        return getCAGR() / maxDrawdownPercent;
     }
 
     /**
@@ -365,10 +422,10 @@ public class EquitySummaryStatistics {
      * @return the annual Sharpe ratio, or {@code Double.NaN} if insufficient data
      */
     public double getAnnualSharpeRatio() {
-        if (dailyReturnStats.getN() < 1) {
+        long n = dailyReturnStats.getN();
+        if (n < 1) {
             return Double.NaN;
         }
-        long n = dailyReturnStats.getN();
         double oldMean = dailyReturnStats.getMean();
         double oldVariance = dailyReturnStats.getVariance();
         double lastDayReturn = getLastDayReturn();

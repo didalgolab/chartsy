@@ -5,10 +5,11 @@ package one.chartsy.trade.account;
 
 import one.chartsy.DirectionInformation;
 import one.chartsy.SymbolIdentity;
-import one.chartsy.api.messages.BarMessage;
+import one.chartsy.api.messages.TradeBar;
 import one.chartsy.core.event.ListenerList;
 import one.chartsy.time.Chronological;
 import one.chartsy.trade.Direction;
+import one.chartsy.trade.OrderTrade;
 import one.chartsy.trade.event.PositionValueChangeListener;
 
 import java.time.LocalDateTime;
@@ -134,8 +135,8 @@ public class AccountBalanceEntry {
      *
      * @param message the bar message containing symbol, price, and time info
      */
-    public void onBarEvent(BarMessage message) {
-        updateMarketData(message.symbol(), message.bar().close(), message.getTime());
+    public void onBarEvent(TradeBar message) {
+        updateMarketData(message.symbol(), message.get().close(), message.getTime());
     }
 
     /**
@@ -143,7 +144,7 @@ public class AccountBalanceEntry {
      *
      * @param event the trade execution event
      */
-    public void onOrderFill(TradeExecutionEvent event) {
+    public void onOrderFill(OrderTrade event) {
         long tradeTime = event.getTime();
         Position position = getPosition(event.symbol());
         double tradePrice = event.tradePrice();

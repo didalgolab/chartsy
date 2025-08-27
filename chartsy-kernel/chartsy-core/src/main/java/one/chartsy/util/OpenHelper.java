@@ -3,7 +3,7 @@
  */
 package one.chartsy.util;
 
-import one.chartsy.Manageable;
+import one.chartsy.Openable;
 
 /**
  * Utility class for safely opening Manageable resources.
@@ -34,9 +34,9 @@ public final class OpenHelper {
      *
      * @param resources the {@code Manageable} resources to open
      */
-    public static void open(Manageable... resources) {
+    public static void open(Openable... resources) {
         if (resources != null) {
-            for (Manageable resource : resources) {
+            for (Openable resource : resources) {
                 open(resource);
             }
         }
@@ -47,7 +47,7 @@ public final class OpenHelper {
      *
      * @param resource the {@code Manageable} resource to open, may be null
      */
-    public static void open(Manageable resource) {
+    public static void open(Openable resource) {
         if (resource != null) {
             resource.open();
         }

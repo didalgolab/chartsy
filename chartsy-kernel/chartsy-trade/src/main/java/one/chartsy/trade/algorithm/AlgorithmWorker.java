@@ -8,10 +8,12 @@ import one.chartsy.service.QueuedServiceWorker;
 
 public class AlgorithmWorker extends QueuedServiceWorker<Algorithm> {
 
-    private final Algorithm algorithm;
-    private final AlgorithmInvoker invoker;
-    private final MessageBuffer queue;
-    private final MarketSupplier marketSupplier;
+    public static final int DEFAULT_POLL_LIMIT = Integer.getInteger("algorithm.poll.limit", 1024);
+
+    protected final Algorithm algorithm;
+    protected final AlgorithmInvoker invoker;
+    protected final MessageBuffer queue;
+    protected final MarketSupplier marketSupplier;
 
     public AlgorithmWorker(Algorithm algorithm, MessageBuffer queue, MarketSupplier marketSupplier) {
         super(algorithm, queue, new AlgorithmInvoker(algorithm), 1024);
@@ -38,9 +40,13 @@ public class AlgorithmWorker extends QueuedServiceWorker<Algorithm> {
 
     @Override
     public int doWorkUnit(int workDone) {
-        int work = marketSupplier.poll(invoker.getMarketMessageHandler(), 1024);
+        int work = supplyMarketData(workDone);
 
         work += super.doWorkUnit(workDone);
         return work;
+    }
+
+    protected int supplyMarketData(int workDone) {
+        return marketSupplier.poll(invoker.getMarketMessageHandler(), DEFAULT_POLL_LIMIT);
     }
 }

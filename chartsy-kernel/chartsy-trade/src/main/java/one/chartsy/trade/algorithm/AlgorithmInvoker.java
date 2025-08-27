@@ -4,7 +4,11 @@
 package one.chartsy.trade.algorithm;
 
 import lombok.Getter;
-import one.chartsy.Manageable;
+import one.chartsy.Openable;
+import one.chartsy.api.messages.ShutdownRequest;
+import one.chartsy.api.messages.ShutdownResponse;
+import one.chartsy.api.messages.handlers.ShutdownRequestHandler;
+import one.chartsy.api.messages.handlers.ShutdownResponseHandler;
 import one.chartsy.core.event.AbstractInvoker;
 import one.chartsy.data.stream.Message;
 import one.chartsy.data.stream.MessageHandler;
@@ -13,7 +17,7 @@ import one.chartsy.messaging.MarketMessageHandler;
 @Getter
 public class AlgorithmInvoker extends AbstractInvoker implements MessageHandler {
 
-    private final Manageable manageableHandler = getHandler(Manageable.class);
+    private final Openable manageableHandler = getHandler(Openable.class);
     private final MarketMessageHandler marketMessageHandler = getHandler(MarketMessageHandler.class);
 
     public AlgorithmInvoker(Algorithm algorithm) {
@@ -21,11 +25,11 @@ public class AlgorithmInvoker extends AbstractInvoker implements MessageHandler 
     }
 
     @Override
-    public void handleMessage(Message msg) {
-        var msgType = msg.type();
-        var handler = getHandler(msgType.handlerType());
-        if (handler != null) {
-            msgType.handlerFunction().accept(handler, msg);
+    public void handleMessage(Message message) {
+        switch (message) {
+            case ShutdownRequest sr -> getHandler(ShutdownRequestHandler.class).onShutdownRequest(sr);
+            case ShutdownResponse sr -> getHandler(ShutdownResponseHandler.class).onShutdownResponse(sr);
+            default -> { }
         }
     }
 }

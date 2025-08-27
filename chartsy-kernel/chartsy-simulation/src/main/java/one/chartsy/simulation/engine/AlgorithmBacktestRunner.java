@@ -3,12 +3,21 @@
  */
 package one.chartsy.simulation.engine;
 
-import one.chartsy.data.stream.ArrayBlockingQueueMessageBuffer;
+import one.chartsy.data.stream.QueuedMessageBuffer;
+import one.chartsy.simulation.engine.price.PlaybackMarketPriceService;
+import one.chartsy.simulation.reporting.BacktestReport;
 import one.chartsy.simulation.time.PlaybackClock;
+import one.chartsy.time.Chronological;
 import one.chartsy.trade.algorithm.Algorithm;
 import one.chartsy.trade.algorithm.AlgorithmFactory;
 import one.chartsy.trade.algorithm.AlgorithmWorker;
-import one.chartsy.trade.algorithm.StandardAlgorithmContext;
+import one.chartsy.trade.algorithm.DefaultAlgorithmContext;
+import one.chartsy.trade.service.AlgorithmEngine;
+import one.chartsy.trade.service.connector.TradeConnectorContext;
+import one.chartsy.trade.service.connector.TradeConnectorProxy;
+
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Executes an algorithm backtest by orchestrating market data flow, algorithm execution, and performance tracking.
@@ -39,6 +48,8 @@ import one.chartsy.trade.algorithm.StandardAlgorithmContext;
  */
 public class AlgorithmBacktestRunner {
 
+    private static final AtomicInteger runNumber = new AtomicInteger();
+
     /**
      * Runs the specified trading algorithm backtest using provided factories for the algorithm and market supplier.
      * <p>
@@ -48,26 +59,51 @@ public class AlgorithmBacktestRunner {
      *
      * @param configuration the algorithm and the backtest run configurations
      */
-    public void run(AlgorithmBacktestContext configuration) {
+    public BacktestReport run(AlgorithmBacktestContext configuration) {
         var startTime = System.nanoTime();
         var clock = new PlaybackClock();
-        var queue = new ArrayBlockingQueueMessageBuffer<>(1024);
-        var context = new StandardAlgorithmContext(configuration.algorithmName(), clock, queue);
+        var queue = new QueuedMessageBuffer<>(1024);
+        var engine = new AlgorithmEngine(clock);
+        var context = new DefaultAlgorithmContext(configuration.algorithmName(), clock, queue, engine, engine.getSequenceGenerator());
         var algorithm = configuration.algorithmFactory().create(context);
-        var worker = new AlgorithmWorker(algorithm, queue, configuration.marketSupplierFactory().create(clock));
+        var priceService = new PlaybackMarketPriceService();
+        var tradingContext = new TradeConnectorContext("SIMULATOR", clock, priceService, engine);
+        var tradingSimulator = new TradingSimulator(tradingContext);
+        var tradingServiceProxy = new TradeConnectorProxy(tradingSimulator, new ArrayBlockingQueue<>(1024));
+        var tradingWorker = tradingServiceProxy.getWorker();
+        var worker = new PlaybackAlgorithmWorker(algorithm, queue, configuration.marketSupplierFactory().create(), clock, priceService, tradingSimulator, tradingWorker);
+
+        context.addShutdownResponseHandler(engine);
+        engine.addAlgorithm(algorithm);
+        engine.addTradeConnector(tradingServiceProxy);
 
         try {
             worker.onOpen();
+            tradingWorker.onOpen();
             while (worker.doWork() > 0)
-                if (context.isShutdown())
+                if (engine.isShutdown())
                     break;
 
         } finally {
             worker.onClose();
+            tradingWorker.onClose();
         }
 
-        long millis = (System.nanoTime() - startTime) / 1_000_000;
-        System.out.println("Elapsed time [sec]: " + (millis / 1000.0));
+        long elapsedMillis = (System.nanoTime() - startTime) / 1_000_000;
+        double elapsedSeconds = elapsedMillis / 1000.0;
+        System.out.println("Elapsed time [sec]: " + elapsedSeconds);
+        return createBacktestReport(tradingSimulator, elapsedSeconds);
+    }
+
+    private BacktestReport createBacktestReport(TradingSimulator tradingSimulator, double elapsedSeconds) {
+        return new BacktestReport.Of(
+                tradingSimulator.getDefaultAccount().getEquityStatistics(),
+                elapsedSeconds,
+                runNumber.incrementAndGet(),
+                tradingSimulator.getId(),
+                null,
+                Chronological.now()
+        );
     }
 
     /**
@@ -77,10 +113,10 @@ public class AlgorithmBacktestRunner {
      * @param marketSupplierFactory the factory responsible for creating market data suppliers
      * @param algorithmName         the unique identifier for the algorithm being tested
      */
-    public void run(AlgorithmFactory<? extends Algorithm> algorithmFactory,
+    public BacktestReport run(AlgorithmFactory<? extends Algorithm> algorithmFactory,
                     MarketSupplierFactory marketSupplierFactory,
                     String algorithmName) {
-        run(AlgorithmBacktestContext.builder()
+        return run(AlgorithmBacktestContext.builder()
                 .algorithmFactory(algorithmFactory)
                 .marketSupplierFactory(marketSupplierFactory)
                 .algorithmName(algorithmName)

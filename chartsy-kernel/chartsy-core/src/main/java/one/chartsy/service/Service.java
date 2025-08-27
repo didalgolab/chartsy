@@ -3,8 +3,9 @@
  */
 package one.chartsy.service;
 
-import one.chartsy.Manageable;
+import one.chartsy.Openable;
 
-public interface ManageableService extends Manageable {
+public interface Service extends Openable {
 
+    String getId();
 }

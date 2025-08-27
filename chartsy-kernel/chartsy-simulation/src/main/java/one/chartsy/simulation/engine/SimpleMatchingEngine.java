@@ -89,7 +89,7 @@ public class SimpleMatchingEngine extends OrderStatusUpdater implements OrderBro
         //instrument.orders().add(order);
         instrument.getTransmitQueue().add(order);
         order.setSourceId(context.name());
-        toSubmitted(order, orderID.incrementAndGet(), currentTime);
+        toSubmitted(order, String.valueOf(orderID.incrementAndGet()), currentTime);
         return order;
     }
 
@@ -281,7 +281,7 @@ public class SimpleMatchingEngine extends OrderStatusUpdater implements OrderBro
 
         if (order.isBuy())
             price += instrument.getSymbol().getSpread();
-        order.setFillPrice(price);
+        order.setAverageFillPrice(price);
         double volume = order.getQuantity();
         double openingCommission;
         Direction positionType;

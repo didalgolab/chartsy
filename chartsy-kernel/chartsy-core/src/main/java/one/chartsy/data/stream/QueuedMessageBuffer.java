@@ -3,29 +3,37 @@
  */
 package one.chartsy.data.stream;
 
+import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
 
 /**
- * A message buffer that uses an {@link ArrayBlockingQueue} to store messages.
+ * A message buffer that uses a {@link Queue} to store messages.
  * This implementation also serves as a message channel for adding new messages
  * to the buffer. The buffer is managed and can be opened and closed as needed.
  *
  * @param <T> the type of messages this buffer handles
  */
-public class ArrayBlockingQueueMessageBuffer<T extends Message>
-        implements MessageBuffer, MessageChannel<T> {
+public class QueuedMessageBuffer<T extends Message> implements MessageBuffer, MessageChannel<T> {
 
-    private final BlockingQueue<T> queue;
+    private final Queue<T> queue;
     private volatile boolean open;
 
     /**
-     * Constructs an {@link ArrayBlockingQueueMessageBuffer} with the specified capacity.
+     * Constructs an {@code ArrayBlockingQueue}-backed {@link MessageBuffer} with the specified capacity.
      *
      * @param capacity the maximum number of messages the buffer can hold
      */
-    public ArrayBlockingQueueMessageBuffer(int capacity) {
-        this.queue = new ArrayBlockingQueue<>(capacity);
+    public QueuedMessageBuffer(int capacity) {
+        this(new ArrayBlockingQueue<>(capacity));
+    }
+
+    /**
+     * Constructs a {@link MessageBuffer} backed with the provided {@code queue}.
+     *
+     * @param queue the backing queue
+     */
+    public QueuedMessageBuffer(Queue<T> queue) {
+        this.queue = queue;
         this.open = true;
     }
 
@@ -72,20 +80,17 @@ public class ArrayBlockingQueueMessageBuffer<T extends Message>
     /**
      * Fetches and processes messages from the buffer, invoking the provided
      * {@link MessageHandler} for each message. The number of messages processed
-     * is limited by the {@code messageLimit} parameter.
+     * is limited by the {@code pollLimit} parameter.
      *
      * @param handler      the {@link MessageHandler} to process each message
-     * @param messageLimit the maximum number of messages to process in this call
+     * @param pollLimit the maximum number of messages to process in this call
      * @return the actual number of messages that were processed
      */
     @Override
-    public int read(MessageHandler handler, int messageLimit) {
+    public int read(MessageHandler handler, int pollLimit) {
         int count = 0;
-        while (count < messageLimit) {
-            T message = queue.poll();
-            if (message == null) {
-                break;
-            }
+        T message;
+        while (count < pollLimit && (message = queue.poll()) != null) {
             handler.handleMessage(message);
             count++;
         }

@@ -39,15 +39,15 @@ public interface MarketSupplier extends Disposable {
      * Polls and delivers a sequential batch of market data messages corresponding to the next available timestamp.
      * <p>
      * This method retrieves and dispatches messages via the provided {@code handler} for the nearest upcoming timestamp,
-     * up to the specified {@code messageLimit}. All returned messages must share the same timestamp to ensure chronological
+     * up to the specified {@code pollLimit}. All returned messages must share the same timestamp to ensure chronological
      * integrity. If fewer messages are available than the specified limit, only those available are returned, ensuring
      * precise event-time alignment. Subsequent calls to this method will progress through the sequence of timestamps in ascending order.
      *
      * @param handler      the {@link MarketMessageHandler} that processes retrieved market messages
-     * @param messageLimit the maximum number of messages to retrieve in this call; helps control memory usage and throughput
+     * @param pollLimit the maximum number of messages to retrieve in this call; helps control memory usage and throughput
      * @return the actual number of messages retrieved and delivered to the handler; returns {@code 0} if no further messages remain
      */
-    int poll(MarketMessageHandler handler, int messageLimit);
+    int poll(MarketMessageHandler handler, int pollLimit);
 
     /**
      * Closes and disposes of the market supplier, releasing underlying resources and terminating any active connections.

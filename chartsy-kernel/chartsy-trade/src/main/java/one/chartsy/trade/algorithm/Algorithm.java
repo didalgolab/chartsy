@@ -5,14 +5,15 @@ package one.chartsy.trade.algorithm;
 
 import one.chartsy.api.messages.handlers.ShutdownRequestHandler;
 import one.chartsy.messaging.MarketMessageHandler;
-import one.chartsy.service.ManageableService;
+import one.chartsy.service.Service;
+import one.chartsy.trade.service.OrderHandler;
 
 /**
  * Represents a generic algorithm used in an algorithmic trading framework.
  * An implementing class would define the specific logic and behavior of a
  * trading strategy.
  */
-public interface Algorithm extends ManageableService, MarketMessageHandler, ShutdownRequestHandler {
+public interface Algorithm extends Service, MarketMessageHandler, OrderHandler, ShutdownRequestHandler {
 
     /**
      * Closes the algorithm, performing any necessary cleanup operations.

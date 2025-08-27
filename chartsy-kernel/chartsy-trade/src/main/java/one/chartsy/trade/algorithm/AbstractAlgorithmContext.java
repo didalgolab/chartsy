@@ -36,18 +36,18 @@ public abstract class AbstractAlgorithmContext implements AlgorithmContext {
             Pattern.compile("\\$\\{(now\\?([^}]+)|uuid|[^}]+)}");
 
     private final ListenerList<ShutdownResponseHandler> shutdownResponseHandlers = ListenerList.of(ShutdownResponseHandler.class);
-    private final String name;
+    private final String id;
     private volatile boolean shutdown;
 
 
-    protected AbstractAlgorithmContext(String name) {
-        this.name = name;
+    protected AbstractAlgorithmContext(String id) {
+        this.id = id;
         addShutdownResponseHandler(__ -> this.shutdown = true);
     }
 
     @Override
-    public final String getName() {
-        return name;
+    public final String getId() {
+        return id;
     }
 
     @Override

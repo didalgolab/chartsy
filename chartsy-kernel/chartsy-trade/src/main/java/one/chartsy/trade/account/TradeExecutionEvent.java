@@ -6,10 +6,11 @@ package one.chartsy.trade.account;
 import one.chartsy.SymbolIdentity;
 import one.chartsy.messaging.MarketEvent;
 import one.chartsy.trade.Order.Side;
+import one.chartsy.trade.OrderTrade;
 import org.immutables.value.Value;
 
 @Value.Immutable
-public interface TradeExecutionEvent extends MarketEvent {
+public interface TradeExecutionEvent extends MarketEvent, OrderTrade {
 
     Side side();
 

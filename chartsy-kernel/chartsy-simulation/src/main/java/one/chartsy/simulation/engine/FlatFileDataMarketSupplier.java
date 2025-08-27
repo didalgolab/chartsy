@@ -4,6 +4,7 @@ import one.chartsy.Candle;
 import one.chartsy.SymbolIdentity;
 import one.chartsy.SymbolResource;
 import one.chartsy.TimeFrame;
+import one.chartsy.base.Disposable;
 import one.chartsy.context.ExecutionContext;
 import one.chartsy.data.DataQuery;
 import one.chartsy.data.DataSubscription;
@@ -12,9 +13,11 @@ import one.chartsy.data.structures.PriorityMap;
 import one.chartsy.messaging.MarketEvent;
 import one.chartsy.messaging.MarketMessageHandler;
 import one.chartsy.messaging.MarketMessageSource;
-import one.chartsy.simulation.time.PlaybackClock;
 import one.chartsy.trade.algorithm.MarketSupplier;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -22,18 +25,18 @@ public class FlatFileDataMarketSupplier implements MarketSupplier {
 
     private final FlatFileDataProvider dataProvider;
     private final DataSubscription subscription;
-    private final PlaybackClock clock;
+    private final Instant startTime;
 
     private final PriorityMap<MarketEvent, MarketMessageSource> subscribers;
 
     public FlatFileDataMarketSupplier(FlatFileDataProvider dataProvider, DataSubscription subscription) {
-        this(dataProvider, subscription, new PlaybackClock());
+        this(dataProvider, subscription, null);
     }
 
-    public FlatFileDataMarketSupplier(FlatFileDataProvider dataProvider, DataSubscription subscription, PlaybackClock clock) {
+    public FlatFileDataMarketSupplier(FlatFileDataProvider dataProvider, DataSubscription subscription, Instant startTime) {
         this.dataProvider = dataProvider;
         this.subscription = subscription;
-        this.clock = clock;
+        this.startTime = startTime;
         this.subscribers = new PriorityMap<>();
     }
 
@@ -43,10 +46,14 @@ public class FlatFileDataMarketSupplier implements MarketSupplier {
                 .map(SymbolIdentity::name)
                 .collect(Collectors.toSet());
 
+        var queryBuilder = DataQuery.<Candle>builder();
+        if (startTime != null)
+            queryBuilder.startTime(LocalDateTime.ofInstant(startTime, ZoneOffset.UTC));
+
         ExecutionContext context = new ExecutionContext();
         subscribers.clear();
         for (var symbol : symbols) {
-            var query = DataQuery.<Candle>builder()
+            var query = queryBuilder
                     .resource(SymbolResource.of(symbol, TimeFrame.Period.DAILY))
                     .build();
             var messageSource = dataProvider.iterator(query, context);
@@ -54,18 +61,15 @@ public class FlatFileDataMarketSupplier implements MarketSupplier {
             if (firstMessage != null)
                 subscribers.put(firstMessage, messageSource);
         }
-
-        this.clock.setTime(subscribers.peekKey());
     }
 
     @Override
-    public int poll(MarketMessageHandler handler, int messageLimit) {
+    public int poll(MarketMessageHandler handler, int pollLimit) {
         int count = 0;
 
         var current = subscribers.peekKey();
         if (current != null) {
-            clock.setTime(current);
-            while (count < messageLimit) {
+            while (count < pollLimit) {
                 var subscriber = subscribers.remove();
                 var lastTime = current.getTime();
                 handler.onMarketMessage(current);
@@ -89,7 +93,7 @@ public class FlatFileDataMarketSupplier implements MarketSupplier {
 
     @Override
     public void close() {
-        subscribers.forEach((__, source) -> source.close());
+        subscribers.forEachValue(Disposable::close);
         subscribers.clear();
     }
 }

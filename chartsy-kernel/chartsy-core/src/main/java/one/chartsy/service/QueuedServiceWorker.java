@@ -6,21 +6,21 @@ package one.chartsy.service;
 import one.chartsy.data.stream.MessageBuffer;
 import one.chartsy.data.stream.MessageHandler;
 
-public class QueuedServiceWorker<T extends ManageableService> extends ServiceWorker<T> {
+public class QueuedServiceWorker<T extends Service> extends ServiceWorker<T> {
 
     protected final MessageBuffer queue;
     protected final MessageHandler handler;
-    protected final int readLimit;
+    protected final int pollLimit;
 
-    public QueuedServiceWorker(T service, MessageBuffer queue, MessageHandler handler, int readLimit) {
+    public QueuedServiceWorker(T service, MessageBuffer queue, MessageHandler handler, int pollLimit) {
         super(service);
         this.queue = queue;
         this.handler = handler;
-        this.readLimit = readLimit;
+        this.pollLimit = pollLimit;
     }
 
     @Override
     protected int doWorkUnit(int workDone) {
-        return queue.read(handler, readLimit);
+        return queue.read(handler, pollLimit);
     }
 }

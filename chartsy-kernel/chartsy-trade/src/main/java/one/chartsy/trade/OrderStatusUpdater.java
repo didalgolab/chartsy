@@ -4,7 +4,7 @@ package one.chartsy.trade;
 
 public abstract class OrderStatusUpdater {
 
-    protected void toSubmitted(Order order, int orderId, long time) {
+    protected void toSubmitted(Order order, String orderId, long time) {
         fireOrderStatusChanged(order.toSubmitted(orderId, time));
     }
 

@@ -5,8 +5,7 @@ package one.chartsy.trade.account;
 
 import one.chartsy.Candle;
 import one.chartsy.SymbolIdentity;
-import one.chartsy.api.messages.BarMessage;
-import one.chartsy.api.messages.ImmutableBarMessage;
+import one.chartsy.api.messages.TradeBar;
 import one.chartsy.trade.Direction;
 import one.chartsy.trade.Order;
 import org.junit.jupiter.api.Test;
@@ -369,8 +368,8 @@ class AccountBalanceEntryTest {
         return builder.build();
     }
 
-    static BarMessage aBar(double price) {
-        return new ImmutableBarMessage(
+    static TradeBar aBar(double price) {
+        return new TradeBar.Of(
                 SYMBOL,
                 Candle.of(now(), price)
         );

@@ -1,0 +1,126 @@
+/* Copyright 2025 Mariusz Bernacki <consulting@didalgo.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
+package one.chartsy.samples.algorithm.bitcoin;
+
+import one.chartsy.data.DataSubscription;
+import one.chartsy.data.provider.FlatFileDataProvider;
+import one.chartsy.data.provider.file.FlatFileFormat;
+import one.chartsy.data.provider.file.SimpleCandleLineMapper;
+import one.chartsy.messaging.MarketEvent;
+import one.chartsy.simulation.engine.AlgorithmBacktestRunner;
+import one.chartsy.simulation.engine.FlatFileDataMarketSupplier;
+import one.chartsy.simulation.engine.MarketSupplierFactory;
+import one.chartsy.trade.Order;
+import one.chartsy.trade.algorithm.AbstractAlgorithm;
+import one.chartsy.trade.algorithm.AlgorithmContext;
+import one.chartsy.trade.algorithm.AlgorithmFactory;
+import one.chartsy.trade.algorithm.data.InstrumentDataFactory;
+import one.chartsy.trade.algorithm.data.SimpleInstrumentPrices;
+
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+public class RunBtcBacktest {
+
+    public static void main(String[] args) throws Exception {
+
+        // Describe the CSV layout (skip header, comma delimiter, yyyy-MM-dd date format).
+        FlatFileFormat format = FlatFileFormat.builder()
+                .skipFirstLines(1)
+                .lineMapper(new SimpleCandleLineMapper.Type(
+                        ',', List.of("DATE", "OPEN", "HIGH", "LOW", "CLOSE", "VOLUME"),
+                        DateTimeFormatter.ofPattern("yyyy-MM-dd")))
+                .build();
+
+        // Create provider for the BTC file.
+        FlatFileDataProvider provider = new FlatFileDataProvider(format, pathToResource("BTC_DAILY.zip"));
+
+        // Subscribe to all symbols in the file (only BTC here).
+        DataSubscription subscription = DataSubscription.SUBSCRIBED_TO_ALL;
+
+        // Factories for algorithm and market data.
+        AlgorithmFactory<MyAlgorithm> algoFactory = MyAlgorithm::new;
+        LocalDate startDate = LocalDate.parse("2011-06-01");
+        MarketSupplierFactory marketFactory =
+                () -> new FlatFileDataMarketSupplier(provider, subscription,
+                        startDate.atStartOfDay().atZone(ZoneOffset.UTC).toInstant());
+
+        // Run the backtest.
+        var result = new AlgorithmBacktestRunner().run(algoFactory, marketFactory, "ALGO");
+        System.out.println("Backtest result: " + result);
+        System.out.println("Sharpe ratio: " + result.equitySummary().getAnnualSharpeRatio());
+    }
+
+    static class MyAlgorithm extends AbstractAlgorithm {
+
+        public MyAlgorithm(AlgorithmContext context) {
+            super(context);
+        }
+
+        @Override
+        protected InstrumentDataFactory createInstrumentDataFactory() {
+            return SimpleInstrumentPrices::new;
+        }
+
+        private final AtomicBoolean doOnce = new AtomicBoolean();
+
+        @Override
+        public void onMarketMessage(MarketEvent event) {
+            super.onMarketMessage(event);
+            System.out.println(event);
+            if (doOnce.compareAndSet(false, true)) {
+                System.out.println("First event received, placing test order");
+
+                Order.Builder marketOrder = makeMarketOrder(Order.Side.BUY, 1.0, event.symbol());
+                marketOrder.destinationId("SIMULATOR");
+                submitOrder(marketOrder.toNewOrder());
+            }
+        }
+
+        @Override
+        public void onOrderFilled(Order.Filled fill) {
+            super.onOrderFilled(fill);
+            System.out.println("Order filled: " + fill);
+        }
+    }
+
+    public static Path pathToResource(String resourceName) throws IOException {
+        String name = resourceName.startsWith("/") ? resourceName.substring(1) : resourceName;
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        URL url = cl.getResource(name);
+        if (url == null) {
+            throw new FileNotFoundException("Resource not found on classpath: " + name);
+        }
+        try {
+            URI uri = url.toURI();
+            if ("file".equalsIgnoreCase(uri.getScheme()))
+                return Paths.get(uri);
+        } catch (Exception ignore) {
+            // fall through to copy-from-stream
+        }
+
+        try (InputStream in = cl.getResourceAsStream(name)) {
+            if (in == null)
+                throw new FileNotFoundException("Resource stream is null: " + name);
+
+            String fileName = Paths.get(name).getFileName().toString();
+            Path tmp = Files.createTempFile("res-", "-" + fileName);
+            Files.copy(in, tmp, StandardCopyOption.REPLACE_EXISTING);
+            tmp.toFile().deleteOnExit();
+            return tmp;
+        }
+    }
+}

@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class AbstractAlgorithmContextTest {
 
-    final AbstractAlgorithmContext context = new StandardAlgorithmContext("test", null, null);
+    final AbstractAlgorithmContext context = new DefaultAlgorithmContext("test", null, null);
 
     @Test
     void expandPlaceholders_expands_now_and_uuid() {

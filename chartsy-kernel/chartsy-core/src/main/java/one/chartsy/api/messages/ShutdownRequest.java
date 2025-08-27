@@ -4,17 +4,11 @@
 package one.chartsy.api.messages;
 
 import one.chartsy.data.stream.Message;
-import one.chartsy.data.stream.MessageType;
 
 /**
  * A shutdown request message.
  */
 public record ShutdownRequest(long time) implements Message {
-
-    @Override
-    public MessageType type() {
-        return StandardMessageType.SHUTDOWN_REQUEST;
-    }
 
     /**
      * Converts this {@link ShutdownRequest} into a {@link ShutdownResponse}.

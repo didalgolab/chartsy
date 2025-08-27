@@ -12,13 +12,13 @@ public interface MessageBuffer {
     /**
      * Reads and processes messages from the buffer, invoking the provided
      * {@link MessageHandler} for each message. The number of messages processed
-     * is limited by the {@code messageLimit} parameter.
+     * is limited by the {@code pollLimit} parameter.
      *
      * @param handler      the {@link MessageHandler} to process each message
-     * @param messageLimit the maximum number of messages to process in this call
+     * @param pollLimit the maximum number of messages to process in this call
      * @return the actual number of messages that were processed
      */
-    int read(MessageHandler handler, int messageLimit);
+    int read(MessageHandler handler, int pollLimit);
 
     /**
      * Reads and processes messages from the buffer, invoking the provided

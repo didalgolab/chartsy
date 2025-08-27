@@ -3,7 +3,7 @@
 package one.chartsy.data.provider;
 
 import one.chartsy.*;
-import one.chartsy.api.messages.ImmutableBarMessage;
+import one.chartsy.api.messages.TradeBar;
 import one.chartsy.context.ExecutionContext;
 import one.chartsy.core.ResourceHandle;
 import one.chartsy.data.DataQuery;
@@ -149,6 +149,9 @@ public class FlatFileDataProvider extends AbstractDataProvider implements Symbol
 
         context.put("TimeFrame", request.resource().timeFrame());
 
+        var startTime = (request.startTime() != null)? Chronological.toEpochNanos(request.startTime()): Long.MIN_VALUE;
+        var endTime = (request.endTime() != null)? Chronological.toEpochNanos(request.endTime()): Long.MAX_VALUE;
+
         FlatFileItemReader<Candle> itemReader = new FlatFileItemReader<>();
         itemReader.setLineMapper((LineMapper<Candle>) fileFormat.getLineMapper().createLineMapper(context));
         itemReader.setLinesToSkip(fileFormat.getSkipFirstLines());
@@ -159,8 +162,15 @@ public class FlatFileDataProvider extends AbstractDataProvider implements Symbol
             @Override
             public MarketEvent getMessage() {
                 try {
-                    var bar = itemReader.read();
-                    return (bar == null) ? null : new ImmutableBarMessage(identifier, bar);
+                    for (;;) {
+                        var bar = itemReader.read();
+                        if (bar == null || bar.getTime() > endTime)
+                            return null;
+                        if (bar.getTime() < startTime)
+                            continue;
+
+                        return new TradeBar.Of(identifier, bar);
+                    }
                 }
                 catch (IOException e) {
                     throw new UncheckedIOException(e);

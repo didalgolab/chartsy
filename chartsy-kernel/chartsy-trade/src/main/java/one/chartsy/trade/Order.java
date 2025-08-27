@@ -8,18 +8,24 @@ import java.io.Serial;
 import java.time.LocalDateTime;
 import java.util.*;
 
+import lombok.Getter;
 import one.chartsy.SymbolIdentity;
 import one.chartsy.core.CustomValuesHolder;
 import one.chartsy.time.Chronological;
+import one.chartsy.time.Clock;
+import one.chartsy.trade.data.OrderReportEvent;
+import one.chartsy.trade.data.OrderRequestEvent;
 import one.chartsy.trade.data.Position;
+import one.chartsy.util.SequenceGenerator;
 
+@Getter
 public class Order implements java.io.Serializable, Cloneable, CustomValuesHolder {
     @Serial
     private static final long serialVersionUID = -4283839048397874813L;
     /** The empty array of {@code OrderStatusListener}'s shared between all new {@code Order} objects. */
     private static final OrderStatusListener[] EMPTY_LISTENER_LIST = new OrderStatusListener[0];
     /** The unique order identifier. */
-    private int id;
+    private String id;
     /** The order state. */
     private State state = State.NEWLY_CREATED;
     /** The previous order state. */
@@ -32,12 +38,14 @@ public class Order implements java.io.Serializable, Cloneable, CustomValuesHolde
     private final Side side;
     /** The order quantity. */
     private double quantity;
+    /** The order's quantity filled so far. */
+    private double filledQuantity;
     /** The stop loss price. */
     private double exitStop = Double.NaN;
     /** The take profit price. */
     private double exitLimit = Double.NaN;
-    /** The price at which order has been filled, or {@code Double.NaN} if undefined. */
-    private double fillPrice = Double.NaN;
+    /** The price at which order has been filled, or {@code 0.0} if undefined. */
+    private double averageFillPrice;
     /** The number of bars after which the order will be cancelled if it has not been filled. */
     private int barsValid;
     /** The time in force. */
@@ -64,6 +72,20 @@ public class Order implements java.io.Serializable, Cloneable, CustomValuesHolde
     private Map<String, Object> customValues = Collections.emptyMap();
     /** The rejection reason, may be null. */
     private String rejectionReason;
+    /** The original order identifier for replacements (links to prior order). */
+    private String originalOrderId;
+    /** The destination/venue/broker identifier. */
+    private String destinationId;
+    /** The account identifier on which the order is placed. */
+    private String accountId;
+    /** The ISO currency code associated with the order. */
+    private String currency;
+    /** The minimum acceptable execution quantity. */
+    private double minQuantity;
+    /** The reference order identifier (external correlation link). */
+    private String referenceOrderId;
+    /** The client request creation time (epoch nanos). */
+    private long requestTime;
 
     /** The list of {@code OrderStatusListener}'s associated with this order. */
     private OrderStatusListener[] listeners = EMPTY_LISTENER_LIST;
@@ -323,11 +345,11 @@ public class Order implements java.io.Serializable, Cloneable, CustomValuesHolde
         this.timeInForce = tif;
     }
     
-    public final int getId() {
+    public final String getId() {
         return id;
     }
     
-    Order toSubmitted(int id, long time) {
+    Order toSubmitted(String id, long time) {
         setState(state.to(State.SUBMITTED));
         this.id = id;
         this.timeSubmitted = time;
@@ -400,7 +422,11 @@ public class Order implements java.io.Serializable, Cloneable, CustomValuesHolde
 
         this.quantity = quantity;
     }
-    
+
+    public void setFilledQuantity(double filledQuantity) {
+        this.filledQuantity = filledQuantity;
+    }
+
     /**
      * @return the stopLoss
      */
@@ -505,7 +531,7 @@ public class Order implements java.io.Serializable, Cloneable, CustomValuesHolde
         return previousState;
     }
 
-    private void setState(State newState) {
+    public void setState(State newState) {
         State oldState = this.state;
         if (oldState != newState) {
             this.previousState = oldState;
@@ -538,15 +564,15 @@ public class Order implements java.io.Serializable, Cloneable, CustomValuesHolde
     /**
      * @return the fillPrice
      */
-    public double getFillPrice() {
-        return fillPrice;
+    public double getAverageFillPrice() {
+        return averageFillPrice;
     }
     
     /**
-     * @param fillPrice the fillPrice to set
+     * @param averageFillPrice the fillPrice to set
      */
-    public void setFillPrice(double fillPrice) {
-        this.fillPrice = fillPrice;
+    public void setAverageFillPrice(double averageFillPrice) {
+        this.averageFillPrice = averageFillPrice;
     }
 
     public long getTimeSubmitted() {
@@ -574,7 +600,7 @@ public class Order implements java.io.Serializable, Cloneable, CustomValuesHolde
      */
     public double getEntryRisk() {
         int directionTag = side.getDirection().intValue();
-        return (getFillPrice() - getExitStop()) * directionTag;
+        return (getAverageFillPrice() - getExitStop()) * directionTag;
     }
     
     /**
@@ -705,6 +731,306 @@ public class Order implements java.io.Serializable, Cloneable, CustomValuesHolde
                 throw new InvalidOrderStatusException(getState(), String.format("Order.source already set (%s), can't change to %s", this.sourceId, sourceId));
             else
                 this.sourceId = sourceId;
+        }
+    }
+
+    // Inside class Order
+
+    public static Order from(Order.New req) {
+        Objects.requireNonNull(req, "req");
+        Order o = new Order(req.symbol(), req.type(), req.side(), req.quantity(), req.timeInForce());
+        o.expirationTime = req.expirationTime();
+        o.validSinceTime = req.validSinceTime();
+        o.setSourceId(req.sourceId());
+        o.id = req.orderId();
+        o.accountId = req.accountId();
+        o.destinationId = req.destinationId();
+        o.currency = req.currency();
+        o.minQuantity = req.minQuantity();
+        o.referenceOrderId = req.referenceOrderId();
+        o.requestTime = req.time();
+        return o;
+    }
+
+    public static Order from(Order.Replacement replacement) {
+        Objects.requireNonNull(replacement, "replacement");
+        Order o = from(replacement.newOrder());
+        o.originalOrderId = replacement.originalOrderId();
+        return o;
+    }
+
+    public static class Builder {
+        private long time;
+        private String sourceId;
+        private String destinationId;
+        private String orderId;
+        private String originalOrderId;
+        private String accountId;
+        private SymbolIdentity symbol;
+        private OrderType type;
+        private Side side;
+        private double quantity;
+        private String currency;
+        private TimeInForce timeInForce;
+        private long expirationTime = Long.MAX_VALUE;
+        private long validSinceTime = Long.MIN_VALUE;
+        private double minQuantity;
+        private String referenceOrderId;
+        private final Clock clock;
+        private final SequenceGenerator orderIdGenerator;
+
+        public Builder() {
+            this(null, null);
+        }
+
+        public Builder(Clock clock, SequenceGenerator orderIdGenerator) {
+            this.clock = clock;
+            this.orderIdGenerator = orderIdGenerator;
+        }
+
+        public Builder time(long time) {
+            this.time = time;
+            return this;
+        }
+
+        public Builder sourceId(String sourceId) {
+            this.sourceId = sourceId;
+            return this;
+        }
+
+        public Builder destinationId(String destinationId) {
+            this.destinationId = destinationId;
+            return this;
+        }
+
+        public Builder orderId(String orderId) {
+            this.orderId = orderId;
+            return this;
+        }
+
+        public Builder originalOrderId(String originalOrderId) {
+            this.originalOrderId = originalOrderId;
+            return this;
+        }
+
+        public Builder accountId(String accountId) {
+            this.accountId = accountId;
+            return this;
+        }
+
+        public Builder symbol(SymbolIdentity symbol) {
+            this.symbol = symbol;
+            return this;
+        }
+
+        public Builder type(OrderType type) {
+            this.type = type;
+            return this;
+        }
+
+        public Builder side(Side side) {
+            this.side = side;
+            return this;
+        }
+
+        public Builder quantity(double quantity) {
+            this.quantity = quantity;
+            return this;
+        }
+
+        public Builder currency(String currency) {
+            this.currency = currency;
+            return this;
+        }
+
+        public Builder timeInForce(TimeInForce tif) {
+            this.timeInForce = tif;
+            return this;
+        }
+
+        public Builder expirationTime(long expirationTime) {
+            this.expirationTime = expirationTime;
+            return this;
+        }
+
+        public Builder validSinceTime(long validSinceTime) {
+            this.validSinceTime = validSinceTime;
+            return this;
+        }
+
+        public Builder minQuantity(double minQuantity) {
+            this.minQuantity = minQuantity;
+            return this;
+        }
+
+        public Builder referenceOrderId(String referenceOrderId) {
+            this.referenceOrderId = referenceOrderId;
+            return this;
+        }
+
+        protected long time() {
+            if (time != 0)
+                return time;
+            else if (clock != null)
+                return clock.time();
+            else
+                throw new IllegalStateException("`time` is not set and no `clock` is provided to generate it");
+        }
+
+        protected String orderId() {
+            if (orderId != null)
+                return orderId;
+            else if (orderIdGenerator != null)
+                return orderIdGenerator.next();
+            else
+                throw new IllegalStateException("`orderId` is not set and no `orderIdGenerator` is provided to generate it");
+        }
+
+        public New toNewOrder() {
+            return new New(
+                    time(),
+                    orderId(),
+                    sourceId,
+                    destinationId,
+                    accountId,
+                    symbol,
+                    type,
+                    side,
+                    quantity,
+                    currency,
+                    timeInForce,
+                    expirationTime,
+                    validSinceTime,
+                    minQuantity,
+                    referenceOrderId
+            );
+        }
+
+        public Replacement toReplacementOrder() {
+            if (originalOrderId == null)
+                throw new IllegalArgumentException("`originalOrderId` is required for order replacements");
+
+            return new Replacement(originalOrderId, toNewOrder());
+        }
+    }
+
+    /* --- Domain model for order requests and order reports. --- */
+
+    public record New (
+            long time,
+            String orderId,
+            String sourceId,
+            String destinationId,
+            String accountId,
+            SymbolIdentity symbol,
+            OrderType type,
+            Side side,
+            double quantity,
+            String currency,
+            TimeInForce timeInForce,
+            long expirationTime,
+            long validSinceTime,
+            double minQuantity,
+            String referenceOrderId
+    ) implements OrderRequestEvent { }
+
+    public record Replacement (String originalOrderId, New newOrder) implements OrderRequestEvent {
+
+        @Override
+        public String orderId() {
+            return newOrder().orderId();
+        }
+
+        @Override
+        public long time() {
+            return newOrder().time();
+        }
+    }
+
+    public record Cancellation (
+            long time,
+            String orderId,
+            String sourceId,
+            String destinationId,
+            String originalOrderId,
+            String reason
+    ) implements OrderRequestEvent { }
+
+    public record Rejected (
+            long time,
+            String orderId,
+            String sourceId,
+            String destinationId,
+            String rejectionReason
+    ) implements OrderReportEvent { }
+
+    public record StatusChanged (
+            long time,
+            String orderId,
+            String sourceId,
+            String destinationId,
+            State state
+    ) implements OrderReportEvent { }
+
+    public record Filled (
+            long time,
+            String orderId,
+            String sourceId,
+            String destinationId,
+            String executionId,
+            SymbolIdentity symbol,
+            Side side,
+            double tradeQuantity,
+            double tradePrice,
+            double cumulativeQuantity,
+            double averagePrice
+    ) implements OrderReportEvent, OrderTrade {
+
+        @Override
+        public long getTime() {
+            return time();
+        }
+
+        @Override
+        public boolean isBuy() {
+            return side.isBuy();
+        }
+    }
+
+    public record PartiallyFilled (double quantityLeft, Filled filled) implements OrderReportEvent, OrderTrade {
+        @Override
+        public String orderId() {
+            return filled.orderId();
+        }
+
+        @Override
+        public long time() {
+            return filled.time();
+        }
+
+        @Override
+        public long getTime() {
+            return filled.time();
+        }
+
+        @Override
+        public boolean isBuy() {
+            return filled().isBuy();
+        }
+
+        @Override
+        public SymbolIdentity symbol() {
+            return filled.symbol();
+        }
+
+        @Override
+        public double tradePrice() {
+            return filled.tradePrice();
+        }
+
+        @Override
+        public double tradeQuantity() {
+            return filled.tradeQuantity();
         }
     }
 }

@@ -8,6 +8,8 @@ import one.chartsy.data.stream.Message;
 import one.chartsy.data.stream.MessageChannel;
 import one.chartsy.data.stream.MessageChannelException;
 import one.chartsy.time.Clock;
+import one.chartsy.trade.service.OrderHandler;
+import one.chartsy.util.SequenceGenerator;
 import org.springframework.beans.PropertyAccessor;
 
 /**
@@ -22,7 +24,7 @@ public interface AlgorithmContext {
      *
      * @return the name identifying the algorithm
      */
-    String getName();
+    String getId();
 
     /**
      * Provides the clock instance driving time-related operations, events, and simulations
@@ -31,6 +33,22 @@ public interface AlgorithmContext {
      * @return the {@link Clock} instance for this context
      */
     Clock getClock();
+
+    /**
+     * Obtains the order event handler responsible for processing order-related events
+     * within the algorithm context.
+     *
+     * @return the {@link OrderHandler} for handling order events
+     */
+    OrderHandler getOrderHandler();
+
+    /**
+     * Provides a sequence generator that can be used to generate unique identifiers or
+     * sequence numbers for various algorithm operations, such as order IDs or event sequences.
+     *
+     * @return the {@link SequenceGenerator} for generating unique sequences
+     */
+    SequenceGenerator getSequenceGenerator();
 
     /**
      * Gives the primary message channel for sending or receiving generic algorithm messages.

@@ -25,6 +25,18 @@ public interface Chronological extends Comparable<Chronological> {
     ZoneId TIME_ZONE = ZoneId.systemDefault();
 
     /**
+     * The lowest {@code Instant} supported by this type, corresponding to
+     * {@code Long.MIN_VALUE} epoch nanoseconds (i.e. 1677-09-21T00:12:43.145224192Z).
+     */
+    Instant MIN = toInstant(Long.MIN_VALUE);
+
+    /**
+     * The highest {@code Instant} supported by this type, corresponding to
+     * {@code Long.MAX_VALUE} epoch nanoseconds (i.e. 2262-04-11T23:47:16.854775807Z).
+     */
+    Instant MAX = toInstant(Long.MAX_VALUE);
+
+    /**
      * Converts the specified epoch nanoseconds to a {@code LocalDateTime} in UTC.
      * <p>
      * The method is performance efficient but always gives date expressed in the
