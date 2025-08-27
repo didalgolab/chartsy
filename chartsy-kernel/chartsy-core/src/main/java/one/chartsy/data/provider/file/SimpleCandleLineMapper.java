@@ -8,7 +8,6 @@ import one.chartsy.TimeFrameHelper;
 import one.chartsy.context.ExecutionContext;
 import one.chartsy.data.SimpleCandle;
 import one.chartsy.text.FromString;
-import one.chartsy.text.MutableStringFragmentIterator;
 import one.chartsy.time.Chronological;
 
 import java.time.Duration;
@@ -24,9 +23,39 @@ import static java.time.format.DateTimeFormatter.*;
 public class SimpleCandleLineMapper implements LineMapper<SimpleCandle> {
 
     public static class Type implements LineMapperType<SimpleCandle> {
+
+        private static final class FieldSpec {
+            final String name;
+            final boolean optional;
+
+            FieldSpec(String raw) {
+                String s = raw.trim();
+                boolean opt = false;
+
+                if (s.endsWith("?")) {
+                    s = s.substring(0, s.length() - 1);
+                    opt = true;
+                }
+                this.name = s.toUpperCase();
+                this.optional = opt;
+            }
+        }
+
         private final char delimiter;
+        /** The original field descriptors as passed to the constructor, kept to preserve optional markers. */
+        private final List<String> rawFields;
+
+        /** Upper-cased field names without optional markers, kept for compatibility and quick membership tests. */
         private final List<String> fields;
-        private final boolean hasOpen, hasHighAndLow, hasTimeAtOpen;
+
+        /** Parsed field specs. */
+        private final List<FieldSpec> specs;
+
+        private final boolean hasOpenDeclared;
+        private final boolean hasHighDeclared;
+        private final boolean hasLowDeclared;
+        private final boolean hasTimeAtOpenDeclared;
+
         private final DateTimeFormatter dateFormat;
         private final DateTimeFormatter timeFormat;
         private final DateTimeFormatter dateTimeFormat;
@@ -45,41 +74,77 @@ public class SimpleCandleLineMapper implements LineMapper<SimpleCandle> {
 
         public Type(char delimiter, List<String> fields, DateTimeFormatter dateFormat, DateTimeFormatter timeFormat, DateTimeFormatter dateTimeFormat) {
             this.delimiter = delimiter;
-            fields = new ArrayList<>(fields);
-            fields.replaceAll(String::toUpperCase);
-            this.fields = List.copyOf(fields);
+
+            List<String> rawCopy = new ArrayList<>(fields);
+            this.rawFields = List.copyOf(rawCopy);
+
+            // Parse to specs and to plain upper-cased names list
+            List<FieldSpec> parsed = new ArrayList<>(rawCopy.size());
+            List<String> upperNames = new ArrayList<>(rawCopy.size());
+            for (String f : rawCopy) {
+                FieldSpec fs = new FieldSpec(f);
+                parsed.add(fs);
+                upperNames.add(fs.name);
+            }
+            this.specs = List.copyOf(parsed);
+            this.fields = List.copyOf(upperNames);
+
             this.dateFormat = dateFormat;
             this.timeFormat = timeFormat;
             this.dateTimeFormat = dateTimeFormat;
-            this.hasOpen = fields.contains("OPEN");
-            this.hasHighAndLow = fields.contains("HIGH");
-            this.hasTimeAtOpen = fields.contains("OPEN_TIME") || fields.contains("OPEN_DATE_TIME");
-            checkRequiredFieldsPresence(this.fields);
+
+            this.hasOpenDeclared = this.fields.contains("OPEN");
+            this.hasHighDeclared = this.fields.contains("HIGH");
+            this.hasLowDeclared  = this.fields.contains("LOW");
+            this.hasTimeAtOpenDeclared = this.fields.contains("OPEN_TIME") || this.fields.contains("OPEN_DATE_TIME");
+
+            checkRequiredFieldsPresence(this.specs);
+
+            // Static configuration sanity checks
+            if (this.hasHighDeclared != this.hasLowDeclared) {
+                throw new FlatFileFormatException("Required fields missing: neither or both are allowed: HIGH,LOW");
+            }
         }
 
         public Type withDateFormat(DateTimeFormatter dateFormat) {
-            return new Type(delimiter, fields, dateFormat, timeFormat, dateTimeFormat);
+            return new Type(delimiter, rawFields, dateFormat, timeFormat, dateTimeFormat);
         }
 
         public Type withTimeFormat(DateTimeFormatter timeFormat) {
-            return new Type(delimiter, fields, dateFormat, timeFormat, dateTimeFormat);
+            return new Type(delimiter, rawFields, dateFormat, timeFormat, dateTimeFormat);
         }
 
         public Type withDateTimeFormat(DateTimeFormatter dateTimeFormat) {
-            return new Type(delimiter, fields, dateFormat, timeFormat, dateTimeFormat);
+            return new Type(delimiter, rawFields, dateFormat, timeFormat, dateTimeFormat);
         }
 
         public Type withDateAndTimeFormat(DateTimeFormatter dateFormat, DateTimeFormatter timeFormat) {
-            return new Type(delimiter, fields, dateFormat, timeFormat, dateTimeFormat);
+            return new Type(delimiter, rawFields, dateFormat, timeFormat, dateTimeFormat);
         }
 
-        private static void checkRequiredFieldsPresence(List<String> fields) {
-            if (!fields.contains("DATE") && !fields.contains("DATE_TIME") && !fields.contains("OPEN_DATE_TIME"))
+        private static void checkRequiredFieldsPresence(List<FieldSpec> specs) {
+            boolean hasDate     = false;
+            boolean hasDateTime = false;
+            boolean hasOpenDT   = false;
+
+            for (FieldSpec fs : specs) {
+                if ("DATE".equals(fs.name)) hasDate = true;
+                if ("DATE_TIME".equals(fs.name)) hasDateTime = true;
+                if ("OPEN_DATE_TIME".equals(fs.name)) hasOpenDT = true;
+            }
+            if (!hasDate && !hasDateTime && !hasOpenDT) {
                 throw new FlatFileFormatException("Required fields missing: DATE, DATE_TIME or OPEN_DATE_TIME");
-            if (!fields.contains("CLOSE"))
+            }
+
+            boolean hasClose = false;
+            for (FieldSpec fs : specs) {
+                if ("CLOSE".equals(fs.name)) {
+                    hasClose = true;
+                    break;
+                }
+            }
+            if (!hasClose)
                 throw new FlatFileFormatException("Required fields missing: CLOSE");
-            if (fields.contains("HIGH") != fields.contains("LOW"))
-                throw new FlatFileFormatException("Required fields missing: neither or both are allowed: HIGH,LOW");
         }
 
         @Override
@@ -89,17 +154,16 @@ public class SimpleCandleLineMapper implements LineMapper<SimpleCandle> {
     }
 
     private final Type type;
-    private final long timeShift;
-    private boolean isIntraday;
+    private final long configuredOpenTimeShiftMicros;
+    private final boolean isIntraday;
     private final ExecutionContext context;
     private Candle last;
-
 
     public SimpleCandleLineMapper(Type type, ExecutionContext context) {
         var timeFrame = (TimeFrame) context.get("TimeFrame");
         this.type = type;
         this.isIntraday = TimeFrameHelper.isIntraday(timeFrame);
-        this.timeShift = type.hasTimeAtOpen ? getCandleTimeShift(timeFrame) : 0;
+        this.configuredOpenTimeShiftMicros = type.hasTimeAtOpenDeclared ? getCandleTimeShift(timeFrame) : 0L;
         this.context = context;
     }
 
@@ -114,74 +178,138 @@ public class SimpleCandleLineMapper implements LineMapper<SimpleCandle> {
         return nanosShift / 1000L;
     }
 
-    public final Type getType() {
-        return type;
-    }
-
-    protected MutableStringFragmentIterator tokenize(String line, char delimiter) {
-        return MutableStringFragmentIterator.forSplit(line, delimiter);
+    /**
+     * Split line by a single-character delimiter, preserving empty tokens and trailing empties.
+     */
+    private static List<CharSequence> splitLine(String line, char delimiter) {
+        List<CharSequence> tokens = new ArrayList<>();
+        int start = 0;
+        for (int i = 0, n = line.length(); i < n; i++) {
+            if (line.charAt(i) == delimiter) {
+                tokens.add(line.substring(start, i));
+                start = i + 1;
+            }
+        }
+        tokens.add(line.substring(start));
+        return tokens;
     }
 
     @Override
     public SimpleCandle mapLine(String line, int lineNumber) {
-        var iter = tokenize(line, type.delimiter);
+        final List<CharSequence> tokens = splitLine(line, type.delimiter);
+        final int tokenCount = tokens.size();
 
         double open = 0.0, high = 0.0, low = 0.0, close = 0.0, volume = 0.0;
         int count = 0;
+
+        boolean presentOpen = false;
+        boolean presentHigh = false;
+        boolean presentLow  = false;
+        boolean presentClose = false;
+
         LocalDate date = null;
         LocalTime time = LocalTime.MIN;
         LocalDateTime dateTime = null;
-        long timeShift = 0;
-        for (int i = 0, fieldCount = type.fields.size(); i < fieldCount; i++) {
-            String field = type.fields.get(i);
-            CharSequence token = iter.next();
-            switch (field) {
+        long timeShiftMicrosForThisLine = 0L;
+
+        // Precompute "required remaining" suffix counts to decide when to consume tokens for optional specs.
+        final int n = type.specs.size();
+        final int[] requiredRemainingAfter = new int[n + 1];
+        requiredRemainingAfter[n] = 0;
+        for (int i = n - 1; i >= 0; i--) {
+            requiredRemainingAfter[i] = requiredRemainingAfter[i + 1] + (type.specs.get(i).optional ? 0 : 1);
+        }
+
+        int j = 0; // token index
+        for (int i = 0; i < n; i++) {
+            if (j > tokenCount) break; // safety
+
+            Type.FieldSpec fs = type.specs.get(i);
+            int tokensLeft = tokenCount - j;
+
+            if (fs.optional) {
+                // Consume this optional token only if we have more tokens left than required specs remaining after i.
+                if (tokensLeft <= requiredRemainingAfter[i + 1]) {
+                    // Not enough tokens to spend on this optional; skip without consuming.
+                    continue;
+                }
+            } else {
+                // Required field must have a token available now.
+                if (tokensLeft == 0) {
+                    throw new FlatFileParseException(
+                            "Missing required field: " + fs.name, line);
+                }
+            }
+
+            // Consume one token for this spec.
+            CharSequence token = tokens.get(j++);
+            switch (fs.name) {
                 case "DATE" -> date = readDate(token);
                 case "DATE_TIME" -> {
                     dateTime = readDateTime(token);
-                    timeShift = 0;
+                    timeShiftMicrosForThisLine = 0;
                 }
                 case "OPEN_DATE_TIME" -> {
                     if (dateTime == null) {
                         dateTime = readDateTime(token);
-                        timeShift = this.timeShift;
+                        timeShiftMicrosForThisLine = configuredOpenTimeShiftMicros;
                     }
                 }
                 case "TIME" -> {
                     time = readTime(token);
-                    timeShift = 0;
+                    timeShiftMicrosForThisLine = 0;
                 }
                 case "OPEN_TIME" -> {
                     if (time == LocalTime.MIN) {
                         time = readTime(token);
-                        timeShift = this.timeShift;
+                        timeShiftMicrosForThisLine = configuredOpenTimeShiftMicros;
                     }
                 }
-                case "OPEN" -> open = readDouble(token);
-                case "HIGH" -> high = readDouble(token);
-                case "LOW" -> low = readDouble(token);
-                case "CLOSE" -> close = readDouble(token);
+                case "OPEN" -> { open = readDouble(token); presentOpen = true; }
+                case "HIGH" -> { high = readDouble(token); presentHigh = true; }
+                case "LOW"  -> { low  = readDouble(token); presentLow  = true; }
+                case "CLOSE" -> { close = readDouble(token); presentClose = true; }
                 case "VOLUME" -> volume = readDouble(token);
-                case "COUNT" -> count = readInt(token);
-                case "SKIP" -> {}
-                default -> throw new FlatFileFormatException("Unsupported field: " + field);
+                case "COUNT"  -> count = readInt(token);
+                case "SKIP"   -> { /* deliberately ignore */ }
+                default -> throw new FlatFileFormatException("Unsupported field: " + fs.name);
             }
         }
 
-        if (dateTime == null)
-            dateTime = LocalDateTime.of(date, time);
-        if (!isIntraday)
-            dateTime = dateTime.plusDays(1);
-        if (!type.hasOpen)
-            open = close;
-        if (!type.hasHighAndLow)
-            high = low = close;
+        // Ignore any extra trailing tokens beyond declared specs for compatibility with previous behavior.
 
-        var candleTime = Chronological.toEpochNanos(dateTime) + timeShift;
+        if (!presentClose) {
+            throw new FlatFileParseException("Missing required field: CLOSE", line);
+        }
+
+        if (dateTime == null) {
+            if (date == null) {
+                throw new FlatFileParseException(
+                        "Missing date information: expected DATE or DATE_TIME or OPEN_DATE_TIME", line);
+            }
+            dateTime = LocalDateTime.of(date, time);
+        }
+
+        if (!isIntraday) {
+            dateTime = dateTime.plusDays(1);
+        }
+
+        if (!presentOpen) {
+            open = close;
+        }
+        if (presentHigh ^ presentLow) {
+            throw new FlatFileParseException("Invalid line: exactly one of HIGH or LOW present; both or none are required", line);
+        }
+        if (!presentHigh && !presentLow) {
+            high = close;
+            low  = close;
+        }
+
+        long candleTime = Chronological.toEpochNanos(dateTime) + timeShiftMicrosForThisLine;
         if (last != null && candleTime <= last.getTime())
             throw new FlatFileParseException(String.format("Invalid candle order at line %s following candle %s", lineNumber, last), line);
 
-        var candle = SimpleCandle.of(candleTime, open, high, low, close, volume, count);
+        SimpleCandle candle = SimpleCandle.of(candleTime, open, high, low, close, volume, count);
         last = candle;
         return candle;
     }
