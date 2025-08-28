@@ -9,6 +9,7 @@ import one.chartsy.data.provider.file.FlatFileFormat;
 import one.chartsy.data.provider.file.SimpleCandleLineMapper;
 import one.chartsy.messaging.MarketEvent;
 import one.chartsy.simulation.engine.AlgorithmBacktestRunner;
+import one.chartsy.simulation.engine.BootstrappedTradeBarFactory;
 import one.chartsy.simulation.engine.FlatFileDataMarketSupplier;
 import one.chartsy.simulation.engine.MarketSupplierFactory;
 import one.chartsy.trade.Order;
@@ -62,6 +63,14 @@ public class RunBtcBacktest {
         var result = new AlgorithmBacktestRunner().run(algoFactory, marketFactory, "ALGO");
         System.out.println("Backtest result: " + result);
         System.out.println("Sharpe ratio: " + result.equitySummary().getAnnualSharpeRatio());
+
+        marketFactory = new BootstrappedTradeBarFactory(marketFactory);
+        for (int i = 0; i < 3; i++) {
+            System.out.println("=== RUN " + (i+1) + " ===");
+            result = new AlgorithmBacktestRunner().run(algoFactory, marketFactory, "ALGO");
+            System.out.println("Backtest result: " + result);
+            System.out.println("Sharpe ratio: " + result.equitySummary().getAnnualSharpeRatio());
+        }
     }
 
     static class MyAlgorithm extends AbstractAlgorithm {
@@ -80,7 +89,7 @@ public class RunBtcBacktest {
         @Override
         public void onMarketMessage(MarketEvent event) {
             super.onMarketMessage(event);
-            System.out.println(event);
+            //System.out.println(event);
             if (doOnce.compareAndSet(false, true)) {
                 System.out.println("First event received, placing test order");
 
