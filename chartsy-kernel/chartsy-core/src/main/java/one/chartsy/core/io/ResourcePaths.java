@@ -15,13 +15,11 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 
 /**
- * Utility methods for working with classpath resources as {@link Path Paths}.
+ * Utility methods for working with classpath resources.
  */
 public final class ResourcePaths {
 
-    private ResourcePaths() {
-        // utility class
-    }
+    private ResourcePaths() { }
 
     /**
      * Resolves the given resource name to a {@link Path}.

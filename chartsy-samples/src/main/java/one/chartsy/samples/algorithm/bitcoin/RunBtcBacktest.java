@@ -33,6 +33,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static one.chartsy.core.io.ResourcePaths.pathToResource;
+
 public class RunBtcBacktest {
 
     public static void main(String[] args) throws Exception {
@@ -110,33 +112,6 @@ public class RunBtcBacktest {
         public void onOrderFilled(Order.Filled fill) {
             super.onOrderFilled(fill);
             //System.out.println("Order filled: " + fill);
-        }
-    }
-
-    public static Path pathToResource(String resourceName) throws IOException {
-        String name = resourceName.startsWith("/") ? resourceName.substring(1) : resourceName;
-        ClassLoader cl = Thread.currentThread().getContextClassLoader();
-        URL url = cl.getResource(name);
-        if (url == null) {
-            throw new FileNotFoundException("Resource not found on classpath: " + name);
-        }
-        try {
-            URI uri = url.toURI();
-            if ("file".equalsIgnoreCase(uri.getScheme()))
-                return Paths.get(uri);
-        } catch (Exception ignore) {
-            // fall through to copy-from-stream
-        }
-
-        try (InputStream in = cl.getResourceAsStream(name)) {
-            if (in == null)
-                throw new FileNotFoundException("Resource stream is null: " + name);
-
-            String fileName = Paths.get(name).getFileName().toString();
-            Path tmp = Files.createTempFile("res-", "-" + fileName);
-            Files.copy(in, tmp, StandardCopyOption.REPLACE_EXISTING);
-            tmp.toFile().deleteOnExit();
-            return tmp;
         }
     }
 }
