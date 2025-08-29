@@ -169,17 +169,17 @@ public class EquitySummaryStatistics {
         if (equity < totalEquityLow) {
             totalEquityLow = equity;
         }
-        double currentDrawdown = totalEquityHigh - equity;
-        double currentDrawdownPercent = (totalEquityHigh == 0.0) ? 0.0 : (currentDrawdown / totalEquityHigh);
-        if (currentDrawdown > maxDrawdown) {
+        double currentDrawdown = equity - totalEquityHigh;
+        double currentDrawdownPercent = (totalEquityHigh == 0.0) ? 0.0 : (currentDrawdown / totalEquityHigh) * 100.0;
+        if (currentDrawdown < maxDrawdown) {
             maxDrawdown = currentDrawdown;
             maxDrawdownTime = time;
         }
-        if (currentDrawdownPercent > maxDrawdownPercent) {
+        if (currentDrawdownPercent < maxDrawdownPercent) {
             maxDrawdownPercent = currentDrawdownPercent;
             maxDrawdownPercentTime = time;
         }
-        if (currentDrawdown <= 0.0) {
+        if (currentDrawdown >= 0.0) {
             currentDrawdownStartTime = time;
         }
         longestDrawdownDuration = Math.max(longestDrawdownDuration, time - currentDrawdownStartTime);

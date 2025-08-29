@@ -43,8 +43,8 @@ public class StandardScoreEstimatorTest {
 
         approx(zs.mean(), meanExp, 1e-12, "mean");
         approx(zs.sampleStandardDeviation(), sdExp, 1e-12, "sd");
-        approx(r.confidenceInterval().min(), ciLoExp, 5e-4, "CI lower");
-        approx(r.confidenceInterval().max(), ciHiExp, 5e-4, "CI upper");
+        approx(r.normalConfidenceInterval().min(), ciLoExp, 5e-4, "CI lower");
+        approx(r.normalConfidenceInterval().max(), ciHiExp, 5e-4, "CI upper");
     }
 
     @Test
@@ -58,8 +58,8 @@ public class StandardScoreEstimatorTest {
         var rb = estimator.estimate(TARGET + c, b, CL);
 
         approx(ra.score(), rb.score(), 1e-12, "z_hat shift");
-        approx(ra.confidenceInterval().min(), rb.confidenceInterval().min(), 1e-6, "CI lower shift");
-        approx(ra.confidenceInterval().max(), rb.confidenceInterval().max(), 1e-6, "CI upper shift");
+        approx(ra.normalConfidenceInterval().min(), rb.normalConfidenceInterval().min(), 1e-6, "CI lower shift");
+        approx(ra.normalConfidenceInterval().max(), rb.normalConfidenceInterval().max(), 1e-6, "CI upper shift");
     }
 
     @Test
@@ -73,8 +73,8 @@ public class StandardScoreEstimatorTest {
         var rb = estimator.estimate(s * TARGET, b, CL);
 
         approx(ra.score(), rb.score(), 1e-12, "z_hat scale");
-        approx(ra.confidenceInterval().min(), rb.confidenceInterval().min(), 1e-6, "CI lower scale");
-        approx(ra.confidenceInterval().max(), rb.confidenceInterval().max(), 1e-6, "CI upper scale");
+        approx(ra.normalConfidenceInterval().min(), rb.normalConfidenceInterval().min(), 1e-6, "CI lower scale");
+        approx(ra.normalConfidenceInterval().max(), rb.normalConfidenceInterval().max(), 1e-6, "CI upper scale");
     }
 
     @Test
@@ -86,8 +86,8 @@ public class StandardScoreEstimatorTest {
         var r2 = estimator.estimate(11.0, z2, CL);
 
         assertTrue(r2.score() > r1.score(), "z_hat should increase");
-        assertTrue(r2.confidenceInterval().min() > r1.confidenceInterval().min(), "CI lower should increase");
-        assertTrue(r2.confidenceInterval().max() > r1.confidenceInterval().max(), "CI upper should increase");
+        assertTrue(r2.normalConfidenceInterval().min() > r1.normalConfidenceInterval().min(), "CI lower should increase");
+        assertTrue(r2.normalConfidenceInterval().max() > r1.normalConfidenceInterval().max(), "CI upper should increase");
     }
 
     @Test
@@ -98,8 +98,8 @@ public class StandardScoreEstimatorTest {
         var zs = make(VALUES);
         var r = estimator.estimate(sampleMean, zs, CL);
 
-        double s = r.confidenceInterval().max();
-        double sym = Math.abs((r.confidenceInterval().max() + r.confidenceInterval().min()) / Math.max(1.0, Math.abs(s)));
+        double s = r.normalConfidenceInterval().max();
+        double sym = Math.abs((r.normalConfidenceInterval().max() + r.normalConfidenceInterval().min()) / Math.max(1.0, Math.abs(s)));
         assertTrue(sym <= 1e-8, "CI not symmetric about 0");
     }
 
@@ -134,7 +134,7 @@ public class StandardScoreEstimatorTest {
                 zs.add(mu + sigma * rng.nextGaussian());
 
             StandardScore r = estimator.estimate(target, zs.snapshot(), CL);
-            if (r.confidenceInterval().min() <= trueTheta && trueTheta <= r.confidenceInterval().max())
+            if (r.normalConfidenceInterval().min() <= trueTheta && trueTheta <= r.normalConfidenceInterval().max())
                 covered++;
         }
         double coverage = covered / (double) trials;

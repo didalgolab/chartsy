@@ -42,10 +42,9 @@ public class DefaultSampleSet implements SampleSet {
 
     @Override
     public void addAll(double... values) {
-        if (values == null)
-            return;
-        for (double x : values)
-            add(x);
+        if (values != null)
+            for (double x : values)
+                add(x);
     }
 
     @Override
@@ -53,8 +52,7 @@ public class DefaultSampleSet implements SampleSet {
         if (values == null)
             return;
         if (offset < 0 || length < 0 || offset + length > values.length)
-            throw new IndexOutOfBoundsException("Invalid slice: offset=" + offset + ", length=" + length
-                    + ", array.length=" + values.length);
+            throw new IndexOutOfBoundsException("Invalid slice: offset=" + offset + ", length=" + length + ", array.length=" + values.length);
 
         for (int i = 0; i < length; i++)
             add(values[offset + i]);
@@ -94,20 +92,6 @@ public class DefaultSampleSet implements SampleSet {
     @Override
     public final double max() {
         return max;
-    }
-
-    /** z_hat in sample-sigma units: (value - mean_hat) / s. NaN if not ready. */
-    public final double getZHat(double value) {
-        if (!isReady())
-            return Double.NaN;
-        return (value - mean) / sampleStandardDeviation();
-    }
-
-    /** Observed noncentral-t statistic: sqrt(n)*(value - mean)/s. NaN if not ready. */
-    public final double getTObs(double value) {
-        if (!isReady())
-            return Double.NaN;
-        return Math.sqrt((double) count) * (value - mean) / sampleStandardDeviation();
     }
 
     @Override

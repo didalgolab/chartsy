@@ -25,13 +25,13 @@ public interface StandardScore {
     /**
      * @return the confidence interval for the true standardized score parameter
      */
-    Range confidenceInterval();
+    Range normalConfidenceInterval();
 
     /**
      * @return the statistics snapshot used for the calculation (at call time)
      */
     SampleSetSnapshot statisticsUsed();
 
-    record Of(double value, double score, Range confidenceInterval, SampleSetSnapshot statisticsUsed)
+    record Of(double value, double score, Range normalConfidenceInterval, SampleSetSnapshot statisticsUsed)
             implements StandardScore { }
 }

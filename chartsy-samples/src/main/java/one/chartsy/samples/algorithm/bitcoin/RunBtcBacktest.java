@@ -9,7 +9,6 @@ import one.chartsy.data.provider.file.FlatFileFormat;
 import one.chartsy.data.provider.file.SimpleCandleLineMapper;
 import one.chartsy.messaging.MarketEvent;
 import one.chartsy.simulation.engine.AlgorithmBacktestRunner;
-import one.chartsy.simulation.engine.BootstrappedTradeBarFactory;
 import one.chartsy.simulation.engine.FlatFileDataMarketSupplier;
 import one.chartsy.simulation.engine.MarketSupplierFactory;
 import one.chartsy.trade.Order;
@@ -60,17 +59,25 @@ public class RunBtcBacktest {
                         startDate.atStartOfDay().atZone(ZoneOffset.UTC).toInstant());
 
         // Run the backtest.
-        var result = new AlgorithmBacktestRunner().run(algoFactory, marketFactory, "ALGO");
-        System.out.println("Backtest result: " + result);
-        System.out.println("Sharpe ratio: " + result.equitySummary().getAnnualSharpeRatio());
+        var backtestResult = new AlgorithmBacktestRunner().run(algoFactory, marketFactory, "ALGO");
+        System.out.println("Backtest Result: " + backtestResult);
+        System.out.println("Sharpe ratio: " + backtestResult.equitySummary().getAnnualSharpeRatio());
 
+        // Bootstrap the results.
+        /*
+        var bootstrap = new BootstrappedEstimator<EquitySummaryStatistics>();
         marketFactory = new BootstrappedTradeBarFactory(marketFactory);
-        for (int i = 0; i < 3; i++) {
-            System.out.println("=== RUN " + (i+1) + " ===");
-            result = new AlgorithmBacktestRunner().run(algoFactory, marketFactory, "ALGO");
-            System.out.println("Backtest result: " + result);
-            System.out.println("Sharpe ratio: " + result.equitySummary().getAnnualSharpeRatio());
+        for (int i = 0; i <= 10_000; i++) {
+            var log = i % 1_000 == 0;
+            if (log) System.out.println("=== RUN " + (i+1) + " ===");
+            var bootstrapResult = new AlgorithmBacktestRunner().run(algoFactory, marketFactory, "ALGO");
+            bootstrap.accept(bootstrapResult.equitySummary());
+            //System.out.println("Backtest backtestResult: " + backtestResult);
+            if (log) System.out.println("Bootstrap Sharpe: " + bootstrapResult.equitySummary().getAnnualSharpeRatio());
+            if (log) System.out.println("Bootstrap z-Score: " +
+                            bootstrap.estimate(backtestResult.equitySummary()).get("annualSharpeRatio"));
         }
+        */
     }
 
     static class MyAlgorithm extends AbstractAlgorithm {
@@ -91,7 +98,7 @@ public class RunBtcBacktest {
             super.onMarketMessage(event);
             //System.out.println(event);
             if (doOnce.compareAndSet(false, true)) {
-                System.out.println("First event received, placing test order");
+                //System.out.println("First event received, placing test order");
 
                 Order.Builder marketOrder = makeMarketOrder(Order.Side.BUY, 1.0, event.symbol());
                 marketOrder.destinationId("SIMULATOR");
@@ -102,7 +109,7 @@ public class RunBtcBacktest {
         @Override
         public void onOrderFilled(Order.Filled fill) {
             super.onOrderFilled(fill);
-            System.out.println("Order filled: " + fill);
+            //System.out.println("Order filled: " + fill);
         }
     }
 
