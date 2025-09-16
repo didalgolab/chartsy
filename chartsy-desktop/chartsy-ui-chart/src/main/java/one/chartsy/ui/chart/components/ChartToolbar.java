@@ -40,6 +40,7 @@ public class ChartToolbar extends JToolBar implements Serializable {
 
     private final ChartFrame chartFrame;
     private SymbolChanger symbolChanger;
+    private TimeFrameSelector timeFrameSelector;
     private Action favoriteAction;
     
     public ChartToolbar(ChartFrame frame) {
@@ -58,7 +59,10 @@ public class ChartToolbar extends JToolBar implements Serializable {
         // SymbolChanger toolbar
         symbolChanger = new SymbolChanger(chartFrame);
         add(symbolChanger);
-        
+
+        timeFrameSelector = new TimeFrameSelector(chartFrame);
+        add(timeFrameSelector);
+
         // ChartToolbar buttons
         addSeparator();
         add(createButton(ChartActions.zoomIn(chartFrame)));

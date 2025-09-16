@@ -73,7 +73,8 @@ public class StooqDataProvider extends AbstractDataProvider implements SymbolPro
         return TimeFrame.Period.M1;
     }
     
-    private static Map<TimeFrame, String> intervals = new LinkedHashMap<>();
+    private static final Map<TimeFrame, String> intervals = new LinkedHashMap<>();
+    private static final List<TimeFrame> supportedTimeFrames;
     static {
         intervals.put(TimeFrame.Period.QUARTERLY, "q");
         intervals.put(TimeFrame.Period.MONTHLY, "m");
@@ -89,6 +90,12 @@ public class StooqDataProvider extends AbstractDataProvider implements SymbolPro
         intervals.put(TimeFrame.Period.M5, "5");
         intervals.put(TimeFrame.Period.M3, "3");
         intervals.put(TimeFrame.Period.M1, "1");
+        supportedTimeFrames = List.copyOf(intervals.keySet());
+    }
+
+    @Override
+    public List<TimeFrame> getAvailableTimeFrames(SymbolIdentity symbol) {
+        return supportedTimeFrames;
     }
 
     @Override
@@ -151,8 +158,6 @@ public class StooqDataProvider extends AbstractDataProvider implements SymbolPro
             itemReader.open();
             List<Candle> items = itemReader.readAll();
 
-            System.out.println(items);
-
             //items.sort(Comparator.naturalOrder());
             if (query.endTime() != null) {
                 long endTime = Chronological.toEpochNanos(query.endTime());
@@ -214,7 +219,7 @@ public class StooqDataProvider extends AbstractDataProvider implements SymbolPro
         String[] rows = response.split("\\|");
         for (String row : rows) {
             String[] c = row.split("~");
-            if (c.length == 0)
+            if (c.length <= 2)
                 continue;
 
             var symb = new Symbol.Builder(SymbolIdentity.of(c[0]), this)

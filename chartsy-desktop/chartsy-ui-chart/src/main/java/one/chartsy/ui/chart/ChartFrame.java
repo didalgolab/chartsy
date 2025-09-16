@@ -363,6 +363,9 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
 
         datasetLoading(symbol, timeFrame);
 
+        if (!timeFrame.equals(chartData.getTimeFrame()))
+            chartFrameListeners.fire().timeFrameChanged(timeFrame);
+
         // reverse back to predefined bar width
         if (chartTemplate != null)
             chartProperties.setBarWidth(chartTemplate.getChartProperties().getBarWidth());
@@ -385,6 +388,13 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
 
         // notify listeners
         chartFrameListeners.fire().symbolChanged(newSymbol);
+    }
+
+    public void timeFrameChanged(TimeFrame newTimeFrame) {
+        SymbolIdentity symbol = chartData.getSymbol();
+        datasetLoading(symbol, newTimeFrame);
+
+        chartFrameListeners.fire().timeFrameChanged(newTimeFrame);
     }
 
     private void datasetLoading(SymbolIdentity newSymbol, TimeFrame timeFrame) {
