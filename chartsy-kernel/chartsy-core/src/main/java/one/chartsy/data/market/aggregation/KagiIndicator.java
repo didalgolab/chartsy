@@ -39,13 +39,16 @@ public class KagiIndicator implements Incomplete<Kagi<Candle>> {
         return kagi;
     }
 
-    public int length() {
+    public final int length() {
         return output.size();
     }
 
-    public Kagi<Candle> get(int index) {
-        var mappedIndex = output.size() - 1 - index;
-        return output.get(mappedIndex);
+    protected int mapIndex(int index) {
+        return output.size() - 1 - index;
+    }
+
+    public final Kagi<Candle> get(int index) {
+        return output.get(mapIndex(index));
     }
 
     public void addOutput(Kagi<Candle> candle) {
@@ -56,7 +59,7 @@ public class KagiIndicator implements Incomplete<Kagi<Candle>> {
         if (output.isEmpty())
             addOutput(candle);
         else
-            output.set(output.size() - 1, candle);
+            output.set(mapIndex(0), candle);
     }
 
     public void addOutputUpdate(Incomplete<Kagi<Candle>> candle) {

@@ -24,7 +24,10 @@ public class KagiCandleBuilder<C extends Candle, T extends Tick> implements Inco
     protected int formedElementsCount;
     protected Kagi.Trend kagiTrend = UNSPECIFIED;
     protected Kagi.Trend direction = UNSPECIFIED;
-    protected final List<Consumer<CandleBuilder<C,T>>> pendingItems = new LinkedList<>();
+    // NOTE: pendingItems are intentionally flushed into the NEW leg.
+    // We DO NOT flush before finalizing the previous leg, so that all
+    // post-extreme elements belong to the following Kagi handle by design.
+    protected final List<Consumer<CandleBuilder<C,T>>> nextLegElements = new LinkedList<>();
 
     public KagiCandleBuilder(CandleBuilder<C,T> baseBuilder) {
         this.base = baseBuilder;
@@ -35,7 +38,7 @@ public class KagiCandleBuilder<C extends Candle, T extends Tick> implements Inco
         return base.isPresent();
     }
 
-    public Kagi.Trend direction() {
+    public final Kagi.Trend direction() {
         return direction;
     }
 
@@ -58,15 +61,15 @@ public class KagiCandleBuilder<C extends Candle, T extends Tick> implements Inco
     }
 
     protected void addBaseCandle(C c) {
-        if (!pendingItems.isEmpty())
-            addBaseElements(pendingItems);
+        if (!nextLegElements.isEmpty())
+            addBaseElements(nextLegElements);
         base.addCandle(c);
         formedElementsCount++;
     }
 
     protected void addBaseTick(T t) {
-        if (!pendingItems.isEmpty())
-            addBaseElements(pendingItems);
+        if (!nextLegElements.isEmpty())
+            addBaseElements(nextLegElements);
         base.addTick(t);
         formedElementsCount++;
     }
@@ -113,7 +116,7 @@ public class KagiCandleBuilder<C extends Candle, T extends Tick> implements Inco
             }
         }
 
-        pendingItems.add(cb -> cb.addCandle(c));
+        nextLegElements.add(cb -> cb.addCandle(c));
     }
 
     public void addTick(T t) {
@@ -143,7 +146,7 @@ public class KagiCandleBuilder<C extends Candle, T extends Tick> implements Inco
             }
         }
 
-        pendingItems.add(cb -> cb.addTick(t));
+        nextLegElements.add(cb -> cb.addTick(t));
     }
 
     @Override

@@ -4,23 +4,25 @@ import one.chartsy.Candle;
 import one.chartsy.data.ReversalAmount;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 /**
- * A coordinated set of {@link KagiIndicator}s, each with a different reversal amount, that can collectively be updated
- * with new candles. This class simplifies managing multiple Kagi indicators simultaneously, such as when
- * scanning for patterns across a range of reversal amounts.
+ * A coordinated set of {@link KagiIndicator}s, each with a different reversal amount,
+ * that can collectively be updated with new candles. This class simplifies managing
+ * multiple Kagi indicators simultaneously, such as when scanning for patterns across
+ * a range of reversal amounts.
  *
  * <p>Typical usage:</p>
  * <pre>
  * KagiSuite suite = KagiSuite.ofPercentageRange(5.0, 0.05, 200);
  * for (Candle candle : candles) {
- *     suite.onCandle(candle);
+ *     suite.accept(candle);
  *     suite.stream().forEach(indicator -> ...);
  * }
  * </pre>
  */
-public final class KagiSuite implements Iterable<KagiIndicator> {
+public final class KagiSuite implements Consumer<Candle>, Iterable<KagiIndicator> {
 
     private final List<KagiIndicator> indicators;
 
@@ -37,8 +39,8 @@ public final class KagiSuite implements Iterable<KagiIndicator> {
      * Creates a {@code KagiSuite} consisting of a sequence of {@link KagiIndicator}s,
      * each having a reversal amount expressed as a percentage.
      *
-     * <p>The suite is generated with reversal percentages starting at {@code start}, incrementing by {@code step},
-     * for a total of {@code count} indicators.</p>
+     * <p>The suite is generated with reversal percentages starting at {@code start},
+     * incrementing by {@code step}, for a total of {@code count} indicators.</p>
      *
      * @param start the initial reversal percentage
      * @param step  the incremental step between consecutive indicators' reversal percentages
@@ -59,7 +61,8 @@ public final class KagiSuite implements Iterable<KagiIndicator> {
      *
      * @param candle the latest candle to be processed by each indicator
      */
-    public void onCandle(Candle candle) {
+    @Override
+    public void accept(Candle candle) {
         indicators.forEach(indicator -> indicator.onCandle(candle));
     }
 

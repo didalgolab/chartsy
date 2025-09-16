@@ -19,9 +19,10 @@ public class Kagi<C extends Candle> extends AbstractCandle<C> {
 
     protected Kagi(C baseCandle, double open, double close, Trend trend, double yinLevel, double yangLevel, int formedElementsCount) {
         super(baseCandle);
-        if (yangLevel <= yinLevel)
-            throw new IllegalArgumentException(String.format("Yang level cannot be less than Yin level, was: %s vs %s", yangLevel, yinLevel));
-
+        if (!Double.isNaN(yangLevel) && !Double.isNaN(yinLevel) && yangLevel <= yinLevel) {
+            throw new IllegalArgumentException(
+                    String.format("Yang level cannot be less than or equal to Yin level, was: %s vs %s", yangLevel, yinLevel));
+        }
         this.open = open;
         this.close = close;
         this.trend = trend;
@@ -75,6 +76,6 @@ public class Kagi<C extends Candle> extends AbstractCandle<C> {
 
     @Override
     public String toString() {
-        return "\"" + getDateTime() + "\": {\"Kagi\": {\"OC\":[" + open() + "," + close() + "], \"trend\":" + trend() + "}}";
+        return "{\"" + getDateTime() + "\": {\"Kagi\": {\"OC\":[" + open() + "," + close() + "], \"trend\":\"" + trend() + "\"}}}";
     }
 }
