@@ -3,7 +3,7 @@
  */
 package one.chartsy.simulation.engine.account;
 
-import one.chartsy.api.messages.TradeBar;
+import one.chartsy.messaging.data.TradeBar;
 import one.chartsy.simulation.reporting.EquitySummaryStatistics;
 import one.chartsy.trade.account.AccountBalanceEntry;
 

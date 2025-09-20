@@ -3,8 +3,8 @@
  */
 package one.chartsy.trade.service;
 
-import one.chartsy.api.messages.ShutdownResponse;
-import one.chartsy.api.messages.handlers.ShutdownResponseHandler;
+import one.chartsy.messaging.common.ShutdownResponse;
+import one.chartsy.messaging.common.handlers.ShutdownResponseHandler;
 import one.chartsy.service.Service;
 import one.chartsy.time.Clock;
 import one.chartsy.trade.Order;

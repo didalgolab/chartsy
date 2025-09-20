@@ -4,10 +4,10 @@
 package one.chartsy.trade.algorithm.data;
 
 import one.chartsy.SymbolIdentity;
-import one.chartsy.api.messages.BestBidOfferEvent;
-import one.chartsy.api.messages.TradeBar;
-import one.chartsy.api.messages.TradeTick;
 import one.chartsy.messaging.MarketEvent;
+import one.chartsy.messaging.data.BestBidOfferEvent;
+import one.chartsy.messaging.data.TradeBar;
+import one.chartsy.messaging.data.TradeTick;
 
 public class SimpleInstrumentPrices extends AbstractInstrumentData {
     protected double lastTradePrice = Double.NaN;

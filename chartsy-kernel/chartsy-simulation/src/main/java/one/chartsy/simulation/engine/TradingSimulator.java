@@ -4,10 +4,10 @@
 package one.chartsy.simulation.engine;
 
 import one.chartsy.SymbolIdentity;
-import one.chartsy.api.messages.TradeBar;
 import one.chartsy.financial.price.MarketPriceService;
 import one.chartsy.messaging.MarketEvent;
 import one.chartsy.messaging.MarketMessageHandler;
+import one.chartsy.messaging.data.TradeBar;
 import one.chartsy.simulation.engine.account.SimulatorAccount;
 import one.chartsy.trade.Order;
 import one.chartsy.trade.data.OrderRequestEvent;

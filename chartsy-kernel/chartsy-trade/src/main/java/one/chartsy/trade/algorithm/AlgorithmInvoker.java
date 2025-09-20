@@ -4,20 +4,20 @@
 package one.chartsy.trade.algorithm;
 
 import lombok.Getter;
-import one.chartsy.util.OpenCloseable;
-import one.chartsy.api.messages.ShutdownRequest;
-import one.chartsy.api.messages.ShutdownResponse;
-import one.chartsy.api.messages.handlers.ShutdownRequestHandler;
-import one.chartsy.api.messages.handlers.ShutdownResponseHandler;
+import one.chartsy.base.OpenDisposable;
 import one.chartsy.core.event.AbstractInvoker;
 import one.chartsy.data.stream.Message;
 import one.chartsy.data.stream.MessageHandler;
 import one.chartsy.messaging.MarketMessageHandler;
+import one.chartsy.messaging.common.ShutdownRequest;
+import one.chartsy.messaging.common.ShutdownResponse;
+import one.chartsy.messaging.common.handlers.ShutdownRequestHandler;
+import one.chartsy.messaging.common.handlers.ShutdownResponseHandler;
 
 @Getter
 public class AlgorithmInvoker extends AbstractInvoker implements MessageHandler {
 
-    private final OpenCloseable manageableHandler = getHandler(OpenCloseable.class);
+    private final OpenDisposable manageableHandler = getHandler(OpenDisposable.class);
     private final MarketMessageHandler marketMessageHandler = getHandler(MarketMessageHandler.class);
 
     public AlgorithmInvoker(Algorithm algorithm) {

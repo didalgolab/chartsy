@@ -14,7 +14,7 @@ public interface MessageBuffer {
      * {@link MessageHandler} for each message. The number of messages processed
      * is limited by the {@code pollLimit} parameter.
      *
-     * @param handler      the {@link MessageHandler} to process each message
+     * @param handler   the {@link MessageHandler} to process each message
      * @param pollLimit the maximum number of messages to process in this call
      * @return the actual number of messages that were processed
      */

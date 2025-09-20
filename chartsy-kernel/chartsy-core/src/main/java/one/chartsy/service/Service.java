@@ -3,9 +3,9 @@
  */
 package one.chartsy.service;
 
-import one.chartsy.util.OpenCloseable;
+import one.chartsy.base.OpenDisposable;
 
-public interface Service extends OpenCloseable {
+public interface Service extends OpenDisposable {
 
     String getId();
 }

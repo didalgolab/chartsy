@@ -3,10 +3,10 @@
  */
 package one.chartsy.trade.algorithm;
 
-import one.chartsy.api.messages.handlers.ShutdownResponseHandler;
 import one.chartsy.data.stream.Message;
 import one.chartsy.data.stream.MessageChannel;
 import one.chartsy.data.stream.MessageChannelException;
+import one.chartsy.messaging.common.handlers.ShutdownResponseHandler;
 import one.chartsy.time.Clock;
 import one.chartsy.trade.service.OrderHandler;
 import one.chartsy.util.SequenceGenerator;

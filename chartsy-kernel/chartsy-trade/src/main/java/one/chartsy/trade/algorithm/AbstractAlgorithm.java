@@ -4,8 +4,8 @@
 package one.chartsy.trade.algorithm;
 
 import one.chartsy.SymbolIdentity;
-import one.chartsy.api.messages.ShutdownRequest;
 import one.chartsy.messaging.MarketEvent;
+import one.chartsy.messaging.common.ShutdownRequest;
 import one.chartsy.time.Chronological;
 import one.chartsy.time.Clock;
 import one.chartsy.time.DateChangeSignal;

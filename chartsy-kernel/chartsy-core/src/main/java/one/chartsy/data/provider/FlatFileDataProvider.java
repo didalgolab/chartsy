@@ -2,19 +2,25 @@
  * SPDX-License-Identifier: Apache-2.0 */
 package one.chartsy.data.provider;
 
-import one.chartsy.*;
-import one.chartsy.api.messages.TradeBar;
+import one.chartsy.Candle;
+import one.chartsy.Symbol;
+import one.chartsy.SymbolGroup;
+import one.chartsy.SymbolIdentity;
 import one.chartsy.context.ExecutionContext;
 import one.chartsy.core.ResourceHandle;
 import one.chartsy.data.DataQuery;
 import one.chartsy.data.SimpleCandle;
 import one.chartsy.data.UnsupportedDataQueryException;
-import one.chartsy.data.provider.file.*;
+import one.chartsy.data.provider.file.FileSystemCache;
+import one.chartsy.data.provider.file.FlatFileFormat;
+import one.chartsy.data.provider.file.FlatFileItemReader;
+import one.chartsy.data.provider.file.LineMapper;
 import one.chartsy.financial.IdentityType;
 import one.chartsy.financial.InstrumentType;
 import one.chartsy.financial.SymbolIdentifier;
 import one.chartsy.messaging.MarketEvent;
 import one.chartsy.messaging.MarketMessageSource;
+import one.chartsy.messaging.data.TradeBar;
 import one.chartsy.time.Chronological;
 import one.chartsy.util.CloseHelper;
 import org.apache.commons.lang3.StringUtils;
@@ -24,9 +30,20 @@ import reactor.core.publisher.Flux;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.*;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.TreeMap;
 import java.util.function.Predicate;
 
 public class FlatFileDataProvider extends AbstractDataProvider implements SymbolListAccessor, SymbolProposalProvider, HierarchicalConfiguration {

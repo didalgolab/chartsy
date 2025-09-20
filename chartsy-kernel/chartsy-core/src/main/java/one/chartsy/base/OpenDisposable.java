@@ -1,7 +1,7 @@
 /* Copyright 2025 Mariusz Bernacki <consulting@didalgo.com>
  * SPDX-License-Identifier: Apache-2.0
  */
-package one.chartsy.util;
+package one.chartsy.base;
 
 /**
  * A resource with an explicit open/close lifecycle.
@@ -48,25 +48,19 @@ package one.chartsy.util;
  *
  * <h2>Usage</h2>
  * <pre>{@code
- * try (OpenCloseable r = resourceFactory.create()) {
+ * try (OpenDisposable r = resourceFactory.create()) {
  *     r.open();
  *     // use r
  * } // close() is invoked automatically
  * }</pre>
  *
  * @see AutoCloseable
+ * @see Disposable
  */
-public interface OpenCloseable extends AutoCloseable {
+public interface OpenDisposable extends Disposable {
 
     /**
      * Acquire underlying resources and transition the instance to the OPEN state.
      */
     void open();
-
-    /**
-     * Release underlying resources and transition the instance to the CLOSED state.
-     * <p>
-     * This method MUST be idempotent: invoking it when already closed must have no effect.
-     */
-    @Override void close();
 }

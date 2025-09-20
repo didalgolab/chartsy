@@ -16,8 +16,7 @@ public interface MarketMessageSource extends MessageSource<MarketEvent> {
      *
      * @return the next {@link MarketEvent}, or {@code null} if no more messages are available
      */
-    @Override
-    MarketEvent getMessage();
+    @Override MarketEvent getMessage();
 
     /**
      * Checks if the message source is open and available for providing messages.

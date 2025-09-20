@@ -3,12 +3,12 @@
  */
 package one.chartsy.trade.algorithm;
 
-import one.chartsy.api.messages.handlers.ShutdownResponseHandler;
 import one.chartsy.core.event.ListenerList;
 import one.chartsy.data.stream.MessageChannel;
 import one.chartsy.data.stream.MessageChannelException;
 import one.chartsy.kernel.data.stream.csv.CsvResourceMessageChannel;
 import one.chartsy.kernel.data.stream.json.JsonlResourceMessageChannel;
+import one.chartsy.messaging.common.handlers.ShutdownResponseHandler;
 import org.springframework.beans.InvalidPropertyException;
 import org.springframework.beans.PropertyAccessor;
 

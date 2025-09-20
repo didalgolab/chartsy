@@ -2,9 +2,9 @@ package one.chartsy.simulation.engine;
 
 import one.chartsy.Candle;
 import one.chartsy.SymbolIdentity;
-import one.chartsy.api.messages.TradeBar;
 import one.chartsy.messaging.MarketEvent;
 import one.chartsy.messaging.MarketMessageHandler;
+import one.chartsy.messaging.data.TradeBar;
 import one.chartsy.trade.algorithm.MarketSupplier;
 import one.chartsy.util.CloseHelper;
 

@@ -1,7 +1,7 @@
 /* Copyright 2024 Mariusz Bernacki <consulting@didalgo.com>
  * SPDX-License-Identifier: Apache-2.0
  */
-package one.chartsy.api.messages;
+package one.chartsy.messaging.common;
 
 import one.chartsy.data.stream.Message;
 

@@ -5,7 +5,7 @@ package one.chartsy.trade.account;
 
 import one.chartsy.Candle;
 import one.chartsy.SymbolIdentity;
-import one.chartsy.api.messages.TradeBar;
+import one.chartsy.messaging.data.TradeBar;
 import one.chartsy.trade.Direction;
 import one.chartsy.trade.Order;
 import org.junit.jupiter.api.Test;
@@ -15,7 +15,9 @@ import org.junit.jupiter.params.provider.CsvSource;
 import java.util.function.Consumer;
 
 import static one.chartsy.time.Chronological.now;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class AccountBalanceEntryTest {
     static final double EPSILON = 1E-13;

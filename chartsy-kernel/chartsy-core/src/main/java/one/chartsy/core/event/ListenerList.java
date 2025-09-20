@@ -10,7 +10,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -92,7 +91,7 @@ public class ListenerList<L> implements InvocationHandler, Serializable {
      *         not an interface.
      */
     public static <T> ListenerList<T> of(Class<T> listenerInterface) {
-        return new ListenerList<>((Class<T>)listenerInterface);
+        return new ListenerList<>(listenerInterface);
     }
 
     /**

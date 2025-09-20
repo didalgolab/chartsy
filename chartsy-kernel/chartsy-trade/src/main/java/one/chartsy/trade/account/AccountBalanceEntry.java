@@ -5,8 +5,8 @@ package one.chartsy.trade.account;
 
 import one.chartsy.DirectionInformation;
 import one.chartsy.SymbolIdentity;
-import one.chartsy.api.messages.TradeBar;
 import one.chartsy.core.event.ListenerList;
+import one.chartsy.messaging.data.TradeBar;
 import one.chartsy.time.Chronological;
 import one.chartsy.trade.Direction;
 import one.chartsy.trade.OrderTrade;

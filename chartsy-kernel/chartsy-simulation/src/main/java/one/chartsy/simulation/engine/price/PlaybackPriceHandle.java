@@ -5,10 +5,10 @@ package one.chartsy.simulation.engine.price;
 
 import one.chartsy.Candle;
 import one.chartsy.SymbolIdentity;
-import one.chartsy.api.messages.TradeBar;
 import one.chartsy.financial.price.PriceHandle;
 import one.chartsy.messaging.MarketEvent;
 import one.chartsy.messaging.MarketMessageHandler;
+import one.chartsy.messaging.data.TradeBar;
 
 public class PlaybackPriceHandle implements PriceHandle, MarketMessageHandler {
 

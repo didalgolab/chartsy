@@ -3,10 +3,10 @@
  */
 package one.chartsy.service.proxy;
 
-import one.chartsy.util.OpenCloseable;
+import one.chartsy.base.OpenDisposable;
 import one.chartsy.data.stream.Message;
 
-public interface ServiceProxy extends OpenCloseable {
+public interface ServiceProxy extends OpenDisposable {
 
     boolean offer(Message message);
 }

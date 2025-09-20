@@ -1,9 +1,9 @@
 /* Copyright 2024 Mariusz Bernacki <consulting@didalgo.com>
  * SPDX-License-Identifier: Apache-2.0
  */
-package one.chartsy.api.messages.handlers;
+package one.chartsy.messaging.common.handlers;
 
-import one.chartsy.api.messages.ShutdownResponse;
+import one.chartsy.messaging.common.ShutdownResponse;
 
 /**
  * An interface for handling {@link ShutdownResponse} messages. Implementations
