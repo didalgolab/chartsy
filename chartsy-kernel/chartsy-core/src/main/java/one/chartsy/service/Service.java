@@ -3,9 +3,9 @@
  */
 package one.chartsy.service;
 
-import one.chartsy.Openable;
+import one.chartsy.util.OpenCloseable;
 
-public interface Service extends Openable {
+public interface Service extends OpenCloseable {
 
     String getId();
 }
