@@ -16,7 +16,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 public class QueuedMessageBuffer<T extends Message> implements MessageBuffer, MessageChannel<T> {
 
     private final Queue<T> queue;
-    private volatile boolean open;
+    private volatile boolean closed;
 
     /**
      * Constructs an {@code ArrayBlockingQueue}-backed {@link MessageBuffer} with the specified capacity.
@@ -34,22 +34,13 @@ public class QueuedMessageBuffer<T extends Message> implements MessageBuffer, Me
      */
     public QueuedMessageBuffer(Queue<T> queue) {
         this.queue = queue;
-        this.open = true;
     }
 
     /**
-     * Opens the message buffer, allowing it to accept new messages and process
-     * existing ones. This method should be called before the buffer is used.
+     * @return {@code true} if the message buffer is closed, {@code false} otherwise
      */
-    public void open() {
-        this.open = true;
-    }
-
-    /**
-     * @return {@code true} if the message buffer is opened, {@code false} otherwise
-     */
-    public boolean isOpen() {
-        return this.open;
+    public boolean isClosed() {
+        return this.closed;
     }
 
     /**
@@ -58,7 +49,7 @@ public class QueuedMessageBuffer<T extends Message> implements MessageBuffer, Me
      */
     @Override
     public void close() {
-        this.open = false;
+        closed = true;
         queue.clear();
     }
 
@@ -71,7 +62,7 @@ public class QueuedMessageBuffer<T extends Message> implements MessageBuffer, Me
      */
     @Override
     public void send(T msg) {
-        if (!isOpen())
+        if (isClosed())
             throw new IllegalStateException("Message buffer is closed");
         if (!queue.offer(msg))
             throw new IllegalStateException("Message buffer is full");
@@ -82,7 +73,7 @@ public class QueuedMessageBuffer<T extends Message> implements MessageBuffer, Me
      * {@link MessageHandler} for each message. The number of messages processed
      * is limited by the {@code pollLimit} parameter.
      *
-     * @param handler      the {@link MessageHandler} to process each message
+     * @param handler   the {@link MessageHandler} to process each message
      * @param pollLimit the maximum number of messages to process in this call
      * @return the actual number of messages that were processed
      */

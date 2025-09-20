@@ -3,7 +3,7 @@
  */
 package one.chartsy.trade.algorithm;
 
-import one.chartsy.base.Disposable;
+import one.chartsy.base.OpenDisposable;
 import one.chartsy.messaging.MarketMessageHandler;
 
 /**
@@ -23,17 +23,9 @@ import one.chartsy.messaging.MarketMessageHandler;
  * </ul>
  *
  * @see MarketMessageHandler
- * @see Disposable
+ * @see OpenDisposable
  */
-public interface MarketSupplier extends Disposable {
-
-    /**
-     * Opens and initializes the market supplier for subsequent message retrieval.
-     * <p>
-     * This method must be called exactly once before any call to {@link #poll(MarketMessageHandler, int)}.
-     * It typically establishes connections, initializes state, and prepares the data feed for consumption.
-     */
-    void open();
+public interface MarketSupplier extends OpenDisposable {
 
     /**
      * Polls and delivers a sequential batch of market data messages corresponding to the next available timestamp.
@@ -43,19 +35,9 @@ public interface MarketSupplier extends Disposable {
      * integrity. If fewer messages are available than the specified limit, only those available are returned, ensuring
      * precise event-time alignment. Subsequent calls to this method will progress through the sequence of timestamps in ascending order.
      *
-     * @param handler      the {@link MarketMessageHandler} that processes retrieved market messages
+     * @param handler   the {@link MarketMessageHandler} that processes retrieved market messages
      * @param pollLimit the maximum number of messages to retrieve in this call; helps control memory usage and throughput
      * @return the actual number of messages retrieved and delivered to the handler; returns {@code 0} if no further messages remain
      */
     int poll(MarketMessageHandler handler, int pollLimit);
-
-    /**
-     * Closes and disposes of the market supplier, releasing underlying resources and terminating any active connections.
-     * <p>
-     * After invoking this method, no further calls to {@link #poll(MarketMessageHandler, int)} are permitted. Subsequent use
-     * of the instance may result in undefined behavior or exceptions. Implementations must ensure that all resources,
-     * connections, and internal states are gracefully terminated upon closure.
-     */
-    @Override
-    void close();
 }
