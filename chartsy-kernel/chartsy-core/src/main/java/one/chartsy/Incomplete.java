@@ -18,16 +18,17 @@ public interface Incomplete<T> {
 
 
     static <T> Incomplete<T> empty() {
-        final class Empty implements Incomplete<Object> {
-            private static final Empty INSTANCE = new Empty();
-
-            @Override
-            public Object get() {
-                return null;
-            }
-        }
         @SuppressWarnings("unchecked")
         var empty = (Incomplete<T>) Empty.INSTANCE;
         return empty;
+    }
+
+    final class Empty implements Incomplete<Object> {
+        private static final Empty INSTANCE = new Empty();
+
+        @Override
+        public Object get() {
+            return null;
+        }
     }
 }

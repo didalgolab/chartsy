@@ -2150,7 +2150,12 @@ public class Math {
                 PdistTask task = new PdistTask(x, dist, nprocs, i, squared, half);
                 tasks.add(task);
             }
-            ForkJoinPool.commonPool().invokeAll(tasks);
+
+            try {
+                ForkJoinPool.commonPool().invokeAll(tasks);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
