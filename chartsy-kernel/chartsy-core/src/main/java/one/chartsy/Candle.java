@@ -17,7 +17,7 @@ import java.time.temporal.ChronoField;
  * <p>
  * Each price record includes a set of price values ({@link #open()},
  * {@link #high()}, {@link #low()}, {@link #close()}) along with optional
- * {@link #volume()} and {@link #turnover()}. Every price record has an associated
+ * {@link #volume()}. Every price record has an associated
  * {@link #getTime()} timestamp representing the moment in time when the price bar
  * occurred, down to nanosecond accuracy. For continuous time spans (e.g., 15 minutes),
  * the {@link #getTime()} reflects the <b>end time</b> of each time frame period.
@@ -68,20 +68,6 @@ public interface Candle extends Chronological {
      * @return the volume
      */
     double volume();
-
-    /**
-     * Returns the total turnover traded during the candle's period.
-     *
-     * @return the turnover
-     */
-    double turnover();
-
-    /**
-     * Returns the number of trades executed during the candle's period.
-     *
-     * @return the number of trades
-     */
-    int trades();
 
     /**
      * Retrieves the specified field from the candle's timestamp.
@@ -166,16 +152,6 @@ public interface Candle extends Chronological {
     }
 
     /**
-     * Calculates the Volume Weighted Average Price (VWAP) of the candle.
-     *
-     * @return the VWAP, or {@code 0} of the candle's volume is zero
-     */
-    default double vwap() {
-        var volume = volume();
-        return volume != 0.0 ? turnover() / volume : 0.0;
-    }
-
-    /**
      * Creates a new {@code Candle} instance with only the specified time and price.
      * The open, high, low, and close prices are all set to the given price.
      * Volume and turnover are set to zero, and trades are set to zero.
@@ -185,7 +161,7 @@ public interface Candle extends Chronological {
      * @return a new {@code Candle} instance
      */
     static Candle of(long time, double price) {
-        return of(time, price, price, price, price, 0.0, 0);
+        return of(time, price, price, price, price, 0.0);
     }
 
     /**
@@ -200,42 +176,7 @@ public interface Candle extends Chronological {
      * @return a new {@code Candle} instance
      */
     static Candle of(long time, double open, double high, double low, double close) {
-        return of(time, open, high, low, close, 0.0, 0);
-    }
-
-    /**
-     * Creates a new {@code Candle} instance with specified time, open, high, low, close prices, and volume.
-     * Turnover is set to {@code volume * close}, and trades are set to zero.
-     *
-     * @param time    the timestamp of the candle
-     * @param open    the opening price
-     * @param high    the highest price
-     * @param low     the lowest price
-     * @param close   the closing price
-     * @param volume  the total volume traded
-     * @return a new {@code Candle} instance
-     */
-    static Candle of(long time, double open, double high, double low, double close, double volume) {
-        double turnover = volume * close;
-        return of(time, open, high, low, close, volume, turnover, 0);
-    }
-
-    /**
-     * Creates a new {@code Candle} instance with specified time, open, high, low, close prices, volume, and trades.
-     * Turnover is set to {@code volume * close}.
-     *
-     * @param time    the timestamp of the candle
-     * @param open    the opening price
-     * @param high    the highest price
-     * @param low     the lowest price
-     * @param close   the closing price
-     * @param volume  the total volume traded
-     * @param trades  the number of trades executed
-     * @return a new {@code Candle} instance
-     */
-    static Candle of(long time, double open, double high, double low, double close, double volume, int trades) {
-        double turnover = volume * close;
-        return of(time, open, high, low, close, volume, turnover, trades);
+        return of(time, open, high, low, close, 0.0);
     }
 
     /**
@@ -247,12 +188,10 @@ public interface Candle extends Chronological {
      * @param low      the lowest price
      * @param close    the closing price
      * @param volume   the total volume traded
-     * @param turnover the total turnover traded
-     * @param trades   the number of trades executed
      * @return a new {@code Candle} instance
      */
-    static Candle of(long time, double open, double high, double low, double close, double volume, double turnover, int trades) {
-        return SimpleCandle.of(time, open, high, low, close, volume, turnover, trades);
+    static Candle of(long time, double open, double high, double low, double close, double volume) {
+        return SimpleCandle.of(time, open, high, low, close, volume);
     }
 
     /**

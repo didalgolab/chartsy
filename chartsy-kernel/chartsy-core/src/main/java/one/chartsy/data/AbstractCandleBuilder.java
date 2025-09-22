@@ -17,8 +17,6 @@ public abstract class AbstractCandleBuilder<C extends Candle, T extends Tick> im
     protected double low;
     protected double close;
     protected double volume;
-    protected double turnover;
-    protected int trades;
     protected int formedElementsCount;
 
     public final double highPrice() {
@@ -46,7 +44,7 @@ public abstract class AbstractCandleBuilder<C extends Candle, T extends Tick> im
     @Nullable
     public final SimpleCandle getAsSimpleCandle() {
         if (isPresent())
-            return SimpleCandle.of(time, open, high, low, close, volume, turnover, trades);
+            return SimpleCandle.of(time, open, high, low, close, volume);
         else
             return null;
     }
@@ -74,8 +72,6 @@ public abstract class AbstractCandleBuilder<C extends Candle, T extends Tick> im
             low = c.low();
             close = c.close();
             volume = c.volume();
-            turnover = c.turnover();
-            trades = c.trades();
             formedElementsCount = 1;
             setPresent();
         } else {
@@ -83,8 +79,6 @@ public abstract class AbstractCandleBuilder<C extends Candle, T extends Tick> im
             low = Math.min(low, c.low());
             close = c.close();
             volume += c.volume();
-            turnover += c.turnover();
-            trades += c.trades();
             formedElementsCount++;
         }
     }
@@ -95,8 +89,6 @@ public abstract class AbstractCandleBuilder<C extends Candle, T extends Tick> im
         if (!isPresent()) {
             open = high = low = close = t.price();
             volume = t.size();
-            turnover = volume * t.price();
-            trades = 1;
             formedElementsCount = 1;
             setPresent();
         } else {
@@ -105,9 +97,7 @@ public abstract class AbstractCandleBuilder<C extends Candle, T extends Tick> im
             low = Math.min(low, price);
             close = price;
             volume += t.size();
-            turnover += t.size() * t.price();
             formedElementsCount++;
-            trades++;
         }
     }
 }

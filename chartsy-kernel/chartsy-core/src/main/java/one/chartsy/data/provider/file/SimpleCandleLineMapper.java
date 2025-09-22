@@ -309,7 +309,7 @@ public class SimpleCandleLineMapper implements LineMapper<SimpleCandle> {
         if (last != null && candleTime <= last.getTime())
             throw new FlatFileParseException(String.format("Invalid candle order at line %s following candle %s", lineNumber, last), line);
 
-        SimpleCandle candle = SimpleCandle.of(candleTime, open, high, low, close, volume, count);
+        SimpleCandle candle = SimpleCandle.of(candleTime, open, high, low, close, volume);
         last = candle;
         return candle;
     }

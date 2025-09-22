@@ -75,7 +75,7 @@ public class Quota extends AbstractCandleIndicator {
 
     @Override
     public void accept(Candle candle) {
-        turnoverStats.accept(candle.turnover());
+        turnoverStats.accept(candle.volume() * candle.close());
 
         if (turnoverStats.isFull()) {
             double adjustedSum = turnoverStats.getSum() - turnoverStats.getMax();

@@ -74,7 +74,7 @@ public class TimeFrameAggregationVerificationSample {
                 Candle c1 = candles.get(i);
                 Candle c2 = SimpleCandle.from(result.get(i));
                 if ((timeFrame == TimeFrame.Period.DAILY || timeFrame == TimeFrame.Period.WEEKLY || timeFrame == TimeFrame.Period.MONTHLY || timeFrame == TimeFrame.Period.QUARTERLY || timeFrame == TimeFrame.Period.YEARLY) && c1.getTime() % 86_400_000_000L == 0) {
-                    c2 = Candle.of((c2.getTime() + 1), c2.open(), c2.high(), c2.low(), c2.close(), c2.volume(), c2.turnover(), c2.trades());
+                    c2 = Candle.of((c2.getTime() + 1), c2.open(), c2.high(), c2.low(), c2.close(), c2.volume());
                 }
                 if (!c1.equals(c2))
                     throw new RuntimeException(timeFrame + ": " + c1 + " vs " + c2);
@@ -154,7 +154,6 @@ public class TimeFrameAggregationVerificationSample {
         ArrayList<Candle> buffer = new ArrayList<>();
         boolean compressingFromIntraToDaily = (TimeFrameHelper.isIntraday(frame) && !TimeFrameHelper.isIntraday(targetTF));
         double close = 0, open = 0, low = 0, high = 0, volume = 0;
-        int openInterest = 0;
         long time = 0;
         int size = quotes.length();
         int off = TimeFrameHelper.isIntraday(frame)? 1 : 0; // extra intraday time offset
@@ -167,14 +166,13 @@ public class TimeFrameAggregationVerificationSample {
                 if (time != 0) {
                     if (compressingFromIntraToDaily && (time - reftime2) % 86400000000L == 0)
                         time--;
-                    buffer.add(Candle.of(time, open, high, low, close, volume, openInterest));
+                    buffer.add(Candle.of(time, open, high, low, close, volume));
                 }
                 open = q.open();
                 high = q.high();
                 low = q.low();
                 close = q.close();
                 volume = q.volume();
-                openInterest = q.trades();
                 time = t;
             } else {
                 double h = q.high();
@@ -185,11 +183,10 @@ public class TimeFrameAggregationVerificationSample {
                     low = l;
                 close = q.close();
                 volume += q.volume();
-                openInterest = q.trades();
                 time = t;
             }
         }
-        buffer.add(Candle.of(time, open, high, low, close, volume, openInterest));
+        buffer.add(Candle.of(time, open, high, low, close, volume));
         Candle[] result = new Candle[buffer.size()];
         result = buffer.toArray(result);
         for (int i=0, mid=result.length>>1, j=result.length-1; i<mid; i++, j--) {
@@ -211,7 +208,6 @@ public class TimeFrameAggregationVerificationSample {
     private static CandleSeries bruteForceTimeFrameCompressLarge(TimeFrame targetTF, CandleSeries quotes, int months) {
         List<Candle> buffer = new ArrayList<>();
         double close = 0, open = 0, low = 0, high = 0, volume = 0;
-        int openInterest = 0;
         long time = 0;
         int size = quotes.length();
         Calendar cal1 = new GregorianCalendar(TimeZone.getTimeZone("UTC"));
@@ -224,13 +220,12 @@ public class TimeFrameAggregationVerificationSample {
             cal2.setTimeInMillis(t / 1000);
             if (time == 0 || !sameBar(cal1, cal2, months)) {
                 if (time != 0)
-                    buffer.add(Candle.of(time, open, high, low, close, volume, openInterest));
+                    buffer.add(Candle.of(time, open, high, low, close, volume));
                 open = q.open();
                 high = q.high();
                 low = q.low();
                 close = q.close();
                 volume = q.volume();
-                openInterest = q.trades();
             } else {
                 double h = q.high();
                 if (h > high)
@@ -240,11 +235,10 @@ public class TimeFrameAggregationVerificationSample {
                     low = l;
                 close = q.close();
                 volume += q.volume();
-                openInterest = q.trades();
             }
             cal1.setTimeInMillis((time = t) / 1000);
         }
-        buffer.add(Candle.of(time, open, high, low, close, volume, openInterest));
+        buffer.add(Candle.of(time, open, high, low, close, volume));
         Collections.reverse(buffer);
         return CandleSeries.of(quotes.getResource().withTimeFrame(targetTF), buffer);
     }

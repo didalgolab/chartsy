@@ -11,8 +11,6 @@ public enum CandleField implements FinancialField, ToDoubleFunction<Candle> {
     LOW (Candle::low),
     CLOSE (Candle::close),
     VOLUME (Candle::volume),
-    TURNOVER (Candle::turnover),
-    TRADES (Candle::trades),
     ;
 
     CandleField(ToDoubleFunction<Candle> doubleValue) {

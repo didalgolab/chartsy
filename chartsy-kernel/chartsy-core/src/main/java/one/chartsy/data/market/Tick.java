@@ -47,7 +47,7 @@ public interface Tick extends Chronological {
     double size();
 
     default Candle toCandle() {
-        return Candle.of(getTime(), price(), price(), price(), price(), size(), 1);
+        return Candle.of(getTime(), price(), price(), price(), price(), size());
     }
 
     static <T extends Tick> T parse(String json, Class<T> type) {

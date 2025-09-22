@@ -25,7 +25,6 @@ class CandleTest {
         assertInstanceOf(SimpleCandle.class, Candle.of(0L, 1));
         assertInstanceOf(SimpleCandle.class, Candle.of(0L, 1, 3, 0, 2));
         assertInstanceOf(SimpleCandle.class, Candle.of(0L, 1, 3, 0, 2, 100));
-        assertInstanceOf(SimpleCandle.class, Candle.of(0L, 1, 3, 0, 2, 100, 10));
     }
 
     static final long time = toEpochNanos(parse("2001-01-01").atStartOfDay());
@@ -40,10 +39,6 @@ class CandleTest {
                 Candle.of(time, 2.2, 3.3, 2.0, 3.0).toString(), "Candle with wicks");
         assertEquals("{\"2001-01-01\": {OHLC:[0.0], V:5.5}}",
                 Candle.of(time, 0, 0, 0, 0, 5.5).toString(), "Candle with volume");
-        assertEquals("{\"2001-01-01\": {OHLC:[0.0], trades:5}}",
-                Candle.of(time, 0, 0, 0, 0, 0, 5).toString(), "Candle with `count`");
-        assertEquals("{\"2001-01-01\": {OHLC:[2.2, 3.3, 2.0, 3.0], V:4.0, trades:5}}",
-                Candle.of(time, 2.2, 3.3, 2.0, 3.0, 4, 5).toString(), "Full Candle representation");
     }
 
     @Test
@@ -81,7 +76,7 @@ class CandleTest {
             o = h;
             c = l;
         }
-        return Candle.of(time, o, h, l, c, v, r.nextInt(Integer.MAX_VALUE));
+        return Candle.of(time, o, h, l, c, v);
     }
 
     @Nested

@@ -153,9 +153,8 @@ public final class BootstrappedTradeBarFactory implements MarketSupplierFactory 
             double low  = Math.min(Math.min(open, close), prevClose * f.low());
 
             double volume = f.volume();
-            int trades = f.trades();
 
-            Candle c = Candle.of(time, open, high, low, close, volume, trades);
+            Candle c = Candle.of(time, open, high, low, close, volume);
             out.add(new TradeBar.Of(symbol, c));
 
             prevClose = close;
@@ -221,7 +220,7 @@ public final class BootstrappedTradeBarFactory implements MarketSupplierFactory 
                     double lF = curr.low() / base;
                     double hi = Math.max(hF, Math.max(oF, cF));
                     double lo = Math.min(lF, Math.min(oF, cF));
-                    factors.add(Candle.of(0L, oF, hi, lo, cF, curr.volume(), curr.trades()));
+                    factors.add(Candle.of(0L, oF, hi, lo, cF, curr.volume()));
                 }
             }
             originals.add(curr);

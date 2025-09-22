@@ -37,8 +37,6 @@ public final class SimpleCandle implements Candle, Serializable {
     private final double low;
     private final double close;
     private final double volume;
-    private final double turnover;
-    private final int trades;
 
     /**
      * Private constructor to enforce the use of factory methods.
@@ -49,18 +47,14 @@ public final class SimpleCandle implements Candle, Serializable {
      * @param low      the lowest price
      * @param close    the closing price
      * @param volume   the total volume traded
-     * @param turnover the total turnover traded
-     * @param trades   the number of trades executed
      */
-    private SimpleCandle(long time, double open, double high, double low, double close, double volume, double turnover, int trades) {
+    private SimpleCandle(long time, double open, double high, double low, double close, double volume) {
         this.time = time;
         this.open = open;
         this.high = high;
         this.low = low;
         this.close = close;
         this.volume = volume;
-        this.turnover = turnover;
-        this.trades = trades;
     }
 
     /**
@@ -73,29 +67,10 @@ public final class SimpleCandle implements Candle, Serializable {
      * @param low      the lowest price
      * @param close    the closing price
      * @param volume   the total volume traded
-     * @param turnover the total turnover traded (optional)
-     * @param trades   the number of trades executed
      * @return a new {@code SimpleCandle} instance
      */
-    public static SimpleCandle of(long time, double open, double high, double low, double close, double volume, double turnover, int trades) {
-        return new SimpleCandle(time, open, high, low, close, volume, turnover, trades);
-    }
-
-    /**
-     * Factory method to create a new {@code SimpleCandle} instance with default turnover.
-     *
-     * @param time   the timestamp of the candle
-     * @param open   the opening price
-     * @param high   the highest price
-     * @param low    the lowest price
-     * @param close  the closing price
-     * @param volume the total volume traded
-     * @param trades the number of trades executed
-     * @return a new {@code SimpleCandle} instance
-     */
-    public static SimpleCandle of(long time, double open, double high, double low, double close, double volume, int trades) {
-        double turnover = volume * close;
-        return new SimpleCandle(time, open, high, low, close, volume, turnover, trades);
+    public static SimpleCandle of(long time, double open, double high, double low, double close, double volume) {
+        return new SimpleCandle(time, open, high, low, close, volume);
     }
 
     /**
@@ -110,13 +85,12 @@ public final class SimpleCandle implements Candle, Serializable {
         if (c instanceof SimpleCandle sc) {
             return sc;
         }
-        if (c instanceof AbstractCandle ac) {
+        if (c instanceof AbstractCandle<?> ac) {
             Candle bc = ac.baseCandle();
             if (bc != c)
                 return from(bc);
         }
-        double calculatedTurnover = c.volume() * c.close();
-        return new SimpleCandle(c.getTime(), c.open(), c.high(), c.low(), c.close(), c.volume(), calculatedTurnover, c.trades());
+        return new SimpleCandle(c.getTime(), c.open(), c.high(), c.low(), c.close(), c.volume());
     }
 
     @Override
@@ -150,25 +124,13 @@ public final class SimpleCandle implements Candle, Serializable {
     }
 
     @Override
-    public double turnover() {
-        return turnover;
-    }
-
-    @Override
-    public int trades() {
-        return trades;
-    }
-
-    @Override
     public int hashCode() {
         return Double.hashCode(close)
                 ^ Double.hashCode(high)
                 ^ Double.hashCode(low)
                 ^ (31 * Double.hashCode(open))
                 ^ (37 * Double.hashCode(volume))
-                ^ (43 * Double.hashCode(turnover))
-                ^ (47 * Long.hashCode(time))
-                ^ (53 * trades);
+                ^ (43 * Long.hashCode(time));
     }
 
     @Override
@@ -179,9 +141,7 @@ public final class SimpleCandle implements Candle, Serializable {
                     && eq(high, q.high)
                     && eq(low, q.low)
                     && eq(open, q.open)
-                    && eq(volume, q.volume)
-                    && eq(turnover, q.turnover)
-                    && trades == q.trades;
+                    && eq(volume, q.volume);
         }
         return false;
     }
@@ -227,10 +187,6 @@ public final class SimpleCandle implements Candle, Serializable {
 
         if (volume != 0.0)
             buf.append(", V:").append(volume);
-        if (turnover != close * volume)
-            buf.append(", turnover:").append(turnover);
-        if (trades != 0)
-            buf.append(", trades:").append(trades);
 
         return buf.append("}}").toString();
     }
@@ -298,8 +254,7 @@ public final class SimpleCandle implements Candle, Serializable {
                     }
                     default -> throw new JsonParseException("OHLC.length == " + OHLC.length);
                 }
-                double calculatedTurnover = (turnover != 0.0) ? turnover : close * V;
-                return new SimpleCandle(time, open, high, low, close, V, calculatedTurnover, trades);
+                return new SimpleCandle(time, open, high, low, close, V);
             }
         }
     }
