@@ -29,44 +29,24 @@ import static java.time.format.DateTimeFormatter.ISO_LOCAL_TIME;
  *
  * @author Mariusz Bernacki
  */
-public final class SimpleCandle implements Candle, Serializable {
-
-    private final long time;
-    private final double open;
-    private final double high;
-    private final double low;
-    private final double close;
-    private final double volume;
-
-    /**
-     * Private constructor to enforce the use of factory methods.
-     *
-     * @param time     the timestamp of the candle
-     * @param open     the opening price
-     * @param high     the highest price
-     * @param low      the lowest price
-     * @param close    the closing price
-     * @param volume   the total volume traded
-     */
-    private SimpleCandle(long time, double open, double high, double low, double close, double volume) {
-        this.time = time;
-        this.open = open;
-        this.high = high;
-        this.low = low;
-        this.close = close;
-        this.volume = volume;
-    }
+public record SimpleCandle(
+        long getTime,
+        double open,
+        double high,
+        double low,
+        double close,
+        double volume) implements Candle, Serializable {
 
     /**
      * Factory method to create a new {@code SimpleCandle} instance.
      * If turnover is not provided, it defaults to {@code volume * close}.
      *
-     * @param time     the timestamp of the candle
-     * @param open     the opening price
-     * @param high     the highest price
-     * @param low      the lowest price
-     * @param close    the closing price
-     * @param volume   the total volume traded
+     * @param time   the timestamp of the candle
+     * @param open   the opening price
+     * @param high   the highest price
+     * @param low    the lowest price
+     * @param close  the closing price
+     * @param volume the total volume traded
      * @return a new {@code SimpleCandle} instance
      */
     public static SimpleCandle of(long time, double open, double high, double low, double close, double volume) {
@@ -94,54 +74,24 @@ public final class SimpleCandle implements Candle, Serializable {
     }
 
     @Override
-    public long getTime() {
-        return time;
-    }
-
-    @Override
-    public double open() {
-        return open;
-    }
-
-    @Override
-    public double high() {
-        return high;
-    }
-
-    @Override
-    public double low() {
-        return low;
-    }
-
-    @Override
-    public double close() {
-        return close;
-    }
-
-    @Override
-    public double volume() {
-        return volume;
-    }
-
-    @Override
     public int hashCode() {
         return Double.hashCode(close)
                 ^ Double.hashCode(high)
                 ^ Double.hashCode(low)
                 ^ (31 * Double.hashCode(open))
                 ^ (37 * Double.hashCode(volume))
-                ^ (43 * Long.hashCode(time));
+                ^ (43 * Long.hashCode(getTime));
     }
 
     @Override
     public boolean equals(Object obj) {
-        if (obj instanceof SimpleCandle q) {
-            return (time == q.time)
-                    && eq(close, q.close)
-                    && eq(high, q.high)
-                    && eq(low, q.low)
-                    && eq(open, q.open)
-                    && eq(volume, q.volume);
+        if (obj instanceof SimpleCandle(long time2, double open2, double high2, double low2, double close2, double volume2)) {
+            return (getTime == time2)
+                    && eq(close, close2)
+                    && eq(high, high2)
+                    && eq(low, low2)
+                    && eq(open, open2)
+                    && eq(volume, volume2);
         }
         return false;
     }
@@ -172,8 +122,7 @@ public final class SimpleCandle implements Candle, Serializable {
     @Override
     public String toString() {
         LocalDateTime dateTime = getDateTime();
-        StringBuilder buf = new StringBuilder("{\"")
-                .append(dateTime.toLocalDate());
+        StringBuilder buf = new StringBuilder("{\"").append(dateTime.toLocalDate());
         if (!LocalTime.MIDNIGHT.equals(dateTime.toLocalTime()))
             buf.append(' ').append(dateTime.toLocalTime());
         buf.append("\": {OHLC:[");
@@ -244,12 +193,12 @@ public final class SimpleCandle implements Candle, Serializable {
                     case 1 -> close = high = low = open;
                     case 2 -> {
                         close = OHLC[1];
-                        high  = Math.max(open, close);
-                        low   = Math.min(open, close);
+                        high = Math.max(open, close);
+                        low = Math.min(open, close);
                     }
                     case 4 -> {
-                        high  = OHLC[1];
-                        low   = OHLC[2];
+                        high = OHLC[1];
+                        low = OHLC[2];
                         close = OHLC[3];
                     }
                     default -> throw new JsonParseException("OHLC.length == " + OHLC.length);
