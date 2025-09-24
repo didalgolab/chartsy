@@ -62,7 +62,7 @@ public class GptBasedSelectionFromStooqFlatFileDataProvider {
                         .toList();
                 for (Candle candle : lastCandles) {
                     System.out.printf("%s:{%s,%s,%s,%s,%s}%n",
-                            candle.getDateTime().toLocalDate(),
+                            candle.getDate(),
                             df.format(candle.open()),
                             df.format(candle.high()),
                             df.format(candle.low()),

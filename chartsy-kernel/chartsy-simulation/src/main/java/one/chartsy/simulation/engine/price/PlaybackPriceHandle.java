@@ -43,7 +43,7 @@ public class PlaybackPriceHandle implements PriceHandle, MarketMessageHandler {
             var bar = barEvent.get();
             this.lastBar = bar;
             this.lastTradePrice = bar.close();
-            this.lastTradeTime = bar.getTime();
+            this.lastTradeTime = bar.time();
         }
     }
 }

@@ -987,7 +987,7 @@ public class Order implements java.io.Serializable, Cloneable, CustomValuesHolde
     ) implements OrderReportEvent, OrderTrade {
 
         @Override
-        public long getTime() {
+        public long time() {
             return time();
         }
 
@@ -1005,11 +1005,6 @@ public class Order implements java.io.Serializable, Cloneable, CustomValuesHolde
 
         @Override
         public long time() {
-            return filled.time();
-        }
-
-        @Override
-        public long getTime() {
             return filled.time();
         }
 

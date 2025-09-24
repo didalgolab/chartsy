@@ -24,7 +24,7 @@ class EventCorrelator implements EventScheduler {
 
     public void triggerEventsUpTo(long time, PlaybackClock simClock) {
         Chronological event;
-        while (!timedEvents.isEmpty() && (event = timedEvents.peekKey()).getTime() <= time) {
+        while (!timedEvents.isEmpty() && (event = timedEvents.peekKey()).time() <= time) {
             simClock.setTime(event);
             timedEvents.remove().handle(event);
         }

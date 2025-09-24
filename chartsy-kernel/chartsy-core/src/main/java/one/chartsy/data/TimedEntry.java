@@ -21,7 +21,7 @@ public class TimedEntry<V> implements Chronological {
     }
 
     @Override
-    public final long getTime() {
+    public final long time() {
         return time;
     }
 

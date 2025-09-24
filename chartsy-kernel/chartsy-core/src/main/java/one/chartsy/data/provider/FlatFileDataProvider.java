@@ -141,7 +141,7 @@ public class FlatFileDataProvider extends AbstractDataProvider implements Symbol
             //items.sort(Comparator.naturalOrder());
             if (request.endTime() != null) {
                 long endTime = Chronological.toEpochNanos(request.endTime());
-                items.removeIf(item -> item.getTime() > endTime);
+                items.removeIf(item -> item.time() > endTime);
             }
 
             int itemCount = items.size();
@@ -181,9 +181,9 @@ public class FlatFileDataProvider extends AbstractDataProvider implements Symbol
                 try {
                     for (;;) {
                         var bar = itemReader.read();
-                        if (bar == null || bar.getTime() > endTime)
+                        if (bar == null || bar.time() > endTime)
                             return null;
-                        if (bar.getTime() < startTime)
+                        if (bar.time() < startTime)
                             continue;
 
                         return new TradeBar.Of(identifier, bar);

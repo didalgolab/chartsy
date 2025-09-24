@@ -55,7 +55,7 @@ public class SimulatorAccount implements Account {
         if (!secondaryBalances.isEmpty())
             secondaryBalances.values().forEach(balance -> balance.onBarEvent(bar));
 
-        equityStatistics.add(getTotalEquity(), bar.getTime());
+        equityStatistics.add(getTotalEquity(), bar.time());
     }
 
     public final EquitySummaryStatistics getEquityStatistics() {

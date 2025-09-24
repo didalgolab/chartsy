@@ -27,7 +27,7 @@ public record SimpleSessionFilter(
 
         @Override
         public boolean test(E event) {
-            long time = event.getTime();
+            long time = event.time();
             if (time <= startTime)
                 return false;
             if (time <= endTime)

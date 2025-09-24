@@ -48,7 +48,7 @@ public class SimpleSimulationRunner implements SimulationRunner {
 
                 // e.g. Update Equity for the current bar, before shifting When
                 long et = eventTime;
-                eventTime = event.getTime();
+                eventTime = event.time();
                 if (when.current() != null)
                     strategy.onData(when, event, (eventTime > et));
 

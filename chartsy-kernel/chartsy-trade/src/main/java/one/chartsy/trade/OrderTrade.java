@@ -7,7 +7,7 @@ import one.chartsy.SymbolIdentity;
 
 public interface OrderTrade {
 
-    long getTime();
+    long time();
 
     boolean isBuy();
 

@@ -62,7 +62,7 @@ public class Main3 {
         class MyStrategy extends Strategy<Candle> {
             @Override
             public void entryOrders(When when, Chronological data) {
-                cnt.addAndGet(data.getTime());
+                cnt.addAndGet(data.time());
                 //cnt2.add(((Candle) data).close());
                 //System.out.println(when.current());
             }

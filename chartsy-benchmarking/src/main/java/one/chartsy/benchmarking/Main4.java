@@ -72,7 +72,7 @@ public class Main4 {
         initialize() {
             candles = RandomWalk.candles(Duration.ofMinutes(15), LocalDateTime.of(1900, 1, 1, 0, 0))
                     .limit(10_000_000)
-                    .map(c -> ThreadLocalRandom.current().nextInt(4)==0? new ExtendedCandle(c, c.getTime(), 0, 0) : c)
+                    .map(c -> ThreadLocalRandom.current().nextInt(4)==0? new ExtendedCandle(c, c.time(), 0, 0) : c)
                     //.map(c -> new ExtendedCandle(c, c.getTime(), 0, 0))
                     .collect(Collectors.toList());
             for (int i = 0; i < 10; i++) {

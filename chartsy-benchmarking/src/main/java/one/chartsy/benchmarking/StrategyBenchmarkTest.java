@@ -57,14 +57,14 @@ public class StrategyBenchmarkTest {
 
             @Override
             public void onData(When when, Chronological last) {
-                cnt.addAndGet(last.getTime());
+                cnt.addAndGet(last.time());
                 cnt2.add(((Candle) last).close());
             }
         };
         class MyStrategy extends Strategy<Candle> {
             @Override
             public void entryOrders(When when, Chronological data) {
-                cnt.addAndGet(data.getTime());
+                cnt.addAndGet(data.time());
                 cnt2.add(((Candle) data).close());
                 if (when.index() % 10 == 0) {
                     if (series.get(when.index()).isBullish())

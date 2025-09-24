@@ -76,6 +76,6 @@ public class Kagi<C extends Candle> extends AbstractCandle<C> {
 
     @Override
     public String toString() {
-        return "{\"" + getDateTime() + "\": {\"Kagi\": {\"OC\":[" + open() + "," + close() + "], \"trend\":\"" + trend() + "\"}}}";
+        return "{\"" + instant() + "\": {\"Kagi\": {\"OC\":[" + open() + "," + close() + "], \"trend\":\"" + trend() + "\"}}}";
     }
 }

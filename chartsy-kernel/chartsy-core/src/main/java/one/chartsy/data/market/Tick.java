@@ -21,7 +21,7 @@ public interface Tick extends Chronological {
      * @return the tick timestamp
      */
     @Override
-    long getTime();
+    long time();
 
     /**
      * Gives trade conditions associated with this market tick (e.g. the trade direction,
@@ -47,7 +47,7 @@ public interface Tick extends Chronological {
     double size();
 
     default Candle toCandle() {
-        return Candle.of(getTime(), price(), price(), price(), price(), size());
+        return Candle.of(time(), price(), price(), price(), price(), size());
     }
 
     static <T extends Tick> T parse(String json, Class<T> type) {

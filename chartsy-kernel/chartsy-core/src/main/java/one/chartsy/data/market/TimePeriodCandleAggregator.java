@@ -18,14 +18,14 @@ public abstract class TimePeriodCandleAggregator<C extends Candle, T extends Tic
 
     @Override
     public Incomplete<C> addCandle(C c, Consumer<C> completedItemConsumer) {
-        if (isCompletedOn(c.getTime()))
+        if (isCompletedOn(c.time()))
             complete(completedItemConsumer);
         return super.addCandle(c, completedItemConsumer);
     }
 
     @Override
     public Incomplete<C> addTick(T t, Consumer<C> completedItemConsumer) {
-        if (isCompletedOn((t.getTime() + 1)))
+        if (isCompletedOn((t.time() + 1)))
             complete(completedItemConsumer);
         return super.addTick(t, completedItemConsumer);
     }

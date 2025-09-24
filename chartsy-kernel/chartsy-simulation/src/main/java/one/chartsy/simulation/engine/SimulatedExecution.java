@@ -52,4 +52,9 @@ public class SimulatedExecution implements Execution {
         this.price = price;
         this.size = size;
     }
+
+    @Override
+    public long time() {
+        return time;
+    }
 }

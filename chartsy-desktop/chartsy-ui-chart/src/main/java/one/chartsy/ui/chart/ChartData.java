@@ -427,11 +427,11 @@ public class ChartData implements Serializable, ChartFrameListener {
             return null;
         
         int barCount = getVisible().getLength();
-        ZonedDateTime endDate = Chronological.toDateTime(visible.getQuoteAt(barCount - 1).getTime(), (ZoneId)null);
+        ZonedDateTime endDate = Chronological.toDateTime(visible.getQuoteAt(barCount - 1).time(), (ZoneId)null);
         Candle firstBar = visible.getQuoteAt(-1);
         if (firstBar == null)
             firstBar = visible.getQuoteAt(0);
-        ZonedDateTime startDate = Chronological.toDateTime(firstBar.getTime(), (ZoneId)null);
+        ZonedDateTime startDate = Chronological.toDateTime(firstBar.time(), (ZoneId)null);
         int years = endDate.getYear() - startDate.getYear();
         if (ChronoUnit.DAYS.between(startDate, endDate) < 7)
             return new DefaultDateScale(ChronoUnit.DAYS, 1, startDate, endDate); //TODO

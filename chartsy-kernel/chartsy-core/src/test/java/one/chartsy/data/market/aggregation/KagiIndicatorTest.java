@@ -48,7 +48,7 @@ class KagiIndicatorTest {
         assertEquals((0), kagi.length());
         assertEquals(Kagi.Trend.UNSPECIFIED, kagi.getKagiDirection());
         var kagiCandle = kagi.get();
-        assertEquals(Candle.of(c2.getTime(), c1.open(), c2.high(), c1.low(), c2.close()), kagiCandle.baseCandle());
+        assertEquals(Candle.of(c2.time(), c1.open(), c2.high(), c1.low(), c2.close()), kagiCandle.baseCandle());
     }
 
     @Test
@@ -68,8 +68,8 @@ class KagiIndicatorTest {
         assertEquals(UP, kagi.getKagiDirection());
         var kagiCandle = kagi.get(0);
         assertTrue(kagiCandle.isBullish());
-        assertEquals(Candle.of(last.getTime(), first.open(), last.high(), first.low(), last.close()), kagiCandle.baseCandle());
-        assertEquals(last.getTime(), kagiCandle.getTime());
+        assertEquals(Candle.of(last.time(), first.open(), last.high(), first.low(), last.close()), kagiCandle.baseCandle());
+        assertEquals(last.time(), kagiCandle.time());
         assertEquals(first.open(), kagiCandle.open());
         assertEquals(last.close(), kagiCandle.close());
         assertEquals(last.high(), kagiCandle.high());
@@ -306,7 +306,7 @@ class KagiIndicatorTest {
     static Candle c(boolean inverted, String ohlc) {
         Candle c = SimpleCandle.JsonFormat.fromJson(ohlc);
         if (inverted)
-            c = Candle.of(c.getTime(), -c.open(), -c.low(), -c.high(), -c.close(), c.volume());
+            c = Candle.of(c.time(), -c.open(), -c.low(), -c.high(), -c.close(), c.volume());
         return c;
     }
 
@@ -327,7 +327,7 @@ class KagiIndicatorTest {
     static Tick t(boolean inverted, String json) {
         Tick t = SimpleTick.JsonFormat.fromJson(json, SimpleTick.class);
         if (inverted)
-            t = Tick.of(t.getTime(), -t.price(), t.size());
+            t = Tick.of(t.time(), -t.price(), t.size());
         return t;
     }
 }

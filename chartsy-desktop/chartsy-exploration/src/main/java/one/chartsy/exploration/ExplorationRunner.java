@@ -75,7 +75,7 @@ public class ExplorationRunner implements LaunchPerformer {
             if (series.length() >= conf.getDatasetMinDataPoints()) {
                 ExplorationFragment.Builder rowFragment = exploration.addResultFragment(symbol);
                 rowFragment.addColumn("Symbol", symbol.getName());
-                rowFragment.addColumn("Date/Time", series.get(0).getDateTime(), dateTimeFormat);
+                rowFragment.addColumn("Date/Time", series.get(0).instant(), dateTimeFormat);
                 exploration.explore(symbol, series);
 
                 listeners.fire().explorationFragmentCreated(rowFragment.build());

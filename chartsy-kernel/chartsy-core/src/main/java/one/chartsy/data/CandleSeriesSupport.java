@@ -85,7 +85,7 @@ public class CandleSeriesSupport {
 
 		return new AbstractTimeline(order) {
 			@Override public int length() { return times.size(); }
-			@Override public long getTimeAt(int x) { return times.get(x).getTime(); }
+			@Override public long getTimeAt(int x) { return times.get(x).time(); }
 		};
 	}
 
@@ -125,7 +125,7 @@ public class CandleSeriesSupport {
 		Iterator<? extends Candle> iter = series.iterator();
 		if (iter.hasNext()) {
 			Candle curr = iter.next(), prev = null;
-			int timeIndex = timeline.getTimeLocation(curr.getTime());
+			int timeIndex = timeline.getTimeLocation(curr.time());
 			if (timeIndex < 0) {
 				timeIndex = -timeIndex - 1;
 			}
@@ -135,10 +135,10 @@ public class CandleSeriesSupport {
 			for (; timeIndex >= 0; timeIndex--) {
 				long time = timeline.getTimeAt(timeIndex);
 
-				if (curr.getTime() > time && prev != null) {
+				if (curr.time() > time && prev != null) {
 					bars.add(Candle.of(time, prev.close()));
 				}
-				else if (curr.getTime() == time) {
+				else if (curr.time() == time) {
 					bars.add(curr);
 					if (iter.hasNext()) {
 						prev = curr;

@@ -159,7 +159,7 @@ public class TradingSimulator extends TradingAlgorithmHandle implements TradingS
 
     @Override
     public void onData(When when, Chronological data) {
-        eventCorrelator.triggerEventsUpTo(data.getTime(), clock);
+        eventCorrelator.triggerEventsUpTo(data.time(), clock);
         var target = getTarget();
 
         target.doFirst(when);
@@ -209,7 +209,7 @@ public class TradingSimulator extends TradingAlgorithmHandle implements TradingS
 
     protected void fireOnReminder(Chronological event) {
         if (event instanceof TimedEntry entry)
-            onReminder(Chronological.toDateTime(entry.getTime()), entry.getValue());
+            onReminder(Chronological.toDateTime(entry.time()), entry.getValue());
     }
 
     private final EventCorrelator.EventHandler onReminderCallback = this::fireOnReminder;

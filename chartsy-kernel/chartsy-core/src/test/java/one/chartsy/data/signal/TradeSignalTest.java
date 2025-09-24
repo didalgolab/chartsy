@@ -1,6 +1,6 @@
 package one.chartsy.data.signal;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -8,7 +8,7 @@ public class TradeSignalTest {
 
     @Test
     void goLong_gives_expectedTradeSignal() {
-        var now = LocalDateTime.now();
+        var now = Instant.now();
         var ts = TradeSignal.goLong(100.0, 90.0, 110.0, now);
         assertEquals(TradeSignal.Side.LONG, ts.side());
         assertTrue(ts.isLong());
@@ -22,7 +22,7 @@ public class TradeSignalTest {
 
     @Test
     void goShort_gives_expectedTradeSignal() {
-        var now = LocalDateTime.now();
+        var now = Instant.now();
         var ts = TradeSignal.goShort(100.0, 110.0, 90.0, now);
         assertEquals(TradeSignal.Side.SHORT, ts.side());
         assertTrue(ts.isShort());
@@ -36,14 +36,14 @@ public class TradeSignalTest {
 
     @Test
     void goLong_withoutTakeProfit_does_notHaveTakeProfit() {
-        var now = LocalDateTime.now();
+        var now = Instant.now();
         var ts = TradeSignal.goLong(100.0, 90.0, now);
         assertFalse(ts.hasTakeProfit());
     }
 
     @Test
     void goLongOrShort_withInvalidPrices_throwsException() {
-        var now = LocalDateTime.now();
+        var now = Instant.now();
         assertThrows(IllegalArgumentException.class,
             () -> TradeSignal.goLong(-1, -2, -3, now));
         assertThrows(IllegalArgumentException.class,

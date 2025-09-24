@@ -55,7 +55,7 @@ public class SimpleTick implements Tick {
     }
 
     @Override
-    public final long getTime() {
+    public final long time() {
         return time;
     }
 

@@ -633,7 +633,7 @@ public class AnnotationPanel extends JPanel implements OrganizedViewInteractorCo
             if (parent instanceof ChartPanel) {
                 ChartPanel chartPanel = (ChartPanel) parent;
                 Candle q0 = dataset.getQuoteAt(index);
-                long epochMicros = q0.getTime();
+                long epochMicros = q0.time();
                 double open = q0.open();
                 double high = q0.high();
                 double low = q0.low();
@@ -678,7 +678,7 @@ public class AnnotationPanel extends JPanel implements OrganizedViewInteractorCo
             } else {
                 IndicatorPanel indicatorPanel = (IndicatorPanel) parent;
                 Indicator indicator = indicatorPanel.getIndicator();
-                long epochMicros = dataset.getQuoteAt(index).getTime();
+                long epochMicros = dataset.getQuoteAt(index).time();
                 
                 builder.append("<html>");
                 builder.append("Date: ")
@@ -799,8 +799,8 @@ public class AnnotationPanel extends JPanel implements OrganizedViewInteractorCo
             int count = quotes.length();
             if (barNo < 0) {
                 // locate nearest neighbor bar
-                long min = quotes.get(count - 1).getTime();
-                long max = quotes.get(0).getTime();
+                long min = quotes.get(count - 1).time();
+                long max = quotes.get(0).time();
                 
                 if (epochMicros < min)
                     barNo = count - 1;
@@ -838,7 +838,7 @@ public class AnnotationPanel extends JPanel implements OrganizedViewInteractorCo
                     (int)x, 20, rect);
             
             Candle q0 = chartFrame.getChartData().getVisible().getQuoteAt2(index);
-            return q0.getTime();
+            return q0.time();
         }
     }
     

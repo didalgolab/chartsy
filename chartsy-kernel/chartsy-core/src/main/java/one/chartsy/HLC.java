@@ -18,7 +18,7 @@ public record HLC(long time, double high, double low, double close) implements C
     }
 
     @Override
-    public long getTime() {
+    public long time() {
         return time;
     }
 }

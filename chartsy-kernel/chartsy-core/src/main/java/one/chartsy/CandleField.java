@@ -5,7 +5,7 @@ package one.chartsy;
 import java.util.function.ToDoubleFunction;
 
 public enum CandleField implements FinancialField, ToDoubleFunction<Candle> {
-    TIME (Candle::getTime),
+    TIME (Candle::time),
     OPEN (Candle::open),
     HIGH (Candle::high),
     LOW (Candle::low),

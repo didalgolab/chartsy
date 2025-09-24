@@ -31,6 +31,6 @@ public interface TradeExecutionEvent extends MarketEvent, OrderTrade {
             Side side,
             double tradePrice,
             double tradeQuantity,
-            long getTime
+            long time
     ) implements TradeExecutionEvent { }
 }

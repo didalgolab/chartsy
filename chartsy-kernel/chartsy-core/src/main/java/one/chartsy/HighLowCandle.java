@@ -18,5 +18,5 @@ public interface HighLowCandle extends Chronological {
         return new Of(time, high, low);
     }
 
-    record Of(long getTime, double high, double low) implements HighLowCandle { }
+    record Of(long time, double high, double low) implements HighLowCandle { }
 }

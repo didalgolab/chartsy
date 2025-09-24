@@ -55,13 +55,13 @@ public interface Chronological extends Comparable<Chronological> {
     }
 
     /**
-     * Returns an object's date and time as a {@code LocalDateTime} instance.
+     * Returns an object's date and time as an {@code Instant} instance.
      *
-     * @return the {@code LocalDateTime} in the Coordinated Universal Time (UTC)
-     * @see #toDateTime(long)
+     * @return the {@code Instant} in the Coordinated Universal Time (UTC)
+     * @see #toInstant(long)
      */
-    default LocalDateTime getDateTime() {
-        return toDateTime(getTime());
+    default Instant instant() {
+        return toInstant(time());
     }
 
     /**
@@ -71,7 +71,7 @@ public interface Chronological extends Comparable<Chronological> {
      * @see #toDateTime(long)
      */
     default LocalDate getDate() {
-        return toDateTime(getTime() - 1).toLocalDate();
+        return toDateTime(time() - 1).toLocalDate();
     }
 
     /**
@@ -206,7 +206,7 @@ public interface Chronological extends Comparable<Chronological> {
      * @return the object's time, i.e. the quote ending time when using with the
      *         {@code Quote} instances
      */
-    long getTime();
+    long time();
 
     /**
      * Returns an object's date and time as a {@code ZonedDateTime} instance
@@ -218,7 +218,7 @@ public interface Chronological extends Comparable<Chronological> {
      * @return the {@code ZonedDateTime} using the given time zone
      */
     default ZonedDateTime getDateTime(ZoneId zone) {
-        return toDateTime(getTime(), zone);
+        return toDateTime(time(), zone);
     }
 
     /**
@@ -228,7 +228,7 @@ public interface Chronological extends Comparable<Chronological> {
      * @return {@code true} if and only if {@code this.getTime() > other.getTime()}
      */
     default boolean isAfter(Chronological other) {
-        return getTime() > other.getTime();
+        return time() > other.time();
     }
 
     /**
@@ -242,7 +242,7 @@ public interface Chronological extends Comparable<Chronological> {
      * @throws ArithmeticException if the conversion of {@code dateTime} overflows a {@code long}
      */
     default boolean isAfter(LocalDateTime dateTime) {
-        return getTime() > Chronological.toEpochNanos(dateTime);
+        return time() > Chronological.toEpochNanos(dateTime);
     }
 
     /**
@@ -252,7 +252,7 @@ public interface Chronological extends Comparable<Chronological> {
      * @return {@code true} if and only if {@code this.getTime() < other.getTime()}
      */
     default boolean isBefore(Chronological other) {
-        return getTime() < other.getTime();
+        return time() < other.time();
     }
 
     /**
@@ -266,7 +266,7 @@ public interface Chronological extends Comparable<Chronological> {
      * @throws ArithmeticException if the conversion of {@code dateTime} overflows a {@code long}
      */
     default boolean isBefore(LocalDateTime dateTime) {
-        return getTime() < Chronological.toEpochNanos(dateTime);
+        return time() < Chronological.toEpochNanos(dateTime);
     }
 
     /**
@@ -283,7 +283,7 @@ public interface Chronological extends Comparable<Chronological> {
      */
     @Override
     default int compareTo(Chronological other) {
-        return Long.compare(getTime(), other.getTime());
+        return Long.compare(time(), other.time());
     }
 
     /**
@@ -316,10 +316,10 @@ public interface Chronological extends Comparable<Chronological> {
             boolean reversed = isReversed();
             int size = elements.length;
             if (size > 1) {
-                long previous = elements[0].getTime();
+                long previous = elements[0].time();
                 int i = 1;
                 while (i < size) {
-                    long current = elements[i++].getTime();
+                    long current = elements[i++].time();
                     if (reversed && current > previous || !reversed && current < previous)
                         return false;
                     previous = current;
@@ -332,9 +332,9 @@ public interface Chronological extends Comparable<Chronological> {
             boolean reversed = isReversed();
             Iterator<? extends Chronological> iter = elements.iterator();
             if (iter.hasNext()) {
-                long previous = iter.next().getTime();
+                long previous = iter.next().time();
                 while (iter.hasNext()) {
-                    long current = iter.next().getTime();
+                    long current = iter.next().time();
                     if (reversed && current > previous || !reversed && current < previous)
                         return false;
                     previous = current;
@@ -343,7 +343,7 @@ public interface Chronological extends Comparable<Chronological> {
             return true;
         }
 
-        private static final Comparator<Chronological> naturalOrder = Comparator.comparingLong(Chronological::getTime),
+        private static final Comparator<Chronological> naturalOrder = Comparator.comparingLong(Chronological::time),
                 reverseOrder = naturalOrder.reversed();
     }
 }

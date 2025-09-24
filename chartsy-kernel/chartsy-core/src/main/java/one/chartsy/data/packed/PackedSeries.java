@@ -89,7 +89,7 @@ public class PackedSeries<E extends Chronological> implements Series<E>, Timelin
 
     @Override
     public final long getTimeAt(int index) {
-        return get(index).getTime();
+        return get(index).time();
     }
 
     @Override

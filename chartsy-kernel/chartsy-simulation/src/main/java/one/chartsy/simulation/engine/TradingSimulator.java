@@ -83,10 +83,10 @@ public class TradingSimulator extends AbstractTradeConnector implements MarketMe
         var orders = getInstrumentOrders(event.symbol());
 
         if (!orders.inboundOrders.isEmpty()) {
-            processInboundOrders(event.getTime(), orders.inboundOrders, event);
+            processInboundOrders(event.time(), orders.inboundOrders, event);
         }
         if (!orders.workingOrders.isEmpty()) {
-            processWorkingOrders(event.getTime(), orders.workingOrders, event);
+            processWorkingOrders(event.time(), orders.workingOrders, event);
         }
         updateValuations(event);
     }

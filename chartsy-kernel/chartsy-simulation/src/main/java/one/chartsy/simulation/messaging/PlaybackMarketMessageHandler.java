@@ -25,8 +25,8 @@ public final class PlaybackMarketMessageHandler implements MarketMessageHandler 
 
     @Override
     public void onMarketMessage(MarketEvent event) {
-        if (clock.time() != event.getTime())
-            clock.setTime(event.getTime());
+        if (clock.time() != event.time())
+            clock.setTime(event.time());
         downstream.onMarketMessage(event);
     }
 }

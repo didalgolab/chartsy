@@ -99,10 +99,10 @@ public final class BootstrappedTradeBarFactory implements MarketSupplierFactory 
                 return 0;
 
             int limit = Math.max(1, pollLimit);
-            long t = synthetic.get(index).getTime();
+            long t = synthetic.get(index).time();
             int delivered = 0;
             while (index < synthetic.size()
-                    && synthetic.get(index).getTime() == t
+                    && synthetic.get(index).time() == t
                     && delivered < limit) {
                 handler.onMarketMessage(synthetic.get(index++));
                 delivered++;
@@ -145,7 +145,7 @@ public final class BootstrappedTradeBarFactory implements MarketSupplierFactory 
         for (int i = 0; i < originals.size(); i++) {
             if (i > 0)
                 f = pickUsableFactor(bag, rng);
-            long time = originals.get(i).getTime();
+            long time = originals.get(i).time();
 
             double open = prevClose * f.open();
             double close = prevClose * f.close();

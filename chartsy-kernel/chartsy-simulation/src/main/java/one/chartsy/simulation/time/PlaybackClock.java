@@ -45,7 +45,7 @@ public class PlaybackClock extends Clock {
     }
 
     public final void setTime(Chronological data) {
-        this.time = data.getTime();
+        this.time = data.time();
     }
 
     public final void setTime(LocalDateTime datetime) {

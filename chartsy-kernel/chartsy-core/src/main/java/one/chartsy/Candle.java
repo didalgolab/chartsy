@@ -7,6 +7,7 @@ import one.chartsy.data.SimpleCandle;
 import one.chartsy.time.Chronological;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoField;
 
 /**
@@ -18,13 +19,13 @@ import java.time.temporal.ChronoField;
  * Each price record includes a set of price values ({@link #open()},
  * {@link #high()}, {@link #low()}, {@link #close()}) along with optional
  * {@link #volume()}. Every price record has an associated
- * {@link #getTime()} timestamp representing the moment in time when the price bar
+ * {@link #time()} timestamp representing the moment in time when the price bar
  * occurred, down to nanosecond accuracy. For continuous time spans (e.g., 15 minutes),
- * the {@link #getTime()} reflects the <b>end time</b> of each time frame period.
+ * the {@link #time()} reflects the <b>end time</b> of each time frame period.
  * For daily periods, the time component might be irrelevant and omitted.
  *
  * <p>
- * Note that {@link Candle#getTime()} uses an internal representation of time with
+ * Note that {@link Candle#time()} uses an internal representation of time with
  * nanosecond accuracy and is not equivalent to a Unix timestamp or Java milliseconds
  * from the epoch. Use {@link Chronological#toDateTime(long)} and
  * {@link Chronological#toEpochNanos(LocalDateTime)} to convert between internal
@@ -86,7 +87,7 @@ public interface Candle extends Chronological {
      * @return the value of the specified field
      */
     default int get(ChronoField field) {
-        return getDateTime().get(field);
+        return Chronological.toDateTime(time(), ZoneOffset.UTC).get(field);
     }
 
     /**

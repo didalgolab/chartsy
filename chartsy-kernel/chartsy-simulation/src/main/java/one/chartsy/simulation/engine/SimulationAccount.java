@@ -134,7 +134,7 @@ public class SimulationAccount implements Account {
     public void exitPosition(Position position, Execution execution) {
         profit -= position.getProfit();
         double currPrice = execution.getPrice();
-        long currTime = execution.getTime();
+        long currTime = execution.time();
         position.updateProfit(currPrice, currTime);
         //TODO
         //balance = balance.withAmount(balance.getAmount() + position.getProfit() - position.getExtraCommission() - closingCommission);
@@ -162,7 +162,7 @@ public class SimulationAccount implements Account {
     public void updateProfit(SymbolIdentity symbol, Candle ohlc) {
         Position position = getInstrument(symbol).position();
         if (position != null) {
-            profit += position.updateProfit(ohlc.close(), ohlc.getTime());
+            profit += position.updateProfit(ohlc.close(), ohlc.time());
 
             if (!positionValueChangeListeners.isEmpty())
                 firePositionValueChanged(this, position);

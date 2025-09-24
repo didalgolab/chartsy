@@ -161,7 +161,7 @@ public class StooqDataProvider extends AbstractDataProvider implements SymbolPro
             //items.sort(Comparator.naturalOrder());
             if (query.endTime() != null) {
                 long endTime = Chronological.toEpochNanos(query.endTime());
-                items.removeIf(item -> item.getTime() > endTime);
+                items.removeIf(item -> item.time() > endTime);
             }
 
             int itemCount = items.size();

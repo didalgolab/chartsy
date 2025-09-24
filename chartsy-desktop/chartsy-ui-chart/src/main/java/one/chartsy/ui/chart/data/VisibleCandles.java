@@ -147,9 +147,9 @@ public class VisibleCandles {
             int mid = (low + high) >> 1;
         Candle midVal = getQuoteAt(mid);
         
-        if (midVal.getTime() < time)
+        if (midVal.time() < time)
             low = mid + 1;
-        else if (midVal.getTime() > time)
+        else if (midVal.time() > time)
             high = mid - 1;
         else
             return mid; // key found

@@ -73,8 +73,8 @@ public class TimeFrameAggregationVerificationSample {
             for (int i = Math.max(result.length(), candles.size()) - 1; i >= 0; i--) {
                 Candle c1 = candles.get(i);
                 Candle c2 = SimpleCandle.from(result.get(i));
-                if ((timeFrame == TimeFrame.Period.DAILY || timeFrame == TimeFrame.Period.WEEKLY || timeFrame == TimeFrame.Period.MONTHLY || timeFrame == TimeFrame.Period.QUARTERLY || timeFrame == TimeFrame.Period.YEARLY) && c1.getTime() % 86_400_000_000L == 0) {
-                    c2 = Candle.of((c2.getTime() + 1), c2.open(), c2.high(), c2.low(), c2.close(), c2.volume());
+                if ((timeFrame == TimeFrame.Period.DAILY || timeFrame == TimeFrame.Period.WEEKLY || timeFrame == TimeFrame.Period.MONTHLY || timeFrame == TimeFrame.Period.QUARTERLY || timeFrame == TimeFrame.Period.YEARLY) && c1.time() % 86_400_000_000L == 0) {
+                    c2 = Candle.of((c2.time() + 1), c2.open(), c2.high(), c2.low(), c2.close(), c2.volume());
                 }
                 if (!c1.equals(c2))
                     throw new RuntimeException(timeFrame + ": " + c1 + " vs " + c2);
@@ -159,7 +159,7 @@ public class TimeFrameAggregationVerificationSample {
         int off = TimeFrameHelper.isIntraday(frame)? 1 : 0; // extra intraday time offset
         for (int barNo = size-1; barNo >= 0; barNo--) {
             Candle q = quotes.get(barNo);
-            long t = q.getTime();
+            long t = q.time();
             if (t < time && time != 0)
                 continue;
             if ((time - reftime2 - off)/micros != (t - reftime2 - off)/micros || time == 0) {
@@ -214,7 +214,7 @@ public class TimeFrameAggregationVerificationSample {
         Calendar cal2 = new GregorianCalendar(TimeZone.getTimeZone("UTC"));
         for (int barNo = size-1; barNo >= 0; barNo--) {
             Candle q = quotes.get(barNo);
-            long t = q.getTime();
+            long t = q.time();
             if (t < time && time != 0)
                 continue;
             cal2.setTimeInMillis(t / 1000);

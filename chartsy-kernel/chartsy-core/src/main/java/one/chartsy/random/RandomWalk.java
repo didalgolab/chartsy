@@ -64,7 +64,7 @@ public class RandomWalk {
         var timeStepNanos = Chronological.toNanos(granularity);
         var seedEndTime = Chronological.toEpochNanos(startTime) + timeStepNanos;
         var seed = candle(seedEndTime, referencePrice, spec.withGappiness(0.0), rnd);
-        return Stream.iterate(seed, c -> candle(c.getTime() + timeStepNanos, c.close(), spec, rnd));
+        return Stream.iterate(seed, c -> candle(c.time() + timeStepNanos, c.close(), spec, rnd));
     }
 
     /**
@@ -152,7 +152,7 @@ public class RandomWalk {
                 double open = (index + 1 == series.length())? ref : method.calculate(series.get(index + 1).close(), choice.open(), ref);
                 double close = method.calculate(choice.open(), choice.close(), open);
                 result[barNo] = Candle.of(
-                        source.getTime(),
+                        source.time(),
                         open,
                         method.calculate(choice.open(), choice.high(), open),
                         method.calculate(choice.open(), choice.low(), open),

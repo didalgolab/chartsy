@@ -62,6 +62,6 @@ public class SimulationInstrument implements Instrument {
     @Override
     public boolean isActiveSince(long lastTradeTime) {
         Candle c = lastCandle;
-        return (c != null && c.getTime() >= lastTradeTime);
+        return (c != null && c.time() >= lastTradeTime);
     }
 }

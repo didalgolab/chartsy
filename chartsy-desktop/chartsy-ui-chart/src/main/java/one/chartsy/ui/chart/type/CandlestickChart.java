@@ -204,7 +204,7 @@ public class CandlestickChart implements Chart {
                 double candleWidth = cp.getBarWidth();
                 double candleHeight = Math.abs(yOpen - yClose);
                 
-                PlotStyle style = hint.getStyle(q0.getTime(), null);
+                PlotStyle style = hint.getStyle(q0.time(), null);
                 if (style != null) {
                     style.draw(g, CoordCalc.line(x, (open > close ? yOpen
                             : yClose), x, yHigh));

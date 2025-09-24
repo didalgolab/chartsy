@@ -44,12 +44,12 @@ public class SimpleInstrumentPrices extends AbstractInstrumentData {
 
     public void onTradeBar(TradeBar bar) {
         this.lastTradePrice = bar.get().close();
-        this.lastTradeTime = bar.getTime();
+        this.lastTradeTime = bar.time();
     }
 
     public void onTradeTick(TradeTick tick) {
         this.lastTradePrice = tick.get().price();
-        this.lastTradeTime = tick.getTime();
+        this.lastTradeTime = tick.time();
     }
 
     public void onBestBidOffer(BestBidOfferEvent bestBidOffer) {

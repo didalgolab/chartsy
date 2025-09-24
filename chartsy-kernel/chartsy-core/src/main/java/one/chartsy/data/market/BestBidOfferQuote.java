@@ -10,7 +10,7 @@ import one.chartsy.time.Chronological;
  * All monetary/size amounts are Decimal64 (long) for consistency.
  */
 public record BestBidOfferQuote(
-        long getTime,
+        long time,
         boolean bidChanged,
         double bidPrice,
         double bidSize,

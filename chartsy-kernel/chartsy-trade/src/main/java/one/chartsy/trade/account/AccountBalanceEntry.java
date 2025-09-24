@@ -136,7 +136,7 @@ public class AccountBalanceEntry {
      * @param message the bar message containing symbol, price, and time info
      */
     public void onBarEvent(TradeBar message) {
-        updateMarketData(message.symbol(), message.get().close(), message.getTime());
+        updateMarketData(message.symbol(), message.get().close(), message.time());
     }
 
     /**
@@ -145,7 +145,7 @@ public class AccountBalanceEntry {
      * @param event the trade execution event
      */
     public void onOrderFill(OrderTrade event) {
-        long tradeTime = event.getTime();
+        long tradeTime = event.time();
         Position position = getPosition(event.symbol());
         double tradePrice = event.tradePrice();
         double tradeQuantity = event.tradeQuantity();

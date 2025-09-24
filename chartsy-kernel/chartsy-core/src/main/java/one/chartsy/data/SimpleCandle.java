@@ -11,6 +11,8 @@ import org.openide.util.Lookup;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.temporal.ChronoField;
@@ -30,7 +32,7 @@ import static java.time.format.DateTimeFormatter.ISO_LOCAL_TIME;
  * @author Mariusz Bernacki
  */
 public record SimpleCandle(
-        long getTime,
+        long time,
         double open,
         double high,
         double low,
@@ -70,7 +72,7 @@ public record SimpleCandle(
             if (bc != c)
                 return from(bc);
         }
-        return new SimpleCandle(c.getTime(), c.open(), c.high(), c.low(), c.close(), c.volume());
+        return new SimpleCandle(c.time(), c.open(), c.high(), c.low(), c.close(), c.volume());
     }
 
     @Override
@@ -80,13 +82,13 @@ public record SimpleCandle(
                 ^ Double.hashCode(low)
                 ^ (31 * Double.hashCode(open))
                 ^ (37 * Double.hashCode(volume))
-                ^ (43 * Long.hashCode(getTime));
+                ^ (43 * Long.hashCode(time));
     }
 
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof SimpleCandle(long time2, double open2, double high2, double low2, double close2, double volume2)) {
-            return (getTime == time2)
+            return (time == time2)
                     && eq(close, close2)
                     && eq(high, high2)
                     && eq(low, low2)
@@ -121,7 +123,7 @@ public record SimpleCandle(
 
     @Override
     public String toString() {
-        LocalDateTime dateTime = getDateTime();
+        ZonedDateTime dateTime = instant().atZone(ZoneOffset.UTC);
         StringBuilder buf = new StringBuilder("{\"").append(dateTime.toLocalDate());
         if (!LocalTime.MIDNIGHT.equals(dateTime.toLocalTime()))
             buf.append(' ').append(dateTime.toLocalTime());

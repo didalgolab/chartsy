@@ -16,7 +16,7 @@ public interface MarketDataEvent<T extends Chronological> extends MarketEvent {
     T get();
 
     @Override
-    default long getTime() {
-        return get().getTime();
+    default long time() {
+        return get().time();
     }
 }

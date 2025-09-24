@@ -17,8 +17,8 @@ public abstract class AbstractCandle<C extends Candle> implements Candle {
     }
 
     @Override
-    public long getTime() {
-        return baseCandle().getTime();
+    public long time() {
+        return baseCandle().time();
     }
 
     @Override

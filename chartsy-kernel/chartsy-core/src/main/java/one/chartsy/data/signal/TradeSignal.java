@@ -4,7 +4,7 @@
  */
 package one.chartsy.data.signal;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Objects;
 
 /**
@@ -36,8 +36,8 @@ import java.util.Objects;
  * </ul>
  *
  * <p>The class exposes two static factory methods,
- * {@link #goLong(double, double, double, LocalDateTime)} and
- * {@link #goShort(double, double, double, LocalDateTime)}, which
+ * {@link #goLong(double, double, double, Instant)} and
+ * {@link #goShort(double, double, double, Instant)}, which
  * validate these invariants at creation time.</p>
  *
  * <p>Because the object is immutable and fully self-contained, it can
@@ -58,7 +58,7 @@ public final class TradeSignal {
     private final double entryPrice;
     private final double stopLoss;
     private final double takeProfit;
-    private final LocalDateTime time;
+    private final Instant time;
 
     /**
      * Creates a {@code LONG} signal.
@@ -74,13 +74,13 @@ public final class TradeSignal {
     public static TradeSignal goLong(double entryPrice,
                                      double stopLoss,
                                      double takeProfit,
-                                     LocalDateTime time) {
+                                     Instant time) {
         return new TradeSignal(Side.LONG, entryPrice, stopLoss, takeProfit, time);
     }
 
     public static TradeSignal goLong(double entryPrice,
                                      double stopLoss,
-                                     LocalDateTime time) {
+                                     Instant time) {
         return goLong(entryPrice, stopLoss, Double.NaN, time);
     }
 
@@ -98,17 +98,17 @@ public final class TradeSignal {
     public static TradeSignal goShort(double entryPrice,
                                       double stopLoss,
                                       double takeProfit,
-                                      LocalDateTime time) {
+                                      Instant time) {
         return new TradeSignal(Side.SHORT, entryPrice, stopLoss, takeProfit, time);
     }
 
     public static TradeSignal goShort(double entryPrice,
                                       double stopLoss,
-                                      LocalDateTime time) {
+                                      Instant time) {
         return goShort(entryPrice, stopLoss, Double.NaN, time);
     }
 
-    private TradeSignal(Side side, double entryPrice, double stopLoss, double takeProfit, LocalDateTime time) {
+    private TradeSignal(Side side, double entryPrice, double stopLoss, double takeProfit, Instant time) {
         Objects.requireNonNull(time, "time");
         validatePrices(side, entryPrice, stopLoss, takeProfit);
 
@@ -149,7 +149,7 @@ public final class TradeSignal {
     public double entryPrice()     { return entryPrice; }
     public double stopLoss()       { return stopLoss; }
     public double takeProfit()     { return takeProfit; }
-    public LocalDateTime time()    { return time; }
+    public Instant time()    { return time; }
 
     public boolean isLong()  { return side == Side.LONG; }
     public boolean isShort() { return side == Side.SHORT; }

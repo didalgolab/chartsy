@@ -225,7 +225,7 @@ public class ChartStackPanel extends JLayeredPane {
         Rectangle bounds = chartPanel.getBounds(chartPanel.getInsets());
         
         int index = getMarkerIndex();
-        long epochMicros = chartFrame.getChartData().getVisible().getQuoteAt(index).getTime();
+        long epochMicros = chartFrame.getChartData().getVisible().getQuoteAt(index).time();
         String s = TimeFrameHelper.formatDate(chartFrame.getChartData().getTimeFrame(), epochMicros);
         double dx = chartFrame.getChartData().getX(index, bounds);
         g.setFont(font);
@@ -261,7 +261,7 @@ public class ChartStackPanel extends JLayeredPane {
             DecimalFormat df = new DecimalFormat("#,##0.00");
             
             Candle q0 = cd.getVisible().getQuoteAt(getMarkerIndex());
-            long epochMicros = q0.getTime();
+            long epochMicros = q0.time();
             String date = TimeFrameHelper.formatDate(chartFrame.getChartData().getTimeFrame(), epochMicros);
             
             StringBuilder sb = new StringBuilder();

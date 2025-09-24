@@ -79,7 +79,7 @@ public class StrategyTest {
                     assertNotNull(position);
                     assertEquals(Direction.LONG, position.getDirection(), "opened position direction");
                     assertEquals(c2.open(), position.getEntryPrice(), "position open price");
-                    assertEquals(c2.getTime(), position.getEntryTime(), "position open time");
+                    assertEquals(c2.time(), position.getEntryTime(), "position open time");
 
                     System.out.println(Chronological.toDateTime(position.getEntryOrder().getAcceptedTime()));
                 }

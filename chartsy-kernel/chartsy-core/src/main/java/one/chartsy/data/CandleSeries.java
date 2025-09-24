@@ -132,7 +132,7 @@ public interface CandleSeries extends Series<Candle> {
             throw new IllegalArgumentException(String.format("endIndexExclusive: %n < startIndex: %n", startIndex, endIndexExclusive));
 
         double high = Double.NEGATIVE_INFINITY, low = Double.POSITIVE_INFINITY;
-        long time = get(startIndex).getTime();
+        long time = get(startIndex).time();
         for (int index = endIndexExclusive; --index >= startIndex; ) {
             Candle c = get(index);
             high = Math.max(high, c.high());

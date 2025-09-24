@@ -65,7 +65,7 @@ public abstract class AbstractCandleBuilder<C extends Candle, T extends Tick> im
 
     @Override
     public void addCandle(C c) {
-        time = c.getTime();
+        time = c.time();
         if (!isPresent()) {
             open = c.open();
             high = c.high();
@@ -85,7 +85,7 @@ public abstract class AbstractCandleBuilder<C extends Candle, T extends Tick> im
 
     @Override
     public void addTick(Tick t) {
-        time = t.getTime();
+        time = t.time();
         if (!isPresent()) {
             open = high = low = close = t.price();
             volume = t.size();

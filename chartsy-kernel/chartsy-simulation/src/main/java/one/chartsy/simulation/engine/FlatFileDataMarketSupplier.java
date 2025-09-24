@@ -71,7 +71,7 @@ public class FlatFileDataMarketSupplier implements MarketSupplier {
         if (current != null) {
             while (count < pollLimit) {
                 var subscriber = subscribers.remove();
-                var lastTime = current.getTime();
+                var lastTime = current.time();
                 handler.onMarketMessage(current);
                 count++;
 
@@ -83,7 +83,7 @@ public class FlatFileDataMarketSupplier implements MarketSupplier {
                 }
 
                 current = subscribers.peekKey();
-                if (current == null || current.getTime() != lastTime) {
+                if (current == null || current.time() != lastTime) {
                     break;
                 }
             }
