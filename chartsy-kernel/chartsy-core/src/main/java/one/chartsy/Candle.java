@@ -70,6 +70,16 @@ public interface Candle extends Chronological {
     double volume();
 
     /**
+     * Returns the total turnover traded during the candle's period, which may be
+     * a simple approximation of {@code volume * close}.
+     *
+     * @return the actual turnover in the period or its approximation
+     */
+    default double turnover() {
+        return volume() * close();
+    }
+
+    /**
      * Retrieves the specified field from the candle's timestamp.
      *
      * @param field the temporal field to get
