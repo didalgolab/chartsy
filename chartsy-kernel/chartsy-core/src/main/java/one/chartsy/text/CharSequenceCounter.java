@@ -5,32 +5,43 @@ package one.chartsy.text;
 
 import java.util.Arrays;
 
-/**
- * A fixed-width counter backed by a char[] and exposed as a CharSequence.
- * <p>
- * Characteristics:
- * - Holds a non-negative numeric suffix (one or more trailing digits). A non-digit prefix is allowed.
- * - Underlying storage is a fixed-length char[]; only the trailing digit run is incremented.
- * - Increment operations are performed in-place using only the char[].
- * - If an increment would require more digits in the numeric suffix than available (e.g., "...99" -> "...100"),
- *   an ArithmeticException("Overflow") is thrown and the state remains unchanged.
- *
- * <p><b>Thread-safety:</b> not synchronized.
- */
+/// A fixed-width counter backed by a char[] and exposed as a CharSequence.
+///
+/// Order produced for any fixed length:
+/// - First: purely decimal 0-9 on every position, e.g. 000, 001, ..., 999.
+/// - Then: base-36 (per position 0-9 then A-Z), e.g. 99A, 99B, ..., 99Z, 9A0, ..., ZZZ.
+///
+/// Characteristics:
+/// - Monotonically increasing sequence of strings.
+/// - Alphabet per position: 0-9 then A-Z (uppercase). Lowercase input is normalized to uppercase.
+/// - Underlying storage is a fixed-length char[]; increments are performed in-place.
+/// - If the state is all 'Z' (e.g., "ZZZ"), increment throws ArithmeticException("Overflow")
+///   and the state remains unchanged.
+/// - The maximum number of values for counter of length N is determined by the formula:
+///   `(26*36^N + 35*10^N - 61) / 35`
+///
+/// **Thread-safety:** not synchronized.
+///
+/// @author Mariusz Bernacki
+///
 public class CharSequenceCounter implements CharSequence {
 
     private final char[] digits;
-
-    public CharSequenceCounter(long initial) {
-        this(String.valueOf(initial));
-        if (initial < 0)
-            throw new IllegalArgumentException("`initial` must be non-negative but was: " + initial);
-    }
+    private boolean hasLetter;
 
     public CharSequenceCounter(String initial) {
-        if (initial.isEmpty() || !isAsciiDigit(initial.charAt(initial.length() - 1)))
-            throw new IllegalArgumentException("`initial` must end with one or more digits: " + initial);
-        this.digits = initial.toCharArray();
+        if (initial == null || initial.isEmpty())
+            throw new IllegalArgumentException("`initial` must be non-empty");
+
+        String normalized = initial.toUpperCase();
+        for (int i = 0; i < normalized.length(); i++) {
+            char c = normalized.charAt(i);
+            if (!isBase36(c))
+                throw new IllegalArgumentException("`initial` must contain only [0-9A-Z]: " + initial);
+            if (c >= 'A' && c <= 'Z')
+                hasLetter = true;
+        }
+        this.digits = normalized.toCharArray();
     }
 
     @Override
@@ -53,34 +64,80 @@ public class CharSequenceCounter implements CharSequence {
         return new String(digits);
     }
 
+    /// Gives `true` if the counter can be incremented without overflow.
+    public boolean hasNext() {
+        if (!hasLetter)
+            return true;
+
+        for (char c : digits)
+            if (c != 'Z')
+                return true;
+
+        return false;
+    }
+
+    /// Returns the current value and then increments the counter.
     public String getAndIncrement() {
-        var valueBefore = toString();
+        String valueBefore = toString();
         increment();
         return valueBefore;
     }
 
+    /// Increments the counter and then returns the new value.
     public String incrementAndGet() {
         increment();
         return toString();
     }
 
+    /// Increment policy that matches the requested sequence:
+    /// - If current state contains no letters (only '0'..'9' on all positions),
+    ///   behave as a fixed-width decimal counter. Example: 019 -> 020, 199 -> 200.
+    ///   Special case: if all positions are '9' (e.g., "999"), switch into base-36
+    ///   by turning the last '9' into 'A': "999" -> "99A".
+    /// - Otherwise (there is at least one 'A'..'Z'), increment as fixed-width base-36:
+    ///   per position 0..9, A..Z with carry; "99Z" -> "9A0", "YZZ" -> "Z00".
     private void increment() {
         final int end = digits.length - 1;
-        if (!isAsciiDigit(digits[end]))
-            throw new IllegalStateException("Counter must end with a digit");
 
-        int k = end;
-        while (k >= 0 && digits[k] == '9')
-            k--;
-        if (k < 0 || !isAsciiDigit(digits[k]))
-            throw new ArithmeticException("Overflow");
+        if (!hasLetter) {
+            int k = end;
+            while (k >= 0 && digits[k] == '9')
+                k--;
 
-        digits[k]++;
-        Arrays.fill(digits, k + 1, end + 1, '0');
+            if (k < 0) {
+                digits[end] = 'A';
+                hasLetter = true;
+            } else {
+                digits[k] = (char) (digits[k] + 1);
+                if (k < end)
+                    Arrays.fill(digits, k + 1, end + 1, '0');
+            }
+        } else {
+            int k = end;
+            while (k >= 0 && digits[k] == 'Z')
+                k--;
+            if (k < 0)
+                throw new ArithmeticException("Overflow");
+
+            digits[k] = nextBase36(digits[k]);
+            if (k < end)
+                Arrays.fill(digits, k + 1, end + 1, '0');
+        }
     }
 
-    private static boolean isAsciiDigit(char c) {
-        return c >= '0' && c <= '9';
+    private static boolean isBase36(char c) {
+        return (c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z');
+    }
+
+    private static char nextBase36(char c) {
+        if (c >= '0' && c <= '8')
+            return (char) (c + 1);
+        else if (c == '9')
+            return 'A';
+        else if (c >= 'A' && c <= 'Y')
+            return (char) (c + 1);
+        else
+            throw new IllegalArgumentException("Invalid base-36 character: " + c);
     }
 
     @Override

@@ -5,8 +5,6 @@ package one.chartsy.util;
 
 import one.chartsy.text.CharSequenceCounter;
 
-import java.time.Instant;
-
 /**
  * A generator for unique sequence numbers.
  */
@@ -19,8 +17,7 @@ public interface SequenceGenerator {
     }
 
     static SequenceGenerator create(String prefix) {
-        var instant = Instant.now();
-        var initial = Math.multiplyExact(instant.getEpochSecond(), 1_000_000) + instant.getNano() / 1_000;
-        return new CharSequenceCounter(prefix + initial)::incrementAndGet;
+        var sequence = new CharSequenceCounter("000000");
+        return () -> prefix + sequence.incrementAndGet();
     }
 }
