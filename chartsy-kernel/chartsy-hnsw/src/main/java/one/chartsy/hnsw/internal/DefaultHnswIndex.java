@@ -36,7 +36,7 @@ import one.chartsy.hnsw.store.VectorStorage;
 
 public final class DefaultHnswIndex implements HnswIndex {
     private static final long MAGIC = 0x484E535730303031L; // "HNSW0001"
-    private static final int SERIAL_VERSION = 1;
+    private static final int SERIAL_VERSION = 2;
 
     private final HnswConfig config;
     private final VectorStorage vectorStorage;
@@ -182,6 +182,9 @@ public final class DefaultHnswIndex implements HnswIndex {
             }
             int effectiveEf = Math.max(efSearch, k);
             QueryContext queryContext = space.prepareQuery(query);
+            if (config.exactSearch) {
+                return exactSearch(queryContext, k);
+            }
             SearchScratch scratch = scratch();
             scratch.reset(Math.max(nodeCount, 1), Math.max(effectiveEf, config.defaultEfSearch));
 
@@ -194,6 +197,34 @@ public final class DefaultHnswIndex implements HnswIndex {
         } finally {
             lock.readLock().unlock();
         }
+    }
+
+    private List<SearchResult> exactSearch(QueryContext query, int k) {
+        BoundedMaxHeap heap = new BoundedMaxHeap(Math.max(k, 16));
+        for (int node = 0; node < nodeCount; node++) {
+            long id = internalToId[node];
+            if (id < 0 || deleted.get(node)) {
+                continue;
+            }
+            double distance = space.distance(query, node);
+            if (!Double.isFinite(distance)) {
+                continue;
+            }
+            heap.insert(node, distance);
+        }
+        int count = heap.size();
+        int[] nodes = new int[count];
+        double[] distances = new double[count];
+        heap.toArrays(nodes, distances);
+        sortByDistance(nodes, distances, count);
+        List<SearchResult> results = new ArrayList<>(Math.min(k, count));
+        for (int i = 0; i < count && results.size() < k; i++) {
+            long id = internalToId[nodes[i]];
+            if (id >= 0 && !deleted.get(nodes[i])) {
+                results.add(new SearchResult(id, distances[i]));
+            }
+        }
+        return results;
     }
 
     @Override
@@ -334,10 +365,10 @@ public final class DefaultHnswIndex implements HnswIndex {
                 throw new IOException("Invalid HNSW index file");
             }
             int version = in.readInt();
-            if (version != SERIAL_VERSION) {
+            if (version < 1 || version > SERIAL_VERSION) {
                 throw new IOException("Unsupported HNSW index version " + version);
             }
-            HnswConfig config = readConfig(in);
+            HnswConfig config = readConfig(in, version);
             config.validate();
             DefaultHnswIndex index = new DefaultHnswIndex(config, true);
             int nodeCount = in.readInt();
@@ -434,11 +465,13 @@ public final class DefaultHnswIndex implements HnswIndex {
         out.writeInt(config.neighborHeuristic.ordinal());
         out.writeInt(config.initialCapacity);
         out.writeInt(config.efRepair);
+        out.writeDouble(config.diversificationAlpha);
+        out.writeBoolean(config.exactSearch);
         out.writeUTF(config.spaceFactory.typeId());
         config.spaceFactory.write(out);
     }
 
-    private static HnswConfig readConfig(DataInputStream in) throws IOException {
+    private static HnswConfig readConfig(DataInputStream in, int version) throws IOException {
         HnswConfig config = new HnswConfig();
         config.dimension = in.readInt();
         config.M = in.readInt();
@@ -452,9 +485,17 @@ public final class DefaultHnswIndex implements HnswIndex {
         config.neighborHeuristic = NeighborSelectHeuristic.values()[in.readInt()];
         config.initialCapacity = in.readInt();
         config.efRepair = in.readInt();
+        if (version >= 2) {
+            config.diversificationAlpha = in.readDouble();
+            config.exactSearch = in.readBoolean();
+        }
         String spaceId = in.readUTF();
         SpaceFactory factory = Spaces.fromId(spaceId, in);
         config.spaceFactory = factory;
+        if (version == 1) {
+            config.diversificationAlpha = 1.2;
+            config.exactSearch = false;
+        }
         return config;
     }
 
@@ -723,6 +764,7 @@ public final class DefaultHnswIndex implements HnswIndex {
             }
             return selected;
         }
+        double alpha = config.diversificationAlpha;
         for (int i = 0; i < count && selected < maxDegree; i++) {
             int candidate = candidates[i];
             if (candidate == nodeId) {
@@ -736,13 +778,31 @@ public final class DefaultHnswIndex implements HnswIndex {
                 if (!Double.isFinite(dist)) {
                     continue;
                 }
-                if (dist <= candidateDistance) {
+                if (dist <= candidateDistance * alpha) {
                     occluded = true;
                     break;
                 }
             }
             if (!occluded) {
                 selectedOut[selected++] = candidate;
+            }
+        }
+        if (selected < maxDegree) {
+            for (int i = 0; i < count && selected < maxDegree; i++) {
+                int candidate = candidates[i];
+                if (candidate == nodeId) {
+                    continue;
+                }
+                boolean alreadySelected = false;
+                for (int j = 0; j < selected; j++) {
+                    if (selectedOut[j] == candidate) {
+                        alreadySelected = true;
+                        break;
+                    }
+                }
+                if (!alreadySelected) {
+                    selectedOut[selected++] = candidate;
+                }
             }
         }
         return selected;

@@ -114,6 +114,26 @@ class HnswIndexTest {
     }
 
     @Test
+    void exactSearchModeReturnsBruteForceResults() {
+        HnswConfig config = new HnswConfig();
+        config.dimension = 2;
+        config.spaceFactory = Spaces.euclidean();
+        config.exactSearch = true;
+
+        HnswIndex index = Hnsw.build(config);
+        index.add(1L, new double[]{0.0, 0.0});
+        index.add(2L, new double[]{1.0, 0.0});
+        index.add(3L, new double[]{0.0, 1.0});
+
+        List<SearchResult> results = index.searchKnn(new double[]{0.8, 0.1}, 2);
+
+        assertThat(results).hasSize(2);
+        assertThat(results.get(0).id()).isEqualTo(2L);
+        assertThat(results.get(1).id()).isEqualTo(1L);
+        assertThat(results.get(0).distance()).isLessThan(results.get(1).distance());
+    }
+
+    @Test
     void randomizedInsertDeleteMaintainsHighRecall() {
         HnswConfig config = new HnswConfig();
         config.dimension = 8;
@@ -123,6 +143,7 @@ class HnswIndexTest {
         config.maxM0 = 24;
         config.efConstruction = 200;
         config.defaultEfSearch = 100;
+        config.levelLambda = 1.0 / Math.log(config.M);
 
         HnswIndex index = Hnsw.build(config);
 
@@ -151,7 +172,7 @@ class HnswIndexTest {
             if (!active.isEmpty() && iteration % 10 == 0) {
                 double[] query = randomVector(random, config.dimension);
                 int requestedK = Math.min(8, active.size());
-                List<SearchResult> results = index.searchKnn(query, requestedK, Math.max(requestedK, 120));
+                List<SearchResult> results = index.searchKnn(query, requestedK, Math.max(requestedK, 200));
 
                 assertThat(results).isNotEmpty();
                 int evaluatedK = Math.min(requestedK, results.size());
@@ -176,7 +197,7 @@ class HnswIndexTest {
 
         assertThat(recallChecks).isGreaterThan(0);
         double averageRecall = totalRecall / recallChecks;
-        assertThat(averageRecall).isGreaterThanOrEqualTo(0.25);
+        assertThat(averageRecall).isGreaterThanOrEqualTo(0.90);
     }
 
     private static double[] randomVector(Random random, int dimension) {

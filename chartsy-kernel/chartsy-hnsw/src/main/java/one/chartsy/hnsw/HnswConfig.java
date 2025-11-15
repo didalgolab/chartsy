@@ -22,6 +22,17 @@ public final class HnswConfig {
     public NeighborSelectHeuristic neighborHeuristic = NeighborSelectHeuristic.DIVERSIFIED;
     public int initialCapacity = 16_384;
     public int efRepair = 40;
+    /**
+     * Multiplier applied during diversified neighbor selection to control occlusion tolerance.
+     * Values {@code >= 1.0} relax the strict angular constraint and allow denser connectivity.
+     */
+    public double diversificationAlpha = 1.2;
+
+    /**
+     * When enabled, {@link HnswIndex#searchKnn(double[], int)} falls back to a brute-force scan of
+     * all active nodes. Primarily intended for diagnostics or validating recall in tests.
+     */
+    public boolean exactSearch = false;
 
     public HnswConfig() {
     }
@@ -40,6 +51,8 @@ public final class HnswConfig {
         this.neighborHeuristic = other.neighborHeuristic;
         this.initialCapacity = other.initialCapacity;
         this.efRepair = other.efRepair;
+        this.diversificationAlpha = other.diversificationAlpha;
+        this.exactSearch = other.exactSearch;
     }
 
     public static Builder builder() {
@@ -74,6 +87,9 @@ public final class HnswConfig {
         }
         if (efRepair < 0) {
             throw new IllegalArgumentException("efRepair must be >= 0");
+        }
+        if (diversificationAlpha < 1.0) {
+            throw new IllegalArgumentException("diversificationAlpha must be >= 1.0");
         }
     }
 
@@ -142,6 +158,16 @@ public final class HnswConfig {
 
         public Builder efRepair(int value) {
             config.efRepair = value;
+            return this;
+        }
+
+        public Builder diversificationAlpha(double value) {
+            config.diversificationAlpha = value;
+            return this;
+        }
+
+        public Builder exactSearch(boolean value) {
+            config.exactSearch = value;
             return this;
         }
 
