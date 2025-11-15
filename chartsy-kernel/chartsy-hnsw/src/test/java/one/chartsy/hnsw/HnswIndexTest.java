@@ -3,7 +3,9 @@ package one.chartsy.hnsw;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -18,6 +20,8 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 import one.chartsy.hnsw.space.Spaces;
+import one.chartsy.hnsw.internal.DefaultHnswIndex;
+import one.chartsy.hnsw.store.VectorStorage;
 
 class HnswIndexTest {
 
@@ -111,6 +115,68 @@ class HnswIndexTest {
 
         List<SearchResult> results = index.searchKnn(new double[]{1.0, 2.0, 3.0}, 1);
         assertThat(results).extracting(SearchResult::id).containsExactly(2L);
+    }
+
+    @Test
+    void sizeTracksNonDeletedVectors() {
+        HnswConfig config = new HnswConfig();
+        config.dimension = 2;
+        config.spaceFactory = Spaces.euclidean();
+        config.initialCapacity = 2;
+
+        HnswIndex index = Hnsw.build(config);
+
+        assertThat(index.size()).isZero();
+
+        index.add(1L, new double[]{0.0, 0.0});
+        index.add(2L, new double[]{1.0, 1.0});
+        index.add(3L, new double[]{2.0, 2.0});
+
+        assertThat(index.size()).isEqualTo(3);
+        assertThat(index.contains(2L)).isTrue();
+
+        assertThat(index.remove(2L)).isTrue();
+        assertThat(index.size()).isEqualTo(2);
+        assertThat(index.contains(2L)).isFalse();
+
+        index.add(4L, new double[]{3.0, 3.0});
+        assertThat(index.size()).isEqualTo(3);
+        assertThat(index.contains(4L)).isTrue();
+    }
+
+    @Test
+    void expandingCapacityKeepsPreviouslyInsertedVectors() throws Exception {
+        HnswConfig config = new HnswConfig();
+        config.dimension = 3;
+        config.spaceFactory = Spaces.euclidean();
+        config.initialCapacity = 1;
+        config.M = 4;
+        config.maxM0 = 6;
+
+        HnswIndex index = Hnsw.build(config);
+        long anchorId = 99L;
+        double[] anchorVector = new double[]{10.0, 20.0, 30.0};
+        index.add(anchorId, anchorVector);
+
+        for (int i = 0; i < 10; i++) {
+            index.add(200L + i, new double[]{i, i + 1.0, i + 2.0});
+        }
+
+        assertThat(index.size()).isEqualTo(11);
+        assertThat(index.contains(anchorId)).isTrue();
+
+        DefaultHnswIndex internal = (DefaultHnswIndex) index;
+        Field vectorField = DefaultHnswIndex.class.getDeclaredField("vectorStorage");
+        vectorField.setAccessible(true);
+        VectorStorage vectorStorage = (VectorStorage) vectorField.get(internal);
+
+        Field mapField = DefaultHnswIndex.class.getDeclaredField("idToInternal");
+        mapField.setAccessible(true);
+        Long2IntOpenHashMap idToInternal = (Long2IntOpenHashMap) mapField.get(internal);
+        int nodeId = idToInternal.get(anchorId);
+
+        assertThat(nodeId).isGreaterThanOrEqualTo(0);
+        assertThat(vectorStorage.copy(nodeId)).containsExactly(anchorVector);
     }
 
     @Test
