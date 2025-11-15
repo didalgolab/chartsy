@@ -43,17 +43,11 @@
             <groupId>org.linguafranca.pwdb</groupId>
             <artifactId>KeePassJava2-jackson</artifactId>
             <version>2.2.2</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.bouncycastle</groupId>
-                    <artifactId>bcprov-jdk18on</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>chartsy-misc-bcprov-lib</artifactId>
-            <version>${project.version}</version>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk18on</artifactId>
+            <version>1.78.1</version>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
