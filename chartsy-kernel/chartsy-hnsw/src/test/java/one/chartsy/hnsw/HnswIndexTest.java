@@ -154,7 +154,7 @@ class HnswIndexTest {
         double totalRecall = 0.0;
         int recallChecks = 0;
 
-        for (int iteration = 0; iteration < 400; iteration++) {
+        for (int iteration = 0; iteration < 1000000; iteration++) {
             boolean shouldInsert = active.isEmpty() || active.size() < 64 || random.nextDouble() < 0.6;
             if (shouldInsert) {
                 double[] vector = randomVector(random, config.dimension);
@@ -197,8 +197,7 @@ class HnswIndexTest {
 
         assertThat(recallChecks).isGreaterThan(0);
         double averageRecall = totalRecall / recallChecks;
-        assertThat(averageRecall).isGreaterThanOrEqualTo(0.90);
-        System.out.println("Average recall over " + recallChecks + " checks: " + averageRecall);
+        assertThat(averageRecall).isGreaterThanOrEqualTo(0.98);
     }
 
     private static double[] randomVector(Random random, int dimension) {

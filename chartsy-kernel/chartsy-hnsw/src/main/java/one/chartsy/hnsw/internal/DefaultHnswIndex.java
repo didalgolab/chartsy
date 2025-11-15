@@ -37,6 +37,7 @@ import one.chartsy.hnsw.store.VectorStorage;
 public final class DefaultHnswIndex implements HnswIndex {
     private static final long MAGIC = 0x484E535730303031L; // "HNSW0001"
     private static final int SERIAL_VERSION = 2;
+    private static final int[] EMPTY_INT_ARRAY = new int[0];
 
     private final HnswConfig config;
     private final VectorStorage vectorStorage;
@@ -118,10 +119,15 @@ public final class DefaultHnswIndex implements HnswIndex {
 
             QueryContext query = space.prepareQueryForNode(nodeId);
             int entryPoint = graph.entryPoint();
-
-            if (level > currentMaxLevel) {
-                graph.setEntryPoint(nodeId);
+            if (entryPoint == nodeId || entryPoint < 0 || entryPoint >= nodeCount
+                    || internalToId[entryPoint] < 0 || deleted.get(entryPoint)) {
+                int alternate = selectAlternateEntry(nodeId);
+                if (alternate >= 0) {
+                    entryPoint = alternate;
+                }
             }
+
+            boolean newTopLevel = level > currentMaxLevel;
 
             for (int levelCursor = currentMaxLevel; levelCursor > level; levelCursor--) {
                 entryPoint = greedySearchOnLevel(entryPoint, query, levelCursor);
@@ -131,7 +137,8 @@ public final class DefaultHnswIndex implements HnswIndex {
                 entryPoint = connectOnLevel(nodeId, query, entryPoint, levelCursor);
             }
 
-            if (level > currentMaxLevel) {
+            if (newTopLevel) {
+                graph.setEntryPoint(nodeId);
                 graph.setMaxLevel(level);
             }
         } finally {
@@ -525,6 +532,25 @@ public final class DefaultHnswIndex implements HnswIndex {
         return nodeCount++;
     }
 
+    private int selectAlternateEntry(int excludeNode) {
+        int bestNode = -1;
+        int bestLevel = -1;
+        for (int i = 0; i < nodeCount; i++) {
+            if (i == excludeNode) {
+                continue;
+            }
+            if (internalToId[i] < 0 || deleted.get(i)) {
+                continue;
+            }
+            int level = graph.levelOfNode(i);
+            if (level > bestLevel) {
+                bestLevel = level;
+                bestNode = i;
+            }
+        }
+        return bestNode;
+    }
+
     private int sampleLevel() {
         double u = 1.0 - random.nextDouble();
         double value = -Math.log(u) * config.levelLambda;
@@ -710,15 +736,16 @@ public final class DefaultHnswIndex implements HnswIndex {
         int[] selected = scratch.tmpNodesSecondary(Math.max(candidateCount, maxDegree));
         int selectedCount = selectNeighbors(nodeId, level, candidateNodes, candidateDistances, candidateCount, maxDegree, selected);
 
+        int[] neighbors = selectedCount > 0 ? Arrays.copyOf(selected, selectedCount) : EMPTY_INT_ARRAY;
         NeighborList nodeList = graph.ensureNeighborList(level, nodeId);
-        nodeList.replaceWith(selected, selectedCount);
+        nodeList.replaceWith(neighbors, selectedCount);
 
         for (int i = 0; i < selectedCount; i++) {
-            connectMutual(level, nodeId, selected[i], scratch);
+            connectMutual(level, nodeId, neighbors[i], scratch);
         }
 
         if (selectedCount > 0) {
-            return selected[0];
+            return neighbors[0];
         }
         return entryPoint;
     }
@@ -732,6 +759,7 @@ public final class DefaultHnswIndex implements HnswIndex {
         int count = 0;
         boolean contains = false;
         int[] elements = list.elements();
+        int[] previousNeighbors = Arrays.copyOf(elements, size);
         for (int i = 0; i < size; i++) {
             int neighbor = elements[i];
             if (neighbor == source) {
@@ -749,6 +777,78 @@ public final class DefaultHnswIndex implements HnswIndex {
         sortByDistance(candidates, distances, count);
         int[] selected = scratch.tmpNodesSecondary(Math.max(count, maxDegree));
         int selectedCount = selectNeighbors(target, level, candidates, distances, count, maxDegree, selected);
+        if (selectedCount > 0 && previousNeighbors.length > 0) {
+            boolean retainsPrevious = false;
+            for (int prev : previousNeighbors) {
+                for (int i = 0; i < selectedCount; i++) {
+                    if (selected[i] == prev) {
+                        retainsPrevious = true;
+                        break;
+                    }
+                }
+                if (retainsPrevious) {
+                    break;
+                }
+            }
+            if (!retainsPrevious) {
+                int bestPrev = -1;
+                double bestPrevDist = Double.POSITIVE_INFINITY;
+                for (int prev : previousNeighbors) {
+                    if (prev == source) {
+                        continue;
+                    }
+                    double dist = space.distanceBetweenNodes(target, prev);
+                    if (dist < bestPrevDist) {
+                        bestPrevDist = dist;
+                        bestPrev = prev;
+                    }
+                }
+                if (bestPrev >= 0) {
+                    if (selectedCount < maxDegree) {
+                        selected[selectedCount++] = bestPrev;
+                    } else {
+                        int farthestIdx = -1;
+                        double farthestDist = Double.NEGATIVE_INFINITY;
+                        for (int i = 0; i < selectedCount; i++) {
+                            double dist = space.distanceBetweenNodes(target, selected[i]);
+                            if (dist > farthestDist) {
+                                farthestDist = dist;
+                                farthestIdx = i;
+                            }
+                        }
+                        if (farthestIdx >= 0 && bestPrevDist < farthestDist) {
+                            selected[farthestIdx] = bestPrev;
+                        }
+                    }
+                }
+            }
+        }
+        boolean containsSourceNeighbor = false;
+        for (int i = 0; i < selectedCount; i++) {
+            if (selected[i] == source) {
+                containsSourceNeighbor = true;
+                break;
+            }
+        }
+        if (!containsSourceNeighbor) {
+            double sourceDistance = space.distanceBetweenNodes(target, source);
+            if (selectedCount < maxDegree) {
+                selected[selectedCount++] = source;
+            } else {
+                int farthestIdx = -1;
+                double farthestDist = Double.NEGATIVE_INFINITY;
+                for (int i = 0; i < selectedCount; i++) {
+                    double dist = space.distanceBetweenNodes(target, selected[i]);
+                    if (dist > farthestDist) {
+                        farthestDist = dist;
+                        farthestIdx = i;
+                    }
+                }
+                if (farthestIdx >= 0 && sourceDistance < farthestDist) {
+                    selected[farthestIdx] = source;
+                }
+            }
+        }
         list.replaceWith(selected, selectedCount);
     }
 
@@ -816,6 +916,9 @@ public final class DefaultHnswIndex implements HnswIndex {
                 continue;
             }
             if (deleted.get(node)) {
+                continue;
+            }
+            if (internalToId[node] < 0) {
                 continue;
             }
             double distance = distances[i];

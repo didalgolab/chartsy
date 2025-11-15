@@ -42,12 +42,13 @@ public final class HnswGraph {
         if (capacity <= levelOfNode.length) {
             return;
         }
+        int oldLength = levelOfNode.length;
         int newLength = levelOfNode.length;
         while (newLength < capacity) {
             newLength = Math.max(newLength * 2, capacity);
         }
         levelOfNode = Arrays.copyOf(levelOfNode, newLength);
-        Arrays.fill(levelOfNode, capacity, newLength, -1);
+        Arrays.fill(levelOfNode, oldLength, newLength, -1);
         for (int level = 0; level < layers.size(); level++) {
             NeighborList[] layer = layers.get(level);
             NeighborList[] expanded = Arrays.copyOf(layer, newLength);
