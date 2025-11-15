@@ -12,7 +12,6 @@
     <artifactId>chartsy-misc</artifactId>
     <packaging>pom</packaging>
     <modules>
-        <module>chartsy-misc-bcprov-lib</module>
         <module>chartsy-misc-captcha-automation</module>
     </modules>
 
