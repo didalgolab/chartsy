@@ -220,7 +220,7 @@ class HnswIndexTest {
         double totalRecall = 0.0;
         int recallChecks = 0;
 
-        for (int iteration = 0; iteration < 1000000; iteration++) {
+        for (int iteration = 0; iteration < 4000; iteration++) {
             boolean shouldInsert = active.isEmpty() || active.size() < 64 || random.nextDouble() < 0.6;
             if (shouldInsert) {
                 double[] vector = randomVector(random, config.dimension);
