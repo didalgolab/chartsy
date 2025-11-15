@@ -198,6 +198,7 @@ class HnswIndexTest {
         assertThat(recallChecks).isGreaterThan(0);
         double averageRecall = totalRecall / recallChecks;
         assertThat(averageRecall).isGreaterThanOrEqualTo(0.90);
+        System.out.println("Average recall over " + recallChecks + " checks: " + averageRecall);
     }
 
     private static double[] randomVector(Random random, int dimension) {
