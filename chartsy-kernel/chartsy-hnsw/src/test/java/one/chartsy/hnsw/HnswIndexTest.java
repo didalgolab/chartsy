@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -98,6 +99,67 @@ class HnswIndexTest {
 
         List<SearchResult> results = index.searchKnn(new double[]{1.0, 0.0, 0.0}, 1);
         assertThat(results).extracting(SearchResult::id).containsExactly(1L);
+    }
+
+    @Test
+    void searchMatchesBruteForceOnLineDataset() {
+        HnswConfig config = new HnswConfig();
+        config.dimension = 1;
+        config.spaceFactory = Spaces.euclidean();
+        config.M = 4;
+        config.maxM0 = 6;
+        config.efConstruction = 64;
+        config.defaultEfSearch = 32;
+
+        HnswIndex index = Hnsw.build(config);
+        Map<Long, double[]> dataset = new LinkedHashMap<>();
+        for (int i = 0; i < 8; i++) {
+            long id = i;
+            double[] vector = new double[]{i};
+            dataset.put(id, vector);
+            index.add(id, vector);
+        }
+
+        double[] query = new double[]{2.2};
+        List<SearchResult> results = index.searchKnn(query, 3, 32);
+
+        assertThat(results).hasSize(3);
+        List<Long> expectedOrder = bruteForceOrderedIds(dataset, query, 3);
+        assertThat(results).extracting(SearchResult::id).containsExactlyElementsOf(expectedOrder);
+    }
+
+    @Test
+    void searchClampsEfSearchWhenBelowRequestedK() {
+        HnswConfig config = new HnswConfig();
+        config.dimension = 2;
+        config.spaceFactory = Spaces.euclidean();
+        config.M = 4;
+        config.maxM0 = 6;
+        config.defaultEfSearch = 2;
+
+        HnswIndex index = Hnsw.build(config);
+        Map<Long, double[]> dataset = new LinkedHashMap<>();
+        double[][] points = {
+                {0.0, 0.0},
+                {0.1, 0.0},
+                {0.0, 0.1},
+                {0.2, 0.0},
+                {0.0, 0.2}
+        };
+        for (int i = 0; i < points.length; i++) {
+            long id = i + 1L;
+            dataset.put(id, points[i]);
+            index.add(id, points[i]);
+        }
+
+        double[] query = new double[]{0.05, 0.05};
+        List<SearchResult> results = index.searchKnn(query, 4, 1);
+
+        assertThat(results).hasSize(4);
+        List<Long> ids = results.stream().map(SearchResult::id).toList();
+        assertThat(ids).contains(1L, 2L, 3L);
+        assertThat(new HashSet<>(ids)).hasSize(4);
+        assertThat(results).extracting(SearchResult::distance).isSorted();
     }
 
     @Test
@@ -215,6 +277,15 @@ class HnswIndexTest {
                 .limit(k)
                 .map(Candidate::id)
                 .collect(HashSet::new, HashSet::add, Set::addAll);
+    }
+
+    private static List<Long> bruteForceOrderedIds(Map<Long, double[]> active, double[] query, int k) {
+        return active.entrySet().stream()
+                .map(entry -> new Candidate(entry.getKey(), euclideanDistance(entry.getValue(), query)))
+                .sorted(Comparator.comparingDouble(Candidate::distance))
+                .limit(k)
+                .map(Candidate::id)
+                .collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
     }
 
     private static double euclideanDistance(double[] vector, double[] query) {
