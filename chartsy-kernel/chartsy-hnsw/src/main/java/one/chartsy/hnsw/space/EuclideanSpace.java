@@ -25,6 +25,11 @@ public final class EuclideanSpace implements Space {
     }
 
     @Override
+    public void preallocate(AuxStorage auxStorage, int capacity) {
+        vectorStorage.ensureCapacity(capacity);
+    }
+
+    @Override
     public void onInsert(int nodeId, double[] vector) {
         requireDimension(vector);
         vectorStorage.set(nodeId, vector);

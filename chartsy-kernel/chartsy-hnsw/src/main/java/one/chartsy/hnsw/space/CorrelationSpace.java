@@ -27,6 +27,12 @@ public final class CorrelationSpace implements Space {
     }
 
     @Override
+    public void preallocate(AuxStorage auxStorage, int capacity) {
+        vectorStorage.ensureCapacity(capacity);
+        auxStorage.preallocateAll(capacity);
+    }
+
+    @Override
     public void onInsert(int nodeId, double[] vector) {
         requireDimension(vector);
         double mean = mean(vector);
@@ -36,11 +42,11 @@ public final class CorrelationSpace implements Space {
         if (norm == 0.0) {
             Arrays.fill(centered, 0.0);
         } else {
-            scale(centered, 1.0); // no-op but emphasises intentionality
+            scale(centered, 1.0 / norm);
         }
         vectorStorage.set(nodeId, centered);
         auxStorage.setMean(nodeId, mean);
-        auxStorage.setCenteredNorm(nodeId, norm);
+        auxStorage.setCenteredNorm(nodeId, norm == 0.0 ? 0.0 : 1.0);
     }
 
     @Override
@@ -60,7 +66,11 @@ public final class CorrelationSpace implements Space {
         double[] centered = Arrays.copyOf(queryVector, queryVector.length);
         centre(centered, mean);
         double norm = norm(centered);
-        return new ArrayQueryContext(centered, norm);
+        if (norm == 0.0) {
+            return new ArrayQueryContext(centered, 0.0);
+        }
+        scale(centered, 1.0 / norm);
+        return new ArrayQueryContext(centered, 1.0);
     }
 
     @Override
@@ -71,7 +81,7 @@ public final class CorrelationSpace implements Space {
     @Override
     public double distance(QueryContext query, int nodeId) {
         return switch (query) {
-            case ArrayQueryContext array -> correlationDistance(array.centered(), array.norm(), nodeId);
+            case ArrayQueryContext array -> correlationDistance(array.normalised(), array.norm(), nodeId);
             case StoredQueryContext stored -> distanceBetweenNodes(stored.nodeId(), nodeId);
             default -> throw new IllegalStateException("Unknown query context: " + query);
         };
@@ -85,20 +95,20 @@ public final class CorrelationSpace implements Space {
             return 1.0;
         }
         double dot = vectorStorage.dotBetween(nodeA, nodeB);
-        double value = 1.0 - (dot / (normA * normB));
+        double value = 1.0 - dot;
         if (Double.isNaN(value) || Double.isInfinite(value)) {
             return Double.POSITIVE_INFINITY;
         }
         return value;
     }
 
-    private double correlationDistance(double[] centeredQuery, double queryNorm, int nodeId) {
+    private double correlationDistance(double[] normalisedQuery, double queryNorm, int nodeId) {
         double normStored = auxStorage.centeredNorm(nodeId);
         if (queryNorm == 0.0 || normStored == 0.0) {
             return 1.0;
         }
-        double dot = vectorStorage.dot(nodeId, centeredQuery);
-        double value = 1.0 - (dot / (queryNorm * normStored));
+        double dot = vectorStorage.dot(nodeId, normalisedQuery);
+        double value = 1.0 - dot;
         if (Double.isNaN(value) || Double.isInfinite(value)) {
             return Double.POSITIVE_INFINITY;
         }
@@ -139,7 +149,7 @@ public final class CorrelationSpace implements Space {
         }
     }
 
-    record ArrayQueryContext(double[] centered, double norm) implements QueryContext {
+    record ArrayQueryContext(double[] normalised, double norm) implements QueryContext {
     }
 
     record StoredQueryContext(int nodeId) implements QueryContext {

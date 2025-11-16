@@ -7,7 +7,7 @@ import java.util.Arrays;
  */
 public final class NeighborList {
     private final int capacity;
-    private int[] ids;
+    private final int[] ids;
     private int size;
 
     public NeighborList(int capacity) {

@@ -104,6 +104,17 @@ public final class AuxStorage {
         this.centeredNorms = null;
     }
 
+    /**
+     * Eagerly materialises all auxiliary arrays to {@code capacity}. This avoids racy lazy
+     * allocations when the structures are written to from multiple worker threads.
+     */
+    public void preallocateAll(int capacity) {
+        ensureCapacity(capacity);
+        ensureNorms();
+        ensureMeans();
+        ensureCenteredNorms();
+    }
+
     private void ensureNorms() {
         if (norms == null) {
             norms = new double[capacity];

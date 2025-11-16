@@ -1,5 +1,6 @@
 package one.chartsy.hnsw.internal;
 
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 
@@ -34,14 +35,14 @@ import one.chartsy.hnsw.graph.HnswGraph;
 import one.chartsy.hnsw.graph.NeighborList;
 import one.chartsy.hnsw.space.QueryContext;
 import one.chartsy.hnsw.space.Space;
-import one.chartsy.hnsw.space.SpaceFactory;
 import one.chartsy.hnsw.space.Spaces;
 import one.chartsy.hnsw.store.AuxStorage;
 import one.chartsy.hnsw.store.VectorStorage;
+import one.chartsy.hnsw.store.VectorStorageF32;
 
 public final class DefaultHnswIndex implements HnswIndex {
     private static final long MAGIC = 0x484E535730303031L; // "HNSW0001"
-    private static final int SERIAL_VERSION = 3;
+    private static final int SERIAL_VERSION = 4;
     private static final int[] EMPTY_INT_ARRAY = new int[0];
 
     private final HnswConfig config;
@@ -65,12 +66,17 @@ public final class DefaultHnswIndex implements HnswIndex {
     }
 
     private DefaultHnswIndex(HnswConfig config, boolean skipValidation) {
+        this(config, skipValidation, new VectorStorage(config.dimension, config.initialCapacity));
+    }
+
+    private DefaultHnswIndex(HnswConfig config, boolean skipValidation, VectorStorage storage) {
         this.config = new HnswConfig(config);
         if (!skipValidation) {
             this.config.validate();
         }
         int capacity = this.config.initialCapacity;
-        this.vectorStorage = new VectorStorage(this.config.dimension, capacity);
+        this.vectorStorage = storage;
+        this.vectorStorage.ensureCapacity(capacity);
         this.auxStorage = new AuxStorage(capacity);
         this.graph = new HnswGraph(this.config.M, this.config.maxM0, capacity);
         this.idToInternal = new Long2IntOpenHashMap(capacity);
@@ -81,13 +87,54 @@ public final class DefaultHnswIndex implements HnswIndex {
         this.freeList = new IntArrayList();
         this.random = new SplittableRandom(this.config.randomSeed);
         this.space = this.config.spaceFactory.create(this.config, vectorStorage, auxStorage);
+        this.space.preallocate(this.auxStorage, capacity);
         this.searchScratch = ThreadLocal.withInitial(() -> new SearchScratch(capacity, this.config.defaultEfSearch));
         this.nodeCount = 0;
         this.size = 0;
     }
 
+    static DefaultHnswIndex newForBulk(HnswConfig config, boolean floatStorage) {
+        VectorStorage storage = floatStorage
+                ? new VectorStorageF32(config.dimension, config.initialCapacity)
+                : new VectorStorage(config.dimension, config.initialCapacity);
+        return new DefaultHnswIndex(config, false, storage);
+    }
+
     private SearchScratch scratch() {
         return searchScratch.get();
+    }
+
+    Space space() {
+        return space;
+    }
+
+    HnswGraph graph() {
+        return graph;
+    }
+
+    VectorStorage vectorStorage() {
+        return vectorStorage;
+    }
+
+    AuxStorage auxStorage() {
+        return auxStorage;
+    }
+
+    BitSet deleted() {
+        return deleted;
+    }
+
+    void bulkSetCounts(int nodeCount, int size) {
+        this.nodeCount = nodeCount;
+        this.size = size;
+        this.freeList.clear();
+    }
+
+    void bulkPublishIdMap(Long2IntOpenHashMap map, long[] newInternalToId) {
+        this.idToInternal.clear();
+        this.idToInternal.putAll(map);
+        this.idToInternal.defaultReturnValue(-1);
+        this.internalToId = Arrays.copyOf(newInternalToId, newInternalToId.length);
     }
 
     @Override
@@ -136,7 +183,7 @@ public final class DefaultHnswIndex implements HnswIndex {
             boolean newTopLevel = level > currentMaxLevel;
 
             for (int levelCursor = currentMaxLevel; levelCursor > level; levelCursor--) {
-                entryPoint = greedySearchOnLevel(entryPoint, query, levelCursor);
+                entryPoint = HnswInternalUtil.greedySearchOnLevel(graph, space, deleted, query, entryPoint, levelCursor);
             }
 
             for (int levelCursor = Math.min(level, currentMaxLevel); levelCursor >= 0; levelCursor--) {
@@ -236,7 +283,7 @@ public final class DefaultHnswIndex implements HnswIndex {
         int[] nodes = new int[count];
         double[] distances = new double[count];
         heap.toArrays(nodes, distances);
-        sortByDistance(nodes, distances, count);
+        HnswInternalUtil.sortByDistance(nodes, distances, count);
         List<SearchResult> results = new ArrayList<>(Math.min(k, count));
         for (int i = 0; i < count && results.size() < k; i++) {
             long id = internalToId[nodes[i]];
@@ -362,11 +409,26 @@ public final class DefaultHnswIndex implements HnswIndex {
             }
             int levelCount = graph.levelCount();
             out.writeInt(levelCount);
-            for (int level = 0; level < levelCount; level++) {
-                NeighborList[] layer = graph.layers().get(level);
-                for (int node = 0; node < nodeCount; node++) {
-                    NeighborList list = node < layer.length ? layer[node] : null;
+            NeighborList[] levelZero = graph.level0();
+            for (int node = 0; node < nodeCount; node++) {
+                NeighborList list = node < levelZero.length ? levelZero[node] : null;
+                int count = list != null ? list.size() : 0;
+                out.writeInt(count);
+                if (count > 0) {
+                    int[] elements = list.elements();
+                    for (int i = 0; i < count; i++) {
+                        out.writeInt(elements[i]);
+                    }
+                }
+            }
+            for (int level = 1; level < levelCount; level++) {
+                HnswGraph.SparseLayer layer = graph.upperLayers().get(level - 1);
+                out.writeInt(layer.map().size());
+                for (Int2ObjectMap.Entry<NeighborList> entry : layer.map().int2ObjectEntrySet()) {
+                    int nodeId = entry.getIntKey();
+                    NeighborList list = entry.getValue();
                     int count = list != null ? list.size() : 0;
+                    out.writeInt(nodeId);
                     out.writeInt(count);
                     if (count > 0) {
                         int[] elements = list.elements();
@@ -395,7 +457,7 @@ public final class DefaultHnswIndex implements HnswIndex {
                 throw new IOException("Invalid HNSW index file");
             }
             int version = in.readInt();
-            if (version < 1 || version > SERIAL_VERSION) {
+            if (version != SERIAL_VERSION) {
                 throw new IOException("Unsupported HNSW index version " + version);
             }
             HnswConfig config = readConfig(in, version);
@@ -446,8 +508,22 @@ public final class DefaultHnswIndex implements HnswIndex {
                 }
             }
             int levelCount = in.readInt();
-            for (int level = 0; level < levelCount; level++) {
-                for (int node = 0; node < nodeCount; node++) {
+            for (int node = 0; node < nodeCount; node++) {
+                int neighborCount = in.readInt();
+                if (neighborCount <= 0) {
+                    continue;
+                }
+                NeighborList list = index.graph.ensureNeighborList(0, node);
+                int[] buffer = new int[neighborCount];
+                for (int i = 0; i < neighborCount; i++) {
+                    buffer[i] = in.readInt();
+                }
+                list.replaceWith(buffer, neighborCount);
+            }
+            for (int level = 1; level < levelCount; level++) {
+                int entryCount = in.readInt();
+                for (int entry = 0; entry < entryCount; entry++) {
+                    int node = in.readInt();
                     int neighborCount = in.readInt();
                     if (neighborCount <= 0) {
                         continue;
@@ -460,13 +536,11 @@ public final class DefaultHnswIndex implements HnswIndex {
                     list.replaceWith(buffer, neighborCount);
                 }
             }
-            if (version >= 3) {
-                long computedChecksum = checkedIn.getChecksum().getValue();
-                checkedIn.getChecksum().reset();
-                long storedChecksum = in.readLong();
-                if (computedChecksum != storedChecksum) {
-                    throw new IOException("Checksum mismatch: expected " + storedChecksum + " but computed " + computedChecksum);
-                }
+            long computedChecksum = checkedIn.getChecksum().getValue();
+            checkedIn.getChecksum().reset();
+            long storedChecksum = in.readLong();
+            if (computedChecksum != storedChecksum) {
+                throw new IOException("Checksum mismatch: expected " + storedChecksum + " but computed " + computedChecksum);
             }
             index.rebuildMapsAfterLoad();
             return index;
@@ -523,21 +597,14 @@ public final class DefaultHnswIndex implements HnswIndex {
         config.neighborHeuristic = NeighborSelectHeuristic.values()[in.readInt()];
         config.initialCapacity = in.readInt();
         config.efRepair = in.readInt();
-        if (version >= 2) {
-            config.diversificationAlpha = in.readDouble();
-            config.exactSearch = in.readBoolean();
-        }
+        config.diversificationAlpha = in.readDouble();
+        config.exactSearch = in.readBoolean();
         String spaceId = in.readUTF();
-        SpaceFactory factory = Spaces.fromId(spaceId, in);
-        config.spaceFactory = factory;
-        if (version == 1) {
-            config.diversificationAlpha = 1.2;
-            config.exactSearch = false;
-        }
+        config.spaceFactory = Spaces.fromId(spaceId, in);
         return config;
     }
 
-    private void ensureCapacity(int capacity) {
+    void ensureCapacity(int capacity) {
         if (capacity <= internalToId.length) {
             vectorStorage.ensureCapacity(capacity);
             auxStorage.ensureCapacity(capacity);
@@ -617,33 +684,6 @@ public final class DefaultHnswIndex implements HnswIndex {
         return current;
     }
 
-    private int greedySearchOnLevel(int entryPoint, QueryContext query, int level) {
-        int current = entryPoint;
-        double currentDistance = space.distance(query, current);
-        boolean changed;
-        do {
-            changed = false;
-            NeighborList list = graph.neighborList(level, current);
-            if (list == null) {
-                break;
-            }
-            int[] neighbors = list.elements();
-            for (int i = 0; i < list.size(); i++) {
-                int neighbor = neighbors[i];
-                if (deleted.get(neighbor)) {
-                    continue;
-                }
-                double distance = space.distance(query, neighbor);
-                if (distance < currentDistance) {
-                    currentDistance = distance;
-                    current = neighbor;
-                    changed = true;
-                }
-            }
-        } while (changed);
-        return current;
-    }
-
     private void executeBaseLayerSearch(QueryContext query, int k, int efSearch, int entryPoint, SearchScratch scratch) {
         DoubleIntMinHeap candidates = scratch.candidates();
         BoundedMaxHeap results = scratch.results();
@@ -693,8 +733,8 @@ public final class DefaultHnswIndex implements HnswIndex {
         int[] nodes = scratch.tmpNodes(count);
         double[] distances = scratch.tmpDistances(count);
         results.toArrays(nodes, distances);
-        int valid = filterCandidates(nodes, distances, count, -1);
-        sortByDistance(nodes, distances, valid);
+        int valid = HnswInternalUtil.filterCandidates(deleted, internalToId, nodes, distances, count, -1);
+        HnswInternalUtil.sortByDistance(nodes, distances, valid);
         List<SearchResult> out = new ArrayList<>(Math.min(k, valid));
         for (int i = 0; i < valid && out.size() < k; i++) {
             int nodeId = nodes[i];
@@ -760,12 +800,12 @@ public final class DefaultHnswIndex implements HnswIndex {
         int[] candidateNodes = scratch.tmpNodes(candidateCount);
         double[] candidateDistances = scratch.tmpDistances(candidateCount);
         results.toArrays(candidateNodes, candidateDistances);
-        candidateCount = filterCandidates(candidateNodes, candidateDistances, candidateCount, nodeId);
-        sortByDistance(candidateNodes, candidateDistances, candidateCount);
+        candidateCount = HnswInternalUtil.filterCandidates(deleted, internalToId, candidateNodes, candidateDistances, candidateCount, nodeId);
+        HnswInternalUtil.sortByDistance(candidateNodes, candidateDistances, candidateCount);
 
         int maxDegree = level == 0 ? config.maxM0 : config.M;
         int[] selected = scratch.tmpNodesSecondary(Math.max(candidateCount, maxDegree));
-        int selectedCount = selectNeighbors(nodeId, level, candidateNodes, candidateDistances, candidateCount, maxDegree, selected);
+        int selectedCount = HnswInternalUtil.selectNeighbors(space, config.neighborHeuristic, config.diversificationAlpha, nodeId, level, candidateNodes, candidateDistances, candidateCount, maxDegree, selected);
 
         int[] neighbors = selectedCount > 0 ? Arrays.copyOf(selected, selectedCount) : EMPTY_INT_ARRAY;
         NeighborList nodeList = graph.ensureNeighborList(level, nodeId);
@@ -805,9 +845,9 @@ public final class DefaultHnswIndex implements HnswIndex {
             distances[count] = space.distanceBetweenNodes(target, source);
             count++;
         }
-        sortByDistance(candidates, distances, count);
+        HnswInternalUtil.sortByDistance(candidates, distances, count);
         int[] selected = scratch.tmpNodesSecondary(Math.max(count, maxDegree));
-        int selectedCount = selectNeighbors(target, level, candidates, distances, count, maxDegree, selected);
+        int selectedCount = HnswInternalUtil.selectNeighbors(space, config.neighborHeuristic, config.diversificationAlpha, target, level, candidates, distances, count, maxDegree, selected);
         if (selectedCount > 0 && previousNeighbors.length > 0) {
             boolean retainsPrevious = false;
             for (int prev : previousNeighbors) {
@@ -881,96 +921,6 @@ public final class DefaultHnswIndex implements HnswIndex {
             }
         }
         list.replaceWith(selected, selectedCount);
-    }
-
-    private int selectNeighbors(int nodeId, int level, int[] candidates, double[] distances, int count, int maxDegree, int[] selectedOut) {
-        int selected = 0;
-        if (config.neighborHeuristic == NeighborSelectHeuristic.SIMPLE) {
-            for (int i = 0; i < count && selected < maxDegree; i++) {
-                int candidate = candidates[i];
-                if (candidate == nodeId) {
-                    continue;
-                }
-                selectedOut[selected++] = candidate;
-            }
-            return selected;
-        }
-        double alpha = config.diversificationAlpha;
-        for (int i = 0; i < count && selected < maxDegree; i++) {
-            int candidate = candidates[i];
-            if (candidate == nodeId) {
-                continue;
-            }
-            double candidateDistance = distances[i];
-            boolean occluded = false;
-            for (int j = 0; j < selected; j++) {
-                int other = selectedOut[j];
-                double dist = space.distanceBetweenNodes(candidate, other);
-                if (!Double.isFinite(dist)) {
-                    continue;
-                }
-                if (dist <= candidateDistance * alpha) {
-                    occluded = true;
-                    break;
-                }
-            }
-            if (!occluded) {
-                selectedOut[selected++] = candidate;
-            }
-        }
-        if (selected < maxDegree) {
-            for (int i = 0; i < count && selected < maxDegree; i++) {
-                int candidate = candidates[i];
-                if (candidate == nodeId) {
-                    continue;
-                }
-                boolean alreadySelected = false;
-                for (int j = 0; j < selected; j++) {
-                    if (selectedOut[j] == candidate) {
-                        alreadySelected = true;
-                        break;
-                    }
-                }
-                if (!alreadySelected) {
-                    selectedOut[selected++] = candidate;
-                }
-            }
-        }
-        return selected;
-    }
-
-    private int filterCandidates(int[] nodes, double[] distances, int count, int disallowNode) {
-        int write = 0;
-        for (int i = 0; i < count; i++) {
-            int node = nodes[i];
-            if (node == disallowNode || node < 0) {
-                continue;
-            }
-            if (deleted.get(node)) {
-                continue;
-            }
-            if (internalToId[node] < 0) {
-                continue;
-            }
-            double distance = distances[i];
-            if (!Double.isFinite(distance)) {
-                continue;
-            }
-            boolean duplicate = false;
-            for (int j = 0; j < write; j++) {
-                if (nodes[j] == node) {
-                    duplicate = true;
-                    break;
-                }
-            }
-            if (duplicate) {
-                continue;
-            }
-            nodes[write] = node;
-            distances[write] = distance;
-            write++;
-        }
-        return write;
     }
 
     private boolean removeNode(int nodeId, boolean removeFromMap) {
@@ -1083,11 +1033,11 @@ public final class DefaultHnswIndex implements HnswIndex {
         int[] nodes = scratch.tmpNodes(candidateCount);
         double[] distances = scratch.tmpDistances(candidateCount);
         results.toArrays(nodes, distances);
-        candidateCount = filterCandidates(nodes, distances, candidateCount, source);
-        sortByDistance(nodes, distances, candidateCount);
+        candidateCount = HnswInternalUtil.filterCandidates(deleted, internalToId, nodes, distances, candidateCount, source);
+        HnswInternalUtil.sortByDistance(nodes, distances, candidateCount);
         int maxDegree = level == 0 ? config.maxM0 : config.M;
         int[] selected = scratch.tmpNodesSecondary(Math.max(candidateCount, maxDegree));
-        int selectedCount = selectNeighbors(source, level, nodes, distances, candidateCount, maxDegree, selected);
+        int selectedCount = HnswInternalUtil.selectNeighbors(space, config.neighborHeuristic, config.diversificationAlpha, source, level, nodes, distances, candidateCount, maxDegree, selected);
         NeighborList list = graph.ensureNeighborList(level, source);
         list.replaceWith(selected, selectedCount);
         for (int i = 0; i < selectedCount; i++) {
@@ -1110,42 +1060,5 @@ public final class DefaultHnswIndex implements HnswIndex {
         }
         graph.setEntryPoint(bestNode);
         graph.setMaxLevel(bestLevel);
-    }
-
-    private void sortByDistance(int[] nodes, double[] distances, int length) {
-        if (length <= 1) {
-            return;
-        }
-        quickSort(nodes, distances, 0, length - 1);
-    }
-
-    private void quickSort(int[] nodes, double[] distances, int left, int right) {
-        int i = left;
-        int j = right;
-        double pivot = distances[(left + right) >>> 1];
-        while (i <= j) {
-            while (distances[i] < pivot) {
-                i++;
-            }
-            while (distances[j] > pivot) {
-                j--;
-            }
-            if (i <= j) {
-                double tmpDist = distances[i];
-                distances[i] = distances[j];
-                distances[j] = tmpDist;
-                int tmpNode = nodes[i];
-                nodes[i] = nodes[j];
-                nodes[j] = tmpNode;
-                i++;
-                j--;
-            }
-        }
-        if (left < j) {
-            quickSort(nodes, distances, left, j);
-        }
-        if (i < right) {
-            quickSort(nodes, distances, i, right);
-        }
     }
 }

@@ -27,6 +27,12 @@ public final class CosineSpace implements Space {
     }
 
     @Override
+    public void preallocate(AuxStorage auxStorage, int capacity) {
+        vectorStorage.ensureCapacity(capacity);
+        auxStorage.preallocateAll(capacity);
+    }
+
+    @Override
     public void onInsert(int nodeId, double[] vector) {
         requireDimension(vector);
         double norm = norm(vector);

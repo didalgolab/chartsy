@@ -52,7 +52,7 @@ class SpacesTest {
     }
 
     @Test
-    void correlationSpaceCentersVectorsBeforeComputingDistance() {
+    void correlationSpaceCentersAndNormalizesVectorsBeforeComputingDistance() {
         HnswConfig config = config(4);
         VectorStorage vectorStorage = new VectorStorage(config.dimension, 4);
         AuxStorage auxStorage = new AuxStorage(4);
@@ -60,7 +60,10 @@ class SpacesTest {
 
         space.onInsert(0, new double[]{1.0, 2.0, 3.0, 4.0});
         assertThat(auxStorage.mean(0)).isCloseTo(2.5, within(1e-12));
-        assertThat(vectorStorage.copy(0)).containsExactly(new double[]{-1.5, -0.5, 0.5, 1.5}, within(1e-12));
+        assertThat(auxStorage.centeredNorm(0)).isCloseTo(1.0, within(1e-12));
+        assertThat(vectorStorage.copy(0)).containsExactly(
+                new double[]{-0.6708203932499369, -0.22360679774997896, 0.22360679774997896, 0.6708203932499369},
+                within(1e-12));
 
         space.onInsert(1, new double[]{2.0, 4.0, 6.0, 8.0});
         double perfectCorrelation = space.distance(space.prepareQueryForNode(0), 1);

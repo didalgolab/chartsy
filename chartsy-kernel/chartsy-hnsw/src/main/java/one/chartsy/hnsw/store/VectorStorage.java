@@ -5,18 +5,24 @@ import java.util.Arrays;
 /**
  * Row-major storage of dense vectors backed by a single double array.
  */
-public final class VectorStorage {
-    private final int dimension;
-    private double[] data;
-    private int capacity;
+public class VectorStorage {
+    protected final int dimension;
+    protected double[] data;
+    protected int capacity;
 
     public VectorStorage(int dimension, int initialCapacity) {
+        this(dimension, initialCapacity, false);
+    }
+
+    protected VectorStorage(int dimension, int initialCapacity, boolean skipAllocation) {
         if (dimension <= 0) {
             throw new IllegalArgumentException("dimension must be positive");
         }
         this.dimension = dimension;
         this.capacity = Math.max(1, initialCapacity);
-        this.data = new double[this.capacity * this.dimension];
+        if (!skipAllocation) {
+            this.data = new double[this.capacity * this.dimension];
+        }
     }
 
     public int dimension() {
@@ -34,6 +40,10 @@ public final class VectorStorage {
         int newCapacity = capacity;
         while (newCapacity < requested) {
             newCapacity = Math.max(newCapacity * 2, requested);
+        }
+        if (data == null) {
+            capacity = newCapacity;
+            return;
         }
         data = Arrays.copyOf(data, newCapacity * dimension);
         capacity = newCapacity;

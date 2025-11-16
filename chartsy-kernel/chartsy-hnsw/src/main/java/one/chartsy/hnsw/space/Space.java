@@ -1,11 +1,22 @@
 package one.chartsy.hnsw.space;
 
+import one.chartsy.hnsw.store.AuxStorage;
+
 /**
  * Abstraction over the distance space used by the HNSW graph.
  */
 public interface Space {
 
     int dimension();
+
+    /**
+     * Allows the space implementation to eagerly allocate any internal storage it needs for
+     * {@code capacity} nodes. Implementations that do not require additional allocations can ignore
+     * this hook.
+     */
+    default void preallocate(AuxStorage auxStorage, int capacity) {
+        // default no-op
+    }
 
     /**
      * Invoked when a vector is inserted into the index. Implementations may mutate the stored

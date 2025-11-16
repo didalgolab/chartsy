@@ -164,7 +164,7 @@ public class HnswPerformanceBenchmark {
         }
     }
 
-    private static double[][] randomNormalizedVectors(int count, int dimension, long seed) {
+    static double[][] randomNormalizedVectors(int count, int dimension, long seed) {
         double[][] vectors = new double[count][];
         SplittableRandom random = new SplittableRandom(seed);
         for (int i = 0; i < count; i++) {
