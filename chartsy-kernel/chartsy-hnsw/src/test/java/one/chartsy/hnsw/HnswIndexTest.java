@@ -391,6 +391,72 @@ class HnswIndexTest {
     }
 
     @Test
+    void removingEntryPointReselectsNewEntryPoint() throws Exception {
+        HnswConfig config = new HnswConfig();
+        config.dimension = 2;
+        config.spaceFactory = Spaces.euclidean();
+        config.M = 4;
+        config.maxM0 = 6;
+
+        HnswIndex index = Hnsw.build(config);
+        index.add(1L, new double[]{0.0, 0.0});
+        index.add(2L, new double[]{1.0, 0.0});
+        index.add(3L, new double[]{0.0, 1.0});
+
+        DefaultHnswIndex internal = (DefaultHnswIndex) index;
+        HnswGraph graph = extractGraph(internal);
+        int entryNode = graph.entryPoint();
+        assertThat(entryNode).isGreaterThanOrEqualTo(0);
+        long entryId = extractInternalToId(internal)[entryNode];
+
+        assertThat(index.remove(entryId)).isTrue();
+        assertThat(index.contains(entryId)).isFalse();
+
+        int newEntry = graph.entryPoint();
+        assertThat(newEntry).isGreaterThanOrEqualTo(0);
+        long newEntryId = extractInternalToId(internal)[newEntry];
+        assertThat(newEntryId).isNotEqualTo(-1L);
+        assertThat(newEntryId).isNotEqualTo(entryId);
+        assertThat(graph.maxLevel()).isEqualTo(graph.levelOfNode(newEntry));
+
+        List<SearchResult> results = index.searchKnn(new double[]{0.2, 0.2}, 2);
+        assertThat(results)
+                .as("search should remain operational after removing the entry point")
+                .extracting(SearchResult::id)
+                .doesNotContain(entryId)
+                .containsAnyOf(2L, 3L);
+    }
+
+    @Test
+    void removingNodeReturnsSlotToFreeList() throws Exception {
+        HnswConfig config = new HnswConfig();
+        config.dimension = 2;
+        config.spaceFactory = Spaces.euclidean();
+        config.M = 4;
+        config.maxM0 = 6;
+
+        HnswIndex index = Hnsw.build(config);
+        index.add(1L, new double[]{0.0, 0.0});
+        index.add(2L, new double[]{1.0, 0.0});
+        index.add(3L, new double[]{0.0, 1.0});
+
+        DefaultHnswIndex internal = (DefaultHnswIndex) index;
+        int initialNodeCount = extractNodeCount(internal);
+        assertThat(initialNodeCount).isEqualTo(3);
+
+        assertThat(index.remove(2L)).isTrue();
+        assertThat(extractNodeCount(internal))
+                .as("removing should not shrink nodeCount because slots are recycled lazily")
+                .isEqualTo(initialNodeCount);
+
+        index.add(4L, new double[]{1.0, 1.0});
+        assertThat(extractNodeCount(internal))
+                .as("freed slots should be reused without growing the node pool")
+                .isEqualTo(initialNodeCount);
+        assertThat(index.contains(4L)).isTrue();
+    }
+
+    @Test
     void querySpecificEfSearchLowerThanDefaultIsHonored() throws Exception {
         HnswConfig config = new HnswConfig();
         config.dimension = 1;
@@ -440,6 +506,24 @@ class HnswIndexTest {
         Field sizeField = heap.getClass().getDeclaredField("size");
         sizeField.setAccessible(true);
         return sizeField.getInt(heap);
+    }
+
+    private static HnswGraph extractGraph(DefaultHnswIndex index) throws Exception {
+        Field graphField = DefaultHnswIndex.class.getDeclaredField("graph");
+        graphField.setAccessible(true);
+        return (HnswGraph) graphField.get(index);
+    }
+
+    private static long[] extractInternalToId(DefaultHnswIndex index) throws Exception {
+        Field field = DefaultHnswIndex.class.getDeclaredField("internalToId");
+        field.setAccessible(true);
+        return (long[]) field.get(index);
+    }
+
+    private static int extractNodeCount(DefaultHnswIndex index) throws Exception {
+        Field field = DefaultHnswIndex.class.getDeclaredField("nodeCount");
+        field.setAccessible(true);
+        return field.getInt(index);
     }
 
     private static Set<Long> bruteForceTopK(Map<Long, double[]> active, double[] query, int k) {
