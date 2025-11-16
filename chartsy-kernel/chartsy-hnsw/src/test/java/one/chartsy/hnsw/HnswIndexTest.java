@@ -42,6 +42,92 @@ class HnswIndexTest {
     }
 
     @Test
+    void searchMatchesBruteForceOnLineData() {
+        HnswConfig config = new HnswConfig();
+        config.dimension = 1;
+        config.spaceFactory = Spaces.euclidean();
+        config.initialCapacity = 32;
+        config.M = 4;
+        config.maxM0 = 6;
+
+        HnswIndex index = Hnsw.build(config);
+        Map<Long, double[]> dataset = new HashMap<>();
+        for (int i = 0; i < 20; i++) {
+            long id = i;
+            double[] vector = new double[]{i};
+            dataset.put(id, vector);
+            index.add(id, vector);
+        }
+
+        double[] query = new double[]{7.25};
+        int k = 5;
+        List<SearchResult> results = index.searchKnn(query, k, 16);
+
+        assertThat(results).hasSize(k);
+        assertThat(results)
+                .isSortedAccordingTo(Comparator.comparingDouble(SearchResult::distance));
+
+        List<Map.Entry<Long, double[]>> brute = new ArrayList<>(dataset.entrySet());
+        brute.sort(Comparator.comparingDouble(entry -> euclideanDistance(entry.getValue(), query)));
+        List<Long> expectedOrder = new ArrayList<>();
+        for (int i = 0; i < k; i++) {
+            expectedOrder.add(brute.get(i).getKey());
+        }
+
+        List<Long> actualOrder = new ArrayList<>();
+        for (SearchResult result : results) {
+            actualOrder.add(result.id());
+        }
+
+        assertThat(actualOrder).containsExactlyElementsOf(expectedOrder);
+    }
+
+    @Test
+    void searchRecallMeetsTargetOnRandomData() {
+        HnswConfig config = new HnswConfig();
+        config.dimension = 32;
+        config.spaceFactory = Spaces.euclidean();
+        config.initialCapacity = 12_000;
+        config.M = 16;
+        config.maxM0 = 32;
+        config.efConstruction = 200;
+        config.defaultEfSearch = 100;
+
+        HnswIndex index = Hnsw.build(config);
+        Map<Long, double[]> dataset = new HashMap<>();
+        Random random = new Random(42L);
+        int pointCount = 10_000;
+        for (int i = 0; i < pointCount; i++) {
+            double[] vector = randomVector(random, config.dimension);
+            long id = i + 1L;
+            dataset.put(id, vector);
+            index.add(id, vector);
+        }
+
+        Random queryRandom = new Random(777L);
+        int queryCount = 25;
+        int k = 10;
+        int efSearch = k * 10;
+        double totalRecall = 0.0;
+        for (int q = 0; q < queryCount; q++) {
+            double[] query = randomVector(queryRandom, config.dimension);
+            List<SearchResult> results = index.searchKnn(query, k, efSearch);
+            assertThat(results.size()).isGreaterThanOrEqualTo(k);
+
+            Set<Long> expected = bruteForceTopK(dataset, query, k);
+            long hits = results.stream()
+                    .limit(k)
+                    .map(SearchResult::id)
+                    .filter(expected::contains)
+                    .count();
+            totalRecall += ((double) hits) / k;
+        }
+
+        double averageRecall = totalRecall / queryCount;
+        assertThat(averageRecall).isGreaterThanOrEqualTo(0.9);
+    }
+
+    @Test
     void shouldRespectDuplicatePolicy() {
         HnswConfig config = new HnswConfig();
         config.dimension = 3;
