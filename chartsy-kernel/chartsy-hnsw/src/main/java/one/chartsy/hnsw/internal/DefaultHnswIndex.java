@@ -193,7 +193,7 @@ public final class DefaultHnswIndex implements HnswIndex {
                 return exactSearch(queryContext, k);
             }
             SearchScratch scratch = scratch();
-            scratch.reset(Math.max(nodeCount, 1), Math.max(effectiveEf, config.defaultEfSearch));
+            scratch.reset(Math.max(nodeCount, 1), effectiveEf);
 
             int entryPoint = graph.entryPoint();
             entryPoint = greedySearchOnAllLevels(queryContext, entryPoint);

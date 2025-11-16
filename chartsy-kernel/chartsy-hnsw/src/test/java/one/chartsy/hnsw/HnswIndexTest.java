@@ -19,6 +19,8 @@ import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
+import one.chartsy.hnsw.graph.HnswGraph;
+import one.chartsy.hnsw.internal.DefaultHnswIndex;
 import one.chartsy.hnsw.space.Spaces;
 import one.chartsy.hnsw.internal.DefaultHnswIndex;
 import one.chartsy.hnsw.store.VectorStorage;
@@ -266,12 +268,56 @@ class HnswIndexTest {
         assertThat(averageRecall).isGreaterThanOrEqualTo(0.98);
     }
 
+    @Test
+    void querySpecificEfSearchLowerThanDefaultIsHonored() throws Exception {
+        HnswConfig config = new HnswConfig();
+        config.dimension = 1;
+        config.spaceFactory = Spaces.euclidean();
+        config.defaultEfSearch = 32;
+        config.efConstruction = 40;
+        config.M = 6;
+        config.maxM0 = 6;
+
+        HnswIndex index = Hnsw.build(config);
+        for (int i = 0; i < 16; i++) {
+            index.add(i, new double[]{i});
+        }
+
+        DefaultHnswIndex internal = (DefaultHnswIndex) index;
+        Field graphField = DefaultHnswIndex.class.getDeclaredField("graph");
+        graphField.setAccessible(true);
+        HnswGraph graph = (HnswGraph) graphField.get(internal);
+        graph.setEntryPoint(0);
+        graph.setMaxLevel(0);
+
+        List<SearchResult> results = index.searchKnn(new double[]{15.2}, 1, 1);
+        assertThat(results).isNotEmpty();
+
+        int resultHeapSize = extractResultHeapSize((DefaultHnswIndex) index);
+        assertThat(resultHeapSize)
+                .as("per-query efSearch should cap the number of retained candidates")
+                .isLessThanOrEqualTo(1);
+    }
+
     private static double[] randomVector(Random random, int dimension) {
         double[] vector = new double[dimension];
         for (int i = 0; i < dimension; i++) {
             vector[i] = random.nextDouble() * 2.0 - 1.0;
         }
         return vector;
+    }
+
+    private static int extractResultHeapSize(DefaultHnswIndex index) throws Exception {
+        Field scratchField = DefaultHnswIndex.class.getDeclaredField("searchScratch");
+        scratchField.setAccessible(true);
+        ThreadLocal<?> scratchLocal = (ThreadLocal<?>) scratchField.get(index);
+        Object scratch = scratchLocal.get();
+        Field resultsField = scratch.getClass().getDeclaredField("results");
+        resultsField.setAccessible(true);
+        Object heap = resultsField.get(scratch);
+        Field sizeField = heap.getClass().getDeclaredField("size");
+        sizeField.setAccessible(true);
+        return sizeField.getInt(heap);
     }
 
     private static Set<Long> bruteForceTopK(Map<Long, double[]> active, double[] query, int k) {
