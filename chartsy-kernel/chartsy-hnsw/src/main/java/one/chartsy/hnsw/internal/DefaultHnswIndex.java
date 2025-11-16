@@ -1000,6 +1000,7 @@ public final class DefaultHnswIndex implements HnswIndex {
                     continue;
                 }
                 connectMutual(level, neighbor, other, scratch);
+                connectMutual(level, other, neighbor, scratch);
             }
             if (config.efRepair > 0) {
                 runRepairSearch(level, neighbor, neighbors, scratch);
