@@ -49,6 +49,21 @@ class HnswIndexTest {
     }
 
     @Test
+    void addRejectsMismatchedDimensionsWithoutCorruptingState() {
+        HnswConfig config = new HnswConfig();
+        config.dimension = 3;
+        config.spaceFactory = Spaces.euclidean();
+
+        HnswIndex index = Hnsw.build(config);
+
+        assertThatThrownBy(() -> index.add(7L, new double[]{1.0, 2.0}))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        assertThat(index.size()).isZero();
+        assertThat(index.contains(7L)).isFalse();
+    }
+
+    @Test
     void searchRecallMeetsTargetOnRandomData() {
         HnswConfig config = new HnswConfig();
         config.dimension = 32;
