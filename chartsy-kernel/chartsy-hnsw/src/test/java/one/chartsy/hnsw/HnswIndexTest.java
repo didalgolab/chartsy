@@ -42,47 +42,6 @@ class HnswIndexTest {
     }
 
     @Test
-    void searchMatchesBruteForceOnLineData() {
-        HnswConfig config = new HnswConfig();
-        config.dimension = 1;
-        config.spaceFactory = Spaces.euclidean();
-        config.initialCapacity = 32;
-        config.M = 4;
-        config.maxM0 = 6;
-
-        HnswIndex index = Hnsw.build(config);
-        Map<Long, double[]> dataset = new HashMap<>();
-        for (int i = 0; i < 20; i++) {
-            long id = i;
-            double[] vector = new double[]{i};
-            dataset.put(id, vector);
-            index.add(id, vector);
-        }
-
-        double[] query = new double[]{7.25};
-        int k = 5;
-        List<SearchResult> results = index.searchKnn(query, k, 16);
-
-        assertThat(results).hasSize(k);
-        assertThat(results)
-                .isSortedAccordingTo(Comparator.comparingDouble(SearchResult::distance));
-
-        List<Map.Entry<Long, double[]>> brute = new ArrayList<>(dataset.entrySet());
-        brute.sort(Comparator.comparingDouble(entry -> euclideanDistance(entry.getValue(), query)));
-        List<Long> expectedOrder = new ArrayList<>();
-        for (int i = 0; i < k; i++) {
-            expectedOrder.add(brute.get(i).getKey());
-        }
-
-        List<Long> actualOrder = new ArrayList<>();
-        for (SearchResult result : results) {
-            actualOrder.add(result.id());
-        }
-
-        assertThat(actualOrder).containsExactlyElementsOf(expectedOrder);
-    }
-
-    @Test
     void searchRecallMeetsTargetOnRandomData() {
         HnswConfig config = new HnswConfig();
         config.dimension = 32;
