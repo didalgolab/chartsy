@@ -17,6 +17,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.Test;
 
@@ -133,6 +140,118 @@ class HnswIndexTest {
         assertThat(index.contains(1L)).isFalse();
         List<SearchResult> results = index.searchKnn(new double[]{0.0, 0.0}, 1);
         assertThat(results).extracting(SearchResult::id).doesNotContain(1L);
+    }
+
+    @Test
+    void concurrentSearchesYieldDeterministicResults() throws Exception {
+        HnswConfig config = new HnswConfig();
+        config.dimension = 8;
+        config.spaceFactory = Spaces.euclidean();
+        config.initialCapacity = 512;
+        config.M = 8;
+        config.maxM0 = 12;
+        config.defaultEfSearch = 32;
+        config.efConstruction = 64;
+
+        HnswIndex index = Hnsw.build(config);
+        Random random = new Random(123L);
+        for (int i = 0; i < 256; i++) {
+            index.add(i + 1L, randomVector(random, config.dimension));
+        }
+
+        int queryCount = 32;
+        List<double[]> queries = new ArrayList<>(queryCount);
+        List<List<SearchResult>> expectedResults = new ArrayList<>(queryCount);
+        for (int i = 0; i < queryCount; i++) {
+            double[] query = randomVector(random, config.dimension);
+            queries.add(query);
+            expectedResults.add(index.searchKnn(query, 5, 32));
+        }
+
+        ExecutorService executor = Executors.newFixedThreadPool(8);
+        try {
+            List<Callable<Void>> tasks = new ArrayList<>();
+            for (int i = 0; i < queryCount; i++) {
+                double[] query = queries.get(i);
+                List<SearchResult> expected = expectedResults.get(i);
+                tasks.add(() -> {
+                    for (int round = 0; round < 5; round++) {
+                        List<SearchResult> actual = index.searchKnn(query, 5, 32);
+                        assertThat(actual).containsExactlyElementsOf(expected);
+                    }
+                    return null;
+                });
+            }
+            executor.invokeAll(tasks);
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    @Test
+    void removeDoesNotLeakDeletedNodesDuringConcurrentReads() throws Exception {
+        HnswConfig config = new HnswConfig();
+        config.dimension = 1;
+        config.spaceFactory = Spaces.euclidean();
+        config.M = 4;
+        config.maxM0 = 6;
+        config.defaultEfSearch = 16;
+        config.efConstruction = 32;
+
+        HnswIndex index = Hnsw.build(config);
+        long removedId = 1L;
+        index.add(removedId, new double[]{0.0});
+        for (int i = 1; i <= 64; i++) {
+            index.add(removedId + i, new double[]{10.0 + i});
+        }
+        double[] query = new double[]{0.05};
+
+        int readerCount = 3;
+        ExecutorService executor = Executors.newFixedThreadPool(readerCount + 1);
+        CountDownLatch readersReady = new CountDownLatch(readerCount);
+        CountDownLatch start = new CountDownLatch(1);
+        AtomicBoolean running = new AtomicBoolean(true);
+        AtomicBoolean removed = new AtomicBoolean(false);
+
+        List<Future<?>> readers = new ArrayList<>();
+        for (int i = 0; i < readerCount; i++) {
+            readers.add(executor.submit(() -> {
+                readersReady.countDown();
+                start.await();
+                while (running.get()) {
+                    List<SearchResult> results = index.searchKnn(query, 1, 16);
+                    if (removed.get()) {
+                        assertThat(results)
+                                .extracting(SearchResult::id)
+                                .doesNotContain(removedId);
+                    }
+                }
+                return null;
+            }));
+        }
+
+        assertThat(readersReady.await(2, TimeUnit.SECONDS)).isTrue();
+        Future<Boolean> removalFuture = executor.submit(() -> {
+            start.countDown();
+            return index.remove(removedId);
+        });
+
+        boolean removedNow = removalFuture.get(5, TimeUnit.SECONDS);
+        assertThat(removedNow).isTrue();
+        removed.set(true);
+
+        // Allow readers to observe the removal while still running.
+        Thread.sleep(50L);
+        running.set(false);
+        for (Future<?> reader : readers) {
+            reader.get(5, TimeUnit.SECONDS);
+        }
+        executor.shutdownNow();
+
+        List<SearchResult> resultsAfterRemoval = index.searchKnn(query, 1, 16);
+        assertThat(resultsAfterRemoval)
+                .extracting(SearchResult::id)
+                .doesNotContain(removedId);
     }
 
     @Test
