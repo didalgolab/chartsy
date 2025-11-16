@@ -21,9 +21,9 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 import one.chartsy.hnsw.graph.HnswGraph;
+import one.chartsy.hnsw.graph.NeighborList;
 import one.chartsy.hnsw.internal.DefaultHnswIndex;
 import one.chartsy.hnsw.space.Spaces;
-import one.chartsy.hnsw.internal.DefaultHnswIndex;
 import one.chartsy.hnsw.store.VectorStorage;
 
 class HnswIndexTest {
@@ -133,6 +133,49 @@ class HnswIndexTest {
         assertThat(index.contains(1L)).isFalse();
         List<SearchResult> results = index.searchKnn(new double[]{0.0, 0.0}, 1);
         assertThat(results).extracting(SearchResult::id).doesNotContain(1L);
+    }
+
+    @Test
+    void removalReconnectsNeighborsWhenRepairDisabled() throws Exception {
+        HnswConfig config = new HnswConfig();
+        config.dimension = 1;
+        config.spaceFactory = Spaces.euclidean();
+        config.M = 2;
+        config.maxM0 = 2;
+        config.efConstruction = 8;
+        config.defaultEfSearch = 2;
+        config.randomSeed = 1234L;
+        config.efRepair = 0;
+
+        HnswIndex index = Hnsw.build(config);
+        index.add(1L, new double[]{0.0});
+        index.add(2L, new double[]{0.1});
+        index.add(3L, new double[]{0.2});
+
+        DefaultHnswIndex internal = (DefaultHnswIndex) index;
+        Field mapField = DefaultHnswIndex.class.getDeclaredField("idToInternal");
+        mapField.setAccessible(true);
+        Long2IntOpenHashMap idToInternal = (Long2IntOpenHashMap) mapField.get(internal);
+        int firstNode = idToInternal.get(1L);
+        int middleNode = idToInternal.get(2L);
+        int thirdNode = idToInternal.get(3L);
+
+        Field graphField = DefaultHnswIndex.class.getDeclaredField("graph");
+        graphField.setAccessible(true);
+        HnswGraph graph = (HnswGraph) graphField.get(internal);
+        NeighborList middleNeighbors = graph.neighborList(0, middleNode);
+        assertThat(middleNeighbors).isNotNull();
+        assertThat(middleNeighbors.contains(firstNode)).isTrue();
+        assertThat(middleNeighbors.contains(thirdNode)).isTrue();
+
+        assertThat(index.remove(2L)).isTrue();
+        NeighborList firstNeighbors = graph.neighborList(0, firstNode);
+        NeighborList thirdNeighbors = graph.neighborList(0, thirdNode);
+
+        assertThat(firstNeighbors).isNotNull();
+        assertThat(thirdNeighbors).isNotNull();
+        assertThat(firstNeighbors.contains(thirdNode)).isTrue();
+        assertThat(thirdNeighbors.contains(firstNode)).isTrue();
     }
 
     @Test
