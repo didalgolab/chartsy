@@ -113,15 +113,15 @@ public final class HnswGraph {
     }
 
     public long totalEdges() {
-        long edges = 0L;
+        long adjacencyEntries = 0L;
         for (NeighborList[] layer : layers) {
             for (NeighborList list : layer) {
                 if (list != null) {
-                    edges += list.size();
+                    adjacencyEntries += list.size();
                 }
             }
         }
-        return edges;
+        return adjacencyEntries / 2;
     }
 
     public int levelCount() {

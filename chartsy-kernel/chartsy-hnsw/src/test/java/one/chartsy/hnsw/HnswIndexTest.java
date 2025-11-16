@@ -21,6 +21,7 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 import one.chartsy.hnsw.graph.HnswGraph;
+import one.chartsy.hnsw.graph.NeighborList;
 import one.chartsy.hnsw.internal.DefaultHnswIndex;
 import one.chartsy.hnsw.space.Spaces;
 import one.chartsy.hnsw.internal.DefaultHnswIndex;
@@ -269,6 +270,38 @@ class HnswIndexTest {
     }
 
     @Test
+    void statsReportUndirectedEdgeCounts() throws Exception {
+        HnswConfig config = new HnswConfig();
+        config.dimension = 4;
+        config.spaceFactory = Spaces.euclidean();
+        config.initialCapacity = 32;
+        config.M = 8;
+        config.maxM0 = 12;
+
+        HnswIndex index = Hnsw.build(config);
+        Random random = new Random(1234L);
+        int pointCount = 32;
+        for (int i = 0; i < pointCount; i++) {
+            index.add(i + 1L, randomVector(random, config.dimension));
+        }
+
+        HnswStats stats = index.stats();
+        assertThat(stats.size()).isEqualTo(pointCount);
+
+        DefaultHnswIndex internal = (DefaultHnswIndex) index;
+        Field graphField = DefaultHnswIndex.class.getDeclaredField("graph");
+        graphField.setAccessible(true);
+        HnswGraph graph = (HnswGraph) graphField.get(internal);
+
+        long adjacencyEntries = countAdjacencyEntries(graph);
+        assertThat(adjacencyEntries).isGreaterThan(0);
+        assertThat(stats.totalEdges()).isEqualTo(adjacencyEntries / 2);
+
+        double expectedAverageDegree = ((double) adjacencyEntries) / stats.size();
+        assertThat(stats.averageDegree()).isEqualTo(expectedAverageDegree);
+    }
+
+    @Test
     void expandingCapacityKeepsPreviouslyInsertedVectors() throws Exception {
         HnswConfig config = new HnswConfig();
         config.dimension = 3;
@@ -440,6 +473,19 @@ class HnswIndexTest {
         Field sizeField = heap.getClass().getDeclaredField("size");
         sizeField.setAccessible(true);
         return sizeField.getInt(heap);
+    }
+
+    private static long countAdjacencyEntries(HnswGraph graph) {
+        long entries = 0L;
+        List<NeighborList[]> layers = graph.layers();
+        for (NeighborList[] layer : layers) {
+            for (NeighborList list : layer) {
+                if (list != null) {
+                    entries += list.size();
+                }
+            }
+        }
+        return entries;
     }
 
     private static Set<Long> bruteForceTopK(Map<Long, double[]> active, double[] query, int k) {
