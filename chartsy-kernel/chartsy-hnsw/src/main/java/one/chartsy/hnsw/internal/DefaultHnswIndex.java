@@ -8,6 +8,8 @@ import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -17,6 +19,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.SplittableRandom;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.zip.CRC32;
+import java.util.zip.CheckedInputStream;
+import java.util.zip.CheckedOutputStream;
 
 import one.chartsy.hnsw.DeletionPolicy;
 import one.chartsy.hnsw.DuplicatePolicy;
@@ -36,7 +41,7 @@ import one.chartsy.hnsw.store.VectorStorage;
 
 public final class DefaultHnswIndex implements HnswIndex {
     private static final long MAGIC = 0x484E535730303031L; // "HNSW0001"
-    private static final int SERIAL_VERSION = 2;
+    private static final int SERIAL_VERSION = 3;
     private static final int[] EMPTY_INT_ARRAY = new int[0];
 
     private final HnswConfig config;
@@ -323,7 +328,10 @@ public final class DefaultHnswIndex implements HnswIndex {
     @Override
     public void save(Path path) throws IOException {
         lock.readLock().lock();
-        try (DataOutputStream out = new DataOutputStream(new BufferedOutputStream(Files.newOutputStream(path)))) {
+        try (OutputStream fileOut = Files.newOutputStream(path);
+             BufferedOutputStream bufferedOut = new BufferedOutputStream(fileOut);
+             CheckedOutputStream checkedOut = new CheckedOutputStream(bufferedOut, new CRC32());
+             DataOutputStream out = new DataOutputStream(checkedOut)) {
             out.writeLong(MAGIC);
             out.writeInt(SERIAL_VERSION);
             writeConfig(out);
@@ -368,13 +376,20 @@ public final class DefaultHnswIndex implements HnswIndex {
                     }
                 }
             }
+            out.flush();
+            long checksum = checkedOut.getChecksum().getValue();
+            checkedOut.getChecksum().reset();
+            out.writeLong(checksum);
         } finally {
             lock.readLock().unlock();
         }
     }
 
     public static HnswIndex load(Path path) throws IOException {
-        try (DataInputStream in = new DataInputStream(new BufferedInputStream(Files.newInputStream(path)))) {
+        try (InputStream fileIn = Files.newInputStream(path);
+             BufferedInputStream bufferedIn = new BufferedInputStream(fileIn);
+             CheckedInputStream checkedIn = new CheckedInputStream(bufferedIn, new CRC32());
+             DataInputStream in = new DataInputStream(checkedIn)) {
             long magic = in.readLong();
             if (magic != MAGIC) {
                 throw new IOException("Invalid HNSW index file");
@@ -443,6 +458,14 @@ public final class DefaultHnswIndex implements HnswIndex {
                         buffer[i] = in.readInt();
                     }
                     list.replaceWith(buffer, neighborCount);
+                }
+            }
+            if (version >= 3) {
+                long computedChecksum = checkedIn.getChecksum().getValue();
+                checkedIn.getChecksum().reset();
+                long storedChecksum = in.readLong();
+                if (computedChecksum != storedChecksum) {
+                    throw new IOException("Checksum mismatch: expected " + storedChecksum + " but computed " + computedChecksum);
                 }
             }
             index.rebuildMapsAfterLoad();
