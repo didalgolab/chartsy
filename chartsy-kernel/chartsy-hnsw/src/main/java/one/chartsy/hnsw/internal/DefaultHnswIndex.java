@@ -88,6 +88,7 @@ public final class DefaultHnswIndex implements HnswIndex {
     @Override
     public void add(long id, double[] vector) {
         Objects.requireNonNull(vector, "vector");
+        requireDimension(vector);
         lock.writeLock().lock();
         try {
             int existing = idToInternal.getOrDefault(id, -1);
@@ -143,6 +144,13 @@ public final class DefaultHnswIndex implements HnswIndex {
             }
         } finally {
             lock.writeLock().unlock();
+        }
+    }
+
+    private void requireDimension(double[] vector) {
+        if (vector.length != config.dimension) {
+            throw new IllegalArgumentException(
+                    "Expected vector dimension " + config.dimension + " but was " + vector.length);
         }
     }
 
