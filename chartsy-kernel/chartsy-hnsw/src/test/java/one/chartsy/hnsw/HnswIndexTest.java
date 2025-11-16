@@ -317,6 +317,34 @@ class HnswIndexTest {
     }
 
     @Test
+    void loadFailsWhenChecksumIsCorrupted() throws IOException {
+        HnswConfig config = new HnswConfig();
+        config.dimension = 2;
+        config.spaceFactory = Spaces.euclidean();
+        config.initialCapacity = 4;
+
+        HnswIndex index = Hnsw.build(config);
+        index.add(1L, new double[]{0.0, 0.0});
+        index.add(2L, new double[]{1.0, 1.0});
+
+        Path path = Files.createTempFile("hnsw-index", ".bin");
+        try {
+            index.save(path);
+
+            byte[] bytes = Files.readAllBytes(path);
+            int corruptIndex = Math.max(0, bytes.length - Long.BYTES - 1);
+            bytes[corruptIndex] ^= 0xFF;
+            Files.write(path, bytes);
+
+            assertThatThrownBy(() -> Hnsw.load(path))
+                    .isInstanceOf(IOException.class)
+                    .hasMessageContaining("Checksum");
+        } finally {
+            Files.deleteIfExists(path);
+        }
+    }
+
+    @Test
     void cosineSpaceShouldNormaliseVectors() {
         HnswConfig config = new HnswConfig();
         config.dimension = 3;
