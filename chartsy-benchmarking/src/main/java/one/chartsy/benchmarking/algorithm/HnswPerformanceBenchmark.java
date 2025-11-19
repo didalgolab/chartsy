@@ -45,7 +45,7 @@ public class HnswPerformanceBenchmark {
     @Benchmark
     @BenchmarkMode(Mode.SampleTime)
     @OutputTimeUnit(TimeUnit.MICROSECONDS)
-    public void searchNaiveLatency(SearchState state, Blackhole blackhole) {
+    public void searchExactLatency(SearchState state, Blackhole blackhole) {
         blackhole.consume(state.hnswIndex.nearestNeighborsExact(state.nextQuery(), state.k));
     }
 

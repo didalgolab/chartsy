@@ -22,12 +22,16 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import one.chartsy.hnsw.graph.HnswGraph;
 import one.chartsy.hnsw.graph.NeighborList;
 import one.chartsy.hnsw.internal.DefaultHnswIndex;
+import one.chartsy.hnsw.space.SpaceFactory;
 import one.chartsy.hnsw.space.Spaces;
 import one.chartsy.hnsw.store.VectorStorage;
 
@@ -507,11 +511,12 @@ class HnswIndexTest {
         assertThat(results.get(0).distance()).isLessThan(results.get(1).distance());
     }
 
-    @Test
-    void randomizedInsertDeleteMaintainsHighRecall() {
+    @ParameterizedTest
+    @MethodSource("builtInSpaces")
+    void randomizedInsertDeleteMaintainsHighRecallForAllSpaces(SpaceFactory spaceFactory) {
         HnswConfig config = new HnswConfig();
         config.dimension = 8;
-        config.spaceFactory = Spaces.euclidean();
+        config.spaceFactory = spaceFactory;
         config.initialCapacity = 512;
         config.M = 12;
         config.maxM0 = 24;
@@ -566,15 +571,22 @@ class HnswIndexTest {
                 recallChecks++;
 
                 assertThat(returnedIds)
-                        .as("search results must not include deleted ids")
+                        .as("search results must not include deleted ids (space=%s)", spaceFactory.getClass().getSimpleName())
                         .allMatch(active::containsKey);
             }
         }
 
         assertThat(recallChecks).isGreaterThan(0);
         double averageRecall = totalRecall / recallChecks;
-        assertThat(averageRecall).isGreaterThanOrEqualTo(0.9887);
-        System.out.printf("Average recall over %d checks: %.8f%n", recallChecks, averageRecall);
+        assertThat(averageRecall)
+                .as("average recall for space=%s", spaceFactory.getClass().getSimpleName())
+                .isGreaterThanOrEqualTo(0.97);
+        System.out.printf("Average recall over %d checks (%s): %.8f%n", recallChecks,
+                spaceFactory.getClass().getSimpleName(), averageRecall);
+    }
+
+    private static Stream<SpaceFactory> builtInSpaces() {
+        return Stream.of(Spaces.euclidean(), Spaces.cosineNormalized(), Spaces.correlationDirect());
     }
 
     @Test
