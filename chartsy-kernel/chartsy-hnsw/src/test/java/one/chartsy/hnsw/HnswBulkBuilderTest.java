@@ -133,7 +133,7 @@ class HnswBulkBuilderTest {
         int count = 0;
         for (int i = 0; i < dataset.ids().length && count < samples; i += step, count++) {
             double[] query = dataset.vectors()[i];
-            List<SearchResult> truth = serial.nearestNeighbors(query, k);
+            List<SearchResult> truth = serial.nearestNeighborsExact(query, k);
             List<SearchResult> approx = bulk.nearestNeighbors(query, k);
             total += recallAtK(approx, truth);
         }

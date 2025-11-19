@@ -1,6 +1,5 @@
 package one.chartsy.benchmarking.algorithm;
 
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -75,8 +74,8 @@ public class HnswBulkBuildBenchmark2 {
         HnswIndex serial = state.serial();
         HnswIndex bulk = state.bulk();
 
-        double serialRecall = recallAtKCosine(serial, state.dataset, state.ids, state.queries, state.k, state.efSearch);
-        double bulkRecall   = recallAtKCosine(bulk,   state.dataset, state.ids, state.queries, state.k, state.efSearch);
+        double serialRecall = recallAtK(serial, state.queries, state.k, state.efSearch);
+        double bulkRecall   = recallAtK(bulk,   state.queries, state.k, state.efSearch);
 
         System.out.printf(
                 "recall@%d (efSearch=%d)  serial=%.4f  bulk=%.4f  [N=%d, dim=%d, Q=%d]%n",
@@ -155,28 +154,23 @@ public class HnswBulkBuildBenchmark2 {
      * Computes average recall@k for cosine distance (unit-normalized vectors) across all queries.
      * recall@k = | approx_top_k ∩ exact_top_k | / k
      */
-    private static double recallAtKCosine(
-            HnswIndex index,
-            double[][] data, long[] ids,
-            double[][] queries,
-            int k, int efSearch
-    ) {
-        final int K = Math.min(k, ids.length);
+    private static double recallAtK(HnswIndex index, double[][] queries, int k, int efSearch) {
+        final int K = Math.min(k, index.size());
         double sum = 0.0;
 
         for (double[] q : queries) {
-            // exact top-k by cosine = top-k by highest dot (smallest (1 - dot))
-            long[] gt = exactTopKCosine(ids, data, q, K);
+            Set<Long> truth = new HashSet<>();
+            for (SearchResult result : index.nearestNeighborsExact(q, K)) {
+                truth.add(result.id());
+            }
 
-            // approx results from index
             Set<Long> approx = new HashSet<>();
             for (SearchResult r : index.nearestNeighbors(q, K, efSearch)) {
                 approx.add(r.id());
             }
 
-            // compute intersection size / k
             int hit = 0;
-            for (long id : gt) {
+            for (long id : truth) {
                 if (approx.contains(id)) {
                     hit++;
                 }
@@ -187,58 +181,4 @@ public class HnswBulkBuildBenchmark2 {
         return sum / Math.max(1, queries.length);
     }
 
-    /**
-     * Exact top-k by cosine for a single query. Assumes data[i] are unit-normalized.
-     * Returns the IDs (unsorted) of the top-k nearest neighbors.
-     */
-    private static long[] exactTopKCosine(long[] ids, double[][] data, double[] q, int k) {
-        final int K = Math.min(k, ids.length);
-        final long[] bestIds   = new long[K];
-        final double[] bestDst = new double[K];
-        Arrays.fill(bestDst, Double.POSITIVE_INFINITY);
-
-        int worstIdx = 0;
-
-        for (int i = 0; i < data.length; i++) {
-            // cosine distance for unit vectors = 1 - dot
-            double dist = 1.0 - dot(data[i], q);
-            if (dist < bestDst[worstIdx]) {
-                bestDst[worstIdx] = dist;
-                bestIds[worstIdx] = ids[i];
-                // recompute current worst in O(K) – K is small (e.g., 10)
-                worstIdx = indexOfWorst(bestDst);
-            }
-        }
-        return bestIds;
-    }
-
-    private static int indexOfWorst(double[] arr) {
-        int idx = 0;
-        double val = arr[0];
-        for (int i = 1; i < arr.length; i++) {
-            if (arr[i] > val) {
-                val = arr[i];
-                idx = i;
-            }
-        }
-        return idx;
-    }
-
-    private static double dot(double[] a, double[] b) {
-        double s0 = 0.0, s1 = 0.0, s2 = 0.0, s3 = 0.0;
-        int i = 0;
-        int n = a.length;
-        int limit = n - (n % 4);
-        for (; i < limit; i += 4) {
-            s0 += a[i] * b[i];
-            s1 += a[i + 1] * b[i + 1];
-            s2 += a[i + 2] * b[i + 2];
-            s3 += a[i + 3] * b[i + 3];
-        }
-        double sum = (s0 + s1) + (s2 + s3);
-        for (; i < n; i++) {
-            sum += a[i] * b[i];
-        }
-        return sum;
-    }
 }

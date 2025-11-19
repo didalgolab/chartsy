@@ -1,6 +1,5 @@
 package one.chartsy.benchmarking.algorithm;
 
-import java.util.Arrays;
 import java.util.SplittableRandom;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -8,7 +7,6 @@ import java.util.concurrent.TimeUnit;
 import one.chartsy.hnsw.Hnsw;
 import one.chartsy.hnsw.HnswConfig;
 import one.chartsy.hnsw.HnswIndex;
-import one.chartsy.hnsw.SearchResult;
 import one.chartsy.hnsw.space.Spaces;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -48,7 +46,7 @@ public class HnswPerformanceBenchmark {
     @BenchmarkMode(Mode.SampleTime)
     @OutputTimeUnit(TimeUnit.MICROSECONDS)
     public void searchNaiveLatency(SearchState state, Blackhole blackhole) {
-        blackhole.consume(state.naiveIndex.searchKnn(state.nextQuery(), state.k));
+        blackhole.consume(state.hnswIndex.nearestNeighborsExact(state.nextQuery(), state.k));
     }
 
     @Benchmark
@@ -84,14 +82,12 @@ public class HnswPerformanceBenchmark {
         double[][] queries;
         int nextQueryIndex;
         HnswIndex hnswIndex;
-        NaiveCosineIndex naiveIndex;
 
         @Setup(Level.Trial)
         public void setUp() {
             SharedSearchDataset shared = SharedSearchDataset.forConfig(vectorCount, dimension, efSearch);
             this.queries = shared.queries;
             this.hnswIndex = shared.hnswIndex;
-            this.naiveIndex = shared.naiveIndex;
             this.nextQueryIndex = 0;
         }
 
@@ -178,12 +174,10 @@ public class HnswPerformanceBenchmark {
 
         private final double[][] queries;
         private final HnswIndex hnswIndex;
-        private final NaiveCosineIndex naiveIndex;
 
-        private SharedSearchDataset(double[][] queries, HnswIndex hnswIndex, NaiveCosineIndex naiveIndex) {
+        private SharedSearchDataset(double[][] queries, HnswIndex hnswIndex) {
             this.queries = queries;
             this.hnswIndex = hnswIndex;
-            this.naiveIndex = naiveIndex;
         }
 
         static SharedSearchDataset forConfig(int vectorCount, int dimension, int efSearch) {
@@ -204,12 +198,10 @@ public class HnswPerformanceBenchmark {
                     .build();
 
             HnswIndex hnswIndex = Hnsw.build(config);
-            NaiveCosineIndex naiveIndex = new NaiveCosineIndex(key.vectorCount, key.dimension);
             for (int i = 0; i < dataset.length; i++) {
                 hnswIndex.add(i, dataset[i]);
-                naiveIndex.add(i, dataset[i]);
             }
-            return new SharedSearchDataset(queries, hnswIndex, naiveIndex);
+            return new SharedSearchDataset(queries, hnswIndex);
         }
 
         record Key(int vectorCount, int dimension, int efSearch) {
@@ -247,48 +239,10 @@ public class HnswPerformanceBenchmark {
             if (id >= storage.length) {
                 throw new IllegalArgumentException("id exceeds capacity");
             }
-            storage[id] = Arrays.copyOf(vector, vector.length);
+            storage[id] = java.util.Arrays.copyOf(vector, vector.length);
             if (id + 1 > size) {
                 size = id + 1;
             }
-        }
-
-        SearchResult[] searchKnn(double[] query, int k) {
-            double[] bestDistances = new double[k];
-            Arrays.fill(bestDistances, Double.POSITIVE_INFINITY);
-            int[] bestIds = new int[k];
-            Arrays.fill(bestIds, -1);
-            for (int i = 0; i < size; i++) {
-                double[] candidate = storage[i];
-                if (candidate == null) {
-                    continue;
-                }
-                double distance = 1.0 - dot(query, candidate);
-                if (distance >= bestDistances[k - 1]) {
-                    continue;
-                }
-                int pos = k - 1;
-                while (pos > 0 && distance < bestDistances[pos - 1]) {
-                    bestDistances[pos] = bestDistances[pos - 1];
-                    bestIds[pos] = bestIds[pos - 1];
-                    pos--;
-                }
-                bestDistances[pos] = distance;
-                bestIds[pos] = i;
-            }
-            SearchResult[] results = new SearchResult[k];
-            for (int i = 0; i < k; i++) {
-                results[i] = new SearchResult(bestIds[i], bestDistances[i]);
-            }
-            return results;
-        }
-
-        private double dot(double[] a, double[] b) {
-            double sum = 0.0;
-            for (int i = 0; i < dimension; i++) {
-                sum += a[i] * b[i];
-            }
-            return sum;
         }
     }
 }

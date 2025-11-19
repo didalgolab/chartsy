@@ -8,7 +8,6 @@ import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -101,7 +100,10 @@ class HnswIndexTest {
             List<SearchResult> results = index.nearestNeighbors(query, k, efSearch);
             assertThat(results.size()).isEqualTo(k);
 
-            Set<Long> expected = bruteForceTopK(dataset, query, k);
+            Set<Long> expected = index.nearestNeighborsExact(query, k).stream()
+                    .map(SearchResult::id)
+                    .limit(k)
+                    .collect(HashSet::new, HashSet::add, Set::addAll);
             long hits = results.stream()
                     .limit(k)
                     .map(SearchResult::id)
@@ -376,8 +378,11 @@ class HnswIndexTest {
         List<SearchResult> results = index.nearestNeighbors(query, 3, 32);
 
         assertThat(results).hasSize(3);
-        List<Long> expectedOrder = bruteForceOrderedIds(dataset, query, 3);
-        assertThat(results).extracting(SearchResult::id).containsExactlyElementsOf(expectedOrder);
+        List<Long> expectedOrder = index.nearestNeighborsExact(query, 3).stream()
+                .map(SearchResult::id)
+                .toList();
+        assertThat(results).extracting(SearchResult::id)
+                .containsExactlyElementsOf(expectedOrder);
     }
 
     @Test
@@ -546,7 +551,9 @@ class HnswIndexTest {
                 assertThat(results).isNotEmpty();
                 int evaluatedK = Math.min(requestedK, results.size());
 
-                Set<Long> expectedTopK = bruteForceTopK(active, query, evaluatedK);
+                Set<Long> expectedTopK = index.nearestNeighborsExact(query, evaluatedK).stream()
+                        .map(SearchResult::id)
+                        .collect(HashSet::new, HashSet::add, Set::addAll);
                 Set<Long> returnedIds = new HashSet<>();
                 for (int i = 0; i < evaluatedK; i++) {
                     SearchResult result = results.get(i);
@@ -693,33 +700,4 @@ class HnswIndexTest {
         graphField.setAccessible(true);
         return (HnswGraph) graphField.get(index);
     }
-
-    private static Set<Long> bruteForceTopK(Map<Long, double[]> active, double[] query, int k) {
-        return active.entrySet().stream()
-                .map(entry -> new Candidate(entry.getKey(), euclideanDistance(entry.getValue(), query)))
-                .sorted(Comparator.comparingDouble(Candidate::distance))
-                .limit(k)
-                .map(Candidate::id)
-                .collect(HashSet::new, HashSet::add, Set::addAll);
-    }
-
-    private static List<Long> bruteForceOrderedIds(Map<Long, double[]> active, double[] query, int k) {
-        return active.entrySet().stream()
-                .map(entry -> new Candidate(entry.getKey(), euclideanDistance(entry.getValue(), query)))
-                .sorted(Comparator.comparingDouble(Candidate::distance))
-                .limit(k)
-                .map(Candidate::id)
-                .collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
-    }
-
-    private static double euclideanDistance(double[] vector, double[] query) {
-        double sum = 0.0;
-        for (int i = 0; i < vector.length; i++) {
-            double diff = vector[i] - query[i];
-            sum += diff * diff;
-        }
-        return Math.sqrt(sum);
-    }
-
-    private record Candidate(long id, double distance) {}
 }
