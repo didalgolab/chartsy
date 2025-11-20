@@ -15,6 +15,7 @@
         <module>chartsy-connectors</module>
         <module>chartsy-core</module>
         <module>chartsy-core-ml</module>
+        <module>chartsy-hnsw</module>
         <module>chartsy-kernel</module>
         <module>chartsy-kernel-libs</module>
         <module>chartsy-kernel-persistence</module>
