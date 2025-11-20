@@ -1040,11 +1040,21 @@ public class DefaultHnswIndex implements HnswIndex {
                 }
                 HnswConfig config = readConfig(in, version);
                 config.validate();
+                long fileSize = Files.size(path);
                 DefaultHnswIndex index = new DefaultHnswIndex(config, true);
                 int nodeCount = in.readInt();
                 int size = in.readInt();
                 int entryPoint = in.readInt();
                 int maxLevel = in.readInt();
+                if (nodeCount < 0 || size < 0 || size > nodeCount) {
+                    throw new IOException("Corrupted index: invalid node/size counts");
+                }
+                // Rough upper bound sanity check to avoid pathological allocations on corrupted files.
+                long minBytesPerNode = 36L + 8L * config.dimension; // ids + level + vector + aux scalars (lower‑bound)
+                long maxNodesBySize = fileSize > 0 ? (fileSize / Math.max(1L, minBytesPerNode)) : Integer.MAX_VALUE;
+                if (nodeCount > maxNodesBySize) {
+                    throw new IOException("Corrupted index: nodeCount exceeds file size bounds");
+                }
                 index.directory.ensureCapacity(nodeCount);
                 index.directory.bulkSetCounts(nodeCount, size);
                 index.graph.setEntryPoint(entryPoint);

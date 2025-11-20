@@ -32,7 +32,7 @@ public final class Spaces {
             case "euclidean" -> new EuclideanSpace.Factory();
             case "cosine" -> new CosineSpace.Factory();
             case "correlation" -> new CorrelationSpace.Factory();
-            case "custom" -> throw new IOException("Cannot deserialize custom space factories");
+            case "custom" -> CustomSpace.Factory.readFactory(in);
             default -> throw new IOException("Unknown space factory id: " + id);
         };
     }

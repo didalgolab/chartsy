@@ -1,5 +1,14 @@
 package one.chartsy.hnsw.space;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
+
 import one.chartsy.hnsw.HnswConfig;
 import one.chartsy.hnsw.store.AuxStorage;
 import one.chartsy.hnsw.store.VectorStorage;
@@ -87,6 +96,25 @@ public final class CustomSpace implements Space {
         }
 
         @Override
+        public void write(DataOutput out) throws IOException {
+            if (!(distance instanceof Serializable)) {
+                throw new IOException("Custom VectorDistance must be Serializable for persistence");
+            }
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            try (ObjectOutputStream oos = new ObjectOutputStream(baos)) {
+                oos.writeObject(distance);
+            }
+            byte[] bytes = baos.toByteArray();
+            out.writeInt(bytes.length);
+            out.write(bytes);
+        }
+
+        @Override
+        public SpaceFactory read(DataInput in) throws IOException {
+            return readFactory(in);
+        }
+
+        @Override
         public Space create(HnswConfig config, VectorStorage vectorStorage, AuxStorage auxStorage) {
             return new CustomSpace(config, vectorStorage, distance);
         }
@@ -94,6 +122,24 @@ public final class CustomSpace implements Space {
         @Override
         public String typeId() {
             return "custom";
+        }
+
+        static SpaceFactory readFactory(DataInput in) throws IOException {
+            int len = in.readInt();
+            if (len < 0) {
+                throw new IOException("Invalid custom VectorDistance length: " + len);
+            }
+            byte[] data = new byte[len];
+            in.readFully(data);
+            try (ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(data))) {
+                Object obj = ois.readObject();
+                if (obj instanceof VectorDistance distance) {
+                    return new Factory(distance);
+                }
+                throw new IOException("Deserialized object is not a VectorDistance: " + obj);
+            } catch (ClassNotFoundException e) {
+                throw new IOException("Failed to deserialize custom VectorDistance", e);
+            }
         }
     }
 }
