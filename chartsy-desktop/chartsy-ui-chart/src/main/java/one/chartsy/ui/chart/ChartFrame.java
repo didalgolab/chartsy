@@ -66,7 +66,8 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
         if (chartLayer.getView() == null || force) {
             chartToolbar = new ChartToolbar(this);
             mainPanel = new MainPanel(this);
-            ChartFrameDropTarget.decorate(this);
+            if (!GraphicsEnvironment.isHeadless())
+                ChartFrameDropTarget.decorate(this);
             scrollBar = new JScrollBar(JScrollBar.HORIZONTAL);
             scrollBar.setAlignmentX(java.awt.Component.RIGHT_ALIGNMENT);
 

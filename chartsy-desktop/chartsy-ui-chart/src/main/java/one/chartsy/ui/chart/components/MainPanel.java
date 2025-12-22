@@ -139,6 +139,14 @@ public class MainPanel extends JLayeredPane {
     public void paint(Graphics g) {
         chartFrame.getChartData().calculate(chartFrame);
         chartFrame.getChartData().calculateRange(chartFrame, sPane.getChartPanel().getOverlays());
+
+        // VolatileImage rendering requires a non-null GraphicsConfiguration (i.e., a displayable component).
+        // For offscreen rendering (e.g., screenshot generation) fall back to regular Swing painting.
+        if (GraphicsEnvironment.isHeadless() || getGraphicsConfiguration() == null) {
+            vImg = null;
+            super.paint(g);
+            return;
+        }
         
         if (vImg == null || ChartRenderingSystem.current().isRerender())
             renderOffscreen(g.getClip());
