@@ -5,4 +5,5 @@ bin
 build
 logs
 target
+private
 /chartsy.kdbx
