@@ -11,30 +11,45 @@ import one.chartsy.data.DataQuery;
 import one.chartsy.data.provider.FlatFileDataProvider;
 import one.chartsy.kernel.ServiceManager;
 import one.chartsy.time.Chronological;
+import org.yaml.snakeyaml.DumperOptions;
+import org.yaml.snakeyaml.Yaml;
 
 import javax.imageio.ImageIO;
+import javax.swing.JLayer;
 import javax.swing.SwingUtilities;
+import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
+import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics2D;
+import java.awt.LayoutManager;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.nio.file.Path;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Generates a {@link ChartFrame}-style chart screenshot without launching the full application.
+ * Generates a {@link ChartFrame}-style chart screenshot or a prompt-ready
+ * summary without launching the full application.
  * <p>
  * This utility intentionally mirrors the "Basic Chart" template used by the GUI front-end
  * (candlesticks + common overlays/indicators).
  */
-public final class ChartScreenshotTool {
+public final class ChartTool {
+
+    private static final int PROMPT_BAR_COUNT = 24;
 
     /**
      * Specifies what portion of candle data should be used for rendering.
@@ -82,7 +97,7 @@ public final class ChartScreenshotTool {
         }
     }
 
-    private ChartScreenshotTool() {
+    private ChartTool() {
     }
 
     public static BufferedImage renderChart(FlatFileDataProvider provider,
@@ -100,6 +115,7 @@ public final class ChartScreenshotTool {
         var dataset = loadCandles(provider, symbol, timeFrame, range);
         var template = basicChartTemplate();
         var chartFrame = createChartFrame(provider, dataset, template, size);
+        removeScreenshotChrome(chartFrame);
         return paint(chartFrame, size, chartFrame.getChartProperties().getBackgroundColor());
     }
 
@@ -112,6 +128,28 @@ public final class ChartScreenshotTool {
         Objects.requireNonNull(outputFile, "outputFile");
         BufferedImage image = renderChart(provider, symbol, timeFrame, range, size);
         ImageIO.write(image, "png", outputFile.toFile());
+    }
+
+    public static String createPrompt(FlatFileDataProvider provider,
+                                      SymbolIdentity symbol,
+                                      TimeFrame timeFrame,
+                                      DataRange range) {
+        Objects.requireNonNull(provider, "provider");
+        Objects.requireNonNull(symbol, "symbol");
+        Objects.requireNonNull(timeFrame, "timeFrame");
+        Objects.requireNonNull(range, "range");
+
+        var dataset = loadCandles(provider, symbol, timeFrame, range);
+        var daily = aggregateCandles(dataset, TimeFrame.Period.DAILY);
+        var weekly = aggregateCandles(dataset, TimeFrame.Period.WEEKLY);
+        var monthly = aggregateCandles(dataset, TimeFrame.Period.MONTHLY);
+
+        Map<String, Object> root = new LinkedHashMap<>();
+        root.put("daily_bars", toBarsMap(daily, PROMPT_BAR_COUNT, "daily"));
+        root.put("weekly_bars", toBarsMap(weekly, PROMPT_BAR_COUNT, "weekly"));
+        root.put("monthly_bars", toBarsMap(monthly, PROMPT_BAR_COUNT, "monthly"));
+
+        return dumpYaml(root);
     }
 
     static CandleSeries loadCandles(FlatFileDataProvider provider,
@@ -161,6 +199,60 @@ public final class ChartScreenshotTool {
             throw new IllegalStateException("No candle data in requested range for symbol `" + symbol.name() + "`");
 
         return CandleSeries.of((SymbolResource<Candle>) resource, slice);
+    }
+
+    private static List<Candle> aggregateCandles(CandleSeries series, TimeFrame timeFrame) {
+        Objects.requireNonNull(series, "series");
+        Objects.requireNonNull(timeFrame, "timeFrame");
+
+        var aggregator = timeFrame.getAggregator();
+        var chronological = new ArrayList<Candle>(series.length());
+        for (Candle candle : series) {
+            chronological.add(candle);
+        }
+        return aggregator.aggregate(chronological, true);
+    }
+
+    private static Map<String, Map<String, BigDecimal>> toBarsMap(List<Candle> candles, int count, String label) {
+        if (candles.size() < count)
+            throw new IllegalStateException("Not enough " + label + " bars to build the prompt (need "
+                    + count + ", got " + candles.size() + ")");
+
+        int startIndex = candles.size() - count;
+        var bars = new LinkedHashMap<String, Map<String, BigDecimal>>(count);
+        for (int i = candles.size() - 1; i >= startIndex; i--) {
+            Candle candle = candles.get(i);
+            LocalDate date = candle.getDate();
+            bars.put(date.toString(), toOhlcvMap(candle));
+        }
+        return bars;
+    }
+
+    private static Map<String, BigDecimal> toOhlcvMap(Candle candle) {
+        var values = new LinkedHashMap<String, BigDecimal>(5);
+        values.put("open", toDecimal(candle.open()));
+        values.put("high", toDecimal(candle.high()));
+        values.put("low", toDecimal(candle.low()));
+        values.put("close", toDecimal(candle.close()));
+        values.put("volume", toDecimal(candle.volume()));
+        return values;
+    }
+
+    private static BigDecimal toDecimal(double value) {
+        return BigDecimal.valueOf(value).setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private static String dumpYaml(Map<String, Object> data) {
+        DumperOptions options = new DumperOptions();
+        options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
+        options.setDefaultScalarStyle(DumperOptions.ScalarStyle.PLAIN);
+        options.setPrettyFlow(true);
+        options.setIndent(2);
+        options.setIndicatorIndent(1);
+        options.setLineBreak(DumperOptions.LineBreak.UNIX);
+
+        Yaml yaml = new Yaml(options);
+        return yaml.dump(data).stripTrailing();
     }
 
     static ChartFrame createChartFrame(FlatFileDataProvider provider,
@@ -259,6 +351,32 @@ public final class ChartScreenshotTool {
             } finally {
                 g.dispose();
             }
+        });
+    }
+
+    private static void removeScreenshotChrome(ChartFrame chartFrame) {
+        callOnEdt(() -> {
+            for (Component component : chartFrame.getComponents()) {
+                if (component instanceof JLayer<?> layer) {
+                    Component view = layer.getView();
+                    if (view instanceof Container container) {
+                        LayoutManager layout = container.getLayout();
+                        if (layout instanceof BorderLayout borderLayout) {
+                            Component north = borderLayout.getLayoutComponent(container, BorderLayout.NORTH);
+                            if (north != null)
+                                container.remove(north);
+                            Component south = borderLayout.getLayoutComponent(container, BorderLayout.SOUTH);
+                            if (south != null)
+                                container.remove(south);
+                            container.revalidate();
+                            container.doLayout();
+                        }
+                    }
+                    break;
+                }
+            }
+            layoutRecursively(chartFrame);
+            return null;
         });
     }
 

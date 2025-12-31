@@ -11,18 +11,21 @@ import one.chartsy.data.provider.file.SimpleCandleLineMapper;
 import one.chartsy.core.io.ResourcePaths;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.yaml.snakeyaml.Yaml;
 
 import javax.imageio.ImageIO;
 import java.awt.Dimension;
 import java.awt.image.BufferedImage;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class ChartScreenshotToolTest {
+class ChartToolTest {
 
     @Test
     void renders_basic_chart_with_expected_overlays_and_indicator(@TempDir Path tempDir) throws Exception {
@@ -39,19 +42,19 @@ class ChartScreenshotToolTest {
 
         var symbol = SymbolIdentity.of("BTC_DAILY");
         var timeFrame = TimeFrame.Period.DAILY;
-        var range = ChartScreenshotTool.DataRange.last(200);
-        var size = new Dimension(1200, 800);
+        var range = ChartTool.DataRange.last(200);
+        var size = new Dimension(1536, 793);
 
         // Assert template composition (services must be discoverable without launching the app).
-        ChartTemplate template = ChartScreenshotTool.basicChartTemplate();
+        ChartTemplate template = ChartTool.basicChartTemplate();
         assertThat(template.getOverlays()).extracting(Overlay::getName)
                 .contains("FRAMA, Leading", "FRAMA, Trailing", "Sfora", "Volume", "Sentiment Bands");
         assertThat(template.getIndicators()).extracting(Indicator::getName)
                 .contains("Fractal Dimension");
 
         // Assert the resulting ChartFrame contains expected plugins (ensures proper wiring with ChartFrame listeners).
-        CandleSeries dataset = ChartScreenshotTool.loadCandles(provider, symbol, timeFrame, range);
-        ChartFrame frame = ChartScreenshotTool.createChartFrame(provider, dataset, template, size);
+        CandleSeries dataset = ChartTool.loadCandles(provider, symbol, timeFrame, range);
+        ChartFrame frame = ChartTool.createChartFrame(provider, dataset, template, size);
         assertThat(frame.getWidth()).isEqualTo(size.width);
         assertThat(frame.getHeight()).isEqualTo(size.height);
         assertThat(frame.getMainPanel().getChartPanel().getWidth()).isGreaterThan(0);
@@ -72,7 +75,7 @@ class ChartScreenshotToolTest {
         assertThat(sfora.visibleDataset(frame, "8").getValueAt(0)).isNotNaN();
 
         // Act: render a screenshot using the tool.
-        BufferedImage image = ChartScreenshotTool.renderChart(provider, symbol, timeFrame, range, size);
+        BufferedImage image = ChartTool.renderChart(provider, symbol, timeFrame, range, size);
 
         // Assert: basic image sanity.
         assertThat(image.getWidth()).isEqualTo(size.width);
@@ -83,6 +86,57 @@ class ChartScreenshotToolTest {
         Path output = tempDir.resolve("chart.png");
         ImageIO.write(image, "png", output.toFile());
         assertThat(Files.size(output)).isGreaterThan(0L);
+    }
+
+    @Test
+    void creates_prompt_with_expected_bar_counts() throws Exception {
+        FlatFileFormat format = FlatFileFormat.builder()
+                .skipFirstLines(1)
+                .lineMapper(new SimpleCandleLineMapper.Type(
+                        ',', List.of("DATE", "OPEN", "HIGH", "LOW", "CLOSE", "VOLUME"),
+                        DateTimeFormatter.ofPattern("yyyy-MM-dd")))
+                .build();
+
+        Path archive = ResourcePaths.pathToResource("BTC_DAILY.zip");
+        FlatFileDataProvider provider = new FlatFileDataProvider(format, archive);
+
+        var symbol = SymbolIdentity.of("BTC_DAILY");
+        var timeFrame = TimeFrame.Period.DAILY;
+        var range = ChartTool.DataRange.all();
+
+        String prompt = ChartTool.createPrompt(provider, symbol, timeFrame, range);
+        Map<String, Object> parsed = new Yaml().load(prompt);
+
+        assertThat(parsed).containsKeys("daily_bars", "weekly_bars", "monthly_bars");
+        assertThat(((Map<?, ?>) parsed.get("daily_bars")).size()).isEqualTo(24);
+        assertThat(((Map<?, ?>) parsed.get("weekly_bars")).size()).isEqualTo(24);
+        assertThat(((Map<?, ?>) parsed.get("monthly_bars")).size()).isEqualTo(24);
+    }
+
+    @Test
+    void writes_prompt_to_temp_file_for_series_ending_on_2025_06_01(@TempDir Path tempDir) throws Exception {
+        FlatFileFormat format = FlatFileFormat.builder()
+                .skipFirstLines(1)
+                .lineMapper(new SimpleCandleLineMapper.Type(
+                        ',', List.of("DATE", "OPEN", "HIGH", "LOW", "CLOSE", "VOLUME"),
+                        DateTimeFormatter.ofPattern("yyyy-MM-dd")))
+                .build();
+
+        Path archive = ResourcePaths.pathToResource("BTC_DAILY.zip");
+        FlatFileDataProvider provider = new FlatFileDataProvider(format, archive);
+
+        var symbol = SymbolIdentity.of("BTC_DAILY");
+        var timeFrame = TimeFrame.Period.DAILY;
+        var endTime = LocalDate.of(2025, 6, 1).atTime(23, 59, 59);
+        var range = new ChartTool.DataRange(null, endTime, 0, 0);
+
+        String prompt = ChartTool.createPrompt(provider, symbol, timeFrame, range);
+        Path output = tempDir.resolve("btc_prompt_2025-06-01.yaml");
+        Files.writeString(output, prompt);
+        System.out.println("Prompt written to: " + output.toAbsolutePath());
+
+        assertThat(Files.size(output)).isGreaterThan(0L);
+        assertThat(prompt).contains("2025-05-31");
     }
 
     private static boolean hasNonWhitePixel(BufferedImage image) {

@@ -43,10 +43,6 @@ import static one.chartsy.TimeFrameHelper.isIntraday;
     @ServiceProvider(service = StooqDataProvider.class)
 })
 public class StooqDataProvider extends AbstractDataProvider implements SymbolProposalProvider {
-    /** The serial version UID */
-    private static final long serialVersionUID = 2170493974406373183L;
-    /** The namespace constant used by this data provider. */
-    public static final String NAMESPACE = "http://stooq.com";
     /** The Http Client used to execute the service requests. */
     private final HttpClient httpClient = newHttpClient();
 
@@ -64,15 +60,6 @@ public class StooqDataProvider extends AbstractDataProvider implements SymbolPro
         return HttpClient.newBuilder();
     }
 
-    /**
-     * Returns the base time frame in which the given symbol is represented.
-     * 
-     * @return the base time frame supported
-     */
-    public TimeFrame getBaseTimeFrame(Symbol symbol) {
-        return TimeFrame.Period.M1;
-    }
-    
     private static final Map<TimeFrame, String> intervals = new LinkedHashMap<>();
     private static final List<TimeFrame> supportedTimeFrames;
     static {
@@ -98,6 +85,7 @@ public class StooqDataProvider extends AbstractDataProvider implements SymbolPro
         return supportedTimeFrames;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public <T extends Chronological> Flux<T> query(Class<T> type, DataQuery<T> query) {
         try {
@@ -232,27 +220,5 @@ public class StooqDataProvider extends AbstractDataProvider implements SymbolPro
             list.add(symb.build());
         }
         return list;
-    }
-
-//    @Override
-//    public final String getNamespace() {
-//        return NAMESPACE;
-//    }
-    
-    
-    public static void main(String[] args) throws Exception {
-        StooqDataProvider provider = new StooqDataProvider();
-        List<Symbol> proposals = provider.getProposals("AB");
-
-        DataQuery<Candle> query = DataQuery
-                .resource(SymbolResource.of("EURUSD", TimeFrame.Period.DAILY))
-                .build();
-//        provider.getCandles(query);
-
-//        Quotes quotes = new StooqDataProvider().getQuotes(new SymbolExt("EURUSD"), TimeFrame.Period.H1, null, null, null);
-//
-//        System.out.println(quotes.length());
-//        for (Quote quote : quotes)
-//            System.out.println(quote);
     }
 }
