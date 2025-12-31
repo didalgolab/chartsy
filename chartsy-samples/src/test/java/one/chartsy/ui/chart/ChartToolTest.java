@@ -3,6 +3,7 @@
 package one.chartsy.ui.chart;
 
 import one.chartsy.SymbolIdentity;
+import one.chartsy.SystemFiles;
 import one.chartsy.TimeFrame;
 import one.chartsy.data.CandleSeries;
 import one.chartsy.data.provider.FlatFileDataProvider;
@@ -19,9 +20,11 @@ import java.awt.image.BufferedImage;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -137,6 +140,57 @@ class ChartToolTest {
 
         assertThat(Files.size(output)).isGreaterThan(0L);
         assertThat(prompt).contains("2025-05-31");
+    }
+
+    @Test
+    void renders_stooq_chart_for_user_supplied_zip_symbol_and_end_date() throws Exception {
+        Path zipPath = resolveStooqZipPath(System.getProperty("stooq.zip",
+                "C:/Users/Mariusz/Downloads/d_pl_txt (1).zip"));
+        String symbol = System.getProperty("stooq.symbol", "HEL");
+        LocalDate endDate = LocalDate.parse(System.getProperty("stooq.endDate", "2025-04-01"));
+
+        FlatFileDataProvider provider = FlatFileFormat.STOOQ.newDataProvider(zipPath);
+        try {
+            var timeFrame = TimeFrame.Period.DAILY;
+            var endTime = endDate.atStartOfDay().plusDays(1);
+            var range = new ChartTool.DataRange(null, endTime, 200, ChartTool.DataRange.DEFAULT_WARMUP_BARS);
+
+            CandleSeries dataset = ChartTool.loadCandles(provider, SymbolIdentity.of(symbol), timeFrame, range);
+            assertThat(dataset.isEmpty()).isFalse();
+
+            Path outputDir = SystemFiles.PRIVATE_DIR.resolve("ChartTool");
+            Files.createDirectories(outputDir);
+            Path output = outputDir.resolve(symbol + "__" + endDate + ".png");
+
+            ChartTool.renderChartToPng(output, provider, SymbolIdentity.of(symbol), timeFrame, range,
+                    new Dimension(1536, 793));
+            System.out.println("Stooq screenshot saved to: " + output.toAbsolutePath());
+
+            assertThat(Files.size(output)).isGreaterThan(0L);
+        } finally {
+            provider.close();
+        }
+    }
+
+    private static Path resolveStooqZipPath(String rawPath) {
+        Objects.requireNonNull(rawPath, "rawPath");
+        Path path = Path.of(rawPath);
+        if (Files.exists(path)) {
+            return path;
+        }
+        String normalized = rawPath.replace('\\', '/');
+        if (normalized.length() >= 3 && Character.isLetter(normalized.charAt(0)) && normalized.charAt(1) == ':') {
+            String drive = String.valueOf(Character.toLowerCase(normalized.charAt(0)));
+            String rest = normalized.substring(2);
+            if (rest.startsWith("/")) {
+                rest = rest.substring(1);
+            }
+            Path wslPath = Path.of("/mnt", drive, rest);
+            if (Files.exists(wslPath)) {
+                return wslPath;
+            }
+        }
+        throw new IllegalArgumentException("Stooq ZIP file not found: " + rawPath);
     }
 
     private static boolean hasNonWhitePixel(BufferedImage image) {
