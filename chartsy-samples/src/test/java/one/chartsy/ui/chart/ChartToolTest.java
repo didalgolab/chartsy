@@ -33,12 +33,7 @@ class ChartToolTest {
     @Test
     void renders_basic_chart_with_expected_overlays_and_indicator(@TempDir Path tempDir) throws Exception {
         // Arrange: use included historical BTC data for a natural-looking chart.
-        FlatFileFormat format = FlatFileFormat.builder()
-                .skipFirstLines(1)
-                .lineMapper(new SimpleCandleLineMapper.Type(
-                        ',', List.of("DATE", "OPEN", "HIGH", "LOW", "CLOSE", "VOLUME"),
-                        DateTimeFormatter.ofPattern("yyyy-MM-dd")))
-                .build();
+        FlatFileFormat format = btcDailyFormat();
 
         Path archive = ResourcePaths.pathToResource("BTC_DAILY.zip");
         FlatFileDataProvider provider = new FlatFileDataProvider(format, archive);
@@ -93,12 +88,7 @@ class ChartToolTest {
 
     @Test
     void creates_prompt_with_expected_bar_counts() throws Exception {
-        FlatFileFormat format = FlatFileFormat.builder()
-                .skipFirstLines(1)
-                .lineMapper(new SimpleCandleLineMapper.Type(
-                        ',', List.of("DATE", "OPEN", "HIGH", "LOW", "CLOSE", "VOLUME"),
-                        DateTimeFormatter.ofPattern("yyyy-MM-dd")))
-                .build();
+        FlatFileFormat format = btcDailyFormat();
 
         Path archive = ResourcePaths.pathToResource("BTC_DAILY.zip");
         FlatFileDataProvider provider = new FlatFileDataProvider(format, archive);
@@ -118,12 +108,7 @@ class ChartToolTest {
 
     @Test
     void writes_prompt_to_temp_file_for_series_ending_on_2025_06_01(@TempDir Path tempDir) throws Exception {
-        FlatFileFormat format = FlatFileFormat.builder()
-                .skipFirstLines(1)
-                .lineMapper(new SimpleCandleLineMapper.Type(
-                        ',', List.of("DATE", "OPEN", "HIGH", "LOW", "CLOSE", "VOLUME"),
-                        DateTimeFormatter.ofPattern("yyyy-MM-dd")))
-                .build();
+        FlatFileFormat format = btcDailyFormat();
 
         Path archive = ResourcePaths.pathToResource("BTC_DAILY.zip");
         FlatFileDataProvider provider = new FlatFileDataProvider(format, archive);
@@ -146,8 +131,9 @@ class ChartToolTest {
     void renders_stooq_chart_for_user_supplied_zip_symbol_and_end_date() throws Exception {
         Path zipPath = resolveStooqZipPath(System.getProperty("stooq.zip",
                 "C:/Users/Mariusz/Downloads/d_pl_txt (1).zip"));
-        String symbol = System.getProperty("stooq.symbol", "HEL");
-        LocalDate endDate = LocalDate.parse(System.getProperty("stooq.endDate", "2025-04-01"));
+        String symbol = System.getProperty("stooq.symbol", "ATR");
+        LocalDate endDate = LocalDate.parse(System.getProperty("stooq.endDate", "2024-11-22"));
+        SymbolIdentity symbolId = SymbolIdentity.of(symbol);
 
         FlatFileDataProvider provider = FlatFileFormat.STOOQ.newDataProvider(zipPath);
         try {
@@ -155,18 +141,25 @@ class ChartToolTest {
             var endTime = endDate.atStartOfDay().plusDays(1);
             var range = new ChartTool.DataRange(null, endTime, 200, ChartTool.DataRange.DEFAULT_WARMUP_BARS);
 
-            CandleSeries dataset = ChartTool.loadCandles(provider, SymbolIdentity.of(symbol), timeFrame, range);
+            CandleSeries dataset = ChartTool.loadCandles(provider, symbolId, timeFrame, range);
             assertThat(dataset.isEmpty()).isFalse();
 
             Path outputDir = SystemFiles.PRIVATE_DIR.resolve("ChartTool");
             Files.createDirectories(outputDir);
             Path output = outputDir.resolve(symbol + "__" + endDate + ".png");
 
-            ChartTool.renderChartToPng(output, provider, SymbolIdentity.of(symbol), timeFrame, range,
+            ChartTool.renderChartToPng(output, provider, symbolId, timeFrame, range,
                     new Dimension(1536, 793));
             System.out.println("Stooq screenshot saved to: " + output.toAbsolutePath());
 
             assertThat(Files.size(output)).isGreaterThan(0L);
+
+            String prompt = ChartTool.createPrompt(provider, symbolId, timeFrame, range);
+            Path promptOutput = outputDir.resolve(symbol + "__" + endDate + ".prompt.md");
+            Files.writeString(promptOutput, prompt);
+            System.out.println("Stooq prompt written to: " + promptOutput.toAbsolutePath());
+
+            assertThat(Files.size(promptOutput)).isGreaterThan(0L);
         } finally {
             provider.close();
         }
@@ -191,6 +184,15 @@ class ChartToolTest {
             }
         }
         throw new IllegalArgumentException("Stooq ZIP file not found: " + rawPath);
+    }
+
+    private static FlatFileFormat btcDailyFormat() {
+        return FlatFileFormat.builder()
+                .skipFirstLines(1)
+                .lineMapper(new SimpleCandleLineMapper.Type(
+                        ',', List.of("DATE", "OPEN", "HIGH", "LOW", "CLOSE", "VOLUME"),
+                        DateTimeFormatter.ofPattern("yyyy-MM-dd")))
+                .build();
     }
 
     private static boolean hasNonWhitePixel(BufferedImage image) {
