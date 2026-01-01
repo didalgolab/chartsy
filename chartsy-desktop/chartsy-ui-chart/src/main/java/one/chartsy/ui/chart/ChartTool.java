@@ -13,8 +13,6 @@ import one.chartsy.kernel.ServiceManager;
 import one.chartsy.time.Chronological;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
-import org.yaml.snakeyaml.nodes.Tag;
-import org.yaml.snakeyaml.representer.Representer;
 
 import javax.imageio.ImageIO;
 import javax.swing.JLayer;
@@ -51,7 +49,10 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public final class ChartTool {
 
-    private static final int PROMPT_BAR_COUNT = 24;
+    private static final String GOAL_ANALYZE = """
+            Analyze this financial chart for trade opportunities and its qualities.
+            """;
+    private static final int PROMPT_BAR_COUNT = 60;
 
     /**
      * Specifies what portion of candle data should be used for rendering.
@@ -151,7 +152,7 @@ public final class ChartTool {
         root.put("weekly_bars", toBarsMap(weekly, PROMPT_BAR_COUNT, "weekly"));
         root.put("monthly_bars", toBarsMap(monthly, PROMPT_BAR_COUNT, "monthly"));
 
-        return dumpYaml(root);
+        return GOAL_ANALYZE + "\n" + dumpYaml(root);
     }
 
     static CandleSeries loadCandles(FlatFileDataProvider provider,
@@ -215,13 +216,9 @@ public final class ChartTool {
         return aggregator.aggregate(chronological, true);
     }
 
-    private static Map<String, Map<String, Object>> toBarsMap(List<Candle> candles, int count, String label) {
-        if (candles.size() < count)
-            throw new IllegalStateException("Not enough " + label + " bars to build the prompt (need "
-                    + count + ", got " + candles.size() + ")");
-
-        int startIndex = candles.size() - count;
-        var bars = new LinkedHashMap<String, Map<String, Object>>(count);
+    private static Map<String, Map<String, BigDecimal>> toBarsMap(List<Candle> candles, int count, String label) {
+        int startIndex = Math.max(0, candles.size() - count);
+        var bars = new LinkedHashMap<String, Map<String, BigDecimal>>(count);
         for (int i = candles.size() - 1; i >= startIndex; i--) {
             Candle candle = candles.get(i);
             LocalDate date = candle.getDate();
@@ -230,14 +227,13 @@ public final class ChartTool {
         return bars;
     }
 
-    private static Map<String, Object> toOhlcvMap(Candle candle) {
-        var values = new LinkedHashMap<String, Object>(2);
-        values.put("OHLC", new FlowList(List.of(
-                toDecimal(candle.open()),
-                toDecimal(candle.high()),
-                toDecimal(candle.low()),
-                toDecimal(candle.close()))));
-        values.put("V", toDecimal(candle.volume()));
+    private static Map<String, BigDecimal> toOhlcvMap(Candle candle) {
+        var values = new LinkedHashMap<String, BigDecimal>(5);
+        values.put("open", toDecimal(candle.open()));
+        values.put("high", toDecimal(candle.high()));
+        values.put("low", toDecimal(candle.low()));
+        values.put("close", toDecimal(candle.close()));
+        values.put("volume", toDecimal(candle.volume()));
         return values;
     }
 
@@ -249,31 +245,13 @@ public final class ChartTool {
         DumperOptions options = new DumperOptions();
         options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
         options.setDefaultScalarStyle(DumperOptions.ScalarStyle.PLAIN);
-        options.setPrettyFlow(false);
+        options.setPrettyFlow(true);
         options.setIndent(2);
         options.setIndicatorIndent(1);
         options.setLineBreak(DumperOptions.LineBreak.UNIX);
-        options.setWidth(512);
 
-        Representer representer = new Representer(options) {
-            @Override
-            protected org.yaml.snakeyaml.nodes.Node representSequence(Tag tag,
-                                                                     Iterable<?> sequence,
-                                                                     DumperOptions.FlowStyle flowStyle) {
-                DumperOptions.FlowStyle chosen = (sequence instanceof FlowList)
-                        ? DumperOptions.FlowStyle.FLOW
-                        : flowStyle;
-                return super.representSequence(tag, sequence, chosen);
-            }
-        };
-        Yaml yaml = new Yaml(representer, options);
+        Yaml yaml = new Yaml(options);
         return yaml.dump(data).stripTrailing();
-    }
-
-    private static final class FlowList extends ArrayList<Object> {
-        FlowList(List<?> values) {
-            super(values);
-        }
     }
 
     static ChartFrame createChartFrame(FlatFileDataProvider provider,

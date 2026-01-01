@@ -132,7 +132,7 @@ class ChartToolTest {
         Path zipPath = resolveStooqZipPath(System.getProperty("stooq.zip",
                 "C:/Users/Mariusz/Downloads/d_pl_txt (1).zip"));
         String symbol = System.getProperty("stooq.symbol", "ATR");
-        LocalDate endDate = LocalDate.parse(System.getProperty("stooq.endDate", "2024-11-22"));
+        LocalDate endDate = LocalDate.parse(System.getProperty("stooq.endDate", "2025-05-12"));
         SymbolIdentity symbolId = SymbolIdentity.of(symbol);
 
         FlatFileDataProvider provider = FlatFileFormat.STOOQ.newDataProvider(zipPath);
