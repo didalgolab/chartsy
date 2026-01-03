@@ -10,6 +10,7 @@ import one.chartsy.data.provider.FlatFileDataProvider;
 import one.chartsy.data.provider.file.FlatFileFormat;
 import one.chartsy.data.provider.file.SimpleCandleLineMapper;
 import one.chartsy.core.io.ResourcePaths;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.yaml.snakeyaml.Yaml;
@@ -28,6 +29,7 @@ import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Disabled("Manual only")
 class ChartToolTest {
 
     @Test
@@ -84,6 +86,30 @@ class ChartToolTest {
         Path output = tempDir.resolve("chart.png");
         ImageIO.write(image, "png", output.toFile());
         assertThat(Files.size(output)).isGreaterThan(0L);
+    }
+
+    @Test
+    void renders_chart_to_svg(@TempDir Path tempDir) throws Exception {
+        FlatFileFormat format = FlatFileFormat.builder()
+                .skipFirstLines(1)
+                .lineMapper(new SimpleCandleLineMapper.Type(
+                        ',', List.of("DATE", "OPEN", "HIGH", "LOW", "CLOSE", "VOLUME"),
+                        DateTimeFormatter.ofPattern("yyyy-MM-dd")))
+                .build();
+
+        Path archive = ResourcePaths.pathToResource("BTC_DAILY.zip");
+        FlatFileDataProvider provider = new FlatFileDataProvider(format, archive);
+
+        var symbol = SymbolIdentity.of("BTC_DAILY");
+        var timeFrame = TimeFrame.Period.DAILY;
+        var range = ChartTool.DataRange.last(200);
+        var size = new Dimension(1536, 793);
+
+        Path output = tempDir.resolve("chart.svg");
+        ChartTool.renderChartToSvg(output, provider, symbol, timeFrame, range, size);
+
+        assertThat(Files.size(output)).isGreaterThan(0L);
+        assertThat(Files.readString(output)).contains("<svg");
     }
 
     @Test
