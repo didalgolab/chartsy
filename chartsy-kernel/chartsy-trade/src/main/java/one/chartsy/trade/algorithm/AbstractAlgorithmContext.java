@@ -77,6 +77,7 @@ public abstract class AbstractAlgorithmContext implements AlgorithmContext {
         Path path = Path.of(resolvedPath);
         var baseFileName = getBaseFileName(path);
         try {
+            Files.createDirectories(path.getParent());
             var writer = createWriter(path);
             if (baseFileName.endsWith(".jsonl"))
                 return new JsonlResourceMessageChannel<>(writer);

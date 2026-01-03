@@ -106,7 +106,8 @@ public interface AlgorithmContext {
 
     /**
      * Creates a new output channel capable of writing messages to the specified channel, resolving placeholders
-     * dynamically via the provided {@link PropertyAccessor}.
+     * dynamically via the provided {@link PropertyAccessor}. The parent directories for the output file will be
+     * created if they do not exist.
      * <p>
      * Supported placeholders include:
      * <ul>
