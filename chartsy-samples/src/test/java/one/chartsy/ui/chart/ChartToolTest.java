@@ -2,10 +2,14 @@
  * SPDX-License-Identifier: Apache-2.0 */
 package one.chartsy.ui.chart;
 
+import one.chartsy.Candle;
+import one.chartsy.FrontEndSupport;
 import one.chartsy.SymbolIdentity;
+import one.chartsy.SymbolResource;
 import one.chartsy.SystemFiles;
 import one.chartsy.TimeFrame;
 import one.chartsy.data.CandleSeries;
+import one.chartsy.data.DataQuery;
 import one.chartsy.data.provider.FlatFileDataProvider;
 import one.chartsy.data.provider.file.FlatFileFormat;
 import one.chartsy.data.provider.file.SimpleCandleLineMapper;
@@ -42,19 +46,23 @@ class ChartToolTest {
 
         var symbol = SymbolIdentity.of("BTC_DAILY");
         var timeFrame = TimeFrame.Period.DAILY;
-        var range = ChartTool.DataRange.last(200);
+        var range = ChartTool.DataRange.all();
         var size = new Dimension(1536, 793);
 
         // Assert template composition (services must be discoverable without launching the app).
-        ChartTemplate template = ChartTool.basicChartTemplate();
+        ChartTemplate template = ChartExporter.basicChartTemplate();
         assertThat(template.getOverlays()).extracting(Overlay::getName)
                 .contains("FRAMA, Leading", "FRAMA, Trailing", "Sfora", "Volume", "Sentiment Bands");
         assertThat(template.getIndicators()).extracting(Indicator::getName)
                 .contains("Fractal Dimension");
 
         // Assert the resulting ChartFrame contains expected plugins (ensures proper wiring with ChartFrame listeners).
-        CandleSeries dataset = ChartTool.loadCandles(provider, symbol, timeFrame, range);
-        ChartFrame frame = ChartTool.createChartFrame(provider, dataset, template, size);
+        DataQuery<Candle> query = DataQuery.<Candle>resource(
+                        SymbolResource.of(symbol, timeFrame).withDataType(Candle.class))
+                .endTime(range.endTime())
+                .build();
+        CandleSeries dataset = ChartExporter.loadCandles(provider, query);
+        ChartFrame frame = ChartExporter.createChartFrame(provider, dataset, template, size);
         assertThat(frame.getWidth()).isEqualTo(size.width);
         assertThat(frame.getHeight()).isEqualTo(size.height);
         assertThat(frame.getMainPanel().getChartPanel().getWidth()).isGreaterThan(0);
@@ -75,7 +83,10 @@ class ChartToolTest {
         assertThat(sfora.visibleDataset(frame, "8").getValueAt(0)).isNotNaN();
 
         // Act: render a screenshot using the tool.
-        BufferedImage image = ChartTool.renderChart(provider, symbol, timeFrame, range, size);
+        ChartFrame exportFrame = ChartExporter.createExportChartFrame(provider, query, ExportOptions.builder()
+                .dimensions(size)
+                .build());
+        BufferedImage image = FrontEndSupport.getDefault().paintComponent(exportFrame);
 
         // Assert: basic image sanity.
         assertThat(image.getWidth()).isEqualTo(size.width);
@@ -102,11 +113,19 @@ class ChartToolTest {
 
         var symbol = SymbolIdentity.of("BTC_DAILY");
         var timeFrame = TimeFrame.Period.DAILY;
-        var range = ChartTool.DataRange.last(200);
+        var range = ChartTool.DataRange.all();
         var size = new Dimension(1536, 793);
 
         Path output = tempDir.resolve("chart.svg");
-        ChartTool.renderChartToSvg(output, provider, symbol, timeFrame, range, size);
+        DataQuery<Candle> query = DataQuery.<Candle>resource(
+                        SymbolResource.of(symbol, timeFrame).withDataType(Candle.class))
+                .endTime(range.endTime())
+                .build();
+        ExportOptions options = ExportOptions.builder()
+                .format(ChartExporter.Format.SVG)
+                .dimensions(size)
+                .build();
+        ChartExporter.export(output, provider, query, options);
 
         assertThat(Files.size(output)).isGreaterThan(0L);
         assertThat(Files.readString(output)).contains("<svg");
@@ -142,7 +161,7 @@ class ChartToolTest {
         var symbol = SymbolIdentity.of("BTC_DAILY");
         var timeFrame = TimeFrame.Period.DAILY;
         var endTime = LocalDate.of(2025, 6, 1).atTime(23, 59, 59);
-        var range = new ChartTool.DataRange(null, endTime, 0, 0);
+        var range = ChartTool.DataRange.until(endTime);
 
         String prompt = ChartTool.createPrompt(provider, symbol, timeFrame, range);
         Path output = tempDir.resolve("btc_prompt_2025-06-01.yaml");
@@ -165,17 +184,28 @@ class ChartToolTest {
         try {
             var timeFrame = TimeFrame.Period.DAILY;
             var endTime = endDate.atStartOfDay().plusDays(1);
-            var range = new ChartTool.DataRange(null, endTime, 200, ChartTool.DataRange.DEFAULT_WARMUP_BARS);
+            var range = ChartTool.DataRange.until(endTime);
 
-            CandleSeries dataset = ChartTool.loadCandles(provider, symbolId, timeFrame, range);
+            DataQuery<Candle> datasetQuery = DataQuery.<Candle>resource(
+                            SymbolResource.of(symbolId, timeFrame).withDataType(Candle.class))
+                    .endTime(range.endTime())
+                    .build();
+            CandleSeries dataset = ChartExporter.loadCandles(provider, datasetQuery);
             assertThat(dataset.isEmpty()).isFalse();
 
             Path outputDir = SystemFiles.PRIVATE_DIR.resolve("ChartTool");
             Files.createDirectories(outputDir);
             Path output = outputDir.resolve(symbol + "__" + endDate + ".png");
 
-            ChartTool.renderChartToPng(output, provider, symbolId, timeFrame, range,
-                    new Dimension(1536, 793));
+            DataQuery<Candle> query = DataQuery.<Candle>resource(
+                            SymbolResource.of(symbolId, timeFrame).withDataType(Candle.class))
+                    .endTime(range.endTime())
+                    .build();
+            ExportOptions options = ExportOptions.builder()
+                    .format(ChartExporter.Format.PNG)
+                    .dimensions(new Dimension(1536, 793))
+                    .build();
+            ChartExporter.export(output, provider, query, options);
             System.out.println("Stooq screenshot saved to: " + output.toAbsolutePath());
 
             assertThat(Files.size(output)).isGreaterThan(0L);
