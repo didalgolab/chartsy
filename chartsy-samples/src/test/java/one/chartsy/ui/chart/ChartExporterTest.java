@@ -2,7 +2,6 @@
  * SPDX-License-Identifier: Apache-2.0 */
 package one.chartsy.ui.chart;
 
-import one.chartsy.Candle;
 import one.chartsy.SymbolIdentity;
 import one.chartsy.SymbolResource;
 import one.chartsy.TimeFrame;
@@ -13,7 +12,6 @@ import one.chartsy.data.provider.file.SimpleCandleLineMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import java.awt.Dimension;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.format.DateTimeFormatter;
@@ -31,16 +29,10 @@ class ChartExporterTest {
         FlatFileDataProvider provider = new FlatFileDataProvider(format, archive);
         try {
             var symbol = SymbolIdentity.of("BTC_DAILY");
-            var timeFrame = TimeFrame.Period.DAILY;
-            var size = new Dimension(1536, 793);
-            var resource = SymbolResource.of(symbol, timeFrame).withDataType(Candle.class);
-            ExportOptions options = ExportOptions.builder()
-                    .format(ChartExporter.Format.PNG)
-                    .dimensions(size)
-                    .build();
+            var resource = SymbolResource.of(symbol, TimeFrame.Period.DAILY);
 
             Path output = tempDir.resolve("chart.png");
-            ChartExporter.export(output, provider, resource, options);
+            ChartExporter.export(output, provider, resource);
 
             assertThat(Files.size(output)).isGreaterThan(0L);
         } finally {
@@ -56,16 +48,10 @@ class ChartExporterTest {
         FlatFileDataProvider provider = new FlatFileDataProvider(format, archive);
         try {
             var symbol = SymbolIdentity.of("BTC_DAILY");
-            var timeFrame = TimeFrame.Period.DAILY;
-            var size = new Dimension(1536, 793);
-            var resource = SymbolResource.of(symbol, timeFrame).withDataType(Candle.class);
-            ExportOptions options = ExportOptions.builder()
-                    .format(ChartExporter.Format.SVG)
-                    .dimensions(size)
-                    .build();
+            var resource = SymbolResource.of(symbol, TimeFrame.Period.DAILY);
 
             Path output = tempDir.resolve("chart.svg");
-            ChartExporter.export(output, provider, resource, options);
+            ChartExporter.export(output, provider, resource);
 
             assertThat(Files.size(output)).isGreaterThan(0L);
             assertThat(Files.readString(output)).contains("<svg");
