@@ -4,6 +4,14 @@ import java.nio.file.Path;
 
 public enum SystemFiles {
 
+    DOWNLOADS_DIR {
+        @Override
+        public Path resolve() {
+            String userHome = System.getProperty("user.home");
+            return Path.of(userHome, "Downloads");
+        }
+    },
+
     PRIVATE_DIR {
         @Override
         public Path resolve() {

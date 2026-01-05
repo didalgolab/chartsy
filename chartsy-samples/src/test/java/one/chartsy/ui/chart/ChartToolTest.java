@@ -25,7 +25,6 @@ import java.awt.image.BufferedImage;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
@@ -142,7 +141,7 @@ class ChartToolTest {
         var timeFrame = TimeFrame.Period.DAILY;
         var range = ChartTool.DataRange.all();
 
-        String prompt = ChartTool.createPrompt(provider, symbol, timeFrame, range);
+        String prompt = ChartTool.createAnalysisPrompt(provider, symbol, timeFrame, range).prompt();
         Map<String, Object> parsed = new Yaml().load(prompt);
 
         assertThat(parsed).containsKeys("daily_bars", "weekly_bars", "monthly_bars");
@@ -163,13 +162,13 @@ class ChartToolTest {
         var endTime = LocalDate.of(2025, 6, 1).atTime(23, 59, 59);
         var range = ChartTool.DataRange.until(endTime);
 
-        String prompt = ChartTool.createPrompt(provider, symbol, timeFrame, range);
-        Path output = tempDir.resolve("btc_prompt_2025-06-01.yaml");
-        Files.writeString(output, prompt);
+        var output = tempDir.resolve("btc_prompt_2025-06-01.yaml");
+        var prompt = ChartTool.createAnalysisPrompt(provider, symbol, timeFrame, range);
+        prompt.writeTo(output);
         System.out.println("Prompt written to: " + output.toAbsolutePath());
 
         assertThat(Files.size(output)).isGreaterThan(0L);
-        assertThat(prompt).contains("2025-05-31");
+        assertThat(prompt.prompt()).contains("2025-05-31");
     }
 
     @Test
@@ -210,12 +209,11 @@ class ChartToolTest {
 
             assertThat(Files.size(output)).isGreaterThan(0L);
 
-            String prompt = ChartTool.createPrompt(provider, symbolId, timeFrame, range);
-            Path promptOutput = outputDir.resolve(symbol + "__" + endDate + ".prompt.md");
-            Files.writeString(promptOutput, prompt);
-            System.out.println("Stooq prompt written to: " + promptOutput.toAbsolutePath());
+            Path promptPath = outputDir.resolve(symbol + "__" + endDate + ".prompt.md");
+            ChartTool.createAnalysisPrompt(provider, symbolId, timeFrame, range).writeTo(promptPath);
+            System.out.println("Stooq prompt written to: " + promptPath.toAbsolutePath());
 
-            assertThat(Files.size(promptOutput)).isGreaterThan(0L);
+            assertThat(Files.size(promptPath)).isGreaterThan(0L);
         } finally {
             provider.close();
         }

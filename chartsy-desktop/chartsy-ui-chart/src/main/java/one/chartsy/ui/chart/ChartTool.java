@@ -12,8 +12,11 @@ import one.chartsy.data.provider.DataProvider;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -30,9 +33,21 @@ import java.util.Map;
 public final class ChartTool {
 
     private static final String GOAL_ANALYZE = """
-            Analyze this financial chart for trade opportunities and its qualities.
-            """;
+            Analyze the attached financial chart for trade opportunities and their qualities.
+            """.strip();
     private static final int PROMPT_BAR_COUNT = 60;
+
+    public record AnalysisPrompt(String prompt, String context) {
+
+        public Path writeTo(Path destination) throws IOException {
+            return Files.writeString(destination, this.toString());
+        }
+
+        @Override
+        public String toString() {
+            return prompt + "\n\n" + context;
+        }
+    }
 
     /**
      * Specifies the inclusive end time for candle loading.
@@ -51,13 +66,18 @@ public final class ChartTool {
         }
     }
 
-    private ChartTool() {
+    private ChartTool() { }
+
+    public static AnalysisPrompt createAnalysisPrompt(DataProvider provider,
+                                                      SymbolIdentity symbol,
+                                                      TimeFrame timeFrame) {
+        return createAnalysisPrompt(provider, symbol, timeFrame, DataRange.all());
     }
 
-    public static String createPrompt(DataProvider provider,
-                                      SymbolIdentity symbol,
-                                      TimeFrame timeFrame,
-                                      DataRange range) {
+    public static AnalysisPrompt createAnalysisPrompt(DataProvider provider,
+                                              SymbolIdentity symbol,
+                                              TimeFrame timeFrame,
+                                              DataRange range) {
         var dataset = loadCandles(provider, symbol, timeFrame, range);
         var daily = aggregateCandles(dataset, TimeFrame.Period.DAILY);
         var weekly = aggregateCandles(dataset, TimeFrame.Period.WEEKLY);
@@ -68,7 +88,7 @@ public final class ChartTool {
         root.put("weekly_bars", toBarsMap(weekly, PROMPT_BAR_COUNT, "weekly"));
         root.put("monthly_bars", toBarsMap(monthly, PROMPT_BAR_COUNT, "monthly"));
 
-        return GOAL_ANALYZE + "\n" + dumpYaml(root);
+        return new AnalysisPrompt(GOAL_ANALYZE, toYamlString(root));
     }
 
     private static CandleSeries loadCandles(DataProvider provider,
@@ -119,7 +139,7 @@ public final class ChartTool {
         return BigDecimal.valueOf(value).setScale(2, RoundingMode.HALF_UP);
     }
 
-    private static String dumpYaml(Map<String, Object> data) {
+    private static String toYamlString(Map<String, Object> data) {
         DumperOptions options = new DumperOptions();
         options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
         options.setDefaultScalarStyle(DumperOptions.ScalarStyle.PLAIN);
@@ -131,5 +151,4 @@ public final class ChartTool {
         Yaml yaml = new Yaml(options);
         return yaml.dump(data).stripTrailing();
     }
-
 }

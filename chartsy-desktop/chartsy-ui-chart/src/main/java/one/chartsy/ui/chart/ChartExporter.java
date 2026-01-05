@@ -250,7 +250,7 @@ public interface ChartExporter {
         template.addOverlay(overlays.get("FRAMA, Trailing"));
         template.addOverlay(overlays.get("Sfora"));
         template.addOverlay(overlays.get("Volume"));
-        //template.addOverlay(overlays.get("Sentiment Bands"));
+        template.addOverlay(overlays.get("Sentiment Bands"));
 
         var indicators = one.chartsy.kernel.ServiceManager.of(Indicator.class);
         template.addIndicator(indicators.get("Fractal Dimension"));

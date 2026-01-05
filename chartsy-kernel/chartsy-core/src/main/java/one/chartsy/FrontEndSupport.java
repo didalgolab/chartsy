@@ -12,10 +12,10 @@ import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
-import java.lang.reflect.InvocationTargetException;
 import java.util.Objects;
 import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.FutureTask;
 
 @ServiceProvider(service = FrontEndSupport.class)
 public class FrontEndSupport {
@@ -25,42 +25,26 @@ public class FrontEndSupport {
     }
 
     public <T> T execute(Callable<T> task) {
-        if (SwingUtilities.isEventDispatchThread()) {
-            try {
-                return task.call();
-            } catch (RuntimeException e) {
-                throw e;
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        AtomicReference<T> result = new AtomicReference<>();
-        AtomicReference<Throwable> error = new AtomicReference<>();
+        var f = new FutureTask<>(task);
         try {
-            SwingUtilities.invokeAndWait(() -> {
-                try {
-                    result.set(task.call());
-                } catch (Throwable t) {
-                    error.set(t);
-                }
-            });
+            if (SwingUtilities.isEventDispatchThread())
+                f.run();
+            else
+                SwingUtilities.invokeAndWait(f);
+            return f.get();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException(e);
-        } catch (InvocationTargetException e) {
-            throw new RuntimeException(e.getCause());
-        }
-
-        Throwable t = error.get();
-        if (t != null) {
-            if (t instanceof RuntimeException re)
+        } catch (ExecutionException e) {
+            if (e.getCause() instanceof RuntimeException re)
                 throw re;
-            if (t instanceof Error err)
+            else if (e.getCause() instanceof Error err)
                 throw err;
-            throw new RuntimeException(t);
+            else
+                throw new RuntimeException(e.getCause());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
-        return result.get();
     }
 
     public BufferedImage paintComponent(JComponent c) {
