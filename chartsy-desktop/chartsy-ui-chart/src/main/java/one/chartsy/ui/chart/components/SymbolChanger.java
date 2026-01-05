@@ -21,6 +21,10 @@ import java.awt.Dimension;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.Serializable;
 import java.util.Iterator;
 import java.util.List;
@@ -66,6 +70,7 @@ public class SymbolChanger extends JToolBar implements Serializable {
         // symbol text field
         txtSymbol = new JTextField(11);
         UpperCaseDocumentFilter.decorate(txtSymbol);
+        selectAllOnFirstFocusFromMouseClick(txtSymbol);
         txtSymbol.setMargin(new Insets(0, 2, 0, 2));
         txtSymbol.setText(chartFrame.getChartData().getSymbol().name());
         Dimension d1 = new Dimension(90, 20);
@@ -151,6 +156,25 @@ public class SymbolChanger extends JToolBar implements Serializable {
         dataProvider = chartFrame.getChartData().getDataProvider();
         SymbolAutoCompleter completer = new SymbolAutoCompleter(txtSymbol, StringSplitters.create());
         completer.setDataProvider(dataProvider);
+    }
+
+    private static void selectAllOnFirstFocusFromMouseClick(JTextField textField) {
+        textField.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                SwingUtilities.invokeLater(textField::selectAll);
+            }
+        });
+        textField.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                if (!textField.hasFocus() && SwingUtilities.isLeftMouseButton(e) && e.getClickCount() == 1) {
+                    textField.requestFocusInWindow();
+                    SwingUtilities.invokeLater(textField::selectAll);
+                    e.consume();
+                }
+            }
+        });
     }
     
     public JButton getBackButton() {
