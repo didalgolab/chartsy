@@ -26,8 +26,7 @@ class ChartExporterTest {
         FlatFileFormat format = btcDailyFormat();
         Path archive = ResourcePaths.pathToResource("BTC_DAILY.zip");
 
-        FlatFileDataProvider provider = new FlatFileDataProvider(format, archive);
-        try {
+        try (FlatFileDataProvider provider = new FlatFileDataProvider(format, archive)) {
             var symbol = SymbolIdentity.of("BTC_DAILY");
             var resource = SymbolResource.of(symbol, TimeFrame.Period.DAILY);
 
@@ -35,8 +34,6 @@ class ChartExporterTest {
             ChartExporter.export(output, provider, resource);
 
             assertThat(Files.size(output)).isGreaterThan(0L);
-        } finally {
-            provider.close();
         }
     }
 
@@ -45,8 +42,7 @@ class ChartExporterTest {
         FlatFileFormat format = btcDailyFormat();
         Path archive = ResourcePaths.pathToResource("BTC_DAILY.zip");
 
-        FlatFileDataProvider provider = new FlatFileDataProvider(format, archive);
-        try {
+        try (FlatFileDataProvider provider = new FlatFileDataProvider(format, archive)) {
             var symbol = SymbolIdentity.of("BTC_DAILY");
             var resource = SymbolResource.of(symbol, TimeFrame.Period.DAILY);
 
@@ -55,8 +51,6 @@ class ChartExporterTest {
 
             assertThat(Files.size(output)).isGreaterThan(0L);
             assertThat(Files.readString(output)).contains("<svg");
-        } finally {
-            provider.close();
         }
     }
 

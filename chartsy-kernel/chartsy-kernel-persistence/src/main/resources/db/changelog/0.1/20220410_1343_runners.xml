@@ -34,12 +34,7 @@
             <column name="type" value="one.chartsy.exploration.ExplorationRunner" />
             <column name="status" value="ACTIVE" />
             <column name="supported_types" value="one.chartsy.kernel.Exploration" />
-        </insert>
-    </changeSet>
-    <changeSet id="runner-tc-update" author="chartsy">
-        <update tableName="ONE_RUNNERS">
             <column name="top_component" value="one.chartsy.exploration.ui.ExplorationResultTab" />
-            <where>"key"='EXPLORATION'</where>
-        </update>
+        </insert>
     </changeSet>
 </databaseChangeLog>

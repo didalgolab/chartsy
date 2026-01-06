@@ -41,61 +41,61 @@ class ChartToolTest {
         FlatFileFormat format = btcDailyFormat();
 
         Path archive = ResourcePaths.pathToResource("BTC_DAILY.zip");
-        FlatFileDataProvider provider = new FlatFileDataProvider(format, archive);
+        try (FlatFileDataProvider provider = new FlatFileDataProvider(format, archive)) {
+            var symbol = SymbolIdentity.of("BTC_DAILY");
+            var timeFrame = TimeFrame.Period.DAILY;
+            var range = ChartTool.DataRange.all();
+            var size = new Dimension(1536, 793);
 
-        var symbol = SymbolIdentity.of("BTC_DAILY");
-        var timeFrame = TimeFrame.Period.DAILY;
-        var range = ChartTool.DataRange.all();
-        var size = new Dimension(1536, 793);
+            // Assert template composition (services must be discoverable without launching the app).
+            ChartTemplate template = ChartExporter.basicChartTemplate();
+            assertThat(template.getOverlays()).extracting(Overlay::getName)
+                    .contains("FRAMA, Leading", "FRAMA, Trailing", "Sfora", "Volume", "Sentiment Bands");
+            assertThat(template.getIndicators()).extracting(Indicator::getName)
+                    .contains("Fractal Dimension");
 
-        // Assert template composition (services must be discoverable without launching the app).
-        ChartTemplate template = ChartExporter.basicChartTemplate();
-        assertThat(template.getOverlays()).extracting(Overlay::getName)
-                .contains("FRAMA, Leading", "FRAMA, Trailing", "Sfora", "Volume", "Sentiment Bands");
-        assertThat(template.getIndicators()).extracting(Indicator::getName)
-                .contains("Fractal Dimension");
+            // Assert the resulting ChartFrame contains expected plugins (ensures proper wiring with ChartFrame listeners).
+            DataQuery<Candle> query = DataQuery.<Candle>resource(
+                            SymbolResource.of(symbol, timeFrame).withDataType(Candle.class))
+                    .endTime(range.endTime())
+                    .build();
+            CandleSeries dataset = ChartExporter.loadCandles(provider, query);
+            ChartFrame frame = ChartExporter.createChartFrame(provider, dataset, template, size);
+            assertThat(frame.getWidth()).isEqualTo(size.width);
+            assertThat(frame.getHeight()).isEqualTo(size.height);
+            assertThat(frame.getMainPanel().getChartPanel().getWidth()).isGreaterThan(0);
+            assertThat(frame.getMainPanel().getChartPanel().getHeight()).isGreaterThan(0);
+            assertThat(frame.getMainStackPanel().getChartPanel().getOverlays())
+                    .extracting(Overlay::getName)
+                    .contains("FRAMA, Leading", "FRAMA, Trailing", "Sfora", "Volume", "Sentiment Bands");
+            assertThat(frame.getMainStackPanel().getIndicatorsList())
+                    .extracting(Indicator::getName)
+                    .contains("Fractal Dimension");
 
-        // Assert the resulting ChartFrame contains expected plugins (ensures proper wiring with ChartFrame listeners).
-        DataQuery<Candle> query = DataQuery.<Candle>resource(
-                        SymbolResource.of(symbol, timeFrame).withDataType(Candle.class))
-                .endTime(range.endTime())
-                .build();
-        CandleSeries dataset = ChartExporter.loadCandles(provider, query);
-        ChartFrame frame = ChartExporter.createChartFrame(provider, dataset, template, size);
-        assertThat(frame.getWidth()).isEqualTo(size.width);
-        assertThat(frame.getHeight()).isEqualTo(size.height);
-        assertThat(frame.getMainPanel().getChartPanel().getWidth()).isGreaterThan(0);
-        assertThat(frame.getMainPanel().getChartPanel().getHeight()).isGreaterThan(0);
-        assertThat(frame.getMainStackPanel().getChartPanel().getOverlays())
-                .extracting(Overlay::getName)
-                .contains("FRAMA, Leading", "FRAMA, Trailing", "Sfora", "Volume", "Sentiment Bands");
-        assertThat(frame.getMainStackPanel().getIndicatorsList())
-                .extracting(Indicator::getName)
-                .contains("Fractal Dimension");
+            // Assert: warmup bars are kept so long-warmup overlays don't "start late" at the left edge.
+            Overlay sfora = frame.getMainStackPanel().getChartPanel().getOverlays().stream()
+                    .filter(o -> o.getName().equals("Sfora"))
+                    .findFirst()
+                    .orElseThrow();
+            assertThat(sfora.visibleDataset(frame, "8")).isNotNull();
+            assertThat(sfora.visibleDataset(frame, "8").getValueAt(0)).isNotNaN();
 
-        // Assert: warmup bars are kept so long-warmup overlays don't "start late" at the left edge.
-        Overlay sfora = frame.getMainStackPanel().getChartPanel().getOverlays().stream()
-                .filter(o -> o.getName().equals("Sfora"))
-                .findFirst()
-                .orElseThrow();
-        assertThat(sfora.visibleDataset(frame, "8")).isNotNull();
-        assertThat(sfora.visibleDataset(frame, "8").getValueAt(0)).isNotNaN();
+            // Act: render a screenshot using the tool.
+            ChartFrame exportFrame = ChartExporter.createExportChartFrame(provider, query, ExportOptions.builder()
+                    .dimensions(size)
+                    .build());
+            BufferedImage image = FrontEndSupport.getDefault().paintComponent(exportFrame);
 
-        // Act: render a screenshot using the tool.
-        ChartFrame exportFrame = ChartExporter.createExportChartFrame(provider, query, ExportOptions.builder()
-                .dimensions(size)
-                .build());
-        BufferedImage image = FrontEndSupport.getDefault().paintComponent(exportFrame);
+            // Assert: basic image sanity.
+            assertThat(image.getWidth()).isEqualTo(size.width);
+            assertThat(image.getHeight()).isEqualTo(size.height);
+            assertThat(hasNonWhitePixel(image)).isTrue();
 
-        // Assert: basic image sanity.
-        assertThat(image.getWidth()).isEqualTo(size.width);
-        assertThat(image.getHeight()).isEqualTo(size.height);
-        assertThat(hasNonWhitePixel(image)).isTrue();
-
-        // Assert: image can be written to PNG.
-        Path output = tempDir.resolve("chart.png");
-        ImageIO.write(image, "png", output.toFile());
-        assertThat(Files.size(output)).isGreaterThan(0L);
+            // Assert: image can be written to PNG.
+            Path output = tempDir.resolve("chart.png");
+            ImageIO.write(image, "png", output.toFile());
+            assertThat(Files.size(output)).isGreaterThan(0L);
+        }
     }
 
     @Test
@@ -108,26 +108,26 @@ class ChartToolTest {
                 .build();
 
         Path archive = ResourcePaths.pathToResource("BTC_DAILY.zip");
-        FlatFileDataProvider provider = new FlatFileDataProvider(format, archive);
+        try (FlatFileDataProvider provider = new FlatFileDataProvider(format, archive)) {
+            var symbol = SymbolIdentity.of("BTC_DAILY");
+            var timeFrame = TimeFrame.Period.DAILY;
+            var range = ChartTool.DataRange.all();
+            var size = new Dimension(1536, 793);
 
-        var symbol = SymbolIdentity.of("BTC_DAILY");
-        var timeFrame = TimeFrame.Period.DAILY;
-        var range = ChartTool.DataRange.all();
-        var size = new Dimension(1536, 793);
+            Path output = tempDir.resolve("chart.svg");
+            DataQuery<Candle> query = DataQuery.<Candle>resource(
+                            SymbolResource.of(symbol, timeFrame).withDataType(Candle.class))
+                    .endTime(range.endTime())
+                    .build();
+            ExportOptions options = ExportOptions.builder()
+                    .format(ChartExporter.Format.SVG)
+                    .dimensions(size)
+                    .build();
+            ChartExporter.export(output, provider, query, options);
 
-        Path output = tempDir.resolve("chart.svg");
-        DataQuery<Candle> query = DataQuery.<Candle>resource(
-                        SymbolResource.of(symbol, timeFrame).withDataType(Candle.class))
-                .endTime(range.endTime())
-                .build();
-        ExportOptions options = ExportOptions.builder()
-                .format(ChartExporter.Format.SVG)
-                .dimensions(size)
-                .build();
-        ChartExporter.export(output, provider, query, options);
-
-        assertThat(Files.size(output)).isGreaterThan(0L);
-        assertThat(Files.readString(output)).contains("<svg");
+            assertThat(Files.size(output)).isGreaterThan(0L);
+            assertThat(Files.readString(output)).contains("<svg");
+        }
     }
 
     @Test
@@ -135,19 +135,19 @@ class ChartToolTest {
         FlatFileFormat format = btcDailyFormat();
 
         Path archive = ResourcePaths.pathToResource("BTC_DAILY.zip");
-        FlatFileDataProvider provider = new FlatFileDataProvider(format, archive);
+        try (FlatFileDataProvider provider = new FlatFileDataProvider(format, archive)) {
+            var symbol = SymbolIdentity.of("BTC_DAILY");
+            var timeFrame = TimeFrame.Period.DAILY;
+            var range = ChartTool.DataRange.all();
 
-        var symbol = SymbolIdentity.of("BTC_DAILY");
-        var timeFrame = TimeFrame.Period.DAILY;
-        var range = ChartTool.DataRange.all();
+            String prompt = ChartTool.createAnalysisPrompt(provider, symbol, timeFrame, range).prompt();
+            Map<String, Object> parsed = new Yaml().load(prompt);
 
-        String prompt = ChartTool.createAnalysisPrompt(provider, symbol, timeFrame, range).prompt();
-        Map<String, Object> parsed = new Yaml().load(prompt);
-
-        assertThat(parsed).containsKeys("daily_bars", "weekly_bars", "monthly_bars");
-        assertThat(((Map<?, ?>) parsed.get("daily_bars")).size()).isEqualTo(24);
-        assertThat(((Map<?, ?>) parsed.get("weekly_bars")).size()).isEqualTo(24);
-        assertThat(((Map<?, ?>) parsed.get("monthly_bars")).size()).isEqualTo(24);
+            assertThat(parsed).containsKeys("daily_bars", "weekly_bars", "monthly_bars");
+            assertThat(((Map<?, ?>) parsed.get("daily_bars")).size()).isEqualTo(24);
+            assertThat(((Map<?, ?>) parsed.get("weekly_bars")).size()).isEqualTo(24);
+            assertThat(((Map<?, ?>) parsed.get("monthly_bars")).size()).isEqualTo(24);
+        }
     }
 
     @Test
@@ -155,20 +155,20 @@ class ChartToolTest {
         FlatFileFormat format = btcDailyFormat();
 
         Path archive = ResourcePaths.pathToResource("BTC_DAILY.zip");
-        FlatFileDataProvider provider = new FlatFileDataProvider(format, archive);
+        try (FlatFileDataProvider provider = new FlatFileDataProvider(format, archive)) {
+            var symbol = SymbolIdentity.of("BTC_DAILY");
+            var timeFrame = TimeFrame.Period.DAILY;
+            var endTime = LocalDate.of(2025, 6, 1).atTime(23, 59, 59);
+            var range = ChartTool.DataRange.until(endTime);
 
-        var symbol = SymbolIdentity.of("BTC_DAILY");
-        var timeFrame = TimeFrame.Period.DAILY;
-        var endTime = LocalDate.of(2025, 6, 1).atTime(23, 59, 59);
-        var range = ChartTool.DataRange.until(endTime);
+            var output = tempDir.resolve("btc_prompt_2025-06-01.yaml");
+            var prompt = ChartTool.createAnalysisPrompt(provider, symbol, timeFrame, range);
+            prompt.writeTo(output);
+            System.out.println("Prompt written to: " + output.toAbsolutePath());
 
-        var output = tempDir.resolve("btc_prompt_2025-06-01.yaml");
-        var prompt = ChartTool.createAnalysisPrompt(provider, symbol, timeFrame, range);
-        prompt.writeTo(output);
-        System.out.println("Prompt written to: " + output.toAbsolutePath());
-
-        assertThat(Files.size(output)).isGreaterThan(0L);
-        assertThat(prompt.prompt()).contains("2025-05-31");
+            assertThat(Files.size(output)).isGreaterThan(0L);
+            assertThat(prompt.prompt()).contains("2025-05-31");
+        }
     }
 
     @Test
@@ -179,8 +179,7 @@ class ChartToolTest {
         LocalDate endDate = LocalDate.parse(System.getProperty("stooq.endDate", "2025-05-12"));
         SymbolIdentity symbolId = SymbolIdentity.of(symbol);
 
-        FlatFileDataProvider provider = FlatFileFormat.STOOQ.newDataProvider(zipPath);
-        try {
+        try (FlatFileDataProvider provider = FlatFileFormat.STOOQ.newDataProvider(zipPath)) {
             var timeFrame = TimeFrame.Period.DAILY;
             var endTime = endDate.atStartOfDay().plusDays(1);
             var range = ChartTool.DataRange.until(endTime);
@@ -214,8 +213,6 @@ class ChartToolTest {
             System.out.println("Stooq prompt written to: " + promptPath.toAbsolutePath());
 
             assertThat(Files.size(promptPath)).isGreaterThan(0L);
-        } finally {
-            provider.close();
         }
     }
 

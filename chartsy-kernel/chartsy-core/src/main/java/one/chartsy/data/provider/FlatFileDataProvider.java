@@ -22,7 +22,6 @@ import one.chartsy.messaging.MarketEvent;
 import one.chartsy.messaging.MarketMessageSource;
 import one.chartsy.messaging.data.TradeBar;
 import one.chartsy.time.Chronological;
-import one.chartsy.util.CloseHelper;
 import org.apache.commons.lang3.StringUtils;
 import org.openide.util.Lookup;
 import org.openide.util.lookup.Lookups;
@@ -46,7 +45,7 @@ import java.util.Objects;
 import java.util.TreeMap;
 import java.util.function.Predicate;
 
-public class FlatFileDataProvider extends AbstractDataProvider implements SymbolListAccessor, SymbolProposalProvider, HierarchicalConfiguration {
+public class FlatFileDataProvider extends AbstractDataProvider implements SymbolListAccessor, SymbolProposalProvider, HierarchicalConfiguration, AutoCloseable {
     private final Lookup lookup = Lookups.singleton(this);
     private final FlatFileFormat fileFormat;
     private final ResourceHandle<FileSystem> fileSystem;
@@ -130,12 +129,11 @@ public class FlatFileDataProvider extends AbstractDataProvider implements Symbol
         ExecutionContext context = new ExecutionContext();
         context.put("TimeFrame", request.resource().timeFrame());
 
-        FlatFileItemReader<T> itemReader = new FlatFileItemReader<>();
-        itemReader.setLineMapper((LineMapper<T>) fileFormat.getLineMapper().createLineMapper(context));
-        itemReader.setLinesToSkip(fileFormat.getSkipFirstLines());
-        itemReader.setInputStreamSource(() -> Files.newInputStream(file));
+        try (FlatFileItemReader<T> itemReader = new FlatFileItemReader<>()) {
+            itemReader.setLineMapper((LineMapper<T>) fileFormat.getLineMapper().createLineMapper(context));
+            itemReader.setLinesToSkip(fileFormat.getSkipFirstLines());
+            itemReader.setInputStreamSource(() -> Files.newInputStream(file));
 
-        try {
             itemReader.open();
             List<T> items = itemReader.readAll();
             //items.sort(Comparator.naturalOrder());
@@ -150,11 +148,8 @@ public class FlatFileDataProvider extends AbstractDataProvider implements Symbol
                 items = items.subList(itemCount - itemLimit, itemCount);
 
             return Flux.fromIterable(items);
-
         } catch (IOException e) {
             throw new UncheckedIOException(e);
-        } finally {
-            CloseHelper.closeQuietly(itemReader);
         }
     }
 
@@ -218,6 +213,7 @@ public class FlatFileDataProvider extends AbstractDataProvider implements Symbol
         return baseDirectories;
     }
 
+    @Override
     public void close() throws IOException {
         if (isCloseable(fileSystem))
             getFileSystem().close();

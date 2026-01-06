@@ -6,4 +6,12 @@ build
 logs
 target
 private
+/application/all-*.dat
+/application/netigso/
+/application/.lastUsedVersion
+/application/lastModified/all-checksum.txt
+/application/j2seplatform/probe/J2SEPlatformProbe.class
+/application/localeVariants
+/application/netigso-bundles
+/application/package-attrs.dat
 /chartsy.kdbx
