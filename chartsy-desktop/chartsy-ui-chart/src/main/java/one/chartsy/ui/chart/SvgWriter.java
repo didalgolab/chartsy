@@ -26,6 +26,12 @@ final class SvgWriter {
 
     static void writeSvg(Path outputFile,
                          SVGGraphics2D svgGraphics) throws IOException {
+        try (Writer writer = Files.newBufferedWriter(outputFile, StandardCharsets.UTF_8)) {
+            writeSvg(writer, svgGraphics);
+        }
+    }
+
+    static void writeSvg(Writer writer, SVGGraphics2D svgGraphics) throws IOException {
         Element root = svgGraphics.getRoot();
         SVGCSSStyler.style(root);
         SvgMinifier.minify(root);
@@ -41,7 +47,7 @@ final class SvgWriter {
         }
 
         TransformerFactory factory = TransformerFactory.newInstance();
-        try (Writer writer = Files.newBufferedWriter(outputFile, StandardCharsets.UTF_8)) {
+        try {
             Transformer transformer = factory.newTransformer();
             transformer.setOutputProperty(OutputKeys.METHOD, "xml");
             transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");

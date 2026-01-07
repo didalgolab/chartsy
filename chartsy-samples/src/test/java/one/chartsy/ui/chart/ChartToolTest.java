@@ -120,7 +120,7 @@ class ChartToolTest {
                     .endTime(range.endTime())
                     .build();
             ExportOptions options = ExportOptions.builder()
-                    .format(ChartExporter.Format.SVG)
+                    .format(ChartExporter.ExportFormat.SVG)
                     .dimensions(size)
                     .build();
             ChartExporter.export(output, provider, query, options);
@@ -200,7 +200,7 @@ class ChartToolTest {
                     .endTime(range.endTime())
                     .build();
             ExportOptions options = ExportOptions.builder()
-                    .format(ChartExporter.Format.PNG)
+                    .format(ChartExporter.ExportFormat.PNG)
                     .dimensions(new Dimension(1536, 793))
                     .build();
             ChartExporter.export(output, provider, query, options);

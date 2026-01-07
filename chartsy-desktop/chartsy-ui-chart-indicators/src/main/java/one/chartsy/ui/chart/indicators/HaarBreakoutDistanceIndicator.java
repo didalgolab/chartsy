@@ -4,9 +4,6 @@
  */
 package one.chartsy.ui.chart.indicators;
 
-import com.google.gson.Gson;
-import one.chartsy.CandleField;
-import one.chartsy.SystemFiles;
 import one.chartsy.core.Range;
 import one.chartsy.data.CandleSeries;
 import one.chartsy.data.DoubleSeries;
@@ -20,31 +17,14 @@ import one.chartsy.ui.chart.data.VisibleValues;
 import one.chartsy.ui.chart.data.VisualRange;
 import one.chartsy.ui.chart.plot.HorizontalLinePlot;
 import one.chartsy.ui.chart.plot.LinePlot;
-import one.chartsy.wavelets.HaarWavelet;
-import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
-import org.apache.commons.math3.stat.correlation.SpearmansCorrelation;
 import org.openide.util.lookup.ServiceProvider;
 
 import java.awt.Color;
 import java.awt.Stroke;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 @ServiceProvider(service = Indicator.class)
 public class HaarBreakoutDistanceIndicator extends AbstractIndicator {
-    private static final int WINDOW = 256;
-
-    @Parameter(name = "Coefficients File")
-    public String coefficientsFile = SystemFiles.PRIVATE_DIR.resolve("Wavelets")
-            .resolve("HaarCoefficients.jsonl")
-            .toString();
-
     @Parameter(name = "Distance Line Color")
     public Color distanceColor = new Color(0x1565C0);
 
@@ -111,8 +91,6 @@ public class HaarBreakoutDistanceIndicator extends AbstractIndicator {
         addPlot("Zero", new HorizontalLinePlot(0.0, zeroLineColor, zeroLineStyle));
 
         if (showCorrelations) {
-            DoubleSeries pearsonSeries = DoubleSeries.of(pearsonValues, candles.getTimeline());
-            DoubleSeries spearmanSeries = DoubleSeries.of(spearmanValues, candles.getTimeline());
             addPlot("Pearson", new LinePlot(pearsonSeries, pearsonColor, pearsonStyle));
             addPlot("Spearman", new LinePlot(spearmanSeries, spearmanColor, spearmanStyle));
         }
@@ -158,103 +136,4 @@ public class HaarBreakoutDistanceIndicator extends AbstractIndicator {
     public double[] getStepValues(ChartContext cf) {
         return super.getStepValues(cf);
     }
-
-    private List<double[]> loadReferenceCoefficients() {
-        if (coefficientsFile == null || coefficientsFile.isBlank()) {
-            return List.of();
-        }
-
-        Path path = resolveCoefficientsPath();
-        if (path == null) {
-            return List.of();
-        }
-
-        Gson gson = new Gson();
-        List<double[]> coefficients = new ArrayList<>();
-        try (BufferedReader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                line = line.trim();
-                if (line.isEmpty()) {
-                    continue;
-                }
-                HaarCoefficientsRecord record = gson.fromJson(line, HaarCoefficientsRecord.class);
-                if (record != null && record.coefficients != null
-                        && record.coefficients.length == WINDOW) {
-                    coefficients.add(record.coefficients);
-                }
-            }
-        } catch (IOException e) {
-            System.err.println("Failed to read Haar coefficients: " + e.getMessage());
-            return List.of();
-        }
-        return coefficients;
-    }
-
-    private Path resolveCoefficientsPath() {
-        if (coefficientsFile != null && !coefficientsFile.isBlank()) {
-            Path configured = Path.of(coefficientsFile);
-            if (Files.exists(configured)) {
-                return configured;
-            }
-        }
-
-        Path found = findUpwards(Path.of("").toAbsolutePath(), Path.of("private", "Wavelets", "HaarCoefficients.jsonl"));
-        if (found != null) {
-            return found;
-        }
-        return findUpwards(Path.of("").toAbsolutePath(), Path.of("chartsy-pro", "private", "Wavelets", "HaarCoefficients.jsonl"));
-    }
-
-    private Path findUpwards(Path start, Path relativeTarget) {
-        Path current = start;
-        for (int i = 0; i < 6 && current != null; i++) {
-            Path candidate = current.resolve(relativeTarget).normalize();
-            if (Files.exists(candidate)) {
-                return candidate;
-            }
-            current = current.getParent();
-        }
-        return null;
-    }
-
-    private static final class HaarCoefficientsRecord {
-        private double[] coefficients;
-    }
-
-    private static Match findBestMatch(double[] current, List<double[]> referenceCoefficients,
-                                       PearsonsCorrelation pearson, SpearmansCorrelation spearman) {
-        int bestIndex = -1;
-        double bestDistance = Double.POSITIVE_INFINITY;
-        double bestPearson = Double.NaN;
-
-        for (int i = 0; i < referenceCoefficients.size(); i++) {
-            double[] reference = referenceCoefficients.get(i);
-            double corr = pearson.correlation(current, reference);
-            if (Double.isNaN(corr) || Double.isInfinite(corr)) {
-                continue;
-            }
-            if (corr > 1.0) {
-                corr = 1.0;
-            } else if (corr < -1.0) {
-                corr = -1.0;
-            }
-            double distance = 1.0 - corr;
-            if (distance < bestDistance) {
-                bestDistance = distance;
-                bestIndex = i;
-                bestPearson = corr;
-            }
-        }
-
-        if (bestIndex < 0) {
-            return new Match(Double.NaN, Double.NaN, Double.NaN);
-        }
-
-        double[] best = referenceCoefficients.get(bestIndex);
-        double spearmanCorr = spearman.correlation(current, best);
-        return new Match(bestDistance, bestPearson, spearmanCorr);
-    }
-
-    private record Match(double distance, double pearson, double spearman) {}
 }

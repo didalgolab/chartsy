@@ -9,18 +9,18 @@ public final class ExportOptions {
 
     public static final Dimension DEFAULT_DIMENSIONS = new Dimension(1536, 793);
 
-    private final Optional<ChartExporter.Format> format;
+    private final Optional<ChartExporter.ExportFormat<?>> format;
     private final Dimension dimensions;
 
     @lombok.Builder(builderClassName = "Builder")
-    private ExportOptions(ChartExporter.Format format, Dimension dimensions) {
+    private ExportOptions(ChartExporter.ExportFormat<?> format, Dimension dimensions) {
         this.format = Optional.ofNullable(format);
         this.dimensions = (dimensions != null) ? new Dimension(dimensions) : new Dimension(DEFAULT_DIMENSIONS);
     }
 
     public static final ExportOptions DEFAULT = ExportOptions.builder().build();
 
-    public Optional<ChartExporter.Format> getFormat() {
+    public Optional<ChartExporter.ExportFormat<?>> getFormat() {
         return format;
     }
 
