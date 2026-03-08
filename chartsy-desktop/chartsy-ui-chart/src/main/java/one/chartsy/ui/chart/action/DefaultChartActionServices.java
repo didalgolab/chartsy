@@ -7,6 +7,8 @@ import one.chartsy.ui.chart.ChartFrame;
 import one.chartsy.ui.chart.IconResource;
 import one.chartsy.ui.chart.Indicator;
 import one.chartsy.ui.chart.IndicatorManager;
+import one.chartsy.ui.chart.Overlay;
+import one.chartsy.ui.chart.OverlayManager;
 import one.chartsy.ui.chart.annotation.AnnotationLookup;
 import one.chartsy.ui.chart.annotation.ChartAnnotator;
 import one.chartsy.ui.chart.components.AnnotationPanel;
@@ -97,6 +99,19 @@ public class DefaultChartActionServices implements ChartActionServices {
         }
     }
 
+    private static void openStudyChooser(ChartFrame chart) {
+        Collection<Indicator> allIndicators = IndicatorManager.getDefault().getIndicatorsList();
+        Collection<Indicator> selectedIndicators = chart.getMainStackPanel().getIndicatorsList();
+        Collection<Overlay> allOverlays = OverlayManager.getDefault().getOverlaysList();
+        Collection<Overlay> selectedOverlays = chart.getMainStackPanel().getChartPanel().getOverlays();
+
+        IndicatorChooserDialog dialog = new IndicatorChooserDialog(chart,
+                selection -> chart.setChartPlugins(selection.indicators(), selection.overlays()));
+        dialog.setLocationRelativeTo(chart);
+        dialog.initForm(allIndicators, selectedIndicators, allOverlays, selectedOverlays);
+        dialog.setVisible(true);
+    }
+
     public static class IndicatorsOpen extends AbstractChartFrameAction {
         public IndicatorsOpen(ChartFrame chart) {
             super(chart);
@@ -104,13 +119,18 @@ public class DefaultChartActionServices implements ChartActionServices {
 
         @Override
         public void actionPerformed(ActionEvent e) {
-            Collection<Indicator> allPlugins = IndicatorManager.getDefault().getIndicatorsList();
-            Collection<Indicator> selectedPlugins = chart.getMainStackPanel().getIndicatorsList();
+            openStudyChooser(chart);
+        }
+    }
 
-            IndicatorChooserDialog dialog = new IndicatorChooserDialog(chart, chart::setIndicators);
-            dialog.setLocationRelativeTo(chart);
-            dialog.initForm(allPlugins, selectedPlugins);
-            dialog.setVisible(true);
+    public static class OverlaysOpen extends AbstractChartFrameAction {
+        public OverlaysOpen(ChartFrame chart) {
+            super(chart);
+        }
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            openStudyChooser(chart);
         }
     }
 

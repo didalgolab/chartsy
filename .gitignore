@@ -5,7 +5,8 @@ bin
 build
 logs
 target
-private
+private/
+tmp/
 /application/all-*.dat
 /application/netigso/
 /application/.lastUsedVersion

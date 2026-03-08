@@ -16,6 +16,7 @@ import one.chartsy.ui.chart.components.ChartToolbar;
 import one.chartsy.ui.chart.components.IndicatorPanel;
 import one.chartsy.ui.chart.components.MainPanel;
 import one.chartsy.ui.chart.data.SymbolResourceLoaderTask;
+import one.chartsy.ui.chart.internal.ChartPluginParameterUtils;
 import one.chartsy.ui.chart.internal.ChartFrameDropTarget;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -34,10 +35,13 @@ import java.awt.event.MouseWheelListener;
 import java.beans.PropertyChangeEvent;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.List;
 
 public class ChartFrame extends JPanel implements ChartContext, MouseWheelListener {
 
@@ -193,11 +197,77 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
 
     public void setIndicators(List<Indicator> newIndicators) {
         Indicator[] current = getMainStackPanel().getIndicators();
-        for (Indicator i : current)
-            indicatorRemoved(i);
+        for (Indicator indicator : current)
+            indicatorRemoved(indicator);
 
-        for (Indicator i : newIndicators)
-            fireIndicatorAdded(i);
+        for (Indicator indicator : newIndicators)
+            fireIndicatorAdded(indicator);
+    }
+
+    public void setOverlays(List<Overlay> newOverlays) {
+        List<Overlay> current = getMainStackPanel().getChartPanel().getOverlays();
+        for (Overlay overlay : current)
+            fireOverlayRemoved(overlay);
+
+        for (Overlay overlay : newOverlays)
+            fireOverlayAdded(overlay);
+    }
+
+    public void setChartPlugins(List<Indicator> newIndicators, List<Overlay> newOverlays) {
+        ChartStackPanel stackPanel = getMainStackPanel();
+        if (stackPanel == null)
+            return;
+
+        boolean overlaysChanged = !arePluginsEquivalent(stackPanel.getChartPanel().getOverlays(), newOverlays);
+        boolean indicatorsChanged = !arePluginsEquivalent(stackPanel.getIndicatorsList(), newIndicators);
+        if (!overlaysChanged && !indicatorsChanged)
+            return;
+
+        Map<UUID, Boolean> indicatorPanelStates = indicatorsChanged ? captureIndicatorPanelStates(stackPanel) : Map.of();
+        if (overlaysChanged)
+            setOverlays(newOverlays);
+        if (indicatorsChanged) {
+            setIndicators(newIndicators);
+            restoreIndicatorPanelStates(stackPanel, indicatorPanelStates);
+        }
+    }
+
+    private Map<UUID, Boolean> captureIndicatorPanelStates(ChartStackPanel stackPanel) {
+        Map<UUID, Boolean> states = new java.util.LinkedHashMap<>();
+        for (IndicatorPanel panel : stackPanel.getIndicatorPanels())
+            states.put(panel.getId(), panel.isMinimized());
+        return states;
+    }
+
+    private void restoreIndicatorPanelStates(ChartStackPanel stackPanel, Map<UUID, Boolean> indicatorPanelStates) {
+        for (IndicatorPanel panel : stackPanel.getIndicatorPanels()) {
+            Boolean minimized = indicatorPanelStates.get(panel.getId());
+            if (minimized != null)
+                panel.setMinimized(minimized);
+        }
+    }
+
+    private static <T extends ChartPlugin<?>> boolean arePluginsEquivalent(List<? extends T> currentPlugins, List<? extends T> updatedPlugins) {
+        if (currentPlugins.size() != updatedPlugins.size())
+            return false;
+
+        for (int i = 0; i < currentPlugins.size(); i++)
+            if (!isPluginEquivalent(currentPlugins.get(i), updatedPlugins.get(i)))
+                return false;
+
+        return true;
+    }
+
+    private static boolean isPluginEquivalent(ChartPlugin<?> current, ChartPlugin<?> updated) {
+        if (current == updated)
+            return true;
+        if (current == null || updated == null)
+            return false;
+        if (current.getClass() != updated.getClass())
+            return false;
+        if (!Objects.equals(current.getName(), updated.getName()))
+            return false;
+        return ChartPluginParameterUtils.haveSameParameterValues(current, updated);
     }
 
     @Override
@@ -207,7 +277,7 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
             int itemsCount = getChartData().getDatasetLength();
             if (itemsCount > items) {
                 int last = getChartData().getLast() - e.getWheelRotation();
-                last = last > itemsCount ? itemsCount : (last < items ? items : last);
+                last = last > itemsCount ? itemsCount : (Math.max(last, items));
 
                 if (getChartData().getLast() != last) {
                     getChartData().setLast(last);
@@ -611,3 +681,5 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
         SwingUtilities.invokeAndWait(ChartFrame::createAndShowGUI);
     }
 }
+
+

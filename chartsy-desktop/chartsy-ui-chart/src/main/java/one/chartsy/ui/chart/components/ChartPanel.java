@@ -246,7 +246,7 @@ public class ChartPanel extends JLayeredPane implements Serializable {
     }
     
     public Overlay getOverlay(int index) {
-        if (index < 0 || index > overlays.size()) {
+        if (index < 0 || index >= overlays.size()) {
             return null;
         }
         return overlays.get(index);
@@ -499,3 +499,4 @@ public class ChartPanel extends JLayeredPane implements Serializable {
         };
     }
 }
+
