@@ -22,6 +22,7 @@ public class RunnerAggregateData extends AbstractAggregateData implements Launch
     @GeneratedValue(strategy = SEQUENCE, generator = "ONE_RUNNER_IDS")
     @SequenceGenerator(name = "ONE_RUNNER_IDS", sequenceName = "ONE_RUNNER_IDS")
     private Long id;
+    @Column(name = "runner_key")
     private String key;
     @Enumerated(EnumType.STRING)
     private Status status;

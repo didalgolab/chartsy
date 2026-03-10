@@ -2,3 +2,6 @@ databaseChangeLog:
   - includeAll:
       path: '0.1'
       relativeToChangelogFile: true
+  - includeAll:
+      path: '0.2'
+      relativeToChangelogFile: true
