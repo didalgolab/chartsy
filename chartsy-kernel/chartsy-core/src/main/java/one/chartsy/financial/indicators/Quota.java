@@ -6,6 +6,16 @@ package one.chartsy.financial.indicators;
 import one.chartsy.Candle;
 import one.chartsy.data.structures.DoubleWindowSummaryStatistics;
 import one.chartsy.financial.AbstractCandleIndicator;
+import one.chartsy.study.ChartStudy;
+import one.chartsy.study.LinePlotSpec;
+import one.chartsy.study.StudyFactory;
+import one.chartsy.study.StudyInputKind;
+import one.chartsy.study.StudyKind;
+import one.chartsy.study.StudyOutput;
+import one.chartsy.study.StudyParameter;
+import one.chartsy.study.StudyParameterScope;
+import one.chartsy.study.StudyParameterType;
+import one.chartsy.study.StudyPlacement;
 
 /**
  * The {@code Quota} indicator measures the <b>liquidity-based maximum recommended capital allocation</b>
@@ -40,6 +50,16 @@ import one.chartsy.financial.AbstractCandleIndicator;
  * @author Mariusz Bernacki
  *
  */
+@ChartStudy(
+        name = "Quota",
+        label = "Quota ({periods}, {quotaFraction})",
+        category = "Market Structure",
+        kind = StudyKind.INDICATOR,
+        placement = StudyPlacement.OWN_PANEL
+)
+@StudyParameter(id = "color", name = "Line Color", scope = StudyParameterScope.VISUAL, type = StudyParameterType.COLOR, defaultValue = "#000000", order = 100)
+@StudyParameter(id = "stroke", name = "Line Style", scope = StudyParameterScope.VISUAL, type = StudyParameterType.STROKE, defaultValue = "THICK_SOLID", order = 110)
+@LinePlotSpec(id = "quota", label = "Quota", output = "value", colorParameter = "color", strokeParameter = "stroke", order = 10)
 public class Quota extends AbstractCandleIndicator {
 
     public static final int DEFAULT_PERIODS = 60;
@@ -49,20 +69,18 @@ public class Quota extends AbstractCandleIndicator {
     private final double quotaFraction;
     private double quota = Double.NaN;
 
-    /**
-     * Constructs a {@code Quota} indicator instance using the default calculation period of 60 bars
-     * and a default quota fraction of {@code 5%}.
-     */
+    @StudyFactory(input = StudyInputKind.CANDLES)
+    public static Quota study(
+            @StudyParameter(id = "periods", name = "Periods", scope = StudyParameterScope.COMPUTATION, defaultValue = "60", order = 10) int periods,
+            @StudyParameter(id = "quotaFraction", name = "Quota Fraction", scope = StudyParameterScope.COMPUTATION, defaultValue = "0.05", order = 20) double quotaFraction
+    ) {
+        return new Quota(periods, quotaFraction);
+    }
+
     public Quota() {
         this(DEFAULT_PERIODS, DEFAULT_QUOTA_FRACTION);
     }
 
-    /**
-     * Constructs a {@code Quota} indicator instance with a customizable calculation period and quota fraction.
-     *
-     * @param periods the number of most recent trading bars to use for turnover averaging
-     * @param quotaFraction the fraction (e.g., 0.05 for 5%) applied to average turnover to determine the quota
-     */
     public Quota(int periods, double quotaFraction) {
         if (periods <= 1)
             throw new IllegalArgumentException("Periods must be greater than 1");
@@ -89,8 +107,8 @@ public class Quota extends AbstractCandleIndicator {
     }
 
     @Override
+    @StudyOutput(id = "value", name = "Quota", order = 10)
     public double getLast() {
         return quota;
     }
-
 }

@@ -5,9 +5,20 @@ package one.chartsy.financial.indicators;
 
 import lombok.Getter;
 import one.chartsy.Candle;
-import one.chartsy.data.structures.RingBuffer;
 import one.chartsy.data.structures.DoubleWindowSummaryStatistics;
+import one.chartsy.data.structures.RingBuffer;
 import one.chartsy.financial.AbstractBandValueIndicator;
+import one.chartsy.study.ChartStudy;
+import one.chartsy.study.InsideFillPlotSpec;
+import one.chartsy.study.LinePlotSpec;
+import one.chartsy.study.StudyFactory;
+import one.chartsy.study.StudyInputKind;
+import one.chartsy.study.StudyKind;
+import one.chartsy.study.StudyOutput;
+import one.chartsy.study.StudyParameter;
+import one.chartsy.study.StudyParameterScope;
+import one.chartsy.study.StudyParameterType;
+import one.chartsy.study.StudyPlacement;
 
 import java.util.function.Consumer;
 
@@ -22,14 +33,34 @@ import java.util.function.Consumer;
  *
  * @author Mariusz Bernacki
  */
+@ChartStudy(
+        name = "Sentiment Bands",
+        label = "Sentiment Bands",
+        category = "Bands",
+        kind = StudyKind.OVERLAY,
+        placement = StudyPlacement.MAIN_PANEL
+)
+@StudyParameter(id = "upperBandColor", name = "Upper Band Color", scope = StudyParameterScope.VISUAL, type = StudyParameterType.COLOR, defaultValue = "#3B82F6", order = 100)
+@StudyParameter(id = "lowerBandColor", name = "Lower Band Color", scope = StudyParameterScope.VISUAL, type = StudyParameterType.COLOR, defaultValue = "#EF4444", order = 110)
+@StudyParameter(id = "bandStroke", name = "Band Stroke", scope = StudyParameterScope.VISUAL, type = StudyParameterType.STROKE, defaultValue = "THICK_SOLID", order = 120)
+@StudyParameter(id = "fillBands", name = "Fill Bands", scope = StudyParameterScope.VISUAL, type = StudyParameterType.BOOLEAN, defaultValue = "true", order = 130)
+@StudyParameter(id = "fillColor", name = "Fill Color", scope = StudyParameterScope.VISUAL, type = StudyParameterType.COLOR, defaultValue = "#0093C5FD", order = 140)
+@InsideFillPlotSpec(id = "bandFill", label = "Band Fill", upperOutput = "upperBand", lowerOutput = "lowerBand", colorParameter = "fillColor", visibleParameter = "fillBands", order = 10)
+@LinePlotSpec(id = "upperBandPlot", label = "Upper Band", output = "upperBand", colorParameter = "upperBandColor", strokeParameter = "bandStroke", order = 20)
+@LinePlotSpec(id = "lowerBandPlot", label = "Lower Band", output = "lowerBand", colorParameter = "lowerBandColor", strokeParameter = "bandStroke", order = 30)
 public class SentimentBands extends AbstractBandValueIndicator<SentimentBands.Values> implements Consumer<Candle> {
 
     private final FramaGroup[] framaGroups;
     private final Frama baseFrama;
     private final AverageTrueRange atr;
-    private @Getter double lowerBand = Double.NaN;
-    private @Getter double upperBand = Double.NaN;
+    private @Getter @StudyOutput(id = "lowerBand", name = "Lower Band", order = 20) double lowerBand = Double.NaN;
+    private @Getter @StudyOutput(id = "upperBand", name = "Upper Band", order = 10) double upperBand = Double.NaN;
     private @Getter boolean isReady;
+
+    @StudyFactory(input = StudyInputKind.CANDLES)
+    public static SentimentBands study() {
+        return new SentimentBands();
+    }
 
     public SentimentBands() {
         framaGroups = new FramaGroup[5];
@@ -41,7 +72,7 @@ public class SentimentBands extends AbstractBandValueIndicator<SentimentBands.Va
         baseFrama = new Frama(10, 90, 10.0);
         atr = new AverageTrueRange(15);
     }
-    
+
     /**
      * Processes a new bar and updates internal FRAMAs, bands, and side states accordingly.
      *
@@ -50,17 +81,17 @@ public class SentimentBands extends AbstractBandValueIndicator<SentimentBands.Va
     @Override
     public void accept(Candle bar) {
         double price = bar.close();
-        
-        // Update all FRAMA groups and their delayed values
+
+        // Update all FRAMA groups and their delayed values.
         for (FramaGroup group : framaGroups) {
             group.update(price);
         }
-        
-        // Update base Frama and ATR
+
+        // Update base Frama and ATR.
         baseFrama.accept(price);
         atr.accept(bar);
 
-        // Check readiness
+        // Check readiness.
         isReady = checkReadiness();
         if (isReady) {
             computeBands();
@@ -72,7 +103,7 @@ public class SentimentBands extends AbstractBandValueIndicator<SentimentBands.Va
         double minValue = Double.POSITIVE_INFINITY;
         double maxValue = Double.NEGATIVE_INFINITY;
 
-        // Process delayed FRAMAs and their HHVs/LLVs
+        // Process delayed FRAMAs and their HHVs/LLVs.
         for (FramaGroup holder : framaGroups) {
             if (!holder.highestHighsWindow.isEmpty()) {
                 double hhv = holder.highestHighsWindow.getMax();
@@ -86,13 +117,13 @@ public class SentimentBands extends AbstractBandValueIndicator<SentimentBands.Va
             }
         }
 
-        // Include special Frama + ATR(15)
+        // Include special Frama + ATR(15).
         double specialFramaValue = baseFrama.getLast();
         double atrValue = atr.getLast();
         double framaAtrUpper = specialFramaValue + atrValue;
 
-        minValue = Math.min(minValue, specialFramaValue); // Lower band includes only FRAMA itself
-        maxValue = Math.max(maxValue, framaAtrUpper);     // Upper band includes FRAMA + ATR only (no minus)
+        minValue = Math.min(minValue, specialFramaValue);
+        maxValue = Math.max(maxValue, framaAtrUpper);
 
         this.lowerBand = minValue;
         this.upperBand = maxValue;
@@ -122,13 +153,13 @@ public class SentimentBands extends AbstractBandValueIndicator<SentimentBands.Va
     /**
      * Container for the upper and lower sentiment band values.
      *
-     * @param upperBand the computed upper sentiment band
-     * @param lowerBand the computed lower sentiment band
+     * @param upperBand the computed upper sentiment band value
+     * @param lowerBand the computed lower sentiment band value
      */
     public record Values(double upperBand, double lowerBand) implements BandValues { }
 
     /**
-     * Holder class for managing individual FRAMAs, delays, and HHVs
+     * Holder class for managing individual FRAMAs, delays, and HHVs.
      */
     private static class FramaGroup {
         static final int REF_WINDOW = 15;

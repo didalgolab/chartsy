@@ -302,6 +302,11 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
     }
 
     public void fireOverlayAdded(Overlay overlay) {
+        if (overlay == null) {
+            log.warn("Ignoring null overlay while initializing chart template `{}`",
+                    (chartTemplate != null) ? chartTemplate.getName() : "<unknown>");
+            return;
+        }
         addChartFrameListener(overlay);
         CandleSeries dataset = chartData.getDataset();
         if (dataset != null) {
@@ -313,6 +318,11 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
     }
 
     public void fireIndicatorAdded(Indicator indicator) {
+        if (indicator == null) {
+            log.warn("Ignoring null indicator while initializing chart template `{}`",
+                    (chartTemplate != null) ? chartTemplate.getName() : "<unknown>");
+            return;
+        }
         addChartFrameListener(indicator);
         CandleSeries dataset = chartData.getDataset();
         if (dataset != null) {
@@ -681,5 +691,3 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
         SwingUtilities.invokeAndWait(ChartFrame::createAndShowGUI);
     }
 }
-
-

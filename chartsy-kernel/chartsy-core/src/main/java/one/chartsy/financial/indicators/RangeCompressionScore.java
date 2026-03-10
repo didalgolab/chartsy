@@ -5,71 +5,67 @@ import one.chartsy.base.Dataset;
 import one.chartsy.data.Series;
 import one.chartsy.data.structures.RingBuffer;
 import one.chartsy.financial.AbstractCandleIndicator;
+import one.chartsy.study.ChartStudy;
+import one.chartsy.study.LinePlotSpec;
+import one.chartsy.study.StudyAxis;
+import one.chartsy.study.StudyFactory;
+import one.chartsy.study.StudyInputKind;
+import one.chartsy.study.StudyKind;
+import one.chartsy.study.StudyOutput;
+import one.chartsy.study.StudyParameter;
+import one.chartsy.study.StudyParameterScope;
+import one.chartsy.study.StudyParameterType;
+import one.chartsy.study.StudyPlacement;
 
-/**
- * An indicator version of RangeCompressionScore that:
- *   - Extends AbstractCandleIndicator
- *   - Uses the existing static compute(...) / computeWithBands(...) methods
- *   - Maintains an internal RingBuffer for lookback
- */
+@ChartStudy(
+        name = "Range Compression Score",
+        label = "Range Compression Score",
+        category = "Volatility",
+        kind = StudyKind.INDICATOR,
+        placement = StudyPlacement.OWN_PANEL
+)
+@StudyAxis(logarithmic = true)
+@StudyParameter(id = "lineColor", name = "Line Color", scope = StudyParameterScope.VISUAL, type = StudyParameterType.COLOR, defaultValue = "#FF0000", order = 100)
+@StudyParameter(id = "lineStyle", name = "Line Style", scope = StudyParameterScope.VISUAL, type = StudyParameterType.STROKE, defaultValue = "SOLID", order = 110)
+@LinePlotSpec(id = "score", label = "Range Compression Score", output = "value", colorParameter = "lineColor", strokeParameter = "lineStyle", order = 10)
 public class RangeCompressionScore extends AbstractCandleIndicator {
 
-    /** 
-     * We need up to 415 bars in order to handle the largest rangeLen (80) 
-     * plus up to 256 lookback blocks of length 80 each.
-     */
     private static final int REQUIRED_CAPACITY = 415;
-    
+
     private final RingBuffer<Candle> ringBuffer;
     private double lastValue;
     private boolean ready;
 
-    /**
-     * Creates a RangeCompressionScore indicator with a default ring buffer capacity
-     * sufficient for the maximum needed lookback (415 bars).
-     */
+    @StudyFactory(input = StudyInputKind.CANDLES)
+    public static RangeCompressionScore study() {
+        return new RangeCompressionScore();
+    }
+
     public RangeCompressionScore() {
         this.ringBuffer = new RingBuffer<>(REQUIRED_CAPACITY);
     }
 
-    /**
-     * Processes a new Candle, appending it to the ring buffer and then 
-     * updating the compression score (if there is enough data).
-     *
-     * @param bar the new Candle to process
-     */
     @Override
     public void accept(Candle bar) {
         ringBuffer.add(bar);
 
         if (!ringBuffer.isEmpty()) {
-            // Compute the score for the most recent candle (offset=0).
             lastValue = compute(ringBuffer, 0);
             ready = true;
         }
     }
 
-    /**
-     * Returns the last computed RangeCompressionScore value.
-     */
     @Override
+    @StudyOutput(id = "value", name = "Range Compression Score", order = 10)
     public double getLast() {
         return lastValue;
     }
 
-    /**
-     * Indicates if the indicator has enough data to produce the "full" score
-     * (i.e. at least 415 bars).
-     */
     @Override
     public boolean isReady() {
         return ready;
     }
 
-    /**
-     * The existing (unchanged) static method that calculates 
-     * the Range Compression Score (without bands) for any series at a given offset.
-     */
     public static double compute(Dataset<Candle> series, int offset) {
         final int MAX_LOOKBACK = 256;
         final int MAX_RANGE_LENGTH = 80;
@@ -128,10 +124,6 @@ public class RangeCompressionScore extends AbstractCandleIndicator {
         return totalScore;
     }
 
-    /**
-     * The extended static method that returns the total score plus
-     * approximate universal breakout bands, unchanged.
-     */
     public static RangeCompressionResult computeWithBands(Series<Candle> series, int offset) {
         final int MAX_LOOKBACK = 256;
         final int MAX_RANGE_LENGTH = 80;
@@ -204,8 +196,5 @@ public class RangeCompressionScore extends AbstractCandleIndicator {
         return new RangeCompressionResult(totalScore, lowerBand, upperBand);
     }
 
-    /**
-     * A small record container for returning both the compression score and breakout range.
-     */
     public record RangeCompressionResult(double totalScore, double lowerBand, double upperBand) { }
 }

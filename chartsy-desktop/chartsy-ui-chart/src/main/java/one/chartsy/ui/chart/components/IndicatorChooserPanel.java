@@ -6,9 +6,10 @@ package one.chartsy.ui.chart.components;
 
 import one.chartsy.ui.chart.BasicStrokes;
 import one.chartsy.ui.chart.ChartPlugin;
-import one.chartsy.ui.chart.ChartPlugin.Parameter;
 import one.chartsy.ui.chart.Indicator;
 import one.chartsy.ui.chart.Overlay;
+import one.chartsy.ui.chart.StudyBackedChartPlugin;
+import one.chartsy.ui.chart.internal.ChartPluginParameter;
 import one.chartsy.ui.chart.internal.ChartPluginParameterUtils;
 import one.chartsy.ui.chart.properties.NamedPluginNode;
 import org.openide.explorer.propertysheet.PropertySheet;
@@ -605,6 +606,9 @@ public class IndicatorChooserPanel extends JPanel {
 
 
     private String resolveCategory(ChartPlugin<?> plugin) {
+        if (plugin instanceof StudyBackedChartPlugin studyPlugin)
+            return studyPlugin.getStudyDescriptor().category();
+
         return switch (PluginKind.from(plugin)) {
             case INDICATOR -> resolveIndicatorCategory((Indicator) plugin);
             case OVERLAY -> resolveOverlayCategory((Overlay) plugin);
@@ -695,15 +699,14 @@ public class IndicatorChooserPanel extends JPanel {
 
 
     private static List<PlotObjectRow> describePlotObjects(ChartPlugin<?> plugin) {
+        if (plugin instanceof StudyBackedChartPlugin studyPlugin)
+            return describeStudyPlotObjects(plugin, studyPlugin);
+
         Map<String, VisualDescriptor> descriptors = new LinkedHashMap<>();
         Map<String, Boolean> visibilityDescriptors = new LinkedHashMap<>();
 
-        for (Field field : ChartPluginParameterUtils.getParameterFields(plugin.getClass())) {
-            Parameter parameter = field.getAnnotation(Parameter.class);
-            if (parameter == null)
-                continue;
-
-            Object value = ChartPluginParameterUtils.readFieldValue(plugin, field);
+        for (ChartPluginParameter parameter : ChartPluginParameterUtils.getParameters(plugin)) {
+            Object value = parameter.getValue();
             String parameterName = parameter.name();
             if (value instanceof Color color) {
                 descriptors.computeIfAbsent(elementNameForColor(parameterName), ignored -> new VisualDescriptor()).color = color;
@@ -734,6 +737,25 @@ public class IndicatorChooserPanel extends JPanel {
             firstRow = false;
         }
 
+        if (rows.isEmpty()) {
+            rows.add(new PlotObjectRow(plugin, true, plugin.getLabel(), describePluginType(plugin), describePanelPlacement(plugin),
+                    "Result", null, null, null));
+        }
+        return rows;
+    }
+
+    private static List<PlotObjectRow> describeStudyPlotObjects(ChartPlugin<?> plugin, StudyBackedChartPlugin studyPlugin) {
+        List<PlotObjectRow> rows = new ArrayList<>();
+        java.util.SequencedMap<String, Object> parameterValues = studyPlugin.getStudyParameterValues();
+        boolean firstRow = true;
+        for (var plot : studyPlugin.getStudyDescriptor().plots()) {
+            Color color = plot.colorParameter().isBlank() ? null : (Color) parameterValues.get(plot.colorParameter());
+            Stroke stroke = plot.strokeParameter().isBlank() ? null : (Stroke) parameterValues.get(plot.strokeParameter());
+            Boolean visible = plot.visibleParameter().isBlank() ? null : (Boolean) parameterValues.get(plot.visibleParameter());
+            rows.add(new PlotObjectRow(plugin, firstRow, plugin.getLabel(), describePluginType(plugin), describePanelPlacement(plugin),
+                    plot.label(), visible, stroke, color));
+            firstRow = false;
+        }
         if (rows.isEmpty()) {
             rows.add(new PlotObjectRow(plugin, true, plugin.getLabel(), describePluginType(plugin), describePanelPlacement(plugin),
                     "Result", null, null, null));
@@ -784,6 +806,12 @@ public class IndicatorChooserPanel extends JPanel {
     }
 
     private static String describePanelPlacement(ChartPlugin<?> plugin) {
+        if (plugin instanceof StudyBackedChartPlugin studyPlugin) {
+            return switch (studyPlugin.getStudyDescriptor().placement()) {
+                case MAIN_PANEL -> "Main Panel";
+                case OWN_PANEL -> "Separate Panel";
+            };
+        }
         return PluginKind.from(plugin).placementLabel();
     }
 
@@ -1016,4 +1044,3 @@ public class IndicatorChooserPanel extends JPanel {
         }
     }
 }
-
