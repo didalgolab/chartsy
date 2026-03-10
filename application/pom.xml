@@ -682,11 +682,6 @@
             <artifactId>chartsy-ui-chart-overlays</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>chartsy-ui-chart-indicators</artifactId>
-            <version>${project.version}</version>
-        </dependency>
     </dependencies>
 
     <build>

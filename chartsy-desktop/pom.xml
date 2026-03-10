@@ -18,7 +18,6 @@
         <module>chartsy-nb-frontend</module>
         <module>chartsy-ui</module>
         <module>chartsy-ui-chart</module>
-        <module>chartsy-ui-chart-indicators</module>
         <module>chartsy-ui-chart-overlays</module>
         <module>chartsy-ui-chartfx</module>
         <module>chartsy-ui-common</module>

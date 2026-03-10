@@ -253,53 +253,7 @@ public final class ChartExporter {
     }
 
     static ChartTemplate basicChartTemplate() {
-        ChartTemplate template = new ChartTemplate("Basic Chart");
-
-        ChartProperties props = new ChartProperties();
-        props.setAxisColor(new Color(0x2e3436));
-        props.setAxisStrokeIndex(0);
-        props.setAxisLogarithmicFlag(true);
-
-        props.setBarWidth(4.0);
-        props.setBarColor(new Color(0x2e3436));
-        props.setBarStrokeIndex(0);
-        props.setBarVisibility(true);
-        props.setBarDownColor(new Color(0x2e3436));
-        props.setBarDownVisibility(true);
-        props.setBarUpColor(new Color(0xffffff));
-        props.setBarUpVisibility(true);
-
-        props.setGridHorizontalColor(new Color(0xeeeeec));
-        props.setGridHorizontalStrokeIndex(0);
-        props.setGridHorizontalVisibility(true);
-        props.setGridVerticalColor(new Color(0xeeeeec));
-        props.setGridVerticalStrokeIndex(0);
-        props.setGridVerticalVisibility(true);
-
-        props.setBackgroundColor(new Color(0xffffff));
-        props.setFont(new Font("Dialog", Font.PLAIN, 12));
-        props.setFontColor(new Color(0x2e3436));
-
-        props.setMarkerVisibility(false);
-        props.setToolbarVisibility(true);
-        props.setToolbarSmallIcons(false);
-        props.setToolbarShowLabels(true);
-        props.setAnnotationLayerVisible(true);
-
-        template.setChartProperties(props);
-        template.setChart(one.chartsy.kernel.ServiceManager.of(Chart.class).get("Candle Stick"));
-
-        var overlays = one.chartsy.kernel.ServiceManager.of(Overlay.class);
-        template.addOverlay(overlays.get("FRAMA, Leading"));
-        template.addOverlay(overlays.get("FRAMA, Trailing"));
-        template.addOverlay(overlays.get("Sfora"));
-        template.addOverlay(overlays.get("Volume"));
-        template.addOverlay(overlays.get("Sentiment Bands"));
-
-        var indicators = one.chartsy.kernel.ServiceManager.of(Indicator.class);
-        template.addIndicator(indicators.get("Fractal Dimension"));
-
-        return template;
+        return ChartTemplateDefaults.basicChartTemplate();
     }
 
     private static Dimension applyDimensions(ChartFrame chartFrame, ExportOptions options) {

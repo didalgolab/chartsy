@@ -5,11 +5,31 @@ package one.chartsy.financial.indicators;
 
 import one.chartsy.data.structures.RingBuffer;
 import one.chartsy.financial.ValueIndicator;
+import one.chartsy.study.ChartStudy;
+import one.chartsy.study.LinePlotSpec;
+import one.chartsy.study.StudyFactory;
+import one.chartsy.study.StudyInputKind;
+import one.chartsy.study.StudyKind;
+import one.chartsy.study.StudyOutput;
+import one.chartsy.study.StudyParameter;
+import one.chartsy.study.StudyParameterScope;
+import one.chartsy.study.StudyParameterType;
+import one.chartsy.study.StudyPlacement;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.DoubleConsumer;
 
+@ChartStudy(
+        name = "FRAMA, Trailing",
+        label = "FRAMA, Trailing",
+        category = "Trend",
+        kind = StudyKind.OVERLAY,
+        placement = StudyPlacement.MAIN_PANEL
+)
+@StudyParameter(id = "color", name = "Color", scope = StudyParameterScope.VISUAL, type = StudyParameterType.COLOR, defaultValue = "#00CCCC", order = 100)
+@StudyParameter(id = "stroke", name = "Stroke", scope = StudyParameterScope.VISUAL, type = StudyParameterType.STROKE, defaultValue = "DEFAULT", order = 110)
+@LinePlotSpec(id = "frama", label = "FRAMA", output = "average", colorParameter = "color", strokeParameter = "stroke", order = 10)
 public class FramaTrendEquilibrium implements ValueIndicator, DoubleConsumer {
     private final List<ValuePath> valuePaths = new ArrayList<>();
     private double min = Double.NaN;
@@ -19,6 +39,11 @@ public class FramaTrendEquilibrium implements ValueIndicator, DoubleConsumer {
             Frama frama,
             RingBuffer.OfDouble delayedValues
     ) {
+    }
+
+    @StudyFactory(input = StudyInputKind.CLOSES)
+    public static FramaTrendEquilibrium study() {
+        return new FramaTrendEquilibrium();
     }
 
     public FramaTrendEquilibrium() {
@@ -62,6 +87,7 @@ public class FramaTrendEquilibrium implements ValueIndicator, DoubleConsumer {
         return max;
     }
 
+    @StudyOutput(id = "average", name = "FRAMA", order = 10)
     public final double getAverage() {
         return (getMax() + getMin()) / 2.0;
     }

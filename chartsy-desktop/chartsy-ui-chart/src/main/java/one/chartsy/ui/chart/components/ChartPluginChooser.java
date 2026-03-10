@@ -40,7 +40,7 @@ import javax.swing.LayoutStyle;
 import javax.swing.SwingConstants;
 import javax.swing.WindowConstants;
 
-import one.chartsy.core.NamedPlugin;
+import one.chartsy.ui.chart.ChartPlugin;
 import one.chartsy.core.ObjectInstantiator;
 import one.chartsy.ui.chart.ChartFrame;
 import one.chartsy.ui.chart.Indicator;
@@ -59,7 +59,7 @@ import org.openide.windows.WindowManager;
  *            the type of the chart plugin handled, e.g. {@code Indicator},
  *            {@code Overlay},... etc.
  */
-public class ChartPluginChooser<T extends NamedPlugin<T> & ObjectInstantiator<T>> extends JDialog {
+public class ChartPluginChooser<T extends ChartPlugin<T> & ObjectInstantiator<T>> extends JDialog {
     @Serial
     private static final long serialVersionUID = 5971773443821473740L;
     /** The parental chart frame that owns this chooser. */
@@ -183,7 +183,7 @@ public class ChartPluginChooser<T extends NamedPlugin<T> & ObjectInstantiator<T>
             @Override
             public Component getListCellRendererComponent(JList<?> list, Object item, int index, boolean isSelected,
                     boolean cellHasFocus) {
-                String value = ((NamedPlugin<?>) item).getName();
+                String value = ((ChartPlugin<?>) item).getName();
                 return super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
             }
         });
@@ -203,7 +203,7 @@ public class ChartPluginChooser<T extends NamedPlugin<T> & ObjectInstantiator<T>
             @Override
             public Component getListCellRendererComponent(JList<?> list, Object item, int index, boolean isSelected,
                     boolean cellHasFocus) {
-                String value = ((NamedPlugin<?>) item).getLabel();
+                String value = ((ChartPlugin<?>) item).getLabel();
                 return super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
             }
         });

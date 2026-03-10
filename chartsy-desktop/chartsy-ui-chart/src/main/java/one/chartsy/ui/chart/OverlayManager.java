@@ -13,8 +13,6 @@ import java.util.List;
  */
 public class OverlayManager {
 
-    private final ChartPluginRegistry<Overlay> overlays = new ChartPluginRegistry<>(Overlay.class);
-
     public static OverlayManager getDefault() {
         return Holder.INSTANCE;
     }
@@ -23,15 +21,15 @@ public class OverlayManager {
     }
 
     public Overlay getOverlay(String key) {
-        return overlays.get(key);
+        return StudyRegistry.getDefault().getOverlay(key);
     }
 
     public List<Overlay> getOverlaysList() {
-        return overlays.getPlugins();
+        return StudyRegistry.getDefault().getOverlaysList();
     }
 
     public List<String> getOverlays() {
-        return overlays.getNames();
+        return StudyRegistry.getDefault().getOverlays();
     }
 
     private static final class Holder {

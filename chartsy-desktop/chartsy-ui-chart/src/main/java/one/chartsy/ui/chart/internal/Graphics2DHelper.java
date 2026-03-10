@@ -26,7 +26,7 @@ public class Graphics2DHelper {
     public static void bar(Graphics2D g, ChartContext cf, Range range, Rectangle bounds, VisibleValues dataset, Color color) {
         g.setPaint(color);
         ChartData cd = cf.getChartData();
-        boolean isLog = false;
+        boolean isLog = supportsLogarithmicScale(cf, range);
         double zeroY = cd.getY(0.0, bounds, range, isLog);
         double maxY = bounds.getMaxY() + 1.0;
 
@@ -41,6 +41,15 @@ public class Graphics2DHelper {
                 g.fill(shape);
             }
         }
+    }
+
+    private static boolean supportsLogarithmicScale(ChartContext cf, Range range) {
+        return cf.getChartProperties().getAxisLogarithmicFlag()
+                && range != null
+                && Double.isFinite(range.min())
+                && Double.isFinite(range.max())
+                && range.min() > 0.0
+                && range.max() > range.min();
     }
 
     public static void insideFill(Graphics2D g, ChartContext cf, Range range, Rectangle bounds, VisibleValues upper, VisibleValues lower, Color color) {

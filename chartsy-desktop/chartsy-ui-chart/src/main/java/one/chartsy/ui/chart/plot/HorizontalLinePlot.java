@@ -15,19 +15,24 @@ public class HorizontalLinePlot extends AbstractPlot {
     protected final Stroke stroke;
     /** The horizontal line value. */
     protected final double value;
-    
-    
+
+
     public HorizontalLinePlot(double value, Color color, Stroke stroke) {
         super(color);
         this.stroke = stroke;
         this.value = value;
     }
-    
+
+    @Override
+    public Range.Builder contributeRange(Range.Builder range, ChartContext cf) {
+        return (range == null ? new Range.Builder() : range).add(value);
+    }
+
     @Override
     public void paint(Graphics2D g, ChartContext cf, Range range, Rectangle bounds) {
         paintHorizontalLine(g, cf, range, bounds);
     }
-    
+
     private void paintHorizontalLine(Graphics2D g, ChartContext cf, Range range, Rectangle bounds) {
         boolean isLog = cf.getChartProperties().getAxisLogarithmicFlag();
         Stroke oldStroke = g.getStroke();

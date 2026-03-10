@@ -17,19 +17,31 @@ public class InsideFillPlot extends AbstractPlot {
     protected final DoubleDataset upper;
     /** The lower boundary of the fill. */
     protected final DoubleDataset lower;
-    
-    
+
+
     public InsideFillPlot(DoubleDataset upper, DoubleDataset lower, Color color) {
         super(color);
         this.upper = upper;
         this.lower = lower;
     }
-    
+
+    @Override
+    public Range.Builder contributeRange(Range.Builder range, ChartContext cf) {
+        Range.Builder builder = range == null ? new Range.Builder() : range;
+        VisibleValues upperLine = cf.getChartData().getVisible().getVisibleDataset(upper);
+        VisibleValues lowerLine = cf.getChartData().getVisible().getVisibleDataset(lower);
+        if (upperLine != null)
+            builder = upperLine.getRange(builder);
+        if (lowerLine != null)
+            builder = lowerLine.getRange(builder);
+        return builder;
+    }
+
     @Override
     public void paint(Graphics2D g, ChartContext cf, Range range, Rectangle bounds) {
         paintFill(g, cf, range, bounds);
     }
-    
+
     private void paintFill(Graphics2D g, ChartContext cf, Range range, Rectangle bounds) {
         VisibleValues upperLine = cf.getChartData().getVisible().getVisibleDataset(upper);
         VisibleValues lowerLine = cf.getChartData().getVisible().getVisibleDataset(lower);
