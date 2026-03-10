@@ -9,14 +9,12 @@ import one.chartsy.ui.chart.ChartContext;
 import one.chartsy.ui.chart.Indicator;
 import one.chartsy.ui.chart.data.VisualRange;
 import one.chartsy.ui.chart.plot.LinePlot;
-import org.openide.util.lookup.ServiceProvider;
 
 import java.awt.*;
 
 /**
  * A presentation layer for the RangeCompressionScore indicator.
  */
-@ServiceProvider(service = Indicator.class)
 public class RangeCompressionScorePresentation extends AbstractIndicator {
 
     @Parameter(name = "Line Color")
@@ -58,3 +56,5 @@ public class RangeCompressionScorePresentation extends AbstractIndicator {
         }
     }
 }
+
+

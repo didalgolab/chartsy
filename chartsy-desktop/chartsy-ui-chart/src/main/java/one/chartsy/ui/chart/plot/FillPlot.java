@@ -17,42 +17,49 @@ import one.chartsy.ui.chart.ChartData;
 import one.chartsy.ui.chart.data.VisibleValues;
 
 public class FillPlot extends AbstractTimeSeriesPlot {
-    
+
     private final double f, t;
     private final boolean upper;
-    
-    
+
+
     public FillPlot(DoubleSeries values, double f, double t, boolean upper, Color color) {
         super(values.values(), color);
         this.f = f;
         this.t = t;
         this.upper = upper;
     }
-    
+
+    @Override
+    public Range.Builder contributeRange(Range.Builder range, ChartContext cf) {
+        Range.Builder builder = super.contributeRange(range, cf);
+        return builder.add(f).add(t);
+    }
+
     @Override
     public void paint(Graphics2D g, ChartContext cf, Range range, Rectangle bounds) {
         VisibleValues values = getVisibleData(cf);
         if (values != null)
             paintFill(g, cf, range, bounds, values, f, t);
     }
-    
+
     protected void paintFill(Graphics2D g, ChartContext cf, Range range, Rectangle bounds, VisibleValues dataset, double f, double t) {
         double min = Math.min(f, t);
         double max = Math.max(f, t);
-        
+
         if (upper) {
             max = Math.max(max, range.max());
         } else {
             min = Math.max(f, t);
             max = Math.min(f, t);
         }
-        
+
         ChartData cd = cf.getChartData();
         int count = dataset.getLength();
-        
-        double x, dx, y = cd.getY(min, bounds, range, false);
+        boolean logarithmic = cf.getChartProperties().getAxisLogarithmicFlag();
+
+        double x, dx, y = cd.getY(min, bounds, range, logarithmic);
         Range fillRange = Range.of(min, max);
-        
+
         Color oldColor = g.getColor();
         g.setColor(primaryColor);
         GeneralPath gp = null;
@@ -62,14 +69,14 @@ public class FillPlot extends AbstractTimeSeriesPlot {
             double value1 = dataset.getValueAt(i - 1);
             double value = dataset.getValueAt(i);
             if (value1 == value1 && value == value) {
-                
-                p1 = cd.getPoint(i - 1, value1, range, bounds, false, p1);
-                p2 = cd.getPoint(i, value, range, bounds, false, p2);
-                
+
+                p1 = cd.getPoint(i - 1, value1, range, bounds, logarithmic, p1);
+                p2 = cd.getPoint(i, value, range, bounds, logarithmic, p2);
+
                 if (!fillRange.contains(value1) && fillRange.contains(value)) {
                     dx = (y - p1.getY()) / (p2.getY() - p1.getY());
                     x = p1.getX() + dx * (p2.getX() - p1.getX());
-                    
+
                     if (gp == null)
                         gp = new GeneralPath();
                     else {
@@ -90,7 +97,7 @@ public class FillPlot extends AbstractTimeSeriesPlot {
                 } else if (fillRange.contains(value1) && !fillRange.contains(value)) {
                     dx = (y - p1.getY()) / (p2.getY() - p1.getY());
                     x = p1.getX() + dx * (p2.getX() - p1.getX());
-                    
+
                     if (gp == null) {
                         gp = new GeneralPath();
                         gp.moveTo(p1.getX(), p1.getY());

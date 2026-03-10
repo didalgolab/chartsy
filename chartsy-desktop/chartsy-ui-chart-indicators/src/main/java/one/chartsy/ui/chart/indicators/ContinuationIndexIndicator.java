@@ -9,7 +9,6 @@ import one.chartsy.ui.chart.*;
 import one.chartsy.ui.chart.data.VisualRange;
 import one.chartsy.ui.chart.plot.HorizontalLinePlot;
 import one.chartsy.ui.chart.plot.LinePlot;
-import org.openide.util.lookup.ServiceProvider;
 
 import java.awt.Color;
 import java.awt.Stroke;
@@ -17,7 +16,6 @@ import java.awt.Stroke;
 /**
  * Visual representation of the {@link ContinuationIndex} indicator.
  */
-@ServiceProvider(service = Indicator.class)
 public class ContinuationIndexIndicator extends AbstractIndicator {
 
     @Parameter(name = "Gamma")
@@ -71,4 +69,8 @@ public class ContinuationIndexIndicator extends AbstractIndicator {
         return new double[] {-1.0, -0.5, 0.0, 0.5, 1.0};
     }
 }
+
+
+
+
 

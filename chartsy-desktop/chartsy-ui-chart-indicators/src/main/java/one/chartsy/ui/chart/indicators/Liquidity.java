@@ -7,7 +7,6 @@ import one.chartsy.financial.ValueIndicatorSupport;
 import one.chartsy.ui.chart.*;
 import one.chartsy.ui.chart.data.VisualRange;
 import one.chartsy.ui.chart.plot.LinePlot;
-import org.openide.util.lookup.ServiceProvider;
 
 import java.awt.Color;
 import java.awt.Stroke;
@@ -41,7 +40,6 @@ import java.awt.Stroke;
  * @see one.chartsy.financial.AbstractCandleIndicator
  * @see one.chartsy.financial.ValueIndicator.OfDouble
  */
-@ServiceProvider(service = Indicator.class)
 public class Liquidity extends AbstractIndicator {
 
     @Parameter(name = "Periods")
@@ -81,3 +79,5 @@ public class Liquidity extends AbstractIndicator {
         return new double[] {0, 0.2, 0.4, 0.6, 0.8, 1};
     }
 }
+
+

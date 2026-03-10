@@ -9,11 +9,9 @@ import one.chartsy.ui.chart.AbstractOverlay;
 import one.chartsy.ui.chart.BasicStrokes;
 import one.chartsy.ui.chart.Overlay;
 import one.chartsy.ui.chart.plot.LinePlot;
-import org.openide.util.lookup.ServiceProvider;
 
 import java.awt.*;
 
-@ServiceProvider(service = Overlay.class)
 public class SentimentBandsOverlay extends AbstractOverlay {
 
     @Parameter(name = "Upper Band Color")
@@ -58,3 +56,5 @@ public class SentimentBandsOverlay extends AbstractOverlay {
         //}
     }
 }
+
+

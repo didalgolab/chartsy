@@ -7,7 +7,6 @@ import one.chartsy.financial.ValueIndicatorSupport;
 import one.chartsy.ui.chart.*;
 import one.chartsy.ui.chart.data.VisualRange;
 import one.chartsy.ui.chart.plot.LinePlot;
-import org.openide.util.lookup.ServiceProvider;
 
 import java.awt.Color;
 import java.awt.Stroke;
@@ -27,7 +26,6 @@ import java.awt.Stroke;
  *
  * @author Mariusz Bernacki
  */
-@ServiceProvider(service = Indicator.class)
 public class RangeInversionSigmaUI extends AbstractIndicator {
 
     /* ======== Parameters exposed in the Chartsy property pane ======== */
@@ -75,3 +73,5 @@ public class RangeInversionSigmaUI extends AbstractIndicator {
         return new double[] { -10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10 };
     }
 }
+
+

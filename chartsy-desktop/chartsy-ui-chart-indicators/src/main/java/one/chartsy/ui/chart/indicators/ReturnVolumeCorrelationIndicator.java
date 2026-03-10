@@ -10,14 +10,12 @@ import one.chartsy.financial.ValueIndicatorSupport;
 import one.chartsy.ui.chart.*;
 import one.chartsy.ui.chart.data.VisualRange;
 import one.chartsy.ui.chart.plot.LinePlot;
-import org.openide.util.lookup.ServiceProvider;
 
 import java.awt.*;
 
 /**
  * Visual representation for {@link one.chartsy.financial.indicators.ReturnVolumeCorrelation}.
  */
-@ServiceProvider(service = Indicator.class)
 public class ReturnVolumeCorrelationIndicator extends AbstractIndicator {
 
     @Parameter(name = "Periods")
@@ -58,3 +56,7 @@ public class ReturnVolumeCorrelationIndicator extends AbstractIndicator {
         return new double[] {-1, -0.5, 0, 0.5, 1};
     }
 }
+
+
+
+

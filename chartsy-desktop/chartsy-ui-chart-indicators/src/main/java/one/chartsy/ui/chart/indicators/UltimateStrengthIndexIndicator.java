@@ -17,7 +17,6 @@ import one.chartsy.ui.chart.data.VisualRange;
 import one.chartsy.ui.chart.plot.FillPlot;
 import one.chartsy.ui.chart.plot.HorizontalLinePlot;
 import one.chartsy.ui.chart.plot.LinePlot;
-import org.openide.util.lookup.ServiceProvider;
 
 import java.awt.Color;
 import java.awt.Stroke;
@@ -27,7 +26,6 @@ import java.awt.Stroke;
  * 
  * @author Mariusz Bernacki
  */
-@ServiceProvider(service=Indicator.class)
 public class UltimateStrengthIndexIndicator extends AbstractIndicator {
     
     @Parameter(name = "Length")

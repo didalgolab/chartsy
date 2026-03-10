@@ -255,13 +255,15 @@ public class IndicatorPanel extends JPanel {
         //bounds.setLocation(0, 0);
         
         if (indicator != null) {
-            boolean isLog = cp.getAxisLogarithmicFlag();
-            if (isLog)
-                cp.setAxisLogarithmicFlag(false);
-            if (!isMinimized() || indicator.isMinimizedPaint())
-                indicator.paint(g2, chartFrame, bounds);
-            if (isLog)
-                cp.setAxisLogarithmicFlag(true);
+            boolean previousLog = cp.getAxisLogarithmicFlag();
+            boolean indicatorLog = indicator.getRange(chartFrame).isLogarithmic();
+            cp.setAxisLogarithmicFlag(indicatorLog);
+            try {
+                if (!isMinimized() || indicator.isMinimizedPaint())
+                    indicator.paint(g2, chartFrame, bounds);
+            } finally {
+                cp.setAxisLogarithmicFlag(previousLog);
+            }
         }
         
         super.paintComponent(g);

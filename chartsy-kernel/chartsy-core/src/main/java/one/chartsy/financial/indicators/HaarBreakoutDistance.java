@@ -7,6 +7,17 @@ import com.google.gson.Gson;
 import one.chartsy.Candle;
 import one.chartsy.data.RealVector;
 import one.chartsy.financial.AbstractCandleIndicator;
+import one.chartsy.study.ChartStudy;
+import one.chartsy.study.HorizontalLinePlotSpec;
+import one.chartsy.study.LinePlotSpec;
+import one.chartsy.study.StudyFactory;
+import one.chartsy.study.StudyInputKind;
+import one.chartsy.study.StudyKind;
+import one.chartsy.study.StudyOutput;
+import one.chartsy.study.StudyParameter;
+import one.chartsy.study.StudyParameterScope;
+import one.chartsy.study.StudyParameterType;
+import one.chartsy.study.StudyPlacement;
 import one.chartsy.wavelets.DiscreteWaveletTransform;
 import one.chartsy.wavelets.HaarWavelet;
 import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
@@ -24,6 +35,26 @@ import java.util.List;
  * Computes the minimum Haar-wavelet distance of the last 256 closes to a reference
  * set of breakout coefficient vectors using correlation-derived distance (1 - Pearson).
  */
+@ChartStudy(
+        name = "Haar Breakout Distance",
+        label = "Haar Breakout Distance",
+        category = "Market Structure",
+        kind = StudyKind.INDICATOR,
+        placement = StudyPlacement.OWN_PANEL
+)
+@StudyParameter(id = "distanceColor", name = "Distance Line Color", scope = StudyParameterScope.VISUAL, type = StudyParameterType.COLOR, defaultValue = "#1565C0", order = 100)
+@StudyParameter(id = "distanceStyle", name = "Distance Line Style", scope = StudyParameterScope.VISUAL, type = StudyParameterType.STROKE, defaultValue = "THIN_SOLID", order = 110)
+@StudyParameter(id = "showCorrelations", name = "Show Correlations", scope = StudyParameterScope.VISUAL, type = StudyParameterType.BOOLEAN, defaultValue = "false", order = 120)
+@StudyParameter(id = "pearsonColor", name = "Pearson Line Color", scope = StudyParameterScope.VISUAL, type = StudyParameterType.COLOR, defaultValue = "#2E7D32", order = 130)
+@StudyParameter(id = "pearsonStyle", name = "Pearson Line Style", scope = StudyParameterScope.VISUAL, type = StudyParameterType.STROKE, defaultValue = "ULTRATHIN_DOTTED", order = 140)
+@StudyParameter(id = "spearmanColor", name = "Spearman Line Color", scope = StudyParameterScope.VISUAL, type = StudyParameterType.COLOR, defaultValue = "#EF6C00", order = 150)
+@StudyParameter(id = "spearmanStyle", name = "Spearman Line Style", scope = StudyParameterScope.VISUAL, type = StudyParameterType.STROKE, defaultValue = "ULTRATHIN_DOTTED", order = 160)
+@StudyParameter(id = "zeroLineColor", name = "Zero Line Color", scope = StudyParameterScope.VISUAL, type = StudyParameterType.COLOR, defaultValue = "#9E9E9E", order = 170)
+@StudyParameter(id = "zeroLineStyle", name = "Zero Line Style", scope = StudyParameterScope.VISUAL, type = StudyParameterType.STROKE, defaultValue = "ULTRATHIN_DOTTED", order = 180)
+@LinePlotSpec(id = "distancePlot", label = "Distance", output = "distance", colorParameter = "distanceColor", strokeParameter = "distanceStyle", order = 10)
+@HorizontalLinePlotSpec(id = "zeroLine", label = "Zero", value = 0.0, colorParameter = "zeroLineColor", strokeParameter = "zeroLineStyle", order = 20)
+@LinePlotSpec(id = "pearsonPlot", label = "Pearson", output = "pearson", colorParameter = "pearsonColor", strokeParameter = "pearsonStyle", visibleParameter = "showCorrelations", order = 30)
+@LinePlotSpec(id = "spearmanPlot", label = "Spearman", output = "spearman", colorParameter = "spearmanColor", strokeParameter = "spearmanStyle", visibleParameter = "showCorrelations", order = 40)
 public class HaarBreakoutDistance extends AbstractCandleIndicator {
     public static final int WINDOW = 256;
     private static final String COEFFICIENTS_RESOURCE = "HaarBreakoutDistance.jsonl";
@@ -40,6 +71,11 @@ public class HaarBreakoutDistance extends AbstractCandleIndicator {
     private double lastDistance = Double.NaN;
     private double lastPearson = Double.NaN;
     private double lastSpearman = Double.NaN;
+
+    @StudyFactory(input = StudyInputKind.CANDLES)
+    public static HaarBreakoutDistance study() {
+        return new HaarBreakoutDistance();
+    }
 
     public HaarBreakoutDistance() {
         this(ReferenceCoefficientsHolder.INSTANCE);
@@ -113,14 +149,17 @@ public class HaarBreakoutDistance extends AbstractCandleIndicator {
     }
 
     @Override
+    @StudyOutput(id = "distance", name = "Distance", order = 10)
     public double getLast() {
         return lastDistance;
     }
 
+    @StudyOutput(id = "pearson", name = "Pearson", order = 20)
     public double getPearson() {
         return lastPearson;
     }
 
+    @StudyOutput(id = "spearman", name = "Spearman", order = 30)
     public double getSpearman() {
         return lastSpearman;
     }

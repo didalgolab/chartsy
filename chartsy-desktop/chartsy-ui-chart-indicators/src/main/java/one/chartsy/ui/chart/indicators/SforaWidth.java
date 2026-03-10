@@ -14,7 +14,6 @@ import one.chartsy.ui.chart.BasicStrokes;
 import one.chartsy.ui.chart.data.VisualRange;
 import one.chartsy.ui.chart.plot.LinePlot;
 
-import org.openide.util.lookup.ServiceProvider;
 
 import java.awt.*;
 
@@ -23,7 +22,6 @@ import java.awt.*;
  * 
  * @author Mariusz Bernacki
  */
-@ServiceProvider(service = Indicator.class)
 public class SforaWidth extends AbstractIndicator {
 
     @Parameter(name = "RPMA %1 Line Color")
@@ -88,3 +86,5 @@ public class SforaWidth extends AbstractIndicator {
         }
     }
 }
+
+

@@ -115,11 +115,8 @@ public abstract class Overlay extends ChartPlugin<Overlay> implements Serializab
     
     public Range getRange(ChartContext cf) {
         Range.Builder rv = new Range.Builder();
-        for (String key : plots.keySet()) {
-            VisibleValues dataset = visibleDataset(cf, key);
-            if (dataset != null) {
-                rv = dataset.getRange(rv);
-            }
+        for (Plot plot : plots.values()) {
+            rv = plot.contributeRange(rv, cf);
         }
         Range range = rv.toRange();
         if (range.isEmpty())
@@ -192,3 +189,4 @@ public abstract class Overlay extends ChartPlugin<Overlay> implements Serializab
         calculate();
     }
 }
+

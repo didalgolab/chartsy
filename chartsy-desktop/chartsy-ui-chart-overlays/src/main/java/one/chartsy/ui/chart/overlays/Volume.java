@@ -73,6 +73,23 @@ public class Volume extends AbstractOverlay {
             }
         }
     }
+
+    @Override
+    public Range getRange(ChartContext cf) {
+        VisibleValues values = visibleDataset(cf, VOLUME);
+        Range.Builder builder = new Range.Builder().add(0.0);
+        if (values != null)
+            values.getRange(builder);
+
+        Range range = builder.toRange();
+        if (range.isEmpty())
+            return Range.of(0.0, 1.0);
+        if (range.length() == 0.0)
+            return Range.of(0.0, Math.max(range.max(), 1.0));
+
+        double margin = range.length() * 0.01;
+        return Range.of(range.min() - margin, range.max() + margin);
+    }
     
     @Override
     public void calculate() {

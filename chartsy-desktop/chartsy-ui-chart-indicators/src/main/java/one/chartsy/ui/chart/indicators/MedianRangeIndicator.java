@@ -9,11 +9,9 @@ import one.chartsy.financial.ValueIndicatorSupport;
 import one.chartsy.financial.indicators.MedianRange;
 import one.chartsy.ui.chart.*;
 import one.chartsy.ui.chart.plot.LinePlot;
-import org.openide.util.lookup.ServiceProvider;
 
 import java.awt.*;
 
-@ServiceProvider(service = Indicator.class)
 public class MedianRangeIndicator extends AbstractIndicator {
 
     @Parameter(name = "Periods")
@@ -43,3 +41,5 @@ public class MedianRangeIndicator extends AbstractIndicator {
         }
     }
 }
+
+

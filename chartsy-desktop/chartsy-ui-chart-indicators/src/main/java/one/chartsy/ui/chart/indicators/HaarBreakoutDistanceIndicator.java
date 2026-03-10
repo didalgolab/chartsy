@@ -17,13 +17,11 @@ import one.chartsy.ui.chart.data.VisibleValues;
 import one.chartsy.ui.chart.data.VisualRange;
 import one.chartsy.ui.chart.plot.HorizontalLinePlot;
 import one.chartsy.ui.chart.plot.LinePlot;
-import org.openide.util.lookup.ServiceProvider;
 
 import java.awt.Color;
 import java.awt.Stroke;
 import java.util.List;
 
-@ServiceProvider(service = Indicator.class)
 public class HaarBreakoutDistanceIndicator extends AbstractIndicator {
     @Parameter(name = "Distance Line Color")
     public Color distanceColor = new Color(0x1565C0);
@@ -137,3 +135,7 @@ public class HaarBreakoutDistanceIndicator extends AbstractIndicator {
         return super.getStepValues(cf);
     }
 }
+
+
+
+

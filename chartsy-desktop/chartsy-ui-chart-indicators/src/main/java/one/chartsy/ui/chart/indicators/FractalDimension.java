@@ -15,7 +15,6 @@ import one.chartsy.finance.FinancialIndicators;
 import one.chartsy.financial.ValueIndicatorSupport;
 import one.chartsy.ui.chart.BasicStrokes;
 import one.chartsy.ui.chart.data.VisualRange;
-import org.openide.util.lookup.ServiceProvider;
 
 import one.chartsy.ui.chart.AbstractIndicator;
 import one.chartsy.ui.chart.ChartContext;
@@ -29,7 +28,6 @@ import one.chartsy.ui.chart.plot.LinePlot;
  * 
  * @author Mariusz Bernacki
  */
-@ServiceProvider(service=Indicator.class)
 public class FractalDimension extends AbstractIndicator {
     
     @Parameter(name = "Price Field")
@@ -101,3 +99,6 @@ public class FractalDimension extends AbstractIndicator {
         return new double[] { 0.2, 0.4, 0.6, 0.8, 1, 1.2, 1.4, 1.6, 1.8, 2 };
     }
 }
+
+
+

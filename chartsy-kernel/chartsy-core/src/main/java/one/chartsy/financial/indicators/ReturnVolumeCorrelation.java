@@ -6,22 +6,37 @@ package one.chartsy.financial.indicators;
 import one.chartsy.Candle;
 import one.chartsy.data.structures.RingBuffer;
 import one.chartsy.financial.AbstractCandleIndicator;
+import one.chartsy.study.ChartStudy;
+import one.chartsy.study.LinePlotSpec;
+import one.chartsy.study.StudyAxis;
+import one.chartsy.study.StudyFactory;
+import one.chartsy.study.StudyInputKind;
+import one.chartsy.study.StudyKind;
+import one.chartsy.study.StudyOutput;
+import one.chartsy.study.StudyParameter;
+import one.chartsy.study.StudyParameterScope;
+import one.chartsy.study.StudyParameterType;
+import one.chartsy.study.StudyPlacement;
 import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
 import org.apache.commons.math3.util.FastMath;
 
 /**
  * Computes the rolling Pearson correlation between logarithmic price returns
  * and logarithmic volume ratios.
- *
- * <p>The indicator first transforms price closes and volumes into
- * first‑order differences expressed as natural logarithms:
- * {@code log(close_t / close_{t-1})} and {@code log(volume_t / volume_{t-1})}.
- * The correlation is then evaluated over a sliding window of the most recent
- * {@code periods} observations.
  */
+@ChartStudy(
+        name = "Return/Volume Correlation",
+        label = "Ret/Vol Corr ({periods})",
+        category = "Momentum",
+        kind = StudyKind.INDICATOR,
+        placement = StudyPlacement.OWN_PANEL
+)
+@StudyAxis(min = -1.0, max = 1.0, steps = {-1.0, -0.5, 0.0, 0.5, 1.0})
+@StudyParameter(id = "color", name = "Line Color", scope = StudyParameterScope.VISUAL, type = StudyParameterType.COLOR, defaultValue = "#DB4437", order = 100)
+@StudyParameter(id = "style", name = "Line Style", scope = StudyParameterScope.VISUAL, type = StudyParameterType.STROKE, defaultValue = "THIN_SOLID", order = 110)
+@LinePlotSpec(id = "correlation", label = "Correlation", output = "value", colorParameter = "color", strokeParameter = "style", order = 10)
 public class ReturnVolumeCorrelation extends AbstractCandleIndicator {
 
-    /** Default number of periods used for correlation calculation. */
     public static final int DEFAULT_PERIODS = 30;
 
     private final int periods;
@@ -31,18 +46,17 @@ public class ReturnVolumeCorrelation extends AbstractCandleIndicator {
     private Candle previous;
     private double last = Double.NaN;
 
-    /**
-     * Constructs the indicator with {@link #DEFAULT_PERIODS} look‑back window.
-     */
+    @StudyFactory(input = StudyInputKind.CANDLES)
+    public static ReturnVolumeCorrelation study(
+            @StudyParameter(id = "periods", name = "Periods", scope = StudyParameterScope.COMPUTATION, defaultValue = "30", order = 10) int periods
+    ) {
+        return new ReturnVolumeCorrelation(periods);
+    }
+
     public ReturnVolumeCorrelation() {
         this(DEFAULT_PERIODS);
     }
 
-    /**
-     * Constructs the indicator with a custom look‑back window.
-     *
-     * @param periods number of periods over which the correlation is computed
-     */
     public ReturnVolumeCorrelation(int periods) {
         if (periods <= 1)
             throw new IllegalArgumentException("Periods must be greater than 1");
@@ -70,6 +84,7 @@ public class ReturnVolumeCorrelation extends AbstractCandleIndicator {
     }
 
     @Override
+    @StudyOutput(id = "value", name = "Correlation", order = 10)
     public double getLast() {
         return last;
     }

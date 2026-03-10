@@ -9,12 +9,10 @@ import one.chartsy.financial.indicators.ChandeMomentumOscillator;
 import one.chartsy.ui.chart.*;
 import one.chartsy.ui.chart.data.VisualRange;
 import one.chartsy.ui.chart.plot.LinePlot;
-import org.openide.util.lookup.ServiceProvider;
 
 import java.awt.Color;
 import java.awt.Stroke;
 
-@ServiceProvider(service = Indicator.class)
 public class ChandeMomentumOscillatorUI extends AbstractIndicator {
 
     @Parameter(name = "Price Field")

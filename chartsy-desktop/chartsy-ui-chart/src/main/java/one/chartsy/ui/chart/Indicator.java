@@ -130,15 +130,11 @@ public abstract class Indicator extends ChartPlugin<Indicator> {
             return new VisualRange(Range.empty());
         }
         
-        Iterator<String> it = plots.keySet().iterator();
-        
+        Iterator<Plot> it = plots.values().iterator();
+
         Range.Builder rv = new Range.Builder();
         while (it.hasNext()) {
-            VisibleValues d = visibleDataset(cf, it.next());
-            
-            if (d != null) {
-                rv = d.getRange(rv);
-            }
+            rv = it.next().contributeRange(rv, cf);
         }
         Range range = rv.toRange();
         if (range.isEmpty())
@@ -216,3 +212,4 @@ public abstract class Indicator extends ChartPlugin<Indicator> {
         this.panelId = panelId;
     }
 }
+

@@ -18,6 +18,11 @@
     </build>
     <dependencies>
         <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>chartsy-study</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
             <groupId>com.ethlo.time</groupId>
             <artifactId>itu</artifactId>
             <version>1.10.2</version>

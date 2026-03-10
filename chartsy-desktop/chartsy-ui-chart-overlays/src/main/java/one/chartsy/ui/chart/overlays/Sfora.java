@@ -10,7 +10,6 @@ import one.chartsy.data.CandleSeries;
 import one.chartsy.financial.ValueIndicatorSupport;
 import one.chartsy.financial.indicators.FramaTrendWhispers;
 import one.chartsy.ui.chart.BasicStrokes;
-import org.openide.util.lookup.ServiceProvider;
 
 import one.chartsy.ui.chart.AbstractOverlay;
 import one.chartsy.ui.chart.Overlay;
@@ -21,7 +20,6 @@ import one.chartsy.ui.chart.plot.LinePlot;
  * 
  * @author Mariusz Bernacki
  */
-@ServiceProvider(service = Overlay.class)
 public class Sfora extends AbstractOverlay {
     
     public Sfora() {
@@ -65,3 +63,5 @@ public class Sfora extends AbstractOverlay {
     public int framaPeriod = 45;
     
 }
+
+

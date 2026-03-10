@@ -1,24 +1,38 @@
-/*
- * Copyright 2024 Mariusz Bernacki <consulting@didalgo.com>
+/* Copyright 2024 Mariusz Bernacki <consulting@didalgo.com>
  * SPDX-License-Identifier: Apache-2.0
  */
 package one.chartsy.financial.indicators;
 
 import one.chartsy.data.structures.DoubleWindowSummaryStatistics;
 import one.chartsy.financial.AbstractDoubleIndicator;
+import one.chartsy.study.ChartStudy;
+import one.chartsy.study.HorizontalLinePlotSpec;
+import one.chartsy.study.LinePlotSpec;
+import one.chartsy.study.StudyAxis;
+import one.chartsy.study.StudyFactory;
+import one.chartsy.study.StudyInputKind;
+import one.chartsy.study.StudyKind;
+import one.chartsy.study.StudyOutput;
+import one.chartsy.study.StudyParameter;
+import one.chartsy.study.StudyParameterScope;
+import one.chartsy.study.StudyParameterType;
+import one.chartsy.study.StudyPlacement;
 import org.apache.commons.math3.util.FastMath;
 
-/**
- * Continuation Index indicator providing early indication of trend onset and exhaustion.
- *
- * <p>The indicator is based on the difference between an {@link UltimateSmoother}
- * filter and a Laguerre filter. The difference is normalized by its average absolute
- * deviation and compressed using an inverse Fisher transform to produce values
- * oscillating around +1 and -1.</p>
- *
- * <p>Implementation inspired by John F. Ehlers' article "The Continuation Index" in
- * <i>Stocks & Commodities</i> (September 2025).</p>
- */
+@ChartStudy(
+        name = "Continuation Index",
+        label = "CI({gamma}, {order}, {length})",
+        category = "Momentum",
+        kind = StudyKind.INDICATOR,
+        placement = StudyPlacement.OWN_PANEL
+)
+@StudyAxis(min = -1.0, max = 1.0, steps = {-1.0, -0.5, 0.0, 0.5, 1.0})
+@StudyParameter(id = "lineColor", name = "Line Color", scope = StudyParameterScope.VISUAL, type = StudyParameterType.COLOR, defaultValue = "#00695C", order = 100)
+@StudyParameter(id = "lineStyle", name = "Line Style", scope = StudyParameterScope.VISUAL, type = StudyParameterType.STROKE, defaultValue = "THIN_SOLID", order = 110)
+@StudyParameter(id = "zeroLineColor", name = "Zero Line Color", scope = StudyParameterScope.VISUAL, type = StudyParameterType.COLOR, defaultValue = "#808080", order = 120)
+@StudyParameter(id = "zeroLineStyle", name = "Zero Line Style", scope = StudyParameterScope.VISUAL, type = StudyParameterType.STROKE, defaultValue = "ULTRATHIN_DOTTED", order = 130)
+@LinePlotSpec(id = "ci", label = "CI", output = "value", colorParameter = "lineColor", strokeParameter = "lineStyle", order = 10)
+@HorizontalLinePlotSpec(id = "zero", label = "Zero", value = 0.0, colorParameter = "zeroLineColor", strokeParameter = "zeroLineStyle", order = 20)
 public class ContinuationIndex extends AbstractDoubleIndicator {
 
     private final int length;
@@ -27,13 +41,15 @@ public class ContinuationIndex extends AbstractDoubleIndicator {
     private final DoubleWindowSummaryStatistics diffStats;
     private double last = Double.NaN;
 
-    /**
-     * Creates a new Continuation Index indicator.
-     *
-     * @param gamma  smoothing factor of the Laguerre filter (0 &le; gamma &lt; 1)
-     * @param order  order of the Laguerre filter (typically 1..10)
-     * @param length smoothing length controlling responsiveness
-     */
+    @StudyFactory(input = StudyInputKind.CLOSES)
+    public static ContinuationIndex study(
+            @StudyParameter(id = "gamma", name = "Gamma", scope = StudyParameterScope.COMPUTATION, defaultValue = "0.8", order = 10) double gamma,
+            @StudyParameter(id = "order", name = "Order", scope = StudyParameterScope.COMPUTATION, defaultValue = "8", order = 20) int order,
+            @StudyParameter(id = "length", name = "Length", scope = StudyParameterScope.COMPUTATION, defaultValue = "40", order = 30) int length
+    ) {
+        return new ContinuationIndex(gamma, order, length);
+    }
+
     public ContinuationIndex(double gamma, int order, int length) {
         this.length = length;
         this.smoother = new UltimateSmoother(Math.max(1, length / 2));
@@ -53,6 +69,7 @@ public class ContinuationIndex extends AbstractDoubleIndicator {
     }
 
     @Override
+    @StudyOutput(id = "value", name = "CI", order = 10)
     public double getLast() {
         return last;
     }
@@ -62,9 +79,6 @@ public class ContinuationIndex extends AbstractDoubleIndicator {
         return diffStats.getCount() >= length;
     }
 
-    /**
-     * The Laguerre filter implementation used by the Continuation Index.
-     */
     static class LaguerreFilter {
         private final int order;
         private final double gamma;
@@ -86,9 +100,7 @@ public class ContinuationIndex extends AbstractDoubleIndicator {
         }
 
         double filter(double price) {
-            // Shift previous values
             System.arraycopy(curr, 0, prev, 0, curr.length);
-            // Compute Laguerre components
             for (int i = 2; i <= order; i++) {
                 curr[i] = -gamma * prev[i - 1] + prev[i - 1] + gamma * prev[i];
             }
@@ -100,10 +112,5 @@ public class ContinuationIndex extends AbstractDoubleIndicator {
             last = fir / order;
             return last;
         }
-
-        double getLast() {
-            return last;
-        }
     }
 }
-

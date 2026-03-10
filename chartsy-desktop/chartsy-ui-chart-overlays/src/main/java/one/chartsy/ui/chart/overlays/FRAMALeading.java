@@ -9,7 +9,6 @@ import one.chartsy.data.CandleSeries;
 import one.chartsy.financial.ValueIndicatorSupport;
 import one.chartsy.financial.indicators.FramaZero;
 import one.chartsy.ui.chart.BasicStrokes;
-import org.openide.util.lookup.ServiceProvider;
 
 import one.chartsy.ui.chart.AbstractOverlay;
 import one.chartsy.ui.chart.Overlay;
@@ -20,7 +19,6 @@ import one.chartsy.ui.chart.plot.LinePlot;
  * 
  * @author Mariusz Bernacki
  */
-@ServiceProvider(service = Overlay.class)
 public class FRAMALeading extends AbstractOverlay {
 
     public FRAMALeading() {
@@ -48,3 +46,5 @@ public class FRAMALeading extends AbstractOverlay {
     @Parameter(name = "Leading Periods")
     public int leadingPeriods = 45;
 }
+
+

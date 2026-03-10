@@ -10,11 +10,9 @@ import one.chartsy.ui.chart.BasicStrokes;
 import one.chartsy.ui.chart.ChartContext;
 import one.chartsy.ui.chart.Indicator;
 import one.chartsy.ui.chart.plot.LinePlot;
-import org.openide.util.lookup.ServiceProvider;
 
 import java.awt.*;
 
-@ServiceProvider(service = Indicator.class)
 public class QuotaIndicator extends AbstractIndicator {
 
     @Parameter(name = "Periods")
@@ -52,3 +50,4 @@ public class QuotaIndicator extends AbstractIndicator {
         return new double[0];
     }
 }
+

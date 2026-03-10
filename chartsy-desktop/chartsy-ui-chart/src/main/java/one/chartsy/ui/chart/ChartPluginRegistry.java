@@ -4,8 +4,6 @@
  */
 package one.chartsy.ui.chart;
 
-import org.openide.util.Lookup;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -14,7 +12,7 @@ import java.util.Objects;
 import java.util.TreeMap;
 
 /**
- * An immutable registry of chart plugins keyed by their display name.
+ * An immutable registry snapshot of chart plugins keyed by their display name.
  *
  * @param <T>
  *            the registered plugin type
@@ -25,10 +23,6 @@ final class ChartPluginRegistry<T extends ChartPlugin<?>> {
     private final LinkedHashMap<String, T> pluginsByName;
     private final List<T> plugins;
     private final List<String> names;
-
-    ChartPluginRegistry(Class<T> pluginType) {
-        this(Lookup.getDefault().lookupAll(pluginType));
-    }
 
     ChartPluginRegistry(Collection<? extends T> plugins) {
         Objects.requireNonNull(plugins, "plugins");
