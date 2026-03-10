@@ -9,10 +9,16 @@ import one.chartsy.study.InsideFillPlotSpec;
 import one.chartsy.study.LinePlotSpec;
 import one.chartsy.study.ShapePlotSpec;
 import one.chartsy.study.StudyAxis;
+import one.chartsy.study.StudyAxisDescriptor;
+import one.chartsy.study.StudyDescriptor;
+import one.chartsy.study.StudyDescriptorProvider;
 import one.chartsy.study.StudyFactory;
+import one.chartsy.study.StudyFactoryDescriptor;
 import one.chartsy.study.StudyFactoryTarget;
 import one.chartsy.study.StudyMemberTarget;
+import one.chartsy.study.StudyOutputDescriptor;
 import one.chartsy.study.StudyOutput;
+import one.chartsy.study.StudyParameterDescriptor;
 import one.chartsy.study.StudyParameter;
 import one.chartsy.study.StudyParameterType;
 import one.chartsy.study.StudyPlotType;
@@ -41,6 +47,11 @@ import javax.tools.JavaFileObject;
 import javax.tools.StandardLocation;
 import java.io.IOException;
 import java.io.Writer;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.net.URLClassLoader;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -89,12 +100,210 @@ public class ChartStudyProcessor extends AbstractProcessor {
             return false;
 
         try {
+            studies = mergeWithExistingStudies(studies);
             writeProvider(studies);
             generated = true;
         } catch (IOException ex) {
             error(null, "Failed to write generated study provider: %s", ex.getMessage());
         }
         return false;
+    }
+
+    private List<StudyModel> mergeWithExistingStudies(List<StudyModel> currentStudies) throws IOException {
+        var mergedStudies = new LinkedHashMap<String, StudyModel>();
+        for (StudyModel study : readExistingStudies()) {
+            mergedStudies.put(study.id(), study);
+        }
+
+        Set<String> currentDefinitionTypes = currentStudies.stream()
+                .map(StudyModel::definitionType)
+                .collect(Collectors.toSet());
+        mergedStudies.entrySet().removeIf(entry -> currentDefinitionTypes.contains(entry.getValue().definitionType()));
+
+        for (StudyModel study : currentStudies) {
+            mergedStudies.put(study.id(), study);
+        }
+
+        return mergedStudies.values().stream()
+                .sorted(Comparator.comparing(StudyModel::definitionType))
+                .toList();
+    }
+
+    private List<StudyModel> readExistingStudies() throws IOException {
+        Path serviceFile = existingServiceFile();
+        if (serviceFile == null || !Files.exists(serviceFile))
+            return List.of();
+
+        Path classOutputRoot = classOutputRoot(serviceFile);
+        try (var classLoader = new URLClassLoader(
+                new java.net.URL[] { classOutputRoot.toUri().toURL() },
+                ChartStudyProcessor.class.getClassLoader())) {
+            var models = new LinkedHashMap<String, StudyModel>();
+            for (String providerClassName : Files.readAllLines(serviceFile)) {
+                String trimmedName = providerClassName.strip();
+                if (trimmedName.isEmpty())
+                    continue;
+                for (StudyDescriptor descriptor : loadExistingDescriptors(trimmedName, classLoader)) {
+                    models.put(descriptor.id(), studyModel(descriptor));
+                }
+            }
+            return List.copyOf(models.values());
+        } catch (ReflectiveOperationException | SecurityException ex) {
+            warning("Failed to inspect existing generated study providers: %s", ex.getMessage());
+            return List.of();
+        }
+    }
+
+    private List<StudyDescriptor> loadExistingDescriptors(String providerClassName, ClassLoader classLoader)
+            throws ReflectiveOperationException {
+        try {
+            Class<?> providerClass = Class.forName(providerClassName, false, classLoader);
+            if (providerClassName.startsWith(PROVIDER_PACKAGE + ".GeneratedStudyDescriptorProvider_"))
+                return loadGeneratedDescriptors(providerClass);
+
+            if (!StudyDescriptorProvider.class.isAssignableFrom(providerClass))
+                return List.of();
+
+            StudyDescriptorProvider provider = (StudyDescriptorProvider) providerClass.getDeclaredConstructor().newInstance();
+            return List.copyOf(provider.getStudyDescriptors());
+        } catch (ClassNotFoundException | LinkageError ex) {
+            warning("Skipping stale study provider %s: %s", providerClassName, ex.getMessage());
+            return List.of();
+        }
+    }
+
+    private List<StudyDescriptor> loadGeneratedDescriptors(Class<?> providerClass) throws ReflectiveOperationException {
+        List<StudyDescriptor> descriptors = new ArrayList<>();
+        for (Method method : Arrays.stream(providerClass.getDeclaredMethods())
+                .filter(method -> method.getParameterCount() == 0)
+                .filter(method -> method.getName().startsWith("descriptor"))
+                .filter(method -> StudyDescriptor.class.equals(method.getReturnType()))
+                .sorted(Comparator.comparing(Method::getName))
+                .toList()) {
+            method.setAccessible(true);
+            try {
+                descriptors.add((StudyDescriptor) method.invoke(null));
+            } catch (InvocationTargetException ex) {
+                Throwable cause = ex.getCause();
+                warning("Skipping stale generated study descriptor %s#%s: %s",
+                        providerClass.getName(),
+                        method.getName(),
+                        cause == null ? ex.getMessage() : cause.getMessage());
+            } catch (LinkageError ex) {
+                warning("Skipping stale generated study descriptor %s#%s: %s",
+                        providerClass.getName(),
+                        method.getName(),
+                        ex.getMessage());
+            }
+        }
+        return descriptors;
+    }
+
+    private Path existingServiceFile() throws IOException {
+        var resource = filer.getResource(StandardLocation.CLASS_OUTPUT, "", PROVIDER_SERVICE);
+        if (!"file".equalsIgnoreCase(resource.toUri().getScheme()))
+            return null;
+        return Path.of(resource.toUri());
+    }
+
+    private Path classOutputRoot(Path serviceFile) {
+        return serviceFile.getParent().getParent().getParent();
+    }
+
+    private StudyModel studyModel(StudyDescriptor descriptor) {
+        List<ParameterModel> parameters = new ArrayList<>();
+        int parameterDeclarationOrder = 0;
+        for (StudyParameterDescriptor parameter : descriptor.parameters().values()) {
+            parameters.add(new ParameterModel(
+                    parameter.id(),
+                    parameter.name(),
+                    parameter.description(),
+                    parameter.scope().name(),
+                    parameter.type().name(),
+                    classLiteral(parameter.valueType()),
+                    classLiteral(parameter.enumType()),
+                    parameter.defaultValue(),
+                    parameter.order(),
+                    parameterDeclarationOrder++,
+                    parameter.stereotype().name()
+            ));
+        }
+
+        List<OutputModel> outputs = new ArrayList<>();
+        for (StudyOutputDescriptor output : descriptor.outputs().values()) {
+            outputs.add(new OutputModel(
+                    output.id(),
+                    output.name(),
+                    output.description(),
+                    output.order(),
+                    output.target().name(),
+                    output.memberName(),
+                    classLiteral(output.valueType())
+            ));
+        }
+
+        StudyAxisDescriptor axis = descriptor.axis();
+        AxisModel axisModel = new AxisModel(
+                doubleLiteral(axis.min()),
+                doubleLiteral(axis.max()),
+                axis.logarithmic(),
+                axis.includeInRange(),
+                Arrays.stream(axis.steps()).mapToObj(ChartStudyProcessor::doubleLiteral).toList()
+        );
+
+        List<PlotModel> plots = descriptor.plots().stream()
+                .map(plot -> new PlotModel(
+                        plot.id(),
+                        plot.label(),
+                        plot.order(),
+                        plot.type().name(),
+                        plot.outputId(),
+                        plot.secondaryOutputId(),
+                        doubleLiteral(plot.value1()),
+                        doubleLiteral(plot.value2()),
+                        plot.upper(),
+                        plot.colorParameter(),
+                        plot.secondaryColorParameter(),
+                        plot.strokeParameter(),
+                        plot.visibleParameter(),
+                        plot.marker().name()
+                ))
+                .sorted(Comparator.comparingInt(PlotModel::order).thenComparing(PlotModel::label))
+                .toList();
+
+        StudyFactoryDescriptor factory = descriptor.factory();
+        return new StudyModel(
+                descriptor.id(),
+                descriptor.name(),
+                descriptor.label(),
+                descriptor.category(),
+                descriptor.kind().name(),
+                descriptor.placement().name(),
+                descriptor.definitionType().getCanonicalName(),
+                descriptor.implementationType().getCanonicalName(),
+                new FactoryModel(
+                        factory.inputKind().name(),
+                        factory.inputParameter(),
+                        factory.target().name(),
+                        factory.memberName(),
+                        factory.parameterIds()
+                ),
+                parameters.stream()
+                        .sorted(Comparator.comparingInt(ParameterModel::order).thenComparingInt(ParameterModel::declarationOrder))
+                        .toList(),
+                outputs.stream()
+                        .sorted(Comparator.comparingInt(OutputModel::order).thenComparing(OutputModel::id))
+                        .toList(),
+                axisModel,
+                plots,
+                descriptor.builderType().getCanonicalName()
+        );
+    }
+
+    private static String classLiteral(Class<?> type) {
+        if (type == null)
+            return "java.lang.Void.class";
+        return normalizeClassLiteral(type.getCanonicalName());
     }
 
     private StudyModel toStudyModel(TypeElement definitionType) {
@@ -540,6 +749,10 @@ public class ChartStudyProcessor extends AbstractProcessor {
 
     private void error(Element element, String message, Object... args) {
         messager.printMessage(Diagnostic.Kind.ERROR, String.format(message, args), element);
+    }
+
+    private void warning(String message, Object... args) {
+        messager.printMessage(Diagnostic.Kind.WARNING, String.format(message, args));
     }
 
     private record StudyModel(
