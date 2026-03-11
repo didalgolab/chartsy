@@ -4,51 +4,40 @@ package one.chartsy.ui;
 
 import one.chartsy.Symbol;
 import one.chartsy.data.provider.DataProvider;
+import one.chartsy.ui.chart.ChartTemplateCatalog;
+import one.chartsy.ui.chart.ChartTemplateSummary;
+import one.chartsy.ui.chart.components.ChartTemplateManagerDialog;
 import one.chartsy.ui.chart.components.SymbolSelectorArea;
 import org.openide.util.Lookup;
 import org.openide.util.NbBundle;
 import org.openide.windows.WindowManager;
 
 import javax.swing.*;
+import javax.swing.DefaultComboBoxModel;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.font.TextAttribute;
 import java.util.*;
 import java.util.List;
+import java.util.UUID;
 
 public class NewChartDialog extends JDialog {
 
     private final transient ResourceBundle rb = NbBundle.getBundle(UI.class);
+    private final ChartTemplateCatalog templateCatalog = ChartTemplateCatalog.getDefault();
 
     private SymbolSelectorArea symbolSelector;
     private List<Symbol> selectedSymbols;
 
     private DataProvider dataProvider;
     private String messageUrl = "";
+    private List<ChartTemplateSummary> availableTemplates = List.of();
+    private ChartOpenOptions chartOpenOptions = ChartOpenOptions.DEFAULT;
 
-
-    /**
-     * Constructs a new open chart dialog from the specified parameters.
-     *
-     * @param parent
-     *            the parent frame
-     * @param modal
-     *            the modality of the dialog
-     */
     public NewChartDialog(Frame parent, boolean modal) {
         this(parent, modal, null);
     }
 
-    /**
-     * Constructs a new open chart dialog from the specified parameters.
-     *
-     * @param parent
-     *            the parent frame
-     * @param modal
-     *            the modality of the dialog
-     * @param dataProvider
-     *            the read-only data provider to be associated with the dialog
-     */
     public NewChartDialog(Frame parent, boolean modal, DataProvider dataProvider) {
         super(parent, modal);
 
@@ -60,23 +49,37 @@ public class NewChartDialog extends JDialog {
         initForm(dataProvider);
     }
 
-    private List<String> availableTemplates = List.of("Default");
-    private String defaultTemplate;
-
-    public void setAvailableTemplates(java.util.List<String> templates) {
-        this.availableTemplates = Objects.requireNonNull(templates);
+    public void setAvailableTemplates(List<ChartTemplateSummary> templates) {
+        availableTemplates = List.copyOf(Objects.requireNonNull(templates, "templates"));
+        templateChoice.setModel(new DefaultComboBoxModel<>(availableTemplates.toArray(ChartTemplateSummary[]::new)));
+        templateChoice.setEnabled(!availableTemplates.isEmpty());
     }
 
-    public java.util.List<String> getAvailableTemplates() {
+    public List<ChartTemplateSummary> getAvailableTemplates() {
         return List.copyOf(availableTemplates);
     }
 
-    public void setDefaultTemplate(String defaultTemplate) {
-        this.defaultTemplate = defaultTemplate;
+    public void setDefaultTemplate(UUID templateKey) {
+        if (templateKey == null) {
+            if (!availableTemplates.isEmpty())
+                templateChoice.setSelectedIndex(0);
+            return;
+        }
+
+        for (int i = 0; i < availableTemplates.size(); i++) {
+            if (templateKey.equals(availableTemplates.get(i).templateKey())) {
+                templateChoice.setSelectedIndex(i);
+                return;
+            }
+        }
     }
 
-    public Optional<String> getDefaultTemplate() {
-        return Optional.ofNullable(defaultTemplate);
+    public Optional<ChartTemplateSummary> getDefaultTemplate() {
+        return availableTemplates.stream().filter(ChartTemplateSummary::defaultTemplate).findFirst();
+    }
+
+    public ChartOpenOptions getChartOpenOptions() {
+        return chartOpenOptions;
     }
 
     private void initForm(DataProvider dataProvider) {
@@ -98,6 +101,7 @@ public class NewChartDialog extends JDialog {
         this.dataProvider = dataProvider;
 
         symbolSelector.setDataProvider(dataProvider);
+        refreshTemplateChoices(null);
     }
 
     public DataProvider getDataProvider() {
@@ -106,6 +110,8 @@ public class NewChartDialog extends JDialog {
 
     private void initComponents() {
         dataProviderChoice = new JComboBox<>();
+        templateChoice = new JComboBox<>();
+        manageTemplatesButton = new JButton();
         openButton = new JButton();
         cancelButton = new JButton();
 
@@ -117,8 +123,24 @@ public class NewChartDialog extends JDialog {
                 Collections.singletonMap(
                         TextAttribute.WEIGHT, TextAttribute.WEIGHT_BOLD));
         dataProviderLabel.setFont(bolderFont);
+        JLabel templateLabel = new JLabel(rb.getString("NewChartDialog.template"));
+        templateLabel.setFont(bolderFont);
 
         dataProviderChoice.addActionListener(this::onDataProviderChange);
+        templateChoice.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                String label = "";
+                if (value instanceof ChartTemplateSummary template) {
+                    label = template.name();
+                    if (template.defaultTemplate())
+                        label += " (Default)";
+                }
+                return super.getListCellRendererComponent(list, label, index, isSelected, cellHasFocus);
+            }
+        });
+        manageTemplatesButton.setText(rb.getString("NewChartDialog.manageTemplates"));
+        manageTemplatesButton.addActionListener(this::onManageTemplates);
 
         openButton.setText(rb.getString("NewChartDialog.open"));
         openButton.addActionListener(this::onAccepted);
@@ -161,6 +183,14 @@ public class NewChartDialog extends JDialog {
         pane.add(dataProviderLabel, c);
         c.gridwidth = GridBagConstraints.REMAINDER;
         pane.add(dataProviderChoice, c);
+        c.gridwidth = 1;
+        pane.add(templateLabel, c);
+        c.weightx = 1.0;
+        c.gridwidth = 1;
+        pane.add(templateChoice, c);
+        c.weightx = 0.0;
+        c.gridwidth = GridBagConstraints.REMAINDER;
+        pane.add(manageTemplatesButton, c);
         c.gridwidth = 1;
         //pane.add(exchangeLabel, c);
         c.gridwidth = GridBagConstraints.REMAINDER;
@@ -245,6 +275,7 @@ public class NewChartDialog extends JDialog {
                 .stream()
                 .map(symb -> new Symbol(symb, dataProvider))
                 .toList();
+        chartOpenOptions = new ChartOpenOptions(null, getSelectedTemplateKey());
 
         setVisible(false);
     }
@@ -252,7 +283,19 @@ public class NewChartDialog extends JDialog {
     protected void onCancelled(ActionEvent e) {
         this.selectedSymbols = List.of();
         this.dataProvider = null;
+        this.chartOpenOptions = ChartOpenOptions.DEFAULT;
         setVisible(false);
+    }
+
+    private void onManageTemplates(ActionEvent event) {
+        UUID preferredTemplateKey = getSelectedTemplateKey();
+        ChartTemplateManagerDialog dialog = new ChartTemplateManagerDialog(this, preferredTemplateKey);
+        dialog.setLocationRelativeTo(this);
+        dialog.setVisible(true);
+        UUID selectedTemplateKey = Optional.ofNullable(dialog.getSelectedTemplate())
+                .map(ChartTemplateSummary::templateKey)
+                .orElse(preferredTemplateKey);
+        refreshTemplateChoices(selectedTemplateKey);
     }
 
     private void onMessageClicked(java.awt.event.MouseEvent evt) {
@@ -268,8 +311,23 @@ public class NewChartDialog extends JDialog {
         return selectedSymbols;
     }
 
+    private UUID getSelectedTemplateKey() {
+        Object selectedItem = templateChoice.getSelectedItem();
+        return (selectedItem instanceof ChartTemplateSummary template) ? template.templateKey() : null;
+    }
+
+    private void refreshTemplateChoices(UUID preferredTemplateKey) {
+        setAvailableTemplates(templateCatalog.listTemplates());
+        UUID templateKeyToSelect = (preferredTemplateKey != null)
+                ? preferredTemplateKey
+                : getDefaultTemplate().map(ChartTemplateSummary::templateKey).orElse(null);
+        setDefaultTemplate(templateKeyToSelect);
+    }
+
     private JButton cancelButton;
+    private JButton manageTemplatesButton;
     private JButton openButton;
     private JComboBox<DataProvider> dataProviderChoice;
+    private JComboBox<ChartTemplateSummary> templateChoice;
     private JLabel messageLabel;
 }
