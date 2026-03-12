@@ -186,6 +186,10 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
         return appliedChartTemplate;
     }
 
+    public StoredChartTemplatePayload getAppliedTemplatePayload() {
+        return appliedTemplatePayload;
+    }
+
     public boolean isTemplateDirty() {
         return templateDirty;
     }
@@ -218,6 +222,21 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
 
     public StoredChartTemplatePayload captureCurrentStudyPayload() {
         return ChartTemplatePayloadMapper.getDefault().captureCurrentStudies(this);
+    }
+
+    public ChartTemplate snapshotVisibleTemplate(String templateName) {
+        String snapshotName = (templateName != null && !templateName.isBlank())
+                ? templateName
+                : (chartTemplate != null ? chartTemplate.getName() : "Chart");
+
+        ChartTemplate snapshot = ChartTemplatePayloadMapper.getDefault()
+                .toChartTemplate(snapshotName, captureCurrentStudyPayload());
+        Chart chart = (chartData != null && chartData.getChart() != null)
+                ? chartData.getChart()
+                : (chartTemplate != null ? chartTemplate.getChart() : null);
+        snapshot.setChart(chart);
+        snapshot.setChartProperties(copyChartProperties(chartProperties));
+        return snapshot;
     }
 
     public void refreshTemplateState() {
@@ -323,6 +342,12 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
         if (!Objects.equals(current.getName(), updated.getName()))
             return false;
         return ChartPluginParameterUtils.haveSameParameterValues(current, updated);
+    }
+
+    private static ChartProperties copyChartProperties(ChartProperties source) {
+        ChartProperties copy = new ChartProperties();
+        copy.copyFrom(source);
+        return copy;
     }
 
     @Override

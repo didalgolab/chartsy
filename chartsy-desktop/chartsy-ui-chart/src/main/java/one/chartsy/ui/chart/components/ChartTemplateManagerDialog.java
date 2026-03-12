@@ -64,6 +64,7 @@ public class ChartTemplateManagerDialog extends JDialog {
     private final JButton closeButton = new JButton("Close");
 
     private ChartTemplateSummary selectedTemplate;
+    private boolean selectedTemplateLoaded;
 
     public ChartTemplateManagerDialog(Component locationAnchor, UUID preferredTemplateKey) {
         this(locationAnchor, preferredTemplateKey,
@@ -171,11 +172,21 @@ public class ChartTemplateManagerDialog extends JDialog {
 
     private void refreshTemplates(UUID preferredTemplateKey) {
         templateListModel.clear();
-        templateCatalog.listTemplates().forEach(templateListModel::addElement);
+        try {
+            templateCatalog.listTemplates().forEach(templateListModel::addElement);
+        } catch (RuntimeException ex) {
+            selectedTemplate = null;
+            selectedTemplateLoaded = false;
+            chooserPanel.initForm(allIndicators, java.util.List.of(), allOverlays, java.util.List.of());
+            updateButtonStates();
+            showTemplateError("Unable to load chart templates.", ex);
+            return;
+        }
 
         if (templateListModel.isEmpty()) {
             chooserPanel.initForm(allIndicators, java.util.List.of(), allOverlays, java.util.List.of());
             selectedTemplate = null;
+            selectedTemplateLoaded = false;
             updateButtonStates();
             return;
         }
@@ -203,13 +214,21 @@ public class ChartTemplateManagerDialog extends JDialog {
         selectedTemplate = templateList.getSelectedValue();
         if (selectedTemplate == null) {
             chooserPanel.initForm(allIndicators, java.util.List.of(), allOverlays, java.util.List.of());
+            selectedTemplateLoaded = false;
             updateButtonStates();
             return;
         }
 
-        ChartTemplateCatalog.LoadedTemplate loadedTemplate = templateCatalog.getTemplate(selectedTemplate.templateKey());
-        chooserPanel.initForm(allIndicators, loadedTemplate.chartTemplate().getIndicators(),
-                allOverlays, loadedTemplate.chartTemplate().getOverlays());
+        try {
+            ChartTemplateCatalog.LoadedTemplate loadedTemplate = templateCatalog.getTemplate(selectedTemplate.templateKey());
+            chooserPanel.initForm(allIndicators, loadedTemplate.chartTemplate().getIndicators(),
+                    allOverlays, loadedTemplate.chartTemplate().getOverlays());
+            selectedTemplateLoaded = true;
+        } catch (RuntimeException ex) {
+            chooserPanel.initForm(allIndicators, java.util.List.of(), allOverlays, java.util.List.of());
+            selectedTemplateLoaded = false;
+            showTemplateError("Unable to load the selected template.", ex);
+        }
         updateButtonStates();
     }
 
@@ -217,9 +236,9 @@ public class ChartTemplateManagerDialog extends JDialog {
         boolean hasSelection = selectedTemplate != null;
         boolean editable = hasSelection && selectedTemplate.editable();
 
-        duplicateButton.setEnabled(hasSelection);
+        duplicateButton.setEnabled(hasSelection && selectedTemplateLoaded);
         moreActionsButton.setEnabled(hasOverflowActions(hasSelection, editable));
-        saveButton.setEnabled(editable);
+        saveButton.setEnabled(editable && selectedTemplateLoaded);
     }
 
     private boolean hasOverflowActions(boolean hasSelection, boolean editable) {
@@ -231,25 +250,39 @@ public class ChartTemplateManagerDialog extends JDialog {
     }
 
     private void onNewTemplate(ActionEvent event) {
-        String proposedName = suggestTemplateName("New Template");
-        String name = promptForName("Create Template", "Template name:", proposedName);
-        if (name == null)
-            return;
+        while (true) {
+            String proposedName = suggestTemplateName("New Template");
+            String name = promptForName("Create Template", "Template name:", proposedName);
+            if (name == null)
+                return;
 
-        ChartTemplateSummary created = templateCatalog.createTemplate(name, chooserPanel.getSelection());
-        refreshTemplates(created.templateKey());
+            try {
+                ChartTemplateSummary created = templateCatalog.createTemplate(name, chooserPanel.getSelection());
+                refreshTemplates(created.templateKey());
+                return;
+            } catch (RuntimeException ex) {
+                showTemplateError("Unable to create the chart template.", ex);
+            }
+        }
     }
 
     private void onDuplicateTemplate(ActionEvent event) {
-        if (selectedTemplate == null)
+        if (selectedTemplate == null || !selectedTemplateLoaded)
             return;
 
-        String name = promptForName("Duplicate Template", "Template name:", suggestTemplateName(selectedTemplate.name() + " Copy"));
-        if (name == null)
-            return;
+        while (true) {
+            String name = promptForName("Duplicate Template", "Template name:", suggestTemplateName(selectedTemplate.name() + " Copy"));
+            if (name == null)
+                return;
 
-        ChartTemplateSummary created = templateCatalog.createTemplate(name, chooserPanel.getSelection());
-        refreshTemplates(created.templateKey());
+            try {
+                ChartTemplateSummary created = templateCatalog.createTemplate(name, chooserPanel.getSelection());
+                refreshTemplates(created.templateKey());
+                return;
+            } catch (RuntimeException ex) {
+                showTemplateError("Unable to duplicate the chart template.", ex);
+            }
+        }
     }
 
     private void onMoreActions(ActionEvent event) {
@@ -264,10 +297,11 @@ public class ChartTemplateManagerDialog extends JDialog {
         if (selectedTemplate == null)
             return menu;
 
-        if (selectedTemplate.editable()) {
+        if (selectedTemplate.editable() && selectedTemplateLoaded) {
             menu.add(menuItem("Rename", this::onRenameTemplate));
-            menu.add(menuItem("Delete", this::onDeleteTemplate));
         }
+        if (selectedTemplate.editable())
+            menu.add(menuItem("Delete", this::onDeleteTemplate));
         if (!selectedTemplate.defaultTemplate()) {
             if (menu.getComponentCount() > 0)
                 menu.addSeparator();
@@ -282,15 +316,22 @@ public class ChartTemplateManagerDialog extends JDialog {
     }
 
     private void onRenameTemplate(ActionEvent event) {
-        if (selectedTemplate == null || !selectedTemplate.editable())
+        if (selectedTemplate == null || !selectedTemplate.editable() || !selectedTemplateLoaded)
             return;
 
-        String name = promptForName("Rename Template", "Template name:", selectedTemplate.name());
-        if (name == null)
-            return;
+        while (true) {
+            String name = promptForName("Rename Template", "Template name:", selectedTemplate.name());
+            if (name == null)
+                return;
 
-        ChartTemplateSummary updated = templateCatalog.updateTemplate(selectedTemplate.templateKey(), name, chooserPanel.getSelection());
-        refreshTemplates(updated.templateKey());
+            try {
+                ChartTemplateSummary updated = templateCatalog.updateTemplate(selectedTemplate.templateKey(), name, chooserPanel.getSelection());
+                refreshTemplates(updated.templateKey());
+                return;
+            } catch (RuntimeException ex) {
+                showTemplateError("Unable to rename the chart template.", ex);
+            }
+        }
     }
 
     private void onDeleteTemplate(ActionEvent event) {
@@ -304,33 +345,49 @@ public class ChartTemplateManagerDialog extends JDialog {
         if (!NotifyDescriptor.YES_OPTION.equals(DialogDisplayer.getDefault().notify(descriptor)))
             return;
 
-        UUID deletedKey = selectedTemplate.templateKey();
-        templateCatalog.deleteTemplate(deletedKey);
-        refreshTemplates(null);
+        try {
+            UUID deletedKey = selectedTemplate.templateKey();
+            templateCatalog.deleteTemplate(deletedKey);
+            refreshTemplates(null);
+        } catch (RuntimeException ex) {
+            showTemplateError("Unable to delete the chart template.", ex);
+        }
     }
 
     private void onSetDefaultTemplate(ActionEvent event) {
         if (selectedTemplate == null)
             return;
 
-        ChartTemplateSummary updated = templateCatalog.setDefaultTemplate(selectedTemplate.templateKey());
-        refreshTemplates(updated.templateKey());
+        try {
+            ChartTemplateSummary updated = templateCatalog.setDefaultTemplate(selectedTemplate.templateKey());
+            refreshTemplates(updated.templateKey());
+        } catch (RuntimeException ex) {
+            showTemplateError("Unable to set the chart template as default.", ex);
+        }
     }
 
     private void onRestoreBuiltIn(ActionEvent event) {
-        ChartTemplateSummary restored = templateCatalog.restoreBuiltIn();
-        refreshTemplates(restored.templateKey());
+        try {
+            ChartTemplateSummary restored = templateCatalog.restoreBuiltIn();
+            refreshTemplates(restored.templateKey());
+        } catch (RuntimeException ex) {
+            showTemplateError("Unable to restore the built-in template.", ex);
+        }
     }
 
     private void onSaveTemplate(ActionEvent event) {
-        if (selectedTemplate == null || !selectedTemplate.editable())
+        if (selectedTemplate == null || !selectedTemplate.editable() || !selectedTemplateLoaded)
             return;
 
-        ChartTemplateSummary updated = templateCatalog.updateTemplate(
-                selectedTemplate.templateKey(),
-                selectedTemplate.name(),
-                chooserPanel.getSelection());
-        refreshTemplates(updated.templateKey());
+        try {
+            ChartTemplateSummary updated = templateCatalog.updateTemplate(
+                    selectedTemplate.templateKey(),
+                    selectedTemplate.name(),
+                    chooserPanel.getSelection());
+            refreshTemplates(updated.templateKey());
+        } catch (RuntimeException ex) {
+            showTemplateError("Unable to save the chart template.", ex);
+        }
     }
 
     private String promptForName(String title, String message, String initialValue) {
@@ -358,15 +415,24 @@ public class ChartTemplateManagerDialog extends JDialog {
             candidate = "Template";
 
         int suffix = 2;
-        java.util.Set<String> existingNames = templateCatalog.listTemplates().stream()
-                .map(template -> template.name().toLowerCase(java.util.Locale.ROOT))
-                .collect(java.util.stream.Collectors.toSet());
+        java.util.Set<String> existingNames = new java.util.LinkedHashSet<>();
+        for (int i = 0; i < templateListModel.size(); i++)
+            existingNames.add(templateListModel.get(i).name().toLowerCase(java.util.Locale.ROOT));
         String normalizedCandidate = candidate.toLowerCase(java.util.Locale.ROOT);
         while (existingNames.contains(normalizedCandidate)) {
             candidate = baseName + " " + suffix++;
             normalizedCandidate = candidate.toLowerCase(java.util.Locale.ROOT);
         }
         return candidate;
+    }
+
+    private void showTemplateError(String title, RuntimeException ex) {
+        String message = ex.getMessage();
+        if (message == null || message.isBlank())
+            message = title;
+        else
+            message = title + "\n" + message;
+        JOptionPane.showMessageDialog(this, message, "Template Error", JOptionPane.ERROR_MESSAGE);
     }
 
     private static Window resolveOwner(Component locationAnchor) {

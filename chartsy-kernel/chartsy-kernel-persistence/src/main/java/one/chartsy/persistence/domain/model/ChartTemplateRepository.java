@@ -17,9 +17,7 @@ public interface ChartTemplateRepository extends JpaRepository<ChartTemplateAggr
 
     Optional<ChartTemplateAggregateData> findByTemplateKey(UUID templateKey);
 
-    Optional<ChartTemplateAggregateData> findByDefaultTemplateTrue();
-
-    Optional<ChartTemplateAggregateData> findByOrigin(ChartTemplateAggregateData.Origin origin);
+    List<ChartTemplateAggregateData> findAllByOriginOrderByNameAsc(ChartTemplateAggregateData.Origin origin);
 
     List<ChartTemplateAggregateData> findAllByOrderByDefaultTemplateDescNameAsc();
 

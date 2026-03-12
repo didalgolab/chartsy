@@ -13,6 +13,7 @@ import java.util.UUID;
 
 public interface ChartTemplateCatalog {
     String BUILT_IN_TEMPLATE_NAME = "Built-in Default";
+    UUID BUILT_IN_TEMPLATE_KEY = UUID.fromString("8f0fdd06-0a53-4a32-a8d6-d136c4e1c1a6");
     int PAYLOAD_VERSION = 1;
 
     record LoadedTemplate(
@@ -38,6 +39,16 @@ public interface ChartTemplateCatalog {
     ChartTemplateSummary setDefaultTemplate(UUID templateKey);
 
     ChartTemplateSummary restoreBuiltIn();
+
+    static ChartTemplateSummary builtInSummary() {
+        return new ChartTemplateSummary(BUILT_IN_TEMPLATE_KEY, BUILT_IN_TEMPLATE_NAME, true, true);
+    }
+
+    static LoadedTemplate builtInTemplate() {
+        ChartTemplate chartTemplate = ChartTemplateDefaults.basicChartTemplate();
+        StoredChartTemplatePayload payload = ChartTemplatePayloadMapper.getDefault().fromChartTemplate(chartTemplate);
+        return new LoadedTemplate(builtInSummary(), chartTemplate, payload);
+    }
 
     static ChartTemplateCatalog getDefault() {
         return LazyHolder.INSTANCE;

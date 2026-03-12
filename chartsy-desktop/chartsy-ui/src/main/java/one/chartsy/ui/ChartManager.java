@@ -9,13 +9,20 @@ import one.chartsy.SymbolResource;
 import one.chartsy.TimeFrame;
 import one.chartsy.data.provider.DataProvider;
 import one.chartsy.ui.chart.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.openide.DialogDisplayer;
+import org.openide.NotifyDescriptor;
 import org.openide.util.Lookup;
 import org.openide.util.lookup.ServiceProvider;
 
+import javax.swing.SwingUtilities;
 import java.util.List;
+import java.util.Objects;
 
 @ServiceProvider(service = ChartManager.class)
 public class ChartManager {
+    private static final Logger log = LogManager.getLogger(ChartManager.class);
     private static final ChartFrameCustomizer NONE = __ -> {};
     private static final String DEFAULT_CHART_TYPE = "Candle Stick";
 
@@ -52,8 +59,8 @@ public class ChartManager {
 
     public ChartTopComponent open(DataProvider provider, SymbolResource<Candle> resource, ChartOpenOptions options, ChartFrameCustomizer customizer) {
         ChartOpenOptions resolvedOptions = (options != null) ? options : ChartOpenOptions.DEFAULT;
-        ChartTemplateCatalog.LoadedTemplate loadedTemplate = ChartTemplateCatalog.getDefault()
-                .resolveTemplate(resolvedOptions.templateKey());
+        TemplateResolution templateResolution = resolveLoadedTemplate(resolvedOptions, ChartTemplateCatalog.getDefault());
+        ChartTemplateCatalog.LoadedTemplate loadedTemplate = templateResolution.loadedTemplate();
         String chartType = resolvedOptions.chartTypeNameOrDefault(DEFAULT_CHART_TYPE);
 
         ChartData chartData = new ChartData();
@@ -70,7 +77,52 @@ public class ChartManager {
         ChartTopComponent tc = new ChartTopComponent(chartFrame);
         tc.open();
         tc.requestActive();
+        if (templateResolution.warningMessage() != null)
+            notifyTemplateFallback(templateResolution.warningMessage());
         return tc;
+    }
+
+    static TemplateResolution resolveLoadedTemplate(ChartOpenOptions options, ChartTemplateCatalog catalog) {
+        ChartOpenOptions resolvedOptions = (options != null) ? options : ChartOpenOptions.DEFAULT;
+        try {
+            return new TemplateResolution(catalog.resolveTemplate(resolvedOptions.templateKey()), null);
+        } catch (IllegalArgumentException ex) {
+            log.warn("Requested chart template `{}` is no longer available. Falling back to the default template.",
+                    resolvedOptions.templateKey(), ex);
+            try {
+                return new TemplateResolution(catalog.getDefaultTemplate(), null);
+            } catch (RuntimeException defaultEx) {
+                return degradedTemplateResolution(resolvedOptions, defaultEx);
+            }
+        } catch (RuntimeException ex) {
+            return degradedTemplateResolution(resolvedOptions, ex);
+        }
+    }
+
+    private static TemplateResolution degradedTemplateResolution(ChartOpenOptions options, RuntimeException ex) {
+        log.warn("Falling back to the built-in chart template while opening a chart", ex);
+        String templateName = (options != null && options.templateKey() != null)
+                ? "requested"
+                : "default";
+        String message = "The " + templateName + " chart template could not be loaded. "
+                + "The chart opened with the built-in template instead.";
+        if (ex.getMessage() != null && !ex.getMessage().isBlank())
+            message += "\n" + ex.getMessage();
+        return new TemplateResolution(ChartTemplateCatalog.builtInTemplate(), message);
+    }
+
+    private static void notifyTemplateFallback(String message) {
+        if (java.awt.GraphicsEnvironment.isHeadless())
+            return;
+
+        NotifyDescriptor descriptor = new NotifyDescriptor.Message(message, NotifyDescriptor.WARNING_MESSAGE);
+        SwingUtilities.invokeLater(() -> DialogDisplayer.getDefault().notify(descriptor));
+    }
+
+    record TemplateResolution(ChartTemplateCatalog.LoadedTemplate loadedTemplate, String warningMessage) {
+        TemplateResolution {
+            loadedTemplate = Objects.requireNonNull(loadedTemplate, "loadedTemplate");
+        }
     }
 
     private static ChartOpenOptions toChartOpenOptions(JsonObject chartOptions) {

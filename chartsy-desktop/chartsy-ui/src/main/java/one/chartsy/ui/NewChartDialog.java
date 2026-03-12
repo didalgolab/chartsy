@@ -191,6 +191,11 @@ public class NewChartDialog extends JDialog {
         c.weightx = 0.0;
         c.gridwidth = GridBagConstraints.REMAINDER;
         pane.add(manageTemplatesButton, c);
+        c.insets = new Insets(0, 10, 4, 10);
+        c.weightx = 1.0;
+        c.gridwidth = GridBagConstraints.REMAINDER;
+        pane.add(messageLabel, c);
+        c.insets = new Insets(1, 10, 1, 10);
         c.gridwidth = 1;
         //pane.add(exchangeLabel, c);
         c.gridwidth = GridBagConstraints.REMAINDER;
@@ -259,8 +264,6 @@ public class NewChartDialog extends JDialog {
     }
 
     protected void onDataProviderChange(ActionEvent evt) {
-        messageLabel.setVisible(false);
-        messageUrl = "";
         JComboBox<DataProvider> source = (JComboBox<DataProvider>) evt.getSource();
         DataProvider provider = (DataProvider) source.getSelectedItem();
         this.dataProvider = provider;
@@ -288,6 +291,9 @@ public class NewChartDialog extends JDialog {
     }
 
     private void onManageTemplates(ActionEvent event) {
+        if (!manageTemplatesButton.isEnabled())
+            return;
+
         UUID preferredTemplateKey = getSelectedTemplateKey();
         ChartTemplateManagerDialog dialog = new ChartTemplateManagerDialog(this, preferredTemplateKey);
         dialog.setLocationRelativeTo(this);
@@ -317,11 +323,36 @@ public class NewChartDialog extends JDialog {
     }
 
     private void refreshTemplateChoices(UUID preferredTemplateKey) {
-        setAvailableTemplates(templateCatalog.listTemplates());
+        try {
+            setAvailableTemplates(templateCatalog.listTemplates());
+            manageTemplatesButton.setEnabled(true);
+            hideTemplateMessage();
+        } catch (RuntimeException ex) {
+            setAvailableTemplates(List.of(ChartTemplateCatalog.builtInSummary()));
+            manageTemplatesButton.setEnabled(false);
+            showTemplateMessage(rb.getString("NewChartDialog.templateUnavailable"));
+        }
         UUID templateKeyToSelect = (preferredTemplateKey != null)
                 ? preferredTemplateKey
                 : getDefaultTemplate().map(ChartTemplateSummary::templateKey).orElse(null);
         setDefaultTemplate(templateKeyToSelect);
+    }
+
+    private void showTemplateMessage(String message) {
+        messageUrl = "";
+        messageLabel.setText(message);
+        messageLabel.setVisible(true);
+        getContentPane().revalidate();
+        getContentPane().repaint();
+        pack();
+    }
+
+    private void hideTemplateMessage() {
+        messageUrl = "";
+        messageLabel.setVisible(false);
+        getContentPane().revalidate();
+        getContentPane().repaint();
+        pack();
     }
 
     private JButton cancelButton;
