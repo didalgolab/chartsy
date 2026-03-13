@@ -4,14 +4,21 @@ package one.chartsy.persistence.domain.model;
 
 import one.chartsy.SymbolGroupContentRepository;
 import one.chartsy.persistence.domain.SymbolGroupAggregateData;
-import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
 @Repository
-public interface SymbolGroupRepository extends JpaRepository<SymbolGroupAggregateData, Long>, SymbolGroupContentRepository {
+public interface SymbolGroupRepository extends SymbolGroupContentRepository {
 
     @Override
     List<SymbolGroupAggregateData> findByParentGroupId(Long parentId);
+
+    SymbolGroupAggregateData save(SymbolGroupAggregateData group);
+
+    SymbolGroupAggregateData saveAndFlush(SymbolGroupAggregateData group);
+
+    void delete(SymbolGroupAggregateData group);
+
+    void deleteAll(Iterable<? extends SymbolGroupAggregateData> groups);
 }

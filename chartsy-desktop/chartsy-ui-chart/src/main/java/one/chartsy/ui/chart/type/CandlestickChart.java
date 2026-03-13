@@ -48,30 +48,7 @@ public class CandlestickChart implements Chart {
     
     @Override
     public void paint(Graphics2D g, ChartContext cf, int width, int height) {
-        // switch antialias off
-        Object oldAntialiasValue = g.getRenderingHint(RenderingHints.KEY_ANTIALIASING);
-        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
-        
-        if (cf.getChartData().getDataRenderingHint() != null) {
-            paintWithHint(g, cf, cf.getChartData().getDataRenderingHint());
-            return;
-        }
-        
-        ChartData cd = cf.getChartData();
-        ChartProperties cp = cf.getChartProperties();
-        if (!cd.isVisibleNull() && cp.getBarVisibility()) {
-            Rectangle rect = new Rectangle(width, height);
-            rect.grow(-2, -2 - rect.height/100);
-            
-            Range range = cf.getMainPanel().getChartPanel().getRange();
-            
-            int candleWidth = (int) Math.round(cp.getBarWidth());
-            if (candleWidth <= 1)
-                drawSubpixelOptimizedChart(g, cd, cp, rect, range, candleWidth);
-            else
-                drawChart(g, cd, cp, rect, range, candleWidth);
-        }
-        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, oldAntialiasValue);
+        // Price rendering is engine-native; this legacy chart remains only for style selection compatibility.
     }
     
     protected void drawChart(Graphics2D g, ChartData cd, ChartProperties cp, Rectangle rect, Range range, int candleWidth) {

@@ -4,6 +4,8 @@
  */
 package one.chartsy.ui.chart;
 
+import java.awt.Component;
+import java.awt.GraphicsConfiguration;
 import java.awt.Insets;
 import java.awt.Rectangle;
 import java.awt.geom.Point2D;
@@ -40,8 +42,11 @@ public class ChartData implements Serializable, ChartFrameListener {
     
     
     
-    public static final int MIN_ITEMS = 40;
+    public static final int MIN_ITEMS = 1;
     public static final int MAX_ITEMS = 1000;
+    private static final double TRAILING_DATA_GAP_PX = 1.0;
+    private static final double MIN_BAR_WIDTH = PixelPerfectCandleGeometry.MIN_BODY_WIDTH;
+    private static final double MAX_BAR_WIDTH = PixelPerfectCandleGeometry.MAX_BODY_WIDTH;
     public static final Insets dataOffset = new Insets(2, 20, 40, 55);
     
     private SymbolIdentity symbol;
@@ -55,6 +60,10 @@ public class ChartData implements Serializable, ChartFrameListener {
     private CandleSeries chartDataset;
     /** The associated chart plot. */
     private Chart chart;
+    /** The native engine-backed price chart style. */
+    private PriceChartStyle priceChartStyle = PriceChartStyle.CANDLE;
+    /** Optional slot policy used to project future slots for regular time frames. */
+    private transient TimeFrameSlotPolicy slotPolicy;
     private VisibleCandles visible;
     private Range visibleRange;
     private List<Indicator> savedIndicators;
@@ -64,6 +73,13 @@ public class ChartData implements Serializable, ChartFrameListener {
     private int period = -1;
     private int last = -1;
     private DataRenderingHint dataRenderingHint;
+    private int visibleSlots = 140;
+    private int visibleStartSlot;
+    private double leadingSlotPadding;
+    private double trailingSlotPadding;
+    private int userTailSlots;
+    private int annotationTailSlots;
+    private boolean viewportInitialized;
     
     public ChartData() {
     }
@@ -86,6 +102,7 @@ public class ChartData implements Serializable, ChartFrameListener {
     
     public void setTimeFrame(TimeFrame interval) {
         this.timeFrame = interval;
+        this.slotPolicy = null;
     }
     
     public void updateDataset() {
@@ -109,9 +126,19 @@ public class ChartData implements Serializable, ChartFrameListener {
      */
     public void setChart(Chart chart) {
         this.chart = chart;
+        this.priceChartStyle = PriceChartStyle.fromChart(chart);
         
         // recalculate the chart dataset
         chartDataset = computeChartDataset().orElse(null);
+    }
+
+    public PriceChartStyle getPriceChartStyle() {
+        return priceChartStyle;
+    }
+
+    public void setPriceChartStyle(PriceChartStyle priceChartStyle) {
+        if (priceChartStyle != null)
+            this.priceChartStyle = priceChartStyle;
     }
     
     /**
@@ -193,6 +220,10 @@ public class ChartData implements Serializable, ChartFrameListener {
         if (timeFrameChanged)
             this.timeFrame = timeFrame;
         this.dataset = quotes;
+        this.slotPolicy = null;
+        this.userTailSlots = 0;
+        this.annotationTailSlots = 0;
+        this.viewportInitialized = false;
         
         // recalculate the chart dataset
         chartDataset = computeChartDataset().orElse(null);
@@ -292,7 +323,7 @@ public class ChartData implements Serializable, ChartFrameListener {
     
     public void calculateRange(ChartContext chartFrame, List<Overlay> overlays) {
         Range.Builder range = new Range.Builder();
-        if (!isVisibleNull()) {
+        if (!isVisibleNull() && getVisible().getLength() > 0) {
             Range di = getVisible().getRange(null).toRange();
             double min = di.min();
             double max = di.max();
@@ -312,36 +343,377 @@ public class ChartData implements Serializable, ChartFrameListener {
                     }
                 }
         }
+        if (range.toRange().isEmpty() && hasDataset()) {
+            Candle lastVisible = getDataset().get(0);
+            range.add(lastVisible.low(), lastVisible.high());
+        }
         setVisibleRange(range.toRange());
     }
     
     public void calculate(ChartContext chartFrame) {
         CandleSeries dataset = getDataset();
-        if (dataset != null) {
-            double barWidth = chartFrame.getChartProperties().getBarWidth();
-            double rectWidth = chartFrame.getMainPanel().getStackPanel().getWidth();
-            
-            if (last == -1)
-                last = dataset.length();
-            if (barWidth >= 3.0)
-                period = (int) (rectWidth / (barWidth + 2));
-            else
-                period = (int) (rectWidth / barWidth);
-            
-            if (period == 0)
-                period = 150;
-            period = Math.min(period, dataset.length());
-
-            setVisible(new VisibleCandles(dataset, dataset.length() - last, period));
-            
-            // shift the marker index if new dataset is shorter than marker location
-            int markerIndex = chartFrame.getMainPanel().getStackPanel().getMarkerIndex();
-            if (markerIndex > period - 1) {
-                markerIndex = period - 1;
-                chartFrame.getMainPanel().getStackPanel().setMarkerIndex(markerIndex);
-            }
-            chartFrame.updateHorizontalScrollBar();
+        if (dataset == null || dataset.length() == 0) {
+            setVisible(null);
+            visibleRange = null;
+            period = -1;
+            last = -1;
+            leadingSlotPadding = 0.0;
+            trailingSlotPadding = 0.0;
+            return;
         }
+
+        int historicalSlots = getHistoricalSlotCount();
+        int desiredVisibleSlots = clampVisibleSlots(estimateVisibleSlots(chartFrame), getTotalSlotCount());
+        if (!viewportInitialized) {
+            visibleSlots = desiredVisibleSlots;
+            visibleStartSlot = Math.max(0, historicalSlots - visibleSlots);
+            viewportInitialized = true;
+        } else if (visibleSlots != desiredVisibleSlots) {
+            int rightEdge = getVisibleEndSlot();
+            visibleSlots = desiredVisibleSlots;
+            visibleStartSlot = Math.clamp(rightEdge - visibleSlots, 0, getMaxVisibleStart());
+        } else {
+            visibleSlots = clampVisibleSlots(visibleSlots, getTotalSlotCount());
+            visibleStartSlot = Math.clamp(visibleStartSlot, 0, getMaxVisibleStart());
+        }
+
+        updateViewportMetrics(chartFrame);
+        updateVisibleWindow();
+        chartFrame.updateHorizontalScrollBar();
+    }
+
+    private int estimateVisibleSlots(ChartContext chartFrame) {
+        double plotWidth = estimatePlotWidth(chartFrame);
+        double displaySpan = projectorDeviceSpan(chartFrame, plotWidth);
+        if (displaySpan <= 0.0)
+            return Math.max(1, visibleSlots);
+
+        double slotStep = estimateSlotStepPixels(chartFrame.getChartProperties());
+        return Math.max(1, (int) Math.floor(displaySpan / slotStep));
+    }
+
+    private static double estimateSlotStepPixels(ChartProperties properties) {
+        return PixelPerfectCandleGeometry.slotStep(properties.getBarWidth());
+    }
+
+    private static double estimatePlotWidth(ChartContext chartFrame) {
+        if (chartFrame.getMainPanel() == null)
+            return -1.0;
+
+        var chartPanel = chartFrame.getMainPanel().getChartPanel();
+        if (chartPanel != null) {
+            Rectangle renderBounds = chartPanel.getRenderBounds();
+            if (renderBounds.width > 0)
+                return renderBounds.width;
+
+            int panelWidth = chartPanel.getWidth();
+            if (panelWidth > 0)
+                return Math.max(1.0, panelWidth - dataOffset.right);
+        }
+
+        int stackWidth = chartFrame.getMainPanel().getStackPanel().getWidth();
+        if (stackWidth > 0)
+            return Math.max(1.0, stackWidth - dataOffset.right);
+        return -1.0;
+    }
+
+    private int clampVisibleSlots(int requested, int totalSlots) {
+        int maxVisible = Math.max(1, Math.min(MAX_ITEMS, Math.max(1, totalSlots)));
+        int minVisible = Math.max(1, Math.min(MIN_ITEMS, maxVisible));
+        return Math.clamp(requested, minVisible, maxVisible);
+    }
+
+    private void updateViewportMetrics(ChartContext chartFrame) {
+        if (chartFrame == null || visibleSlots <= 0) {
+            leadingSlotPadding = 0.0;
+            trailingSlotPadding = 0.0;
+            return;
+        }
+
+        double plotWidth = estimatePlotWidth(chartFrame);
+        double displaySpan = projectorDeviceSpan(chartFrame, plotWidth);
+        if (displaySpan <= 0.0) {
+            leadingSlotPadding = 0.0;
+            trailingSlotPadding = 0.0;
+            return;
+        }
+
+        double slotStep = estimateSlotStepPixels(chartFrame.getChartProperties());
+        double naturalVisibleSlots = displaySpan / slotStep;
+        leadingSlotPadding = Math.max(0.0, naturalVisibleSlots - visibleSlots);
+        trailingSlotPadding = (slotStep > 0.0 && displaySpan > TRAILING_DATA_GAP_PX)
+                ? TRAILING_DATA_GAP_PX / slotStep
+                : 0.0;
+    }
+
+    private static double projectorDisplaySpan(double plotWidth) {
+        if (plotWidth <= 0.0)
+            return -1.0;
+        return Math.max(1.0, plotWidth - 1.0);
+    }
+
+    private static double projectorDeviceSpan(ChartContext chartFrame, double plotWidth) {
+        double logicalSpan = projectorDisplaySpan(plotWidth);
+        if (logicalSpan <= 0.0)
+            return logicalSpan;
+        return logicalSpan * deviceScaleX(chartFrame);
+    }
+
+    private static double deviceScaleX(ChartContext chartFrame) {
+        Component component = null;
+        double paintedScale = -1.0;
+        if (chartFrame != null && chartFrame.getMainPanel() != null) {
+            var chartPanel = chartFrame.getMainPanel().getChartPanel();
+            if (chartPanel != null) {
+                component = chartPanel;
+                paintedScale = chartPanel.getLastPaintScaleX();
+            }
+            if (component == null)
+                component = chartFrame.getMainPanel();
+        }
+        if (Double.isFinite(paintedScale) && paintedScale > 0.0)
+            return paintedScale;
+
+        GraphicsConfiguration configuration = (component != null) ? component.getGraphicsConfiguration() : null;
+        if (configuration == null)
+            return 1.0;
+
+        double scale = configuration.getDefaultTransform().getScaleX();
+        return (Double.isFinite(scale) && scale > 0.0) ? scale : 1.0;
+    }
+
+    private void updateVisibleWindow() {
+        CandleSeries dataset = getDataset();
+        if (dataset == null) {
+            setVisible(null);
+            period = -1;
+            last = -1;
+            return;
+        }
+
+        int historicalSlots = getHistoricalSlotCount();
+        int visibleEndSlot = Math.min(historicalSlots, visibleStartSlot + visibleSlots);
+        int visibleHistoricalLength = Math.max(0, visibleEndSlot - visibleStartSlot);
+        int offset = historicalSlots - visibleEndSlot;
+        setVisible(new VisibleCandles(dataset, Math.max(0, offset), visibleHistoricalLength));
+        period = visibleSlots;
+        last = historicalSlots - visibleStartSlot;
+    }
+
+    public void resetViewport() {
+        viewportInitialized = false;
+        userTailSlots = 0;
+        annotationTailSlots = 0;
+        visibleStartSlot = 0;
+        leadingSlotPadding = 0.0;
+        trailingSlotPadding = 0.0;
+    }
+
+    public int getVisibleSlotCount() {
+        return visibleSlots;
+    }
+
+    public int getVisibleStartSlot() {
+        return visibleStartSlot;
+    }
+
+    public int getVisibleEndSlot() {
+        return visibleStartSlot + visibleSlots;
+    }
+
+    public double getLeadingSlotPadding() {
+        return leadingSlotPadding;
+    }
+
+    public double getViewportSlotSpan() {
+        return Math.max(1.0, visibleSlots + leadingSlotPadding + trailingSlotPadding);
+    }
+
+    public double getViewportMinX() {
+        return visibleStartSlot - 0.5 - leadingSlotPadding;
+    }
+
+    public double getViewportMaxX() {
+        return visibleStartSlot + visibleSlots - 0.5 + trailingSlotPadding;
+    }
+
+    public int getHistoricalSlotCount() {
+        CandleSeries dataset = getChartDataset();
+        if (dataset != null)
+            return dataset.length();
+        return getDatasetLength();
+    }
+
+    public CandleSeries getDisplayDataset() {
+        return chartDataset != null ? chartDataset : dataset;
+    }
+
+    public int getFutureTailSlots() {
+        if (!supportsFutureSlots())
+            return 0;
+        return Math.max(userTailSlots, annotationTailSlots);
+    }
+
+    public int getTotalSlotCount() {
+        return getHistoricalSlotCount() + getFutureTailSlots();
+    }
+
+    public int getMaxVisibleStart() {
+        return Math.max(0, getTotalSlotCount() - visibleSlots);
+    }
+
+    public int getMaxHistoricalVisibleStart() {
+        return Math.max(0, getHistoricalSlotCount() - visibleSlots);
+    }
+
+    public boolean setVisibleStartSlot(int visibleStartSlot) {
+        int clamped = Math.clamp(visibleStartSlot, 0, getMaxVisibleStart());
+        if (this.visibleStartSlot == clamped)
+            return false;
+        this.visibleStartSlot = clamped;
+        if (annotationTailSlots == 0 && getVisibleEndSlot() <= getHistoricalSlotCount())
+            userTailSlots = 0;
+        updateVisibleWindow();
+        return true;
+    }
+
+    public boolean scrollVisibleBy(int deltaSlots) {
+        if (deltaSlots == 0)
+            return false;
+
+        int currentStart = visibleStartSlot;
+        int maxStartBefore = getMaxVisibleStart();
+        int requested = currentStart + deltaSlots;
+        if (supportsFutureSlots() && deltaSlots > 0 && currentStart >= maxStartBefore) {
+            userTailSlots = Math.max(userTailSlots, requested - getMaxHistoricalVisibleStart());
+            visibleSlots = clampVisibleSlots(visibleSlots, getTotalSlotCount());
+        }
+
+        boolean changed = setVisibleStartSlot(requested);
+        if (deltaSlots < 0 && annotationTailSlots == 0 && getVisibleEndSlot() <= getHistoricalSlotCount()) {
+            if (userTailSlots != 0) {
+                userTailSlots = 0;
+                changed = true;
+                setVisibleStartSlot(Math.min(visibleStartSlot, getMaxVisibleStart()));
+            }
+        }
+        return changed;
+    }
+
+    public boolean setVisibleSlotCount(int visibleSlots) {
+        int current = this.visibleSlots;
+        int clamped = clampVisibleSlots(visibleSlots, getTotalSlotCount());
+        if (current == clamped)
+            return false;
+
+        int rightEdge = getVisibleEndSlot();
+        this.visibleSlots = clamped;
+        return setVisibleStartSlot(Math.max(0, rightEdge - clamped));
+    }
+
+    public boolean setAnnotationTailSlots(int annotationTailSlots) {
+        int normalized = supportsFutureSlots() ? Math.max(0, annotationTailSlots) : 0;
+        if (this.annotationTailSlots == normalized)
+            return false;
+        this.annotationTailSlots = normalized;
+        setVisibleStartSlot(Math.min(visibleStartSlot, getMaxVisibleStart()));
+        return true;
+    }
+
+    public int visibleIndexToSlot(int visibleIndex) {
+        return visibleStartSlot + visibleIndex;
+    }
+
+    public int slotToVisibleIndex(int slot) {
+        return slot - visibleStartSlot;
+    }
+
+    public boolean isFutureSlot(int slot) {
+        return slot >= getHistoricalSlotCount();
+    }
+
+    public Candle getCandleAtSlot(int slot) {
+        CandleSeries dataset = getDisplayDataset();
+        int historicalSlots = getHistoricalSlotCount();
+        if (dataset == null || slot < 0 || slot >= historicalSlots)
+            return null;
+        return dataset.get(historicalSlots - slot - 1);
+    }
+
+    public int getLastDisplayedHistoricalSlot() {
+        int historicalEnd = Math.min(getHistoricalSlotCount(), getVisibleEndSlot());
+        return historicalEnd - 1;
+    }
+
+    public Candle getLastDisplayedCandle() {
+        return getCandleAtSlot(getLastDisplayedHistoricalSlot());
+    }
+
+    public long getSlotTime(int slot) {
+        CandleSeries dataset = getDisplayDataset();
+        if (dataset == null || dataset.length() == 0)
+            return 0L;
+
+        int historicalSlots = getHistoricalSlotCount();
+        if (historicalSlots == 0)
+            return 0L;
+        if (slot < 0)
+            slot = 0;
+        if (slot < historicalSlots)
+            return dataset.get(historicalSlots - slot - 1).time();
+
+        if (slotPolicy == null) {
+            long latest = dataset.get(0).time();
+            slotPolicy = TimeFrameSlotPolicy.of(timeFrame, latest).orElse(null);
+        }
+        if (slotPolicy == null)
+            return dataset.get(0).time();
+        return slotPolicy.timeAtOffset(slot - historicalSlots + 1);
+    }
+
+    public int getSlotIndex(long epochNanos) {
+        CandleSeries dataset = getDisplayDataset();
+        int historicalSlots = getHistoricalSlotCount();
+        if (dataset == null || historicalSlots == 0)
+            return 0;
+
+        long newestTime = dataset.get(0).time();
+        if (epochNanos > newestTime) {
+            if (slotPolicy == null)
+                slotPolicy = TimeFrameSlotPolicy.of(timeFrame, newestTime).orElse(null);
+            if (slotPolicy != null)
+                return historicalSlots - 1 + Math.max(1, slotPolicy.slotOffset(epochNanos));
+            return historicalSlots - 1;
+        }
+
+        int seriesIndex = dataset.getTimeline().getTimeLocation(epochNanos);
+        if (seriesIndex < 0) {
+            long oldestTime = dataset.get(historicalSlots - 1).time();
+            if (epochNanos <= oldestTime)
+                return 0;
+            seriesIndex = -seriesIndex - (TimeFrameHelper.isIntraday(timeFrame) ? 1 : 2);
+        }
+        return historicalSlots - seriesIndex - 1;
+    }
+
+    public int getSlotAtX(double x, Rectangle rect) {
+        int visibleIndex = getVisibleIndexAtX(x, rect);
+        if (visibleIndex < 0)
+            return -1;
+        return visibleIndexToSlot(visibleIndex);
+    }
+
+    public double getSlotCenterX(int slot, Rectangle rect) {
+        if (rect == null)
+            return 0.0;
+        if (visibleSlots <= 0 || rect.width <= 0)
+            return rect.x;
+        double slotStep = getSlotStepPixels(rect);
+        return getLeftDataX(rect) + ((slot - visibleStartSlot) + 0.5) * slotStep;
+    }
+
+    public boolean supportsFutureSlots() {
+        return timeFrame != null && (timeFrame.getAsSeconds().isPresent() || timeFrame.getAsMonths().isPresent());
     }
     
     class DefaultDateScale extends DateScale {
@@ -412,6 +784,14 @@ public class ChartData implements Serializable, ChartFrameListener {
                     subScale = new DefaultDateScale(ChronoUnit.MONTHS, 1, startDate, endDate);
                 else if (dates.size() < 9)
                     subScale = new DefaultDateScale(ChronoUnit.MONTHS, 3, startDate, endDate);
+            } else if (incrementUnit == ChronoUnit.MONTHS) {
+                long days = ChronoUnit.DAYS.between(startDate, endDate);
+                if (days <= 45)
+                    subScale = new DefaultDateScale(ChronoUnit.DAYS, 1, startDate, endDate);
+                else if (days <= 120)
+                    subScale = new DefaultDateScale(ChronoUnit.DAYS, 7, startDate, endDate);
+                else if (days <= 240)
+                    subScale = new DefaultDateScale(ChronoUnit.DAYS, 14, startDate, endDate);
             }
         }
         
@@ -514,8 +894,7 @@ public class ChartData implements Serializable, ChartFrameListener {
     
     public double calculateWidth(int width) {
         int count = getDatasetLength();
-        int items = getPeriod();
-        double w = width / items;
+        double w = projectorDisplaySpan(width) / getViewportSlotSpan();
         return w * count;
     }
     
@@ -533,7 +912,9 @@ public class ChartData implements Serializable, ChartFrameListener {
     }
     
     public double getX(double value, Rectangle rect) {
-        return rect.x + (((value + 0.5D) / (double) getPeriod()) * rect.width);
+        if (rect == null || rect.width <= 0)
+            return 0.0;
+        return getLeftDataX(rect) + (value + 0.5D) * getSlotStepPixels(rect);
     }
     
     private double getY(double value, Rectangle2D rect, Range range) {
@@ -633,24 +1014,38 @@ public class ChartData implements Serializable, ChartFrameListener {
     }
     
     public int getIndex(int x, int y, Rectangle rect) {
-        if (!rect.contains(x, y))
+        if (rect == null || !rect.contains(x, y))
             return -1;
-        
-        int items = getPeriod();
-        double w = rect.getWidth() / items;
-        int index = (int)((x - rect.x) / w);
-        if (index >= items)
-            index = items;
-        return index;
+
+        return getVisibleIndexAtX(x, rect);
     }
     
     public int getIndex2(int x, int y, Rectangle rect) {
-        int items = getPeriod();
-        double w = rect.getWidth() / items;
-        int index = (int)((x - rect.x) / w);
-        //		if (index >= items)
-        //			index = items;
-        return index;
+        return getVisibleIndexAtX(x, rect);
+    }
+
+    private double getLeftDataX(Rectangle rect) {
+        return rect.x + leadingSlotPadding * getSlotStepPixels(rect);
+    }
+
+    private double getSlotStepPixels(Rectangle rect) {
+        if (rect == null || rect.width <= 0)
+            return 1.0;
+        return projectorDisplaySpan(rect.width) / getViewportSlotSpan();
+    }
+
+    private int getVisibleIndexAtX(double x, Rectangle rect) {
+        if (visibleSlots <= 0 || rect == null || rect.width <= 0 || x < rect.x || x > rect.x + rect.width)
+            return -1;
+
+        double slotStep = getSlotStepPixels(rect);
+        double leftDataX = getLeftDataX(rect);
+        double rightDataX = leftDataX + (visibleSlots + trailingSlotPadding) * slotStep;
+        if (x < leftDataX || x > rightDataX)
+            return -1;
+
+        double relative = (x - leftDataX) / slotStep;
+        return Math.min(visibleSlots - 1, Math.max(0, (int) Math.floor(relative)));
     }
     
     @Override
@@ -669,21 +1064,19 @@ public class ChartData implements Serializable, ChartFrameListener {
     }
     
     public double zoomIn(double barWidth) {
-        double newWidth = (barWidth < 1)? barWidth * 2 : barWidth + 1;
-        int i = (int) ((period * barWidth) / newWidth);
-        newWidth = i < MIN_ITEMS ? barWidth : newWidth;
-        return newWidth;
+        return Math.clamp(
+                PixelPerfectCandleGeometry.zoomIn(Math.max(MIN_BAR_WIDTH, barWidth)),
+                MIN_BAR_WIDTH,
+                MAX_BAR_WIDTH
+        );
     }
     
     public double zoomOut(double barWidth) {
-        if (hasDataset()) {
-            double newWidth = (barWidth > 1)? barWidth - 1 : barWidth / 2;
-            int barCount = (int) ((period * barWidth) / newWidth);
-            if (barCount > getDataset().length())
-                newWidth = (period * barWidth) / getDataset().length() * 0.9;
-            return newWidth;
-        }
-        return barWidth;
+        return Math.clamp(
+                PixelPerfectCandleGeometry.zoomOut(Math.max(MIN_BAR_WIDTH, barWidth)),
+                MIN_BAR_WIDTH,
+                MAX_BAR_WIDTH
+        );
     }
     
     @Override

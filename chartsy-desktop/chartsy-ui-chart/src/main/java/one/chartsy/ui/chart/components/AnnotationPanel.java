@@ -24,6 +24,7 @@ import java.util.*;
 
 import javax.swing.Action;
 import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
 import javax.swing.ToolTipManager;
 
 import one.chartsy.*;
@@ -129,6 +130,7 @@ public class AnnotationPanel extends JPanel implements OrganizedViewInteractorCo
         model.removeAllLayers();
         graphicLayers.clear();
         model.addLayer(interactiveGraphicLayer = layer);
+        chartFrame.refreshAnnotationFutureTail();
     }
     
     @Override
@@ -211,6 +213,10 @@ public class AnnotationPanel extends JPanel implements OrganizedViewInteractorCo
     public ChartContext getChartFrame() {
         return chartFrame;
     }
+
+    public Rectangle getRenderBounds() {
+        return plotBounds();
+    }
     
     @Override
     public void paint(Graphics g) {
@@ -233,9 +239,17 @@ public class AnnotationPanel extends JPanel implements OrganizedViewInteractorCo
         if (parent instanceof ChartPanel) {
             return ((ChartPanel) parent).getRange();
         } else {
-            return ((IndicatorPanel) parent).getIndicator()
-                    .getRange(chartFrame).range();
+            return ((IndicatorPanel) parent).getPaneRange().range();
         }
+    }
+
+    public boolean isLogarithmicRangeVisible() {
+        return isLogarithmicRange();
+    }
+
+    public double getValueAtY(double y) {
+        Rectangle bounds = plotBounds();
+        return chartFrame.getChartData().getReverseY(y, bounds, getRange(), isLogarithmicRange());
     }
     
     public void setAnnotations(List<Annotation> list) {
@@ -302,27 +316,8 @@ public class AnnotationPanel extends JPanel implements OrganizedViewInteractorCo
                 getParent().requestFocusInWindow();
             
             if (!ChartAnnotator.getGlobal().hasDrawing()) {
-                //				chartFrame.deselectAll();
-                Annotation graphic = model.getGraphic(e.getPoint(), coordinateSystem);
-                if (graphic != null) {
-                    //					setSelected(graphic, true);
-                    if (!getCursor().equals(
-                            Cursor.getPredefinedCursor(Cursor.N_RESIZE_CURSOR))) {
-                        if (chartFrame.getChartProperties().getMarkerVisibility()) {
-                            Rectangle rect = getBounds();
-                            rect.translate(2, 0);
-                            
-                            int index = chartFrame.getChartData().getIndex(e.getX(), e.getY(), rect);
-                            if (index != -1) {
-                                chartFrame.getMainPanel().getStackPanel().setMarkerIndex(index);
-                                chartFrame.getMainPanel().getStackPanel().labelText();
-                                chartFrame.getMainPanel().getStackPanel().repaint();
-                            }
-                        } else {
-                            chartFrame.getMainPanel().getStackPanel().setMarkerIndex(-1);
-                        }
-                    }
-                }
+                if (!getCursor().equals(Cursor.getPredefinedCursor(Cursor.N_RESIZE_CURSOR)))
+                    updateMarkerSlot(e);
             }
         }
         if (e.getButton() == MouseEvent.BUTTON3)
@@ -503,19 +498,7 @@ public class AnnotationPanel extends JPanel implements OrganizedViewInteractorCo
                 //					//}
                 //				}
             } else {
-                if (chartFrame.getChartProperties().getMarkerVisibility()) {
-                    Rectangle rect = getBounds();
-                    rect.translate(2, 0);
-                    
-                    int index = chartFrame.getChartData().getIndex(e.getX(), e.getY(), rect);
-                    if (index != -1) {
-                        chartFrame.getMainPanel().getStackPanel().setMarkerIndex(index);
-                        chartFrame.getMainPanel().getStackPanel().labelText();
-                        chartFrame.getMainPanel().getStackPanel().repaint();
-                    }
-                } else {
-                    chartFrame.getMainPanel().getStackPanel().setMarkerIndex(-1);
-                }
+                updateMarkerSlot(e);
             }
         }
     }
@@ -620,45 +603,46 @@ public class AnnotationPanel extends JPanel implements OrganizedViewInteractorCo
     
     public void tooltipHandler(MouseEvent e) {
         ChartData chartData = chartFrame.getChartData();
-        VisibleCandles dataset = chartData.getVisible();
         DecimalFormat decimalFormat = new DecimalFormat("#,##0.00");
         String newLine = "<br>";
         
-        Rectangle rect = getBounds();
-        rect.translate(2, 0);
-        int index = chartData.getIndex(e.getX(), e.getY(), rect);
-        if (index != -1) {
+        Rectangle rect = plotBounds();
+        if (!rect.contains(e.getPoint())) {
+            setToolTipText(null);
+            return;
+        }
+
+        int slot = slotFromMouseX(e.getX(), false);
+        if (slot != -1) {
             StringBuilder builder = new StringBuilder();
+            int visibleIndex = chartData.slotToVisibleIndex(slot);
+            Candle q0 = chartData.getCandleAtSlot(slot);
             Container parent = getParent();
             if (parent instanceof ChartPanel) {
                 ChartPanel chartPanel = (ChartPanel) parent;
-                Candle q0 = dataset.getQuoteAt(index);
-                long epochMicros = q0.time();
-                double open = q0.open();
-                double high = q0.high();
-                double low = q0.low();
-                double close = q0.close();
-                double volume = q0.volume();
+                long epochMicros = chartData.getSlotTime(slot);
                 
                 builder.append("<html>");
                 builder.append("Date: ")
                 .append(TimeFrameHelper.formatDate(
                         chartData.getTimeFrame(), epochMicros)).append(newLine)
                 .append(newLine);
-                builder.append("Open: ").append(decimalFormat.format(open))
-                .append(newLine);
-                builder.append("High: ").append(decimalFormat.format(high))
-                .append(newLine);
-                builder.append("Low: ").append(decimalFormat.format(low))
-                .append(newLine);
-                builder.append("Close: ").append(decimalFormat.format(close))
-                .append(newLine);
-                builder.append("Volume: ").append(decimalFormat.format(volume))
-                .append(newLine);
+                if (q0 != null) {
+                    builder.append("Open: ").append(decimalFormat.format(q0.open()))
+                    .append(newLine);
+                    builder.append("High: ").append(decimalFormat.format(q0.high()))
+                    .append(newLine);
+                    builder.append("Low: ").append(decimalFormat.format(q0.low()))
+                    .append(newLine);
+                    builder.append("Close: ").append(decimalFormat.format(q0.close()))
+                    .append(newLine);
+                    builder.append("Volume: ").append(decimalFormat.format(q0.volume()))
+                    .append(newLine);
+                }
                 
-                if (chartPanel.hasOverlays()) {
+                if (q0 != null && visibleIndex >= 0 && visibleIndex < chartData.getVisible().getLength() && chartPanel.hasOverlays()) {
                     for (Overlay overlay : chartPanel.getOverlays()) {
-                        LinkedHashMap map = overlay.getHTML(chartFrame, index);
+                        LinkedHashMap map = overlay.getHTML(chartFrame, visibleIndex);
                         Iterator it = map.keySet().iterator();
                         while (it.hasNext()) {
                             String key = it.next().toString();
@@ -677,8 +661,7 @@ public class AnnotationPanel extends JPanel implements OrganizedViewInteractorCo
                 builder.append("</html>");
             } else {
                 IndicatorPanel indicatorPanel = (IndicatorPanel) parent;
-                Indicator indicator = indicatorPanel.getIndicator();
-                long epochMicros = dataset.getQuoteAt(index).time();
+                long epochMicros = chartData.getSlotTime(slot);
                 
                 builder.append("<html>");
                 builder.append("Date: ")
@@ -686,16 +669,20 @@ public class AnnotationPanel extends JPanel implements OrganizedViewInteractorCo
                         chartData.getTimeFrame(), epochMicros)).append(newLine)
                 .append(newLine);
                 
-                LinkedHashMap map = indicator.getHTML(chartFrame, index);
-                Iterator it = map.keySet().iterator();
-                while (it.hasNext()) {
-                    String key = it.next().toString();
-                    String value = map.get(key).toString();
-                    if (value.equals(" ")) {
-                        builder.append(key).append(newLine);
-                    } else {
-                        builder.append(key).append(" ").append(value)
-                        .append(newLine);
+                if (q0 != null && visibleIndex >= 0 && visibleIndex < chartData.getVisible().getLength()) {
+                    for (Indicator indicator : indicatorPanel.getIndicators()) {
+                        LinkedHashMap map = indicator.getHTML(chartFrame, visibleIndex);
+                        Iterator it = map.keySet().iterator();
+                        while (it.hasNext()) {
+                            String key = it.next().toString();
+                            String value = map.get(key).toString();
+                            if (value.equals(" ")) {
+                                builder.append(key).append(newLine);
+                            } else {
+                                builder.append(key).append(" ").append(value)
+                                        .append(newLine);
+                            }
+                        }
                     }
                 }
                 
@@ -703,6 +690,69 @@ public class AnnotationPanel extends JPanel implements OrganizedViewInteractorCo
             }
             
             setToolTipText(builder.toString());
+        } else {
+            setToolTipText(null);
+        }
+    }
+
+    private Rectangle plotBounds() {
+        Container parent = getParent();
+        Rectangle bounds;
+        if (parent instanceof ChartPanel chartPanel) {
+            Rectangle renderBounds = chartPanel.getRenderBounds();
+            if (renderBounds.isEmpty())
+                return new Rectangle();
+            bounds = SwingUtilities.convertRectangle(chartPanel, renderBounds, this);
+        } else if (parent instanceof IndicatorPanel indicatorPanel) {
+            Rectangle renderBounds = indicatorPanel.getRenderBounds();
+            if (renderBounds.isEmpty())
+                return new Rectangle();
+            bounds = SwingUtilities.convertRectangle(indicatorPanel, renderBounds, this);
+        } else {
+            bounds = getBounds();
+            bounds.setLocation(0, 0);
+        }
+        return bounds;
+    }
+
+    private boolean isLogarithmicRange() {
+        Container parent = getParent();
+        if (parent instanceof IndicatorPanel indicatorPanel)
+            return indicatorPanel.getPaneRange().isLogarithmic();
+        return chartFrame.getChartProperties().getAxisLogarithmicFlag();
+    }
+
+    private int slotFromMouseX(double x, boolean clampToVisible) {
+        Rectangle bounds = plotBounds();
+        int slot = chartFrame.getChartData().getSlotAtX(x, bounds);
+        if (slot >= 0 || !clampToVisible)
+            return slot;
+        if (x < bounds.x)
+            return chartFrame.getChartData().getVisibleStartSlot();
+        if (x > bounds.x + bounds.width)
+            return Math.max(chartFrame.getChartData().getVisibleStartSlot(), chartFrame.getChartData().getVisibleEndSlot() - 1);
+        return -1;
+    }
+
+    private void updateMarkerSlot(MouseEvent e) {
+        if (!chartFrame.getChartProperties().getMarkerVisibility()) {
+            chartFrame.getMainPanel().getStackPanel().setMarkerIndex(-1);
+            return;
+        }
+
+        Rectangle bounds = plotBounds();
+        if (!bounds.contains(e.getPoint())) {
+            chartFrame.getMainPanel().getStackPanel().setMarkerIndex(-1);
+            return;
+        }
+
+        int slot = slotFromMouseX(e.getX(), false);
+        if (slot != -1) {
+            chartFrame.getMainPanel().getStackPanel().setMarkerIndex(slot);
+            chartFrame.getMainPanel().getStackPanel().labelText();
+            chartFrame.getMainPanel().getStackPanel().repaint();
+        } else {
+            chartFrame.getMainPanel().getStackPanel().setMarkerIndex(-1);
         }
     }
     
@@ -762,83 +812,35 @@ public class AnnotationPanel extends JPanel implements OrganizedViewInteractorCo
         
         @Override
         public Rectangle getBounds() {
-            return AnnotationPanel.this.getBounds();
+            return plotBounds();
         }
         
         private double getDataToViewY(double v) {
-            Rectangle bounds = getParent().getBounds();
-            bounds.setLocation(0, 0);
-            Insets insets = getParent().getInsets();
-            boolean isLog = chartFrame.getChartProperties().getAxisLogarithmicFlag();
-            
-            return (int) Math.round(chartFrame.getChartData().getY(v, getRange(), bounds, insets, isLog));
+            Rectangle bounds = plotBounds();
+            return chartFrame.getChartData().getY(v, bounds, getRange(), isLogarithmicRange());
         }
         
         private double getViewToDataY(double y) {
-            Rectangle bounds = getParent().getBounds();
-            bounds.setLocation(0, 0);
-            Insets insets = getParent().getInsets();
-            boolean isLog = chartFrame.getChartProperties().getAxisLogarithmicFlag();
-            
-            return chartFrame.getChartData().getReverseY(y, getRange(), bounds, insets, isLog);
+            Rectangle bounds = plotBounds();
+            return chartFrame.getChartData().getReverseY(y, bounds, getRange(), isLogarithmicRange());
         }
         
         @Override
         public int getSlotIndex(long epochMicros) {
-            ChartData cd = chartFrame.getChartData();
-            if (!cd.hasDataset())
-                return 0;
-            
-            CandleSeries quotes = cd.getDataset();
-
-            // TODO
-            //long barTime = TimeFrameHelper.truncateMicros(epochMicros, cd.getTimeFrame());
-            long barTime = epochMicros;
-
-            int barNo = quotes.getTimeline().getTimeLocation(barTime);
-            int count = quotes.length();
-            if (barNo < 0) {
-                // locate nearest neighbor bar
-                long min = quotes.get(count - 1).time();
-                long max = quotes.get(0).time();
-                
-                if (epochMicros < min)
-                    barNo = count - 1;
-                else if (epochMicros > max)
-                    barNo = 0;
-                else
-                    barNo = -barNo - (TimeFrameHelper.isIntraday(cd.getTimeFrame())? 1: 2);
-            }
-            return barNo;
+            return chartFrame.getChartData().getSlotIndex(epochMicros);
         }
         
         private double getDataToViewX(long epochMicros) {
-            int barNo = getSlotIndex(epochMicros);
             ChartData cd = chartFrame.getChartData();
-            Rectangle rect = getBounds();
-            rect.translate(2, 0);
-            
-            int period = cd.getPeriod();
-            int last = cd.getLast();
-            
-            int count = cd.getDatasetLength();
-            
-            int index = count - last + period - barNo - 1;
-            
-            return (int)(0.5 + chartFrame.getChartData().getX(index, rect));
+            Rectangle rect = plotBounds();
+            int slot = cd.getSlotIndex(epochMicros);
+            return cd.getSlotCenterX(slot, rect);
         }
         
         private long getTimeFromX(double x) {
-            Integer idx = null;
             ChartData cd = chartFrame.getChartData();
-            Rectangle rect = getBounds();
-            rect.translate(2, 0);
-            
-            int index = chartFrame.getChartData().getIndex2(
-                    (int)x, 20, rect);
-            
-            Candle q0 = chartFrame.getChartData().getVisible().getQuoteAt2(index);
-            return q0.time();
+            int slot = slotFromMouseX(x, true);
+            return cd.getSlotTime(slot);
         }
     }
     
@@ -993,6 +995,7 @@ public class AnnotationPanel extends JPanel implements OrganizedViewInteractorCo
     @Override
     public void graphicCreated(Annotation graphic) {
         repaint(graphic);
+        chartFrame.refreshAnnotationFutureTail();
     }
     
     /**
@@ -1011,6 +1014,7 @@ public class AnnotationPanel extends JPanel implements OrganizedViewInteractorCo
             setSelected(graphic, false); // already repaints
         else
             repaint(graphic);
+        chartFrame.refreshAnnotationFutureTail();
     }
     
     @Override
@@ -1023,6 +1027,7 @@ public class AnnotationPanel extends JPanel implements OrganizedViewInteractorCo
         repaint(graphic);
         if (oldGraphic != graphic)
             repaint(oldGraphic);
+        chartFrame.refreshAnnotationFutureTail();
     }
     
     /**
@@ -1033,5 +1038,6 @@ public class AnnotationPanel extends JPanel implements OrganizedViewInteractorCo
     @Override
     public void graphicContentChanged() {
         repaint();
+        chartFrame.refreshAnnotationFutureTail();
     }
 }

@@ -3,14 +3,13 @@
 package one.chartsy.ui.chart.plot;
 
 import java.awt.Color;
-import java.awt.Graphics2D;
-import java.awt.Rectangle;
 
 import one.chartsy.base.DoubleDataset;
 import one.chartsy.core.Range;
 import one.chartsy.ui.chart.ChartContext;
+import one.chartsy.ui.chart.PlotRenderContext;
+import one.chartsy.ui.chart.PlotRenderTarget;
 import one.chartsy.ui.chart.data.VisibleValues;
-import one.chartsy.ui.chart.internal.Graphics2DHelper;
 
 public class InsideFillPlot extends AbstractPlot {
     /** The upper boundary of the fill. */
@@ -38,13 +37,12 @@ public class InsideFillPlot extends AbstractPlot {
     }
 
     @Override
-    public void paint(Graphics2D g, ChartContext cf, Range range, Rectangle bounds) {
-        paintFill(g, cf, range, bounds);
+    public void render(PlotRenderTarget target, PlotRenderContext context) {
+        target.addInsideFill(upper, lower, primaryColor, context);
     }
 
-    private void paintFill(Graphics2D g, ChartContext cf, Range range, Rectangle bounds) {
-        VisibleValues upperLine = cf.getChartData().getVisible().getVisibleDataset(upper);
-        VisibleValues lowerLine = cf.getChartData().getVisible().getVisibleDataset(lower);
-        Graphics2DHelper.insideFill(g, cf, range, bounds, upperLine, lowerLine, primaryColor);
+    @Override
+    public boolean supportsLegend() {
+        return false;
     }
 }

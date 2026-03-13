@@ -2,34 +2,57 @@
  * SPDX-License-Identifier: Apache-2.0 */
 package one.chartsy.persistence;
 
+import one.chartsy.Workspace;
 import liquibase.integration.spring.SpringLiquibase;
 import one.chartsy.kernel.config.KernelConfiguration;
+import one.chartsy.persistence.domain.model.JdbcRunnerRepository;
+import one.chartsy.persistence.domain.model.JdbcSymbolGroupRepository;
+import one.chartsy.persistence.domain.model.RunnerRepository;
+import one.chartsy.persistence.domain.model.SymbolGroupRepository;
 import one.chartsy.persistence.domain.services.PersistentSymbolGroupHierarchy;
-import one.chartsy.persistence.event.HibernateEntityEventPublisher;
+import org.h2.jdbcx.JdbcDataSource;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.context.ApplicationEventPublisher;
 
 import javax.sql.DataSource;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
 
 @AutoConfiguration
 @ConditionalOnBean(KernelConfiguration.class)
-@EnableJpaRepositories(basePackages = "one.chartsy.persistence.domain.model")
-@EntityScan(basePackages = "one.chartsy.persistence.domain")
 public class PersistenceAutoConfiguration {
 
     @Bean
-    public PersistentSymbolGroupHierarchy symbolGroupHierarchy() {
-        return new PersistentSymbolGroupHierarchy();
+    public DataSource dataSource() {
+        try {
+            Files.createDirectories(Workspace.current().path());
+        } catch (IOException e) {
+            throw new UncheckedIOException("Cannot create workspace directory", e);
+        }
+
+        var dataSource = new JdbcDataSource();
+        dataSource.setURL("jdbc:h2:file:" + Workspace.current().path().resolve("application") + ";COMPRESS=true");
+        dataSource.setUser("chartsy");
+        dataSource.setPassword("chartsy");
+        return dataSource;
     }
 
     @Bean
-    @Lazy(false)
-    public HibernateEntityEventPublisher hibernateEntityEventPublisher() {
-        return new HibernateEntityEventPublisher();
+    public SymbolGroupRepository symbolGroupRepository(DataSource dataSource, ApplicationEventPublisher eventPublisher, SpringLiquibase liquibase) {
+        return new JdbcSymbolGroupRepository(dataSource, eventPublisher);
+    }
+
+    @Bean
+    public RunnerRepository runnerRepository(DataSource dataSource, SpringLiquibase liquibase) {
+        return new JdbcRunnerRepository(dataSource);
+    }
+
+    @Bean
+    public PersistentSymbolGroupHierarchy symbolGroupHierarchy(SymbolGroupRepository repository, SpringLiquibase liquibase) {
+        return new PersistentSymbolGroupHierarchy(repository);
     }
 
     @Bean

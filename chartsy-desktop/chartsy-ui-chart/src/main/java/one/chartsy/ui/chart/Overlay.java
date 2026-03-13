@@ -5,10 +5,9 @@
 package one.chartsy.ui.chart;
 
 import java.awt.Color;
-import java.awt.Graphics2D;
-import java.awt.Rectangle;
 import java.io.Serializable;
 import java.text.DecimalFormat;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -18,8 +17,6 @@ import one.chartsy.base.DoubleDataset;
 import one.chartsy.ui.chart.data.VisibleValues;
 import one.chartsy.ui.chart.plot.AbstractTimeSeriesPlot;
 import one.chartsy.ui.chart.plot.TimeSeriesPlot;
-
-import javax.swing.*;
 
 /**
  * The overlay displays new information derived from historical price and/or
@@ -58,8 +55,8 @@ public abstract class Overlay extends ChartPlugin<Overlay> implements Serializab
         }
         
         @Override
-        public void paint(Graphics2D g, ChartContext cf, Range range, Rectangle bounds) {
-            // TODO Auto-generated method stub
+        public void render(PlotRenderTarget target, PlotRenderContext context) {
+            // Intentionally empty placeholder dataset plot.
         }
     }
     
@@ -82,6 +79,10 @@ public abstract class Overlay extends ChartPlugin<Overlay> implements Serializab
     
     public void addPlot(String key, Plot plot) {
         plots.put(key, plot);
+    }
+
+    public Map<String, Plot> getPlots() {
+        return Collections.unmodifiableSequencedMap(new LinkedHashMap<>(plots));
     }
     
     public VisibleValues visibleDataset(ChartContext cf, String key) {
@@ -124,12 +125,6 @@ public abstract class Overlay extends ChartPlugin<Overlay> implements Serializab
 
         double margin = range.length() * 0.01;
         return rv.add(range.min() - margin).add(range.max() + margin).toRange();
-    }
-    
-    public void paint(Graphics2D g, ChartContext cf, Rectangle bounds) {
-        Range range = cf.getMainPanel().getChartPanel().getRange();
-        for (Plot plot : plots.values())
-            plot.paint(g, cf, range, bounds);
     }
     
     public abstract void calculate();

@@ -48,7 +48,7 @@ public final class ChartTemplateDefaults {
         props.setAxisStrokeIndex(0);
         props.setAxisLogarithmicFlag(true);
 
-        props.setBarWidth(4.0);
+        props.setBarWidth(PixelPerfectCandleGeometry.DEFAULT_BODY_WIDTH);
         props.setBarColor(new Color(0x2e3436));
         props.setBarStrokeIndex(0);
         props.setBarVisibility(true);
