@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:pro="http://www.liquibase.org/xml/ns/pro" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.1.xsd http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibase-pro-4.1.xsd">
+    <changeSet id="chart-templates" author="codex">
+        <createTable tableName="ONE_CHART_TEMPLATES">
+            <column name="id" type="INTEGER">
+                <constraints nullable="false" primaryKey="true" unique="true" />
+            </column>
+            <column name="template_key" type="UUID">
+                <constraints nullable="false" unique="true" />
+            </column>
+            <column name="created" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP" />
+            <column name="last_modified" type="TIMESTAMP" />
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false" />
+            </column>
+            <column name="name_key" type="VARCHAR(255)">
+                <constraints nullable="false" unique="true" />
+            </column>
+            <column name="origin" type="VARCHAR(20)">
+                <constraints nullable="false" />
+            </column>
+            <column name="default_template" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false" />
+            </column>
+            <column name="payload_version" type="INTEGER">
+                <constraints nullable="false" />
+            </column>
+            <column name="payload_json" type="CLOB">
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+        <createSequence sequenceName="ONE_CHART_TEMPLATE_IDS" incrementBy="50" />
+    </changeSet>
+</databaseChangeLog>

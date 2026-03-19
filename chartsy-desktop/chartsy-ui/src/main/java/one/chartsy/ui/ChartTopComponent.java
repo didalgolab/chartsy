@@ -55,7 +55,17 @@ public class ChartTopComponent extends TopComponent implements TopComponent.Clon
 
         var chartFrame = new ChartFrame();
         chartFrame.setChartData(chartData);
-        chartFrame.setChartTemplate(getChartTemplate());
+        String templateName = (getChartTemplate() != null) ? getChartTemplate().getName() : getName();
+        chartFrame.setChartTemplate(chart.snapshotVisibleTemplate(templateName));
+        if (chart.getAppliedChartTemplate() != null)
+            chartFrame.setAppliedChartTemplate(
+                    new one.chartsy.ui.chart.ChartTemplateSummary(
+                            chart.getAppliedChartTemplate().templateKey(),
+                            chart.getAppliedChartTemplate().name(),
+                            chart.getAppliedChartTemplate().defaultTemplate(),
+                            chart.getAppliedChartTemplate().builtIn()),
+                    chart.getAppliedTemplatePayload());
+        chartFrame.refreshTemplateState();
 
         return new ChartTopComponent(chartFrame);
     }

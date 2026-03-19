@@ -17,6 +17,7 @@ import java.util.Objects;
  */
 public final class ChartTemplateDefaults {
     private static final Logger log = LogManager.getLogger(ChartTemplateDefaults.class);
+    private static final String BASE_CHART_NAME = "Base Chart";
     private static final String BASIC_CHART_NAME = "Basic Chart";
     private static final String DEFAULT_CHART = "Candle Stick";
     private static final List<String> DEFAULT_OVERLAYS = List.of(
@@ -31,11 +32,19 @@ public final class ChartTemplateDefaults {
     private ChartTemplateDefaults() {
     }
 
-    public static ChartTemplate basicChartTemplate() {
-        ChartTemplate template = new ChartTemplate(BASIC_CHART_NAME);
+    public static ChartTemplate baseChartTemplate() {
+        return baseChartTemplate(BASE_CHART_NAME);
+    }
+
+    public static ChartTemplate baseChartTemplate(String name) {
+        ChartTemplate template = new ChartTemplate(Objects.requireNonNull(name, "name"));
         template.setChartProperties(createChartProperties());
         template.setChart(Objects.requireNonNull(ChartManager.getDefault().getChart(DEFAULT_CHART), "default chart"));
+        return template;
+    }
 
+    public static ChartTemplate basicChartTemplate() {
+        ChartTemplate template = baseChartTemplate(BASIC_CHART_NAME);
         StudyRegistry studies = StudyRegistry.getDefault();
         addOverlays(template, studies);
         addIndicators(template, studies);

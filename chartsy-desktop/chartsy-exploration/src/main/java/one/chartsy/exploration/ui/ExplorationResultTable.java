@@ -7,6 +7,7 @@ import one.chartsy.kernel.ExplorationFragment;
 import one.chartsy.kernel.ExplorationListener;
 import one.chartsy.misc.StyleOption;
 import one.chartsy.misc.StyledValue;
+import one.chartsy.ui.ChartOpenOptions;
 import one.chartsy.ui.ChartManager;
 import org.netbeans.swing.etable.ETable;
 import org.openide.util.Lookup;
@@ -145,7 +146,7 @@ public class ExplorationResultTable extends ETable implements ExplorationListene
 
                         ExplorationFragment row = result.getRowAt(rowIndex);
                         Lookup.getDefault().lookup(ChartManager.class)
-                                .open(row.symbol(), TimeFrame.Period.DAILY, null);
+                                .open(row.symbol(), TimeFrame.Period.DAILY, ChartOpenOptions.DEFAULT);
                     }
                 }
             }
