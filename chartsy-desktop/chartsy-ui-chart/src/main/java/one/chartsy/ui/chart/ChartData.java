@@ -343,8 +343,9 @@ public class ChartData implements Serializable, ChartFrameListener {
                     }
                 }
         }
-        if (range.toRange().isEmpty() && hasDataset()) {
-            Candle lastVisible = getDataset().get(0);
+        CandleSeries dataset = getDataset();
+        if (range.toRange().isEmpty() && dataset != null && dataset.length() > 0) {
+            Candle lastVisible = dataset.get(0);
             range.add(lastVisible.low(), lastVisible.high());
         }
         setVisibleRange(range.toRange());

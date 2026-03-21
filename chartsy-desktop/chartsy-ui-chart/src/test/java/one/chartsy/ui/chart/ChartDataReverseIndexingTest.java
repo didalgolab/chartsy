@@ -8,6 +8,7 @@ import one.chartsy.Candle;
 import one.chartsy.SymbolIdentity;
 import one.chartsy.SymbolResource;
 import one.chartsy.TimeFrame;
+import one.chartsy.core.Range;
 import one.chartsy.data.CandleSeries;
 import org.junit.jupiter.api.Test;
 
@@ -77,6 +78,18 @@ class ChartDataReverseIndexingTest {
         assertThat(data.getLastDisplayedCandle().close()).isEqualTo(30.5);
     }
 
+    @Test
+    void emptyDataset_gives_empty_calculated_range() {
+        ChartData data = new ChartData();
+        data.setDataset(emptySeries());
+
+        assertThat(data.hasDataset()).isTrue();
+        assertThat(data.getDatasetLength()).isZero();
+
+        data.calculateRange(null, List.of());
+        assertThat(data.getVisibleRange()).isEqualTo(Range.empty());
+    }
+
     private static CandleSeries sampleSeries() {
         SymbolResource<Candle> resource = SymbolResource.of(SymbolIdentity.of("REVERSAL-TEST"), TimeFrame.Period.DAILY);
         List<Candle> candles = List.of(
@@ -85,5 +98,10 @@ class ChartDataReverseIndexingTest {
                 Candle.of(LocalDate.of(2024, 1, 4).atStartOfDay(), 30.0, 31.0, 29.0, 30.5, 3_000.0)
         );
         return CandleSeries.of(resource, candles);
+    }
+
+    private static CandleSeries emptySeries() {
+        SymbolResource<Candle> resource = SymbolResource.of(SymbolIdentity.of("EMPTY-RANGE-TEST"), TimeFrame.Period.DAILY);
+        return CandleSeries.of(resource, List.of());
     }
 }
