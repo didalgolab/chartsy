@@ -73,7 +73,7 @@ public class ExplorationResultTab extends TopComponent {
                         .toList();
 
                 Lookup.getDefault().lookup(ChartManager.class)
-                        .open(selectedSymbols, TimeFrame.Period.DAILY, null);
+                        .open(selectedSymbols, TimeFrame.Period.DAILY);
             }
         });
         //popupMenu.add(org.openide.awt.Actions.forID("File", "com.softignition.chartsy.actions.ChartsyActions.TabDelimitedExportAction"));

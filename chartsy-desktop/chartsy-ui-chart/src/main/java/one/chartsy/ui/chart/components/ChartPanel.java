@@ -572,6 +572,8 @@ public class ChartPanel extends JLayeredPane implements Serializable {
             @Override
             public void actionPerformed(ActionEvent e) {
                 ChartAction.openSettingsWindow(overlay);
+                if (chartFrame instanceof ChartFrame frame)
+                    frame.refreshTemplateState();
                 chartFrame.getMainPanel().repaint();
             }
         };

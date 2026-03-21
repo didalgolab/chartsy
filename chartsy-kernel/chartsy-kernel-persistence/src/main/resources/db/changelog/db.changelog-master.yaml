@@ -8,3 +8,6 @@ databaseChangeLog:
   - include:
       file: '0.2/20260310_2130_rename_runner_key.xml'
       relativeToChangelogFile: true
+  - include:
+      file: '0.2/20260311_0100_chart_templates.xml'
+      relativeToChangelogFile: true

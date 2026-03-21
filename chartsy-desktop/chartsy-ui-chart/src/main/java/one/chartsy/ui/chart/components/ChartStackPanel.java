@@ -800,6 +800,8 @@ public class ChartStackPanel extends JLayeredPane {
             refreshPanels();
             revalidate();
             getParent().repaint();
+            if (chartFrame instanceof ChartFrame frame)
+                frame.refreshTemplateState();
         }
     }
     
@@ -813,6 +815,8 @@ public class ChartStackPanel extends JLayeredPane {
             refreshPanels();
             revalidate();
             getParent().repaint();
+            if (chartFrame instanceof ChartFrame frame)
+                frame.refreshTemplateState();
         }
     }
     

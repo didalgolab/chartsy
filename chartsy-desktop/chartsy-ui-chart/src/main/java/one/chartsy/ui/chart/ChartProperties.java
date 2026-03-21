@@ -434,6 +434,8 @@ public class ChartProperties implements Serializable {
     {
         setAxisColor(chartProperties.getAxisColor());
         setAxisStrokeIndex(chartProperties.getAxisStrokeIndex());
+        setAxisLogarithmicFlag(chartProperties.getAxisLogarithmicFlag());
+        setBarWidth(chartProperties.getBarWidth());
         setBarColor(chartProperties.getBarColor());
         setBarStrokeIndex(chartProperties.getBarStrokeIndex());
         setBarVisibility(chartProperties.getBarVisibility());
@@ -450,7 +452,11 @@ public class ChartProperties implements Serializable {
         setBackgroundColor(chartProperties.getBackgroundColor());
         setFont(chartProperties.getFont());
         setFontColor(chartProperties.getFontColor());
-        setBarWidth(chartProperties.getBarWidth());
+        setMarkerVisibility(chartProperties.getMarkerVisibility());
+        setToolbarVisibility(chartProperties.getToolbarVisibility());
+        setToolbarSmallIcons(chartProperties.getToolbarSmallIcons());
+        setToolbarShowLabels(chartProperties.getToolbarShowLabels());
+        setAnnotationLayerVisible(chartProperties.isAnnotationLayerVisible());
     }
 
     /**

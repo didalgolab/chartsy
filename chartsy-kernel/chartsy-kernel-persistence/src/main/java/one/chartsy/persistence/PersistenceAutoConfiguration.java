@@ -7,11 +7,15 @@ import liquibase.exception.LiquibaseException;
 import liquibase.integration.spring.SpringLiquibase;
 import one.chartsy.kernel.config.KernelConfiguration;
 import one.chartsy.SymbolGroupContent;
+import one.chartsy.persistence.domain.ChartTemplateAggregateData;
 import one.chartsy.persistence.domain.RunnerAggregateData;
 import one.chartsy.persistence.domain.SymbolGroupAggregateData;
+import one.chartsy.persistence.domain.model.ChartTemplateRepository;
+import one.chartsy.persistence.domain.model.GeneratedChartTemplateRepository;
 import one.chartsy.persistence.domain.model.GeneratedRunnerRepository;
 import one.chartsy.persistence.domain.model.GeneratedSymbolGroupRepository;
 import one.chartsy.persistence.domain.model.RunnerRepository;
+import one.chartsy.persistence.domain.model.SpringGeneratedChartTemplateRepository;
 import one.chartsy.persistence.domain.model.SpringGeneratedRunnerRepository;
 import one.chartsy.persistence.domain.model.SpringGeneratedSymbolGroupRepository;
 import one.chartsy.persistence.domain.model.SymbolGroupRepository;
@@ -40,6 +44,8 @@ import org.springframework.data.relational.core.mapping.event.BeforeConvertCallb
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.sql.DataSource;
 import java.io.IOException;
@@ -71,6 +77,11 @@ public class PersistenceAutoConfiguration extends AbstractJdbcConfiguration {
     @Bean
     public NamedParameterJdbcOperations namedParameterJdbcOperations(DataSource dataSource) {
         return new NamedParameterJdbcTemplate(dataSource);
+    }
+
+    @Bean
+    public PlatformTransactionManager transactionManager(DataSource dataSource) {
+        return new DataSourceTransactionManager(dataSource);
     }
 
     @Bean
@@ -115,6 +126,27 @@ public class PersistenceAutoConfiguration extends AbstractJdbcConfiguration {
     }
 
     @Bean
+    @Lazy
+    public GeneratedChartTemplateRepository generatedChartTemplateRepository(
+            DataAccessStrategy dataAccessStrategy,
+            JdbcMappingContext mappingContext,
+            JdbcConverter jdbcConverter,
+            NamedParameterJdbcOperations jdbcOperations,
+            ApplicationEventPublisher eventPublisher,
+            BeanFactory beanFactory
+    ) {
+        return createRepository(
+                GeneratedChartTemplateRepository.class,
+                dataAccessStrategy,
+                mappingContext,
+                jdbcConverter,
+                jdbcOperations,
+                eventPublisher,
+                beanFactory
+        );
+    }
+
+    @Bean
     public SymbolGroupRepository symbolGroupRepository(
             GeneratedSymbolGroupRepository delegate,
             ApplicationEventPublisher eventPublisher,
@@ -127,6 +159,15 @@ public class PersistenceAutoConfiguration extends AbstractJdbcConfiguration {
     @Lazy
     public RunnerRepository runnerRepository(GeneratedRunnerRepository delegate, SpringLiquibase liquibase) {
         return new SpringGeneratedRunnerRepository(delegate);
+    }
+
+    @Bean
+    @Lazy
+    public ChartTemplateRepository chartTemplateRepository(
+            GeneratedChartTemplateRepository delegate,
+            SpringLiquibase liquibase
+    ) {
+        return new SpringGeneratedChartTemplateRepository(delegate);
     }
 
     @Bean
@@ -184,11 +225,25 @@ public class PersistenceAutoConfiguration extends AbstractJdbcConfiguration {
         };
     }
 
+    @Bean
+    public BeforeConvertCallback<ChartTemplateAggregateData> chartTemplateAggregateBeforeConvert(DataSource dataSource) {
+        return aggregate -> {
+            if (aggregate.getId() == null) {
+                aggregate.setId(nextId(dataSource, "ONE_CHART_TEMPLATE_IDS"));
+                aggregate.markNewlyCreated();
+            } else {
+                aggregate.markModified();
+            }
+            return aggregate;
+        };
+    }
+
     @Override
     protected Set<Class<?>> getInitialEntitySet() {
         return Set.of(
                 SymbolGroupAggregateData.class,
-                RunnerAggregateData.class
+                RunnerAggregateData.class,
+                ChartTemplateAggregateData.class
         );
     }
 

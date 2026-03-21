@@ -16,11 +16,11 @@ import java.util.logging.Logger;
 
 public final class ChartFonts {
     private static final Logger LOG = Logger.getLogger(ChartFonts.class.getName());
-    private static final String REGULAR_RESOURCE = "/one/chartsy/ui/chart/fonts/IosevkaTerm-Regular.ttf";
-    private static final String BOLD_RESOURCE = "/one/chartsy/ui/chart/fonts/IosevkaTerm-Bold.ttf";
+    private static final String REGULAR_RESOURCE = "/one/chartsy/ui/chart/fonts/Iosevka-Regular.ttf";
+    private static final String BOLD_RESOURCE = "/one/chartsy/ui/chart/fonts/Iosevka-Bold.ttf";
     private static final List<String> FALLBACK_FAMILIES = List.of(
-            "Iosevka Term",
             "Iosevka",
+            "Iosevka Term",
             "Iosevka Fixed",
             "Cascadia Mono",
             "JetBrains Mono",
@@ -90,7 +90,8 @@ public final class ChartFonts {
         } catch (IOException ex) {
             throw new UncheckedIOException("Unable to load font resource " + resourcePath, ex);
         } catch (FontFormatException ex) {
-            LOG.log(Level.WARNING, "Unable to initialize embedded chart font " + resourcePath + ", using fallback font", ex);
+            LOG.log(Level.FINE, "Embedded chart font {0} is not supported by the current JVM, using fallback font",
+                    resourcePath);
         } catch (Exception ex) {
             LOG.log(Level.WARNING, "Unable to initialize embedded chart font " + resourcePath + ", using fallback font", ex);
         }
