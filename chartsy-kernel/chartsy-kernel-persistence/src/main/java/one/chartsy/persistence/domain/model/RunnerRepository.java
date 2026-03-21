@@ -3,11 +3,9 @@
 package one.chartsy.persistence.domain.model;
 
 import one.chartsy.persistence.domain.RunnerAggregateData;
-import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
-@Repository
 public interface RunnerRepository {
 
     List<RunnerAggregateData> findAll();

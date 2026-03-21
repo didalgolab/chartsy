@@ -5,26 +5,22 @@ package one.chartsy.persistence.domain;
 import lombok.Getter;
 import lombok.Setter;
 import one.chartsy.kernel.runner.LaunchPerformer;
-
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
 import java.util.Arrays;
 import java.util.List;
 
-import static jakarta.persistence.GenerationType.SEQUENCE;
-
 @Getter
 @Setter
-@Entity
-@Table(name = "ONE_RUNNERS")
+@Table("ONE_RUNNERS")
 public class RunnerAggregateData extends AbstractAggregateData implements LaunchPerformer.Descriptor {
+
     @Id
-    @GeneratedValue(strategy = SEQUENCE, generator = "ONE_RUNNER_IDS")
-    @SequenceGenerator(name = "ONE_RUNNER_IDS", sequenceName = "ONE_RUNNER_IDS")
     private Long id;
-    @Column(name = "runner_key")
+    @Column("RUNNER_KEY")
     private String key;
-    @Enumerated(EnumType.STRING)
     private Status status;
     private String name;
     private String type;

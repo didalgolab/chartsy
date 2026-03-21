@@ -35,7 +35,6 @@ public final class SymbolsApplicationContextFactory {
         var dataSource = createDataSource();
         StartupMetrics.mark("symbolsContext:dataSourceReady");
         initializeLiquibase(dataSource);
-        StartupMetrics.mark("symbolsContext:liquibaseReady");
 
         var context = new GenericApplicationContext();
         var classLoader = Lookup.getDefault().lookup(ClassLoader.class);

@@ -2,72 +2,90 @@
  * SPDX-License-Identifier: Apache-2.0 */
 package one.chartsy.persistence.domain.model;
 
-import liquibase.Contexts;
-import liquibase.Liquibase;
-import liquibase.database.DatabaseFactory;
-import liquibase.database.jvm.JdbcConnection;
-import liquibase.resource.ClassLoaderResourceAccessor;
+import one.chartsy.SymbolGroupContent;
+import one.chartsy.kernel.config.KernelConfiguration;
+import one.chartsy.persistence.PersistenceAutoConfiguration;
 import one.chartsy.persistence.domain.RunnerAggregateData;
-import org.hibernate.SessionFactory;
-import org.hibernate.boot.MetadataSources;
-import org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy;
-import org.hibernate.boot.registry.StandardServiceRegistry;
-import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
-import org.hibernate.cfg.AvailableSettings;
+import one.chartsy.persistence.domain.SymbolGroupAggregateData;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.sql.DriverManager;
-import java.util.UUID;
+import java.util.Comparator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class RunnerRepositoryTest {
 
     @TempDir
-    Path workspace;
+    static Path chartsyHome;
 
-    @Test
-    void liquibase_schema_and_hibernate_mapping_load_seed_runner_from_h2() throws Exception {
-        String databaseName = "runner-repository-" + UUID.randomUUID();
-        String jdbcUrl = "jdbc:h2:file:" + workspace.resolve(databaseName) + ";DB_CLOSE_DELAY=-1";
+    @BeforeEach
+    void resetWorkspace() throws IOException {
+        System.setProperty("chartsy.home", chartsyHome.toString());
 
-        applyChangelog(jdbcUrl);
+        var workspace = chartsyHome.resolve(".chartsy");
+        if (Files.notExists(workspace))
+            return;
 
-        StandardServiceRegistry registry = new StandardServiceRegistryBuilder()
-                .applySetting(AvailableSettings.JAKARTA_JDBC_URL, jdbcUrl)
-                .applySetting(AvailableSettings.JAKARTA_JDBC_USER, "sa")
-                .applySetting(AvailableSettings.JAKARTA_JDBC_PASSWORD, "")
-                .applySetting(AvailableSettings.JAKARTA_JDBC_DRIVER, "org.h2.Driver")
-                .applySetting(AvailableSettings.DIALECT, "org.hibernate.dialect.H2Dialect")
-                .applySetting(AvailableSettings.PHYSICAL_NAMING_STRATEGY, CamelCaseToUnderscoresNamingStrategy.class.getName())
-                .build();
-        try {
-            MetadataSources metadataSources = new MetadataSources(registry)
-                    .addAnnotatedClass(RunnerAggregateData.class);
-
-            try (SessionFactory sessionFactory = metadataSources.buildMetadata().buildSessionFactory();
-                 var session = sessionFactory.openSession()) {
-                assertThat(session.createQuery("from RunnerAggregateData", RunnerAggregateData.class).list())
-                        .extracting(RunnerAggregateData::getKey)
-                        .contains("EXPLORATION");
-            }
-        } finally {
-            StandardServiceRegistryBuilder.destroy(registry);
+        try (var stream = Files.walk(workspace)) {
+            stream.sorted(Comparator.reverseOrder())
+                    .forEach(path -> {
+                        try {
+                            Files.deleteIfExists(path);
+                        } catch (IOException e) {
+                            throw new IllegalStateException("Cannot delete " + path, e);
+                        }
+                    });
         }
     }
 
-    private void applyChangelog(String jdbcUrl) throws Exception {
-        try (var connection = DriverManager.getConnection(jdbcUrl, "sa", "")) {
-            var database = DatabaseFactory.getInstance()
-                    .findCorrectDatabaseImplementation(new JdbcConnection(connection));
-            try (var liquibase = new Liquibase(
-                    "db/changelog/db.changelog-master.yaml",
-                    new ClassLoaderResourceAccessor(getClass().getClassLoader()),
-                    database)) {
-                liquibase.update(new Contexts());
-            }
+    @AfterAll
+    static void clearChartsyHome() {
+        System.clearProperty("chartsy.home");
+    }
+
+    @Test
+    void generated_runner_repository_loads_seed_runner_from_h2() {
+        try (var context = createContext()) {
+            assertThat(context.getBean(RunnerRepository.class).findAll())
+                    .extracting(RunnerAggregateData::getKey)
+                    .contains("EXPLORATION");
         }
+    }
+
+    @Test
+    void generated_symbol_group_repository_supports_parent_lookup() {
+        try (var context = createContext()) {
+            var repository = context.getBean(SymbolGroupRepository.class);
+
+            var parent = new SymbolGroupAggregateData();
+            parent.setName("Parent");
+            parent.setContentType(SymbolGroupContent.Type.FOLDER);
+            parent = repository.save(parent);
+
+            var child = new SymbolGroupAggregateData();
+            child.setParentGroupId(parent.getId());
+            child.setName("Child");
+            child.setContentType(SymbolGroupContent.Type.FOLDER);
+            child = repository.save(child);
+
+            assertThat(repository.findByParentGroupId(parent.getId()))
+                    .extracting(SymbolGroupAggregateData::getId)
+                    .contains(child.getId());
+        }
+    }
+
+    private AnnotationConfigApplicationContext createContext() {
+        var context = new AnnotationConfigApplicationContext();
+        context.registerBean(KernelConfiguration.class, KernelConfiguration::new);
+        context.register(PersistenceAutoConfiguration.class);
+        context.refresh();
+        return context;
     }
 }
