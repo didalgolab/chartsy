@@ -4,24 +4,18 @@
  */
 package one.chartsy.ui.chart;
 
-import java.awt.Color;
-import java.awt.Graphics2D;
-import java.awt.Rectangle;
-import java.text.DecimalFormat;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.UUID;
-
 import one.chartsy.base.DoubleDataset;
 import one.chartsy.core.Range;
 import one.chartsy.data.CandleSeries;
-import one.chartsy.ui.chart.data.VisibleValues;
+import one.chartsy.study.StudyPresentationPlan;
 import one.chartsy.ui.chart.data.VisualRange;
-import one.chartsy.ui.chart.plot.AbstractTimeSeriesPlot;
-import one.chartsy.ui.chart.plot.TimeSeriesPlot;
 
-import javax.swing.*;
+import java.awt.Color;
+import java.text.DecimalFormat;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * The indicator displays new information derived from historical price and/or
@@ -42,53 +36,18 @@ import javax.swing.*;
 public abstract class Indicator extends ChartPlugin<Indicator> {
     /** The dataset used by this indicator. */
     private transient CandleSeries dataset;
-    /** The overlay plots currently being displayed. */
-    protected final Map<String, Plot> plots = createPlotsMap();
     /** Indicates whether the indicator plot should be paint when minimized. */
     private boolean minimizedPaint;
     /** The identifier of the panel to which this indicator should be added to. */
     private @Parameter(name = "panelId") UUID panelId = UUID.randomUUID();
+    /** The native presentation plan used by the engine-backed renderer. */
+    private transient StudyPresentationPlan presentationPlan = StudyPresentationPlan.empty(null);
+    /** The indicator plots currently being displayed. */
+    protected final Map<String, Plot> plots = createPlotsMap();
     
     
     public Indicator(String name) {
         super(name);
-    }
-    
-    public static class EmptyPlot extends AbstractTimeSeriesPlot {
-        
-        public EmptyPlot(DoubleDataset data, Color primaryColor) {
-            super(data, primaryColor);
-        }
-        
-        @Override
-        public void paint(Graphics2D g, ChartContext cf, Range range, Rectangle bounds) {
-            // TODO Auto-generated method stub
-        }
-        
-    }
-    
-    public LinkedHashMap<String, String> getHTML(ChartContext cf, int i) {
-        LinkedHashMap<String, String> ht = new LinkedHashMap<>();
-        
-        DecimalFormat df = new DecimalFormat("#,##0.00");
-        double[] values = getValues(cf, i);
-        
-        ht.put(getLabel(), " ");
-        if (values.length > 0) {
-            int j = 0;
-            Color[] colors = getColors();
-            for (String key : plots.keySet()) {
-                ht.put(getFontHTML(colors[j], key.concat(":")), getFontHTML(colors[j], df.format(values[j])));
-                j++;
-            }
-        }
-        
-        return ht;
-    }
-    
-    public String getFontHTML(Color color, String text) {
-        String html = "<font color=\"" + Integer.toHexString(color.getRGB() & 0x00ffffff) + "\">" + text + "</font>";
-        return html;
     }
     
     protected CandleSeries getDataset() {
@@ -98,30 +57,7 @@ public abstract class Indicator extends ChartPlugin<Indicator> {
     public void setDataset(CandleSeries dataset) {
         this.dataset = dataset;
     }
-    
-    protected void addPlot(String key, Plot plot) {
-        plots.put(key, plot);
-    }
-    
-    protected final boolean hasPlot(String key) {
-        return getPlot(key) != null;
-    }
-    
-    protected Plot getPlot(String key) {
-        return plots.get(key);
-    }
-    
-    public VisibleValues visibleDataset(ChartContext view, String key) {
-        Plot plot = plots.get(key);
-        if (plot instanceof TimeSeriesPlot)
-            return ((TimeSeriesPlot) plot).getVisibleData(view);
-        return null;
-    }
-    
-    public void clearPlots() {
-        plots.clear();
-    }
-    
+
     @Override
     public abstract Indicator newInstance();
     
@@ -129,13 +65,9 @@ public abstract class Indicator extends ChartPlugin<Indicator> {
         if (plots.isEmpty()) {
             return new VisualRange(Range.empty());
         }
-        
-        Iterator<Plot> it = plots.values().iterator();
-
         Range.Builder rv = new Range.Builder();
-        while (it.hasNext()) {
-            rv = it.next().contributeRange(rv, cf);
-        }
+        for (Plot plot : plots.values())
+            rv = plot.contributeRange(rv, cf);
         Range range = rv.toRange();
         if (range.isEmpty())
             return new VisualRange(Range.of(0.0, Double.POSITIVE_INFINITY));
@@ -143,13 +75,7 @@ public abstract class Indicator extends ChartPlugin<Indicator> {
         double margin = range.length() * 0.01;
         return new VisualRange(rv.add(range.min() - margin).add(range.max() + margin).toRange());
     }
-    
-    public void paint(Graphics2D g, ChartContext view, Rectangle bounds) {
-        Range range = getRange(view).range();
-        for (Plot plot : plots.values())
-            plot.paint(g, view, range, bounds);
-    }
-    
+
     /**
      * Calculates all values for the indicator.
      */
@@ -158,8 +84,8 @@ public abstract class Indicator extends ChartPlugin<Indicator> {
     public Color[] getColors() {
         Color[] colors = new Color[plots.size()];
         int k = 0;
-        for (Object key : plots.keySet())
-            colors[k++] = plots.get(key).getPrimaryColor();
+        for (Plot plot : plots.values())
+            colors[k++] = plot.getPrimaryColor();
         return colors;
     }
     
@@ -175,8 +101,8 @@ public abstract class Indicator extends ChartPlugin<Indicator> {
         double[] values = new double[plots.size()];
         int k = 0;
         for (String key : plots.keySet()) {
-            VisibleValues dataset = visibleDataset(cf, key);
-            int barNo = (i < 0)? i + dataset.getLength() : i;
+            var dataset = visibleDataset(cf, key);
+            int barNo = (i < 0 && dataset != null) ? i + dataset.getLength() : i;
             values[k++] = (dataset != null) ? dataset.getValueAt(barNo) : Double.NaN;
         }
         return values;
@@ -203,11 +129,63 @@ public abstract class Indicator extends ChartPlugin<Indicator> {
     public void setMinimizedPaint(boolean minimizedPaint) {
         this.minimizedPaint = minimizedPaint;
     }
+
+    public StudyPresentationPlan getPresentationPlan() {
+        return presentationPlan != null ? presentationPlan : StudyPresentationPlan.empty(null);
+    }
+
+    protected final void setPresentationPlan(StudyPresentationPlan presentationPlan) {
+        this.presentationPlan = presentationPlan != null ? presentationPlan : StudyPresentationPlan.empty(null);
+    }
+
+    public void clearPlots() {
+        plots.clear();
+    }
+
+    public void addPlot(String key, Plot plot) {
+        plots.put(key, plot);
+    }
+
+    public Map<String, Plot> getPlots() {
+        return Collections.unmodifiableSequencedMap(new LinkedHashMap<>(plots));
+    }
+
+    public one.chartsy.ui.chart.data.VisibleValues visibleDataset(ChartContext cf, String key) {
+        Plot plot = plots.get(key);
+        if (plot instanceof one.chartsy.ui.chart.plot.TimeSeriesPlot timeSeriesPlot)
+            return timeSeriesPlot.getVisibleData(cf);
+        return null;
+    }
     
+    public LinkedHashMap<String, String> getHTML(ChartContext cf, int i) {
+        LinkedHashMap<String, String> ht = new LinkedHashMap<>();
+
+        DecimalFormat df = new DecimalFormat("#,##0.00");
+        ht.put(getLabel(), " ");
+        if (!plots.isEmpty()) {
+            int j = 0;
+            Color[] colors = getColors();
+            for (String key : plots.keySet()) {
+                double value = getValues(cf, i)[j];
+                String text = Double.isNaN(value) ? "n/a" : df.format(value);
+                Color color = (j < colors.length) ? colors[j] : Color.BLACK;
+                ht.put(getFontHTML(color, key.concat(":")), getFontHTML(color, text));
+                j++;
+            }
+        }
+
+        return ht;
+    }
+
+    public String getFontHTML(Color color, String text) {
+        String html = "<font color=\"" + Integer.toHexString(color.getRGB() & 0x00ffffff) + "\">" + text + "</font>";
+        return html;
+    }
+
     public UUID getPanelId() {
         return panelId;
     }
-    
+
     public void setPanelId(UUID panelId) {
         this.panelId = panelId;
     }

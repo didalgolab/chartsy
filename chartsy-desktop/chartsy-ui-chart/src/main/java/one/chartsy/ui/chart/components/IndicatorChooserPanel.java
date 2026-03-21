@@ -11,6 +11,7 @@ import one.chartsy.ui.chart.Overlay;
 import one.chartsy.ui.chart.StudyBackedChartPlugin;
 import one.chartsy.ui.chart.internal.ChartPluginParameter;
 import one.chartsy.ui.chart.internal.ChartPluginParameterUtils;
+import one.chartsy.ui.chart.internal.IndicatorPaneSupport;
 import one.chartsy.ui.chart.properties.NamedPluginNode;
 import org.openide.explorer.propertysheet.PropertySheet;
 import org.openide.nodes.Node;
@@ -20,6 +21,7 @@ import javax.swing.BorderFactory;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -103,13 +105,19 @@ public class IndicatorChooserPanel extends JPanel {
     private final JButton expandButton = new JButton("+");
     private final JButton collapseButton = new JButton("-");
     private final JComboBox<ChartPlugin<?>> pluginSelector = new JComboBox<>(pluginSelectorModel);
+    private final DefaultComboBoxModel<PaneChoice> paneSelectorModel = new DefaultComboBoxModel<>();
+    private final JComboBox<PaneChoice> paneSelector = new JComboBox<>(paneSelectorModel);
+    private final JCheckBox forceCombineCheckBox = new JCheckBox("Force combine");
+    private final JLabel paneAssignmentLabel = new JLabel("Pane:");
     private final JLabel selectionMetaLabel = new JLabel(" ");
     private final JPanel propertyContentPanel = new JPanel(new java.awt.CardLayout());
     private final PropertySheet propertySheet = new PropertySheet();
     private final JLabel plotObjectCountLabel = new JLabel();
 
     private boolean synchronizingSelection;
+    private boolean synchronizingPaneControls;
     private boolean splitLayoutInitialized;
+    private ChartPlugin<?> paneSelectionOwner;
 
     public IndicatorChooserPanel() {
         initComponents();
@@ -279,11 +287,49 @@ public class IndicatorChooserPanel extends JPanel {
         gbc.insets = new Insets(4, 0, 4, 8);
         selectorPanel.add(pluginSelector, gbc);
 
+        paneAssignmentLabel.setName("indicatorChooser.paneLabel");
+        paneAssignmentLabel.setVisible(false);
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.weightx = 0.0;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.insets = new Insets(0, 8, 4, 8);
+        selectorPanel.add(paneAssignmentLabel, gbc);
+
+        paneSelector.setName("indicatorChooser.paneSelector");
+        paneSelector.setEnabled(false);
+        paneSelector.setVisible(false);
+        paneSelector.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(javax.swing.JList<?> list, Object value, int index,
+                                                          boolean isSelected, boolean cellHasFocus) {
+                String label = value instanceof PaneChoice paneChoice ? paneChoice.label() : "";
+                return super.getListCellRendererComponent(list, label, index, isSelected, cellHasFocus);
+            }
+        });
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(0, 0, 4, 8);
+        selectorPanel.add(paneSelector, gbc);
+
+        forceCombineCheckBox.setName("indicatorChooser.forceCombine");
+        forceCombineCheckBox.setOpaque(false);
+        forceCombineCheckBox.setVisible(false);
+        gbc.gridx = 1;
+        gbc.gridy = 2;
+        gbc.weightx = 0.0;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.insets = new Insets(0, 0, 4, 8);
+        gbc.anchor = GridBagConstraints.WEST;
+        selectorPanel.add(forceCombineCheckBox, gbc);
+
         selectionMetaLabel.setName("indicatorChooser.selectionMeta");
         selectionMetaLabel.setForeground(resolveSecondaryTextColor());
         selectionMetaLabel.setFont(selectionMetaLabel.getFont().deriveFont(Font.PLAIN,
                 Math.max(11.0f, selectionMetaLabel.getFont().getSize2D() - 1.0f)));
-        gbc.gridy = 1;
+        gbc.gridy = 3;
+        gbc.gridx = 1;
         gbc.insets = new Insets(0, 0, 4, 8);
         gbc.anchor = GridBagConstraints.WEST;
         selectorPanel.add(selectionMetaLabel, gbc);
@@ -397,6 +443,8 @@ public class IndicatorChooserPanel extends JPanel {
             if (!synchronizingSelection)
                 selectPlugin((ChartPlugin<?>) pluginSelector.getSelectedItem(), true);
         });
+        paneSelector.addActionListener(event -> applyPaneAssignment());
+        forceCombineCheckBox.addActionListener(event -> refreshPaneAssignmentControls(getCurrentlySelectedPlugin()));
         plotObjectTable.getSelectionModel().addListSelectionListener(this::onPlotObjectSelectionChanged);
         propertySheet.addPropertyChangeListener(event -> refreshVisualSummary());
     }
@@ -417,8 +465,6 @@ public class IndicatorChooserPanel extends JPanel {
             return;
 
         ChartPlugin<?> plugin = instantiatePlugin(prototype);
-        if (plugin instanceof Indicator indicator)
-            indicator.setPanelId(UUID.randomUUID());
         selectedPlugins.add(plugin);
         refreshSelectedPlugins(plugin);
     }
@@ -466,6 +512,7 @@ public class IndicatorChooserPanel extends JPanel {
         plotObjectTableModel.refresh();
         plotObjectTable.repaint();
         pluginSelector.repaint();
+        refreshPaneAssignmentControls(getCurrentlySelectedPlugin());
     }
 
     private void selectPlugin(ChartPlugin<?> plugin, boolean updateTableSelection) {
@@ -474,6 +521,7 @@ public class IndicatorChooserPanel extends JPanel {
             pluginSelector.setSelectedItem(plugin);
             removeButton.setEnabled(plugin != null);
             selectionMetaLabel.setText(plugin == null ? " " : describePluginType(plugin) + " - " + describePanelPlacement(plugin));
+            refreshPaneAssignmentControls(plugin);
             if (plugin == null) {
                 propertySheet.setNodes(null);
                 showPropertyCard(EMPTY_CARD);
@@ -510,6 +558,126 @@ public class IndicatorChooserPanel extends JPanel {
         int viewRow = plotObjectTable.getSelectedRow();
         PlotObjectRow row = viewRow >= 0 ? plotObjectTableModel.getRow(viewRow) : null;
         return row == null ? null : row.plugin();
+    }
+
+    private void refreshPaneAssignmentControls(ChartPlugin<?> plugin) {
+        if (!(plugin instanceof Indicator indicator) || IndicatorPaneSupport.isMainPanelIndicator(indicator)) {
+            paneSelectionOwner = plugin;
+            synchronizingPaneControls = true;
+            try {
+                paneAssignmentLabel.setVisible(false);
+                paneSelector.setVisible(false);
+                paneSelector.setEnabled(false);
+                forceCombineCheckBox.setVisible(false);
+                paneSelectorModel.removeAllElements();
+            } finally {
+                synchronizingPaneControls = false;
+            }
+            return;
+        }
+
+        boolean currentIncompatible = isForcedCombination(indicator);
+        if (paneSelectionOwner != plugin) {
+            paneSelectionOwner = plugin;
+            forceCombineCheckBox.setSelected(currentIncompatible);
+        }
+
+        List<PaneCandidate> candidates = paneCandidates(indicator);
+        boolean forceCombine = forceCombineCheckBox.isSelected();
+
+        synchronizingPaneControls = true;
+        try {
+            paneAssignmentLabel.setVisible(true);
+            paneSelector.setVisible(true);
+            paneSelector.setEnabled(true);
+            forceCombineCheckBox.setVisible(!candidates.isEmpty());
+            paneSelectorModel.removeAllElements();
+
+            PaneChoice selectedChoice = PaneChoice.newPaneChoice();
+            paneSelectorModel.addElement(selectedChoice);
+
+            int paneNumber = 1;
+            for (PaneCandidate candidate : candidates) {
+                boolean isCurrent = Objects.equals(candidate.group().id(), indicator.getPanelId());
+                boolean compatible = candidate.compatibility() == IndicatorPaneSupport.Compatibility.COMPATIBLE;
+                if (!compatible && !forceCombine && !isCurrent)
+                    continue;
+
+                PaneChoice choice = new PaneChoice(
+                        candidate.group().id(),
+                        formatPaneChoice(candidate.group(), paneNumber++, compatible, isCurrent),
+                        false
+                );
+                paneSelectorModel.addElement(choice);
+                if (isCurrent)
+                    selectedChoice = choice;
+            }
+
+            paneSelector.setSelectedItem(selectedChoice);
+        } finally {
+            synchronizingPaneControls = false;
+        }
+    }
+
+    private void applyPaneAssignment() {
+        if (synchronizingPaneControls)
+            return;
+
+        ChartPlugin<?> plugin = getCurrentlySelectedPlugin();
+        if (!(plugin instanceof Indicator indicator) || IndicatorPaneSupport.isMainPanelIndicator(indicator))
+            return;
+
+        PaneChoice choice = (PaneChoice) paneSelector.getSelectedItem();
+        if (choice == null)
+            return;
+
+        UUID panelId = choice.newPane() ? UUID.randomUUID() : choice.panelId();
+        if (!Objects.equals(panelId, indicator.getPanelId())) {
+            indicator.setPanelId(panelId);
+            refreshSelectedPlugins(indicator);
+        }
+    }
+
+    private boolean isForcedCombination(Indicator indicator) {
+        return paneCandidates(indicator).stream()
+                .filter(candidate -> Objects.equals(candidate.group().id(), indicator.getPanelId()))
+                .findFirst()
+                .map(candidate -> candidate.compatibility() == IndicatorPaneSupport.Compatibility.INCOMPATIBLE)
+                .orElse(false);
+    }
+
+    private List<PaneCandidate> paneCandidates(Indicator indicator) {
+        List<Indicator> indicators = selectedPlugins.stream()
+                .filter(Indicator.class::isInstance)
+                .map(Indicator.class::cast)
+                .filter(IndicatorPaneSupport::isOwnPanelIndicator)
+                .toList();
+
+        List<PaneCandidate> candidates = new ArrayList<>();
+        for (IndicatorPaneSupport.PaneGroup group : IndicatorPaneSupport.groupByPane(indicators)) {
+            List<Indicator> occupants = group.indicators().stream()
+                    .filter(candidate -> candidate != indicator)
+                    .toList();
+            if (occupants.isEmpty())
+                continue;
+            candidates.add(new PaneCandidate(group.withIndicators(occupants), IndicatorPaneSupport.compatibility(indicator, occupants)));
+        }
+        return candidates;
+    }
+
+    private String formatPaneChoice(IndicatorPaneSupport.PaneGroup group, int paneNumber, boolean compatible, boolean current) {
+        StringBuilder label = new StringBuilder("Pane ").append(paneNumber);
+        if (current)
+            label.append(" (Current)");
+        else if (!compatible)
+            label.append(" (Force combine)");
+        label.append(" - ").append(group.indicators().stream()
+                .map(ChartPlugin::getLabel)
+                .distinct()
+                .limit(3)
+                .reduce((left, right) -> left + ", " + right)
+                .orElse("Empty"));
+        return label.toString();
     }
 
     private void rebuildAvailableTree() {
@@ -698,7 +866,7 @@ public class IndicatorChooserPanel extends JPanel {
     }
 
 
-    private static List<PlotObjectRow> describePlotObjects(ChartPlugin<?> plugin) {
+    private List<PlotObjectRow> describePlotObjects(ChartPlugin<?> plugin) {
         if (plugin instanceof StudyBackedChartPlugin studyPlugin)
             return describeStudyPlotObjects(plugin, studyPlugin);
 
@@ -744,7 +912,7 @@ public class IndicatorChooserPanel extends JPanel {
         return rows;
     }
 
-    private static List<PlotObjectRow> describeStudyPlotObjects(ChartPlugin<?> plugin, StudyBackedChartPlugin studyPlugin) {
+    private List<PlotObjectRow> describeStudyPlotObjects(ChartPlugin<?> plugin, StudyBackedChartPlugin studyPlugin) {
         List<PlotObjectRow> rows = new ArrayList<>();
         java.util.SequencedMap<String, Object> parameterValues = studyPlugin.getStudyParameterValues();
         boolean firstRow = true;
@@ -805,12 +973,29 @@ public class IndicatorChooserPanel extends JPanel {
         return PluginKind.from(plugin).displayLabel();
     }
 
-    private static String describePanelPlacement(ChartPlugin<?> plugin) {
+    private static String describeAvailablePlacement(ChartPlugin<?> plugin) {
+        if (plugin instanceof StudyBackedChartPlugin studyPlugin
+                && studyPlugin.getStudyDescriptor().placement() == one.chartsy.study.StudyPlacement.MAIN_PANEL)
+            return "Main Panel";
+        return PluginKind.from(plugin).placementLabel();
+    }
+
+    private String describePanelPlacement(ChartPlugin<?> plugin) {
         if (plugin instanceof StudyBackedChartPlugin studyPlugin) {
-            return switch (studyPlugin.getStudyDescriptor().placement()) {
-                case MAIN_PANEL -> "Main Panel";
-                case OWN_PANEL -> "Separate Panel";
-            };
+            if (studyPlugin.getStudyDescriptor().placement() == one.chartsy.study.StudyPlacement.MAIN_PANEL)
+                return "Main Panel";
+        }
+        if (plugin instanceof Indicator indicator && IndicatorPaneSupport.isOwnPanelIndicator(indicator)) {
+            List<IndicatorPaneSupport.PaneGroup> panes = IndicatorPaneSupport.groupByPane(selectedPlugins.stream()
+                    .filter(Indicator.class::isInstance)
+                    .map(Indicator.class::cast)
+                    .filter(IndicatorPaneSupport::isOwnPanelIndicator)
+                    .toList());
+            for (int i = 0; i < panes.size(); i++) {
+                if (Objects.equals(panes.get(i).id(), indicator.getPanelId()))
+                    return "Pane " + (i + 1);
+            }
+            return "Pane";
         }
         return PluginKind.from(plugin).placementLabel();
     }
@@ -848,6 +1033,15 @@ public class IndicatorChooserPanel extends JPanel {
     private static final class VisualDescriptor {
         private Color color;
         private Stroke stroke;
+    }
+
+    private record PaneCandidate(IndicatorPaneSupport.PaneGroup group, IndicatorPaneSupport.Compatibility compatibility) {
+    }
+
+    private record PaneChoice(UUID panelId, String label, boolean newPane) {
+        static PaneChoice newPaneChoice() {
+            return new PaneChoice(null, "New Pane", true);
+        }
     }
 
     private record PlotObjectRow(ChartPlugin<?> plugin, boolean firstRow, String pluginLabel, String pluginType,
@@ -936,7 +1130,7 @@ public class IndicatorChooserPanel extends JPanel {
                 Object userObject = node.getUserObject();
                 if (userObject instanceof ChartPlugin<?> plugin) {
                     setText(plugin.getName());
-                    setToolTipText(describePluginType(plugin) + " - " + describePanelPlacement(plugin));
+                    setToolTipText(describePluginType(plugin) + " - " + describeAvailablePlacement(plugin));
                     setFont(tree.getFont());
                     setBorder(leafBorder);
                 } else {

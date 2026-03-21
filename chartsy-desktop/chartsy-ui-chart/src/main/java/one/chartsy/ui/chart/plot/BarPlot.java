@@ -3,14 +3,12 @@
 package one.chartsy.ui.chart.plot;
 
 import java.awt.Color;
-import java.awt.Graphics2D;
-import java.awt.Rectangle;
 
 import one.chartsy.base.DoubleDataset;
 import one.chartsy.core.Range;
 import one.chartsy.ui.chart.ChartContext;
-import one.chartsy.ui.chart.data.VisibleValues;
-import one.chartsy.ui.chart.internal.Graphics2DHelper;
+import one.chartsy.ui.chart.PlotRenderContext;
+import one.chartsy.ui.chart.PlotRenderTarget;
 
 public class BarPlot extends AbstractTimeSeriesPlot {
 
@@ -19,19 +17,13 @@ public class BarPlot extends AbstractTimeSeriesPlot {
     }
 
     @Override
-    public void paint(Graphics2D g, ChartContext cf, Range range, Rectangle bounds) {
-        VisibleValues values = getVisibleData(cf);
-        if (values != null)
-            paintBars(g, cf, range, bounds, values);
+    public void render(PlotRenderTarget target, PlotRenderContext context) {
+        target.addBar(getTimeSeries(), primaryColor, context);
     }
 
     @Override
     public Range.Builder contributeRange(Range.Builder range, ChartContext cf) {
         Range.Builder builder = super.contributeRange(range, cf);
         return builder.add(0.0);
-    }
-
-    protected void paintBars(Graphics2D g, ChartContext cf, Range range, Rectangle bounds, VisibleValues values) {
-        Graphics2DHelper.bar(g, cf, range, bounds, values, primaryColor);
     }
 }

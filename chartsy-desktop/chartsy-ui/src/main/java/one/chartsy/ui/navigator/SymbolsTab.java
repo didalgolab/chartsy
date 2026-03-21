@@ -6,8 +6,9 @@ import one.chartsy.Symbol;
 import one.chartsy.SymbolGroupContent;
 import one.chartsy.SymbolGroupContentRepository;
 import one.chartsy.data.provider.DataProviderLoader;
-import one.chartsy.kernel.Kernel;
+import one.chartsy.kernel.StartupMetrics;
 import one.chartsy.kernel.SymbolGroupHierarchy;
+import one.chartsy.ui.StartupServices;
 import one.chartsy.ui.actions.CollapseAllAction;
 import one.chartsy.ui.actions.ExpandAllAction;
 import one.chartsy.ui.swing.CheckBoxTreeDecorator;
@@ -19,6 +20,8 @@ import org.openide.explorer.ExplorerManager;
 import org.openide.explorer.ExplorerUtils;
 import org.openide.explorer.view.BeanTreeView;
 import org.openide.explorer.view.Visualizer;
+import org.openide.nodes.AbstractNode;
+import org.openide.nodes.Children;
 import org.openide.nodes.Node;
 import org.openide.util.NbBundle;
 import org.openide.windows.TopComponent;
@@ -34,17 +37,23 @@ import javax.swing.tree.ExpandVetoException;
 import javax.swing.tree.TreePath;
 import javax.swing.tree.TreeSelectionModel;
 import java.awt.*;
+import java.util.concurrent.CompletionException;
 import java.util.*;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class SymbolsTab extends TopComponent implements ExplorerManager.Provider {
+    private static final Logger LOG = Logger.getLogger(SymbolsTab.class.getName());
     private final ExplorerManager explorerManager = new ExplorerManager();
     private final CheckBoxTreeSelectionModel selectionModel;
-    private final ApplicationContext context;
+    private volatile ApplicationContext context;
     private TreeViewControl viewControl;
     private SymbolsViewListener viewControlAdapter;
+    private boolean listenerRegistered;
 
     public SymbolsTab() {
+        StartupMetrics.mark("symbolsTab:start");
         initComponents();
         setName(NbBundle.getMessage(SymbolsTab.class, "SymbolsTab.name"));
         setToolTipText(NbBundle.getMessage(SymbolsTab.class, "SymbolsTab.hint"));
@@ -58,15 +67,8 @@ public class SymbolsTab extends TopComponent implements ExplorerManager.Provider
         
         // load root symbol group from the database
         BeanTreeView view = (BeanTreeView) scrollPane;
-        context = Kernel.getDefault().getApplicationContext();
-        SymbolGroupHierarchy symbolHierarchy = context.getBean(SymbolGroupHierarchy.class);
-        SymbolGroupContent rootContext = symbolHierarchy.getRootContext();
-        if (rootContext != null) {
-            SymbolGroupNode rootNode = SymbolGroupNode.create(rootContext, explorerManager, view, context);
-            explorerManager.setRootContext(rootNode);
-            viewControl = new TreeViewControl(rootNode);
-            viewControlAdapter = new SymbolsViewListener(viewControl);
-        }
+        explorerManager.setRootContext(createStatusNode("Loading..."));
+        loadRootContext(view);
         
         JTree tree = (JTree) scrollPane.getViewport().getView();
         toolbar.putClientProperty(JTree.class, tree);
@@ -87,6 +89,7 @@ public class SymbolsTab extends TopComponent implements ExplorerManager.Provider
         JTreeEnhancements.setSingleChildExpansionPolicy(tree);
         selectionModel = CheckBoxTreeDecorator.decorate(tree).getCheckBoxTreeSelectionModel();
         setForeground(Color.yellow);
+        StartupMetrics.mark("symbolsTab:ready");
     }
 
     public JTree getTree() {
@@ -134,12 +137,14 @@ public class SymbolsTab extends TopComponent implements ExplorerManager.Provider
 
     public List<Symbol> selectedSymbols() {
         var paths = getSelectionModel().getSelectionPaths();
-        if (paths.length == 0)
+        if (paths == null || paths.length == 0)
             return List.of();
         return getSymbolsAtPaths(paths);
     }
 
     public List<Symbol> getSymbolsAtPaths(TreePath... paths) {
+        if (context == null)
+            return List.of();
         var universe = new LinkedHashSet<Symbol>();
         var worklist = new ArrayDeque<SymbolGroupContent>(paths.length);
         for (TreePath path : paths) {
@@ -174,16 +179,80 @@ public class SymbolsTab extends TopComponent implements ExplorerManager.Provider
     @Override
     public void addNotify() {
         super.addNotify();
-        ApplicationEventMulticaster eventMulticaster = context
-                .getBean(AbstractApplicationContext.APPLICATION_EVENT_MULTICASTER_BEAN_NAME, ApplicationEventMulticaster.class);
-        eventMulticaster.addApplicationListener(viewControlAdapter);
+        registerViewListener();
     }
 
     @Override
     public void removeNotify() {
+        unregisterViewListener();
         super.removeNotify();
+    }
+
+    private void loadRootContext(BeanTreeView view) {
+        StartupServices.symbols().thenApplyAsync(applicationContext -> {
+            StartupMetrics.mark("symbolsTab:rootContext:start");
+            var symbolHierarchy = applicationContext.getBean(SymbolGroupHierarchy.class);
+            var snapshot = new SymbolsLoadingSnapshot(applicationContext, symbolHierarchy.getRootContext());
+            StartupMetrics.mark("symbolsTab:rootContext:ready");
+            return snapshot;
+        }).whenComplete((snapshot, error) -> EventQueue.invokeLater(() -> {
+            if (error != null) {
+                showLoadingFailure(error);
+                return;
+            }
+            applyLoadedRoot(view, snapshot);
+        }));
+    }
+
+    private void applyLoadedRoot(BeanTreeView view, SymbolsLoadingSnapshot snapshot) {
+        context = snapshot.context();
+        SymbolGroupContent rootContext = snapshot.rootContext();
+        if (rootContext != null) {
+            StartupMetrics.mark("symbolsTab:nodeBuild:start");
+            SymbolGroupNode rootNode = SymbolGroupNode.create(rootContext, explorerManager, view, context);
+            StartupMetrics.mark("symbolsTab:nodeBuild:ready");
+            explorerManager.setRootContext(rootNode);
+            viewControl = new TreeViewControl(rootNode);
+            viewControlAdapter = new SymbolsViewListener(viewControl);
+            registerViewListener();
+            view.expandNode(rootNode);
+            StartupMetrics.mark("symbolsTab:dataReady");
+        } else {
+            explorerManager.setRootContext(createStatusNode("No symbols"));
+        }
+    }
+
+    private void showLoadingFailure(Throwable error) {
+        Throwable cause = (error instanceof CompletionException && error.getCause() != null) ? error.getCause() : error;
+        explorerManager.setRootContext(createStatusNode("Failed to load symbols"));
+        StartupMetrics.mark("symbolsTab:failed");
+        LOG.log(Level.SEVERE, "Unable to load symbol hierarchy", cause);
+    }
+
+    private void registerViewListener() {
+        if (listenerRegistered || !isDisplayable() || context == null || viewControlAdapter == null)
+            return;
+        ApplicationEventMulticaster eventMulticaster = context
+                .getBean(AbstractApplicationContext.APPLICATION_EVENT_MULTICASTER_BEAN_NAME, ApplicationEventMulticaster.class);
+        eventMulticaster.addApplicationListener(viewControlAdapter);
+        listenerRegistered = true;
+    }
+
+    private void unregisterViewListener() {
+        if (!listenerRegistered || context == null || viewControlAdapter == null)
+            return;
         ApplicationEventMulticaster eventMulticaster = context
                 .getBean(AbstractApplicationContext.APPLICATION_EVENT_MULTICASTER_BEAN_NAME, ApplicationEventMulticaster.class);
         eventMulticaster.removeApplicationListener(viewControlAdapter);
+        listenerRegistered = false;
+    }
+
+    private Node createStatusNode(String message) {
+        var node = new AbstractNode(Children.LEAF);
+        node.setDisplayName(message);
+        return node;
+    }
+
+    private record SymbolsLoadingSnapshot(ApplicationContext context, SymbolGroupContent rootContext) {
     }
 }

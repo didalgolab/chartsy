@@ -57,7 +57,7 @@ public class DynamicStudyIndicator extends Indicator implements StudyBackedChart
     @Override
     public Indicator newInstance() {
         DynamicStudyIndicator copy = new DynamicStudyIndicator(getStudyDescriptor(), parameterValues, markerVisibility);
-        copy.setPanelId(UUID.randomUUID());
+        copy.setPanelId(getPanelId());
         return copy;
     }
 
@@ -68,14 +68,15 @@ public class DynamicStudyIndicator extends Indicator implements StudyBackedChart
         StudyDescriptor descriptor = getStudyDescriptor();
         if (dataset == null) {
             presentationPlan = StudyPresentationPlan.empty(descriptor.axis());
+            setPresentationPlan(presentationPlan);
             return;
         }
 
         var outputs = StudySeriesEvaluator.evaluate(descriptor, dataset, parameterValues).outputs();
         presentationPlan = StudyPresentationFactory.createPlan(descriptor, dataset, parameterValues, outputs);
-        for (var entry : StudyPresentationFactory.createPlots(presentationPlan)) {
+        setPresentationPlan(presentationPlan);
+        for (var entry : StudyPresentationFactory.createPlots(presentationPlan))
             addPlot(entry.key(), entry.plot());
-        }
     }
 
     @Override

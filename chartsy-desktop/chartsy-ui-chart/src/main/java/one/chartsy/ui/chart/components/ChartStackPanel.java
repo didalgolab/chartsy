@@ -4,6 +4,7 @@
  */
 package one.chartsy.ui.chart.components;
 
+import one.chartsy.charting.Scale;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
@@ -28,10 +29,12 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.UUID;
 
 import javax.swing.BorderFactory;
 import javax.swing.JLayeredPane;
 import javax.swing.JTable;
+import javax.swing.SwingUtilities;
 import javax.swing.table.AbstractTableModel;
 
 import one.chartsy.*;
@@ -53,7 +56,9 @@ public class ChartStackPanel extends JLayeredPane {
     private final ChartContext chartFrame;
     
     private final ChartPanel chartPanel;
+    private final Scale sharedTimeScale = new Scale();
     private final JDataBox label;
+    private final Resizeable resizeable;
     
     /** The chart marker index, or {@code -1} if the marker is disabled. */
     private int markerIndex = -1;
@@ -74,7 +79,7 @@ public class ChartStackPanel extends JLayeredPane {
 
     public ChartStackPanel(ChartContext frame) {
         chartFrame = frame;
-        chartPanel = new ChartPanel(chartFrame);
+        chartPanel = new ChartPanel(chartFrame, sharedTimeScale);
         //indicatorsPanel = new IndicatorsPanel(chartFrame);
         label = new JDataBox();
         
@@ -87,29 +92,38 @@ public class ChartStackPanel extends JLayeredPane {
         //add(label);
         add(chartPanel);
         label.setLocation(0, 50);
-        Resizeable resizeable = new Resizeable();
+        resizeable = new Resizeable();
         addMouseListener(resizeable);
         addMouseMotionListener(resizeable);
+        chartPanel.addMouseListener(resizeable);
+        chartPanel.addMouseMotionListener(resizeable);
         
         ChartFrameListener frameAdapter = new ChartFrameListener() {
             @Override
             public void indicatorAdded(Indicator indicator) {
-                IndicatorPanel indicatorPanel = new IndicatorPanel(chartFrame, indicator);
-                add(indicatorPanel);
-                updateIndicatorsToolbar();
-                chartFrame.getMainPanel().validate();
-                chartFrame.getMainPanel().repaint();
+                IndicatorPanel indicatorPanel = getIndicatorPanel(indicator);
+                if (indicatorPanel == null) {
+                    indicatorPanel = getIndicatorPanel(indicator.getPanelId());
+                    if (indicatorPanel == null)
+                        indicatorPanel = createIndicatorPanel(indicator.getPanelId(), List.of(indicator));
+                    else
+                        indicatorPanel.addIndicator(indicator);
+                }
+                afterIndicatorStructureChanged();
             }
             
             @Override
             public void indicatorRemoved(Indicator indicator) {
                 IndicatorPanel indicatorPanel = getIndicatorPanel(indicator);
                 if (indicatorPanel != null) {
-                    indicator.clearPlots();
-                    remove(indicatorPanel);
-                    updateIndicatorsToolbar();
-                    chartFrame.getMainPanel().validate();
-                    chartFrame.getMainPanel().repaint();
+                    indicatorPanel.removeIndicator(indicator);
+                    indicator.close();
+                    if (indicatorPanel.isEmpty()) {
+                        uninstallResizeListeners(indicatorPanel);
+                        indicatorPanel.disposeResources();
+                        remove(indicatorPanel);
+                    }
+                    afterIndicatorStructureChanged();
                 }
             }
         };
@@ -118,6 +132,35 @@ public class ChartStackPanel extends JLayeredPane {
     
     public ChartPanel getChartPanel() {
         return chartPanel;
+    }
+
+    public Scale getSharedTimeScale() {
+        return sharedTimeScale;
+    }
+
+    public void refreshPanels() {
+        List<IndicatorPanel> indicatorPanels = getIndicatorPanels();
+        IndicatorPanel footerOwner = null;
+        for (IndicatorPanel panel : indicatorPanels) {
+            if (!panel.isMinimized() || panel.getIndicators().stream().anyMatch(Indicator::isMinimizedPaint))
+                footerOwner = panel;
+        }
+
+        chartPanel.refreshEngine(footerOwner == null);
+        for (int i = 0; i < indicatorPanels.size(); i++) {
+            IndicatorPanel panel = indicatorPanels.get(i);
+            panel.refreshEngine(panel == footerOwner, chartPanel.getEngineChart());
+        }
+        if (chartFrame.getDateAxisFooter() != null)
+            chartFrame.getDateAxisFooter().repaint();
+    }
+
+    public void removePane(IndicatorPanel panel) {
+        if (panel == null)
+            return;
+
+        for (Indicator indicator : List.copyOf(panel.getIndicators()))
+            chartFrame.indicatorRemoved(indicator);
     }
     
     /**
@@ -174,7 +217,7 @@ public class ChartStackPanel extends JLayeredPane {
      *         {@code false} otherwise
      */
     public boolean isMarkerEnabled() {
-        return getMarkerIndex() > 0;
+        return getMarkerIndex() >= 0;
     }
     
     @Override
@@ -222,12 +265,14 @@ public class ChartStackPanel extends JLayeredPane {
      * @param g the chart's graphics context
      */
     private void paintMarkerFigure(Graphics2D g) {
-        Rectangle bounds = chartPanel.getBounds(chartPanel.getInsets());
+        if (!hasValidMarkerSlot())
+            return;
+        Rectangle bounds = chartPanel.getRenderBounds();
         
-        int index = getMarkerIndex();
-        long epochMicros = chartFrame.getChartData().getVisible().getQuoteAt(index).time();
+        int slot = getMarkerIndex();
+        long epochMicros = chartFrame.getChartData().getSlotTime(slot);
         String s = TimeFrameHelper.formatDate(chartFrame.getChartData().getTimeFrame(), epochMicros);
-        double dx = chartFrame.getChartData().getX(index, bounds);
+        double dx = chartFrame.getChartData().getSlotCenterX(slot, bounds);
         g.setFont(font);
         
         FontMetrics fm = g.getFontMetrics(font);
@@ -256,39 +301,40 @@ public class ChartStackPanel extends JLayeredPane {
     }
     
     public void labelText() {
-        if (isMarkerEnabled()) {
+        if (hasValidMarkerSlot()) {
             ChartData cd = chartFrame.getChartData();
             DecimalFormat df = new DecimalFormat("#,##0.00");
             
-            Candle q0 = cd.getVisible().getQuoteAt(getMarkerIndex());
-            long epochMicros = q0.time();
+            int slot = getMarkerIndex();
+            int visibleIndex = cd.slotToVisibleIndex(slot);
+            Candle q0 = cd.getCandleAtSlot(slot);
+            long epochMicros = cd.getSlotTime(slot);
             String date = TimeFrameHelper.formatDate(chartFrame.getChartData().getTimeFrame(), epochMicros);
             
             StringBuilder sb = new StringBuilder();
             // Date
             sb.append(addLine("Date:", date));
-            // Open
-            sb.append(addLine("Open:", df.format(q0.open())));
-            // High
-            sb.append(addLine("High:", df.format(q0.high())));
-            // Low
-            sb.append(addLine("Low:", df.format(q0.low())));
-            // Close
-            sb.append(addLine("Close:", df.format(q0.close())));
-            
-            lines = 5;
+            lines = 1;
+
+            if (q0 != null) {
+                sb.append(addLine("Open:", df.format(q0.open())));
+                sb.append(addLine("High:", df.format(q0.high())));
+                sb.append(addLine("Low:", df.format(q0.low())));
+                sb.append(addLine("Close:", df.format(q0.close())));
+                lines = 5;
+            }
             
             boolean hasOverlays = chartPanel.getOverlaysCount() > 0;
             boolean hasIndicators = getIndicatorPanels().size() > 0;
             
-            if (hasOverlays || hasIndicators) {
+            if (q0 != null && (hasOverlays || hasIndicators) && visibleIndex >= 0 && visibleIndex < cd.getVisible().getLength()) {
                 sb.append(addLine(" ", " "));
                 lines++;
             }
             
-            if (hasOverlays) {
+            if (q0 != null && hasOverlays && visibleIndex >= 0 && visibleIndex < cd.getVisible().getLength()) {
                 for (Overlay overlay : chartPanel.getOverlays()) {
-                    LinkedHashMap map = overlay.getHTML(chartFrame, getMarkerIndex());
+                    LinkedHashMap map = overlay.getHTML(chartFrame, visibleIndex);
                     Iterator it = map.keySet().iterator();
                     while (it.hasNext()) {
                         Object key = it.next();
@@ -298,14 +344,14 @@ public class ChartStackPanel extends JLayeredPane {
                 }
             }
             
-            if (hasIndicators) {
+            if (q0 != null && hasIndicators && visibleIndex >= 0 && visibleIndex < cd.getVisible().getLength()) {
                 if (hasOverlays) {
                     sb.append(addLine(" ", " "));
                     lines++;
                 }
                 
                 for (Indicator indicator : getIndicators()) {
-                    LinkedHashMap map = indicator.getHTML(chartFrame, getMarkerIndex());
+                    LinkedHashMap map = indicator.getHTML(chartFrame, visibleIndex);
                     Iterator it = map.keySet().iterator();
                     while (it.hasNext()) {
                         Object key = it.next();
@@ -331,48 +377,30 @@ public class ChartStackPanel extends JLayeredPane {
     }
     
     public Indicator[] getIndicators() {
-        List<IndicatorPanel> indicatorPanels = getIndicatorPanels();
-        Indicator[] indicators = new Indicator[indicatorPanels.size()];
-        for (int i = 0; i < indicatorPanels.size(); i++)
-            indicators[i] = indicatorPanels.get(i).getIndicator();
-        return indicators;
+        return getIndicatorPanels().stream()
+                .flatMap(panel -> panel.getIndicators().stream())
+                .toArray(Indicator[]::new);
     }
     
     public void moveLeft() {
         ChartData cd = chartFrame.getChartData();
-        int last = cd.getLast();
-        int items = cd.getPeriod() - 1;
-        int i = getMarkerIndex() - 1;
-        if (i < 0) {
-            if (last - 1 > items) {
-                cd.setLast(last - 1);
-            }
-        } else {
-            setMarkerIndex(i);
-        }
+        int slot = Math.max(0, getMarkerIndex() - 1);
+        if (slot < cd.getVisibleStartSlot())
+            cd.scrollVisibleBy(-1);
+        setMarkerIndex(slot);
         labelText();
-        cd.calculate(chartFrame);
-        chartFrame.getMainPanel().repaint();
+        chartFrame.refreshChartView();
     }
     
     public void moveRight() {
         ChartData cd = chartFrame.getChartData();
-        CandleSeries dataset = cd.getDataset();
-        if (dataset != null) {
-            int all = dataset.length();
-            int last = cd.getLast();
-            int items = cd.getPeriod() - 1;
-            int i = getMarkerIndex() + 1;
-            if (i > items) {
-                if (last < all) {
-                    cd.setLast(last + 1);
-                }
-            } else {
-                setMarkerIndex(i);
-            }
+        if (cd.hasDataset()) {
+            int slot = Math.min(cd.getTotalSlotCount() - 1, getMarkerIndex() + 1);
+            if (slot >= cd.getVisibleEndSlot())
+                cd.scrollVisibleBy(1);
+            setMarkerIndex(slot);
             labelText();
-            cd.calculate(chartFrame);
-            chartFrame.getMainPanel().repaint();
+            chartFrame.refreshChartView();
         }
     }
     
@@ -389,7 +417,7 @@ public class ChartStackPanel extends JLayeredPane {
          * of indicators positioned below the price panel. Must be a value
          * between 0 and 1.
          */
-        private double southShare = 0.2;
+        private double southShare = 0.26;
         
         private double chartShare = 1.0;
         /**
@@ -645,18 +673,15 @@ public class ChartStackPanel extends JLayeredPane {
             }
         }
         
-        public boolean allMinimized() {
-            for (IndicatorPanel ip : getIndicatorPanels())
-                if (!ip.isMinimized())
-                    return true;
-            return false;
+        public boolean hasResizableSplit() {
+            return !getIndicatorPanels().isEmpty();
         }
         
         @Override
         public void mouseEntered(MouseEvent e) {
             requestFocusInWindow();
-            if (allMinimized())
-                setCursorType(e.getPoint());
+            if (hasResizableSplit())
+                setCursorType(toStackPoint(e));
         }
         
         @Override
@@ -664,6 +689,7 @@ public class ChartStackPanel extends JLayeredPane {
             if (oldCursor != null)
                 ((Component) e.getSource()).setCursor(oldCursor);
             oldCursor = null;
+            resizable = false;
         }
         
         @Override
@@ -671,7 +697,7 @@ public class ChartStackPanel extends JLayeredPane {
             requestFocusInWindow();
             Cursor c = getCursor();
             if (c.equals(Cursor.getPredefinedCursor(Cursor.N_RESIZE_CURSOR))) {
-                fix_pt_y = e.getY();
+                fix_pt_y = toStackPoint(e).y;
             } else {
                 fix_pt_y = -1;
             }
@@ -683,14 +709,16 @@ public class ChartStackPanel extends JLayeredPane {
             setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
             doLayout();
             getChartFrame().getMainPanel().getStackPanel().doLayout();
+            refreshPanels();
             getChartFrame().getMainPanel().validate();
             getChartFrame().getMainPanel().repaint();
+            getChartFrame().refreshChartView();
         }
         
         @Override
         public void mouseMoved(MouseEvent e) {
-            if (allMinimized())
-                setCursorType(e.getPoint());
+            if (hasResizableSplit())
+                setCursorType(toStackPoint(e));
         }
         
         @Override
@@ -725,11 +753,16 @@ public class ChartStackPanel extends JLayeredPane {
             if (panelCount == 0)
                 return;
             
-            int yDelta = y - e.getY();
+            int yDelta = y - toStackPoint(e).y;
             chartPanel.setSize(chartPanel.getWidth(), chartPanel.getHeight() - yDelta);
             layout.southShare += (double)yDelta / panelCount / height;
+            layout.southShare = Math.clamp(layout.southShare, 0.08, 0.7);
             validate();
             repaint();
+        }
+
+        private Point toStackPoint(MouseEvent e) {
+            return SwingUtilities.convertPoint((Component) e.getSource(), e.getPoint(), ChartStackPanel.this);
         }
     }
     
@@ -739,8 +772,9 @@ public class ChartStackPanel extends JLayeredPane {
     }
     
     public int getIndicatorsCount() {
-        // TODO
-        return getIndicators().length;
+        return getIndicatorPanels().stream()
+                .mapToInt(panel -> panel.getIndicators().size())
+                .sum();
     }
     
     public List<IndicatorPanel> getIndicatorPanels() {
@@ -763,8 +797,11 @@ public class ChartStackPanel extends JLayeredPane {
         
         if (newIndex != index) {
             setComponentZOrder(panel, newIndex);
+            refreshPanels();
             revalidate();
             getParent().repaint();
+            if (chartFrame instanceof ChartFrame frame)
+                frame.refreshTemplateState();
         }
     }
     
@@ -775,8 +812,11 @@ public class ChartStackPanel extends JLayeredPane {
         
         if (newIndex != index) {
             setComponentZOrder(panel, newIndex);
+            refreshPanels();
             revalidate();
             getParent().repaint();
+            if (chartFrame instanceof ChartFrame frame)
+                frame.refreshTemplateState();
         }
     }
     
@@ -786,7 +826,42 @@ public class ChartStackPanel extends JLayeredPane {
     
     public IndicatorPanel getIndicatorPanel(Indicator indicator) {
         return getIndicatorPanels().stream()
-                .filter(panel -> indicator.equals(panel.getIndicator()))
+                .filter(panel -> panel.containsIndicator(indicator))
                 .findFirst().orElse(null);
+    }
+
+    public IndicatorPanel getIndicatorPanel(UUID paneId) {
+        return getIndicatorPanels().stream()
+                .filter(panel -> paneId != null && paneId.equals(panel.getId()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private IndicatorPanel createIndicatorPanel(UUID paneId, List<? extends Indicator> indicators) {
+        IndicatorPanel indicatorPanel = new IndicatorPanel(chartFrame, paneId, indicators, sharedTimeScale);
+        add(indicatorPanel);
+        installResizeListeners(indicatorPanel);
+        return indicatorPanel;
+    }
+
+    private void installResizeListeners(IndicatorPanel indicatorPanel) {
+        indicatorPanel.addMouseListener(resizeable);
+        indicatorPanel.addMouseMotionListener(resizeable);
+    }
+
+    private void uninstallResizeListeners(IndicatorPanel indicatorPanel) {
+        indicatorPanel.removeMouseListener(resizeable);
+        indicatorPanel.removeMouseMotionListener(resizeable);
+    }
+
+    private void afterIndicatorStructureChanged() {
+        updateIndicatorsToolbar();
+        refreshPanels();
+        chartFrame.getMainPanel().validate();
+        chartFrame.getMainPanel().repaint();
+    }
+
+    private boolean hasValidMarkerSlot() {
+        return isMarkerEnabled() && markerIndex < chartFrame.getChartData().getTotalSlotCount();
     }
 }

@@ -5,14 +5,16 @@ package one.chartsy.ui.chart;
 import one.chartsy.core.Range;
 
 import java.awt.Color;
-import java.awt.Graphics2D;
-import java.awt.Rectangle;
 
 public interface Plot {
 
     Color getPrimaryColor();
 
-    void paint(Graphics2D g, ChartContext cf, Range range, Rectangle bounds);
+    void render(PlotRenderTarget target, PlotRenderContext context);
+
+    default boolean supportsLegend() {
+        return true;
+    }
 
     default Range.Builder contributeRange(Range.Builder range, ChartContext cf) {
         return range == null ? new Range.Builder() : range;

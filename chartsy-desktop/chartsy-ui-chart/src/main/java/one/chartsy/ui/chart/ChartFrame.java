@@ -10,11 +10,13 @@ import one.chartsy.TimeFrame;
 import one.chartsy.core.event.ListenerList;
 import one.chartsy.data.CandleSeries;
 import one.chartsy.data.Series;
+import one.chartsy.ui.chart.annotation.GraphicLayer;
 import one.chartsy.ui.chart.components.AnnotationPanel;
 import one.chartsy.ui.chart.components.ChartStackPanel;
 import one.chartsy.ui.chart.components.ChartToolbar;
 import one.chartsy.ui.chart.components.IndicatorPanel;
 import one.chartsy.ui.chart.components.MainPanel;
+import one.chartsy.ui.chart.components.SharedDateAxisFooter;
 import one.chartsy.ui.chart.data.SymbolResourceLoaderTask;
 import one.chartsy.ui.chart.internal.ChartPluginParameterUtils;
 import one.chartsy.ui.chart.internal.ChartFrameDropTarget;
@@ -34,6 +36,7 @@ import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
 import java.beans.PropertyChangeEvent;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +47,8 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class ChartFrame extends JPanel implements ChartContext, MouseWheelListener {
+    public static final String APPLIED_TEMPLATE_PROPERTY = "appliedTemplate";
+    public static final String TEMPLATE_DIRTY_PROPERTY = "templateDirty";
 
     private final transient Logger log = LogManager.getLogger(getClass());
     private final JLayer<JPanel> chartLayer = new JLayer<>();
@@ -51,12 +56,17 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
     @Getter
     private ChartToolbar chartToolbar;
     private MainPanel mainPanel;
+    private SharedDateAxisFooter dateAxisFooter;
     private JScrollBar scrollBar;
+    private boolean lastScrollBarAdjusting;
 
     private ChartProperties chartProperties = new ChartProperties();
     private ChartData chartData;
     private ChartHistory history = new ChartHistory();
     private ChartTemplate chartTemplate;
+    private AppliedChartTemplateRef appliedChartTemplate;
+    private StoredChartTemplatePayload appliedTemplatePayload = StoredChartTemplatePayload.EMPTY;
+    private boolean templateDirty;
 
     private final transient ListenerList<ChartFrameListener> chartFrameListeners = ListenerList.of(ChartFrameListener.class);
 
@@ -72,16 +82,21 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
             mainPanel = new MainPanel(this);
             if (!GraphicsEnvironment.isHeadless())
                 ChartFrameDropTarget.decorate(this);
+            dateAxisFooter = new SharedDateAxisFooter(this);
             scrollBar = new JScrollBar(JScrollBar.HORIZONTAL);
             scrollBar.setAlignmentX(java.awt.Component.RIGHT_ALIGNMENT);
+            lastScrollBarAdjusting = scrollBar.getValueIsAdjusting();
 
             JPanel chartLayerView = new JPanel(new BorderLayout());
+            JPanel southPanel = new JPanel(new BorderLayout());
+            southPanel.setOpaque(false);
             chartLayerView.add(chartToolbar, BorderLayout.NORTH);
             JLayer<JComponent> crosshairLayer = new JLayer<>(mainPanel, new StandardCrosshairRendererLayer());
             crosshairLayer.setForeground(Color.lightGray.darker());
             chartLayerView.add(crosshairLayer, BorderLayout.CENTER);
-            //		chartLayerView.add(mainPanel, BorderLayout.CENTER);
-            chartLayerView.add(scrollBar, BorderLayout.SOUTH);
+            southPanel.add(dateAxisFooter, BorderLayout.CENTER);
+            southPanel.add(scrollBar, BorderLayout.SOUTH);
+            chartLayerView.add(southPanel, BorderLayout.SOUTH);
             chartLayer.setView(chartLayerView);
 
             // add chart JLayer as a direct child of this frame
@@ -101,17 +116,14 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
             addMouseWheelListener(this);
             scrollBar.getModel().addChangeListener(e -> {
                 ChartData chartData = getChartData();
-                int items = chartData.getPeriod();
-                int itemsCount = chartData.getDatasetLength();
-                int end = scrollBar.getModel().getValue() + items;
-
-                end = end > itemsCount ? itemsCount : (end < items ? items : end);
-
-                if (chartData.getLast() != end) {
-                    chartData.setLast(end);
-                    chartData.calculate(ChartFrame.this);
-                }
-                repaint();
+                if (chartData == null || !chartData.hasDataset())
+                    return;
+                boolean adjusting = scrollBar.getValueIsAdjusting();
+                boolean adjustingChanged = adjusting != lastScrollBarAdjusting;
+                lastScrollBarAdjusting = adjusting;
+                boolean viewportChanged = chartData.setVisibleStartSlot(scrollBar.getModel().getValue());
+                if (viewportChanged || adjustingChanged)
+                    refreshChartView();
             });
         }
     }
@@ -123,7 +135,7 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
 
     @Override
     public boolean getValueIsAdjusting() {
-        return scrollBar.getValueIsAdjusting();
+        return scrollBar != null && scrollBar.getValueIsAdjusting();
     }
 
     @Override
@@ -135,21 +147,24 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
     public void indicatorRemoved(Indicator indicator) {
         removeChartFrameListener(indicator);
         chartFrameListeners.fire().indicatorRemoved(indicator);
+        refreshTemplateState();
     }
 
     @Override
     public void fireOverlayRemoved(Overlay overlay) {
         removeChartFrameListener(overlay);
         chartFrameListeners.fire().overlayRemoved(overlay);
+        refreshTemplateState();
     }
 
     @Override
     public void zoomIn() {
         double barWidth = chartProperties.getBarWidth();
         double newWidth = chartData.zoomIn(barWidth);
-        if (barWidth != newWidth) {
+        if (Double.compare(barWidth, newWidth) != 0) {
             chartProperties.setBarWidth(newWidth);
-            repaint();
+            chartProperties.setSlotFillPercent(PixelPerfectCandleGeometry.fillPercent(newWidth));
+            refreshChartView();
         }
     }
 
@@ -157,9 +172,10 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
     public void zoomOut() {
         double barWidth = chartProperties.getBarWidth();
         double newWidth = chartData.zoomOut(barWidth);
-        if (barWidth != newWidth) {
+        if (Double.compare(barWidth, newWidth) != 0) {
             chartProperties.setBarWidth(newWidth);
-            repaint();
+            chartProperties.setSlotFillPercent(PixelPerfectCandleGeometry.fillPercent(newWidth));
+            refreshChartView();
         }
     }
 
@@ -175,11 +191,85 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
         return null;
     }
 
+    public AppliedChartTemplateRef getAppliedChartTemplate() {
+        return appliedChartTemplate;
+    }
+
+    public StoredChartTemplatePayload getAppliedTemplatePayload() {
+        return appliedTemplatePayload;
+    }
+
+    public boolean isTemplateDirty() {
+        return templateDirty;
+    }
+
+    public void applyLoadedTemplate(ChartTemplateCatalog.LoadedTemplate loadedTemplate) {
+        Objects.requireNonNull(loadedTemplate, "loadedTemplate");
+        setAppliedChartTemplate(loadedTemplate.summary(), loadedTemplate.payload());
+
+        ChartTemplate template = loadedTemplate.chartTemplate();
+        if (chartData != null && chartData.getChart() != null)
+            template.setChart(chartData.getChart());
+        setChartTemplate(template);
+        refreshTemplateState();
+    }
+
+    public void setAppliedChartTemplate(ChartTemplateSummary summary, StoredChartTemplatePayload payload) {
+        AppliedChartTemplateRef oldValue = appliedChartTemplate;
+        appliedChartTemplate = (summary != null)
+                ? ChartTemplatePayloadMapper.getDefault().toAppliedReference(summary)
+                : null;
+        appliedTemplatePayload = (payload != null) ? payload : StoredChartTemplatePayload.EMPTY;
+        firePropertyChange(APPLIED_TEMPLATE_PROPERTY, oldValue, appliedChartTemplate);
+    }
+
+    public void revertToAppliedTemplate() {
+        if (appliedChartTemplate == null)
+            return;
+
+        ChartTemplate restoredTemplate = ChartTemplatePayloadMapper.getDefault()
+                .toChartTemplate(appliedChartTemplate.name(), appliedTemplatePayload);
+        if (chartData != null && chartData.getChart() != null)
+            restoredTemplate.setChart(chartData.getChart());
+        setChartTemplate(restoredTemplate);
+        refreshTemplateState();
+    }
+
+    public StoredChartTemplatePayload captureCurrentStudyPayload() {
+        return ChartTemplatePayloadMapper.getDefault().captureCurrentStudies(this);
+    }
+
+    public ChartTemplate snapshotVisibleTemplate(String templateName) {
+        String snapshotName = (templateName != null && !templateName.isBlank())
+                ? templateName
+                : (chartTemplate != null ? chartTemplate.getName() : "Chart");
+
+        ChartTemplate snapshot = ChartTemplatePayloadMapper.getDefault()
+                .toChartTemplate(snapshotName, captureCurrentStudyPayload());
+        Chart chart = (chartData != null && chartData.getChart() != null)
+                ? chartData.getChart()
+                : (chartTemplate != null ? chartTemplate.getChart() : null);
+        snapshot.setChart(chart);
+        snapshot.setChartProperties(copyChartProperties(chartProperties));
+        return snapshot;
+    }
+
+    public void refreshTemplateState() {
+        boolean oldDirty = templateDirty;
+        templateDirty = (appliedChartTemplate != null)
+                && !ChartTemplatePayloadMapper.getDefault().equivalent(appliedTemplatePayload, captureCurrentStudyPayload());
+        if (oldDirty != templateDirty)
+            firePropertyChange(TEMPLATE_DIRTY_PROPERTY, oldDirty, templateDirty);
+    }
+
     public void setChartTemplate(ChartTemplate chartTemplate) {
         this.chartTemplate = chartTemplate;
         chartProperties.copyFrom(chartTemplate.getChartProperties());
+        if (chartData != null)
+            chartData.setChart(chartTemplate.getChart());
 
         if (isDisplayable()) {
+            chartFrameListeners.fire().chartChanged(chartTemplate.getChart());
             for (Overlay overlay : getMainStackPanel().getChartPanel().getOverlays())
                 fireOverlayRemoved(overlay);
             for (Overlay overlay : chartTemplate.getOverlays())
@@ -189,10 +279,9 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
                 indicatorRemoved(indicator);
             for (Indicator indicator : chartTemplate.getIndicators())
                 fireIndicatorAdded(indicator);
-        } else {
-            // if the chart is not yet displayed use default bar width from the template
-            chartProperties.setBarWidth(chartTemplate.getChartProperties().getBarWidth());
+            refreshChartView();
         }
+        refreshTemplateState();
     }
 
     public void setIndicators(List<Indicator> newIndicators) {
@@ -230,6 +319,7 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
             setIndicators(newIndicators);
             restoreIndicatorPanelStates(stackPanel, indicatorPanelStates);
         }
+        refreshTemplateState();
     }
 
     private Map<UUID, Boolean> captureIndicatorPanelStates(ChartStackPanel stackPanel) {
@@ -270,21 +360,16 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
         return ChartPluginParameterUtils.haveSameParameterValues(current, updated);
     }
 
+    private static ChartProperties copyChartProperties(ChartProperties source) {
+        ChartProperties copy = new ChartProperties();
+        copy.copyFrom(source);
+        return copy;
+    }
+
     @Override
     public void mouseWheelMoved(MouseWheelEvent e) {
-        if (getChartData().hasDataset()) {
-            int items = getChartData().getPeriod();
-            int itemsCount = getChartData().getDatasetLength();
-            if (itemsCount > items) {
-                int last = getChartData().getLast() - e.getWheelRotation();
-                last = last > itemsCount ? itemsCount : (Math.max(last, items));
-
-                if (getChartData().getLast() != last) {
-                    getChartData().setLast(last);
-                    getChartData().calculate(this);
-                }
-            }
-        }
+        if (getChartData().hasDataset() && getChartData().scrollVisibleBy(e.getWheelRotation()))
+            refreshChartView();
     }
 
     @Override
@@ -315,6 +400,7 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
         }
         // notify listeners
         chartFrameListeners.fire().overlayAdded(overlay);
+        refreshTemplateState();
     }
 
     public void fireIndicatorAdded(Indicator indicator) {
@@ -330,11 +416,17 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
             indicator.calculate(); // TODO: make asynchronous
         }
         chartFrameListeners.fire().indicatorAdded(indicator);
+        refreshTemplateState();
     }
 
     @Override
     public MainPanel getMainPanel() {
         return mainPanel;
+    }
+
+    @Override
+    public SharedDateAxisFooter getDateAxisFooter() {
+        return dateAxisFooter;
     }
 
     public ChartHistory getHistory() {
@@ -406,6 +498,8 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
 
         chartData = data;
         addChartFrameListener(data);
+        if (chartTemplate != null)
+            chartData.setChart(chartTemplate.getChart());
         setName(NbBundle.getMessage(ChartFrame.class, "ChartFrame.name", chartData.getSymbol().name()));
     }
 
@@ -420,12 +514,14 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
 
     @Override
     public void updateHorizontalScrollBar() {
-        int last = getChartData().getLast();
-        int items = getChartData().getPeriod();
-        int itemsCount = getChartData().getDatasetLength();
+        if (scrollBar == null || getChartData() == null)
+            return;
 
-        scrollBar.setValues(last - items, items, 0, itemsCount);
-        scrollBar.setBlockIncrement(Math.max(1, items - 1));
+        int visible = getChartData().getVisibleSlotCount();
+        int total = Math.max(visible, getChartData().getTotalSlotCount());
+        scrollBar.setValues(getChartData().getVisibleStartSlot(), visible, 0, total);
+        scrollBar.setUnitIncrement(1);
+        scrollBar.setBlockIncrement(Math.max(1, visible - 1));
     }
 
     /**
@@ -446,10 +542,6 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
 
         if (!timeFrame.equals(chartData.getTimeFrame()))
             chartFrameListeners.fire().timeFrameChanged(timeFrame);
-
-        // reverse back to predefined bar width
-        if (chartTemplate != null)
-            chartProperties.setBarWidth(chartTemplate.getChartProperties().getBarWidth());
 
         // notify listeners
         chartFrameListeners.fire().symbolChanged(symbol);
@@ -614,9 +706,9 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
                 initComponents(false);
             else {
                 setName(NbBundle.getMessage(ChartFrame.class, "ChartFrame.name", symbol.name()));
-                resetHorizontalScrollBar();
                 chartToolbar.updateToolbar();
             }
+            refreshChartView();
             chartLayer.setUI(new LayerUI<>());
             if (firstLaunch || previousChart == null || !symbol.equals(previousChart.getSymbol()))
                 fireOnChart();
@@ -670,13 +762,90 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
     }
 
     public void resetHorizontalScrollBar() {
-        chartData.setPeriod(-1);
-        chartData.setLast(-1);
-        chartData.calculate(this);
-        int last = getChartData().getLast();
-        int items = getChartData().getPeriod();
-        scrollBar.setValues(last - items, items, 0, last);
-        scrollBar.setBlockIncrement(Math.max(1, items - 1));
+        chartData.resetViewport();
+        refreshChartView();
+    }
+
+    @Override
+    public void refreshChartView() {
+        if (chartData == null)
+            return;
+
+        if (mainPanel != null && chartData.hasDataset()) {
+            mainPanel.refreshCharts();
+            clampMarkerIndex();
+        } else {
+            chartData.calculate(this);
+        }
+        revalidate();
+        repaint();
+        if (dateAxisFooter != null)
+            dateAxisFooter.repaint();
+    }
+
+    @Override
+    public void refreshAnnotationFutureTail() {
+        if (chartData == null || !chartData.hasDataset() || mainPanel == null)
+            return;
+
+        int historicalSlots = chartData.getHistoricalSlotCount();
+        int requiredTail = 0;
+        for (AnnotationPanel panel : getAnnotationPanels())
+            requiredTail = Math.max(requiredTail, annotationFutureTail(panel, historicalSlots));
+
+        if (chartData.setAnnotationTailSlots(requiredTail))
+            refreshChartView();
+    }
+
+    private int annotationFutureTail(AnnotationPanel panel, int historicalSlots) {
+        int requiredTail = 0;
+        var model = panel.getModel();
+        for (int layerIndex = 0; layerIndex < model.getLayersCount(); layerIndex++) {
+            GraphicLayer layer = model.getLayer(layerIndex);
+            for (Annotation annotation : layer.getAnnotations()) {
+                for (ChartPoint point : getAnchorPoints(annotation)) {
+                    if (point == null)
+                        continue;
+                    int slot = chartData.getSlotIndex(point.getTime());
+                    if (slot >= historicalSlots)
+                        requiredTail = Math.max(requiredTail, slot - historicalSlots + 1);
+                }
+            }
+        }
+        return requiredTail;
+    }
+
+    private List<ChartPoint> getAnchorPoints(Annotation annotation) {
+        if (annotation instanceof PolyPointsAware polyPoints)
+            return polyPoints.getAnchorPoints();
+
+        List<ChartPoint> points = new ArrayList<>(2);
+        addAnchor(points, annotation, "getStartAnchor");
+        addAnchor(points, annotation, "getEndAnchor");
+        return points;
+    }
+
+    private void addAnchor(List<ChartPoint> points, Annotation annotation, String methodName) {
+        try {
+            Method method = annotation.getClass().getMethod(methodName);
+            Object value = method.invoke(annotation);
+            if (value instanceof ChartPoint point)
+                points.add(point);
+        } catch (ReflectiveOperationException ignored) {
+        }
+    }
+
+    private void clampMarkerIndex() {
+        if (mainPanel == null)
+            return;
+
+        ChartStackPanel stackPanel = mainPanel.getStackPanel();
+        int totalSlots = chartData.getTotalSlotCount();
+        if (totalSlots == 0) {
+            stackPanel.setMarkerIndex(-1);
+        } else if (stackPanel.getMarkerIndex() >= totalSlots) {
+            stackPanel.setMarkerIndex(totalSlots - 1);
+        }
     }
 
     protected static void createAndShowGUI() {

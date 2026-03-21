@@ -22,7 +22,8 @@ public class ChartProperties implements Serializable {
     public static final int AXIS_STROKE_INDEX = 0;
     public static final boolean AXIS_LOGARITHMIC_FLAG = true;
     
-    public static final double BAR_WIDTH = 8;
+    public static final double BAR_WIDTH = PixelPerfectCandleGeometry.DEFAULT_BODY_WIDTH;
+    public static final double SLOT_FILL_PERCENT = 87.5;
     public static final Color BAR_COLOR = new Color(0x2e3436);
     public static final int BAR_STROKE_INDEX = 0;
     public static final boolean BAR_VISIBILITY = true;
@@ -39,7 +40,7 @@ public class ChartProperties implements Serializable {
     public static final boolean GRID_VERTICAL_VISIBILITY = true;
     
     public static final Color BACKGROUND_COLOR = new Color(0xffffff);
-    public static final Font MAIN_FONT = new Font("Dialog", Font.PLAIN, 12);
+    public static final Font MAIN_FONT = ChartFonts.defaultChartFont();
     public static final Color FONT_COLOR = new Color(0x2e3436);
     
     public static final boolean MARKER_VISIBILITY = false;
@@ -56,6 +57,7 @@ public class ChartProperties implements Serializable {
     private boolean axisLogarithmicFlag = AXIS_LOGARITHMIC_FLAG;
     
     private double barWidth = BAR_WIDTH;
+    private double slotFillPercent = SLOT_FILL_PERCENT;
     private Color barColor = BAR_COLOR;
     private int barStrokeIndex = BAR_STROKE_INDEX;
     private boolean barVisibility = BAR_VISIBILITY;
@@ -137,12 +139,23 @@ public class ChartProperties implements Serializable {
     {
         if (itemWidth <= 0)
             return;
-        barWidth = itemWidth;
+        barWidth = PixelPerfectCandleGeometry.snapBodyWidth(itemWidth);
+        slotFillPercent = PixelPerfectCandleGeometry.fillPercent(barWidth);
     }
     
     public double getBarWidth()
     {
         return barWidth;
+    }
+
+    public double getSlotFillPercent() {
+        return slotFillPercent;
+    }
+
+    public void setSlotFillPercent(double slotFillPercent) {
+        if (slotFillPercent <= 0)
+            return;
+        this.slotFillPercent = Math.clamp(slotFillPercent, 1.0, 100.0);
     }
     
     public Color getBarColor() 
@@ -421,6 +434,8 @@ public class ChartProperties implements Serializable {
     {
         setAxisColor(chartProperties.getAxisColor());
         setAxisStrokeIndex(chartProperties.getAxisStrokeIndex());
+        setAxisLogarithmicFlag(chartProperties.getAxisLogarithmicFlag());
+        setBarWidth(chartProperties.getBarWidth());
         setBarColor(chartProperties.getBarColor());
         setBarStrokeIndex(chartProperties.getBarStrokeIndex());
         setBarVisibility(chartProperties.getBarVisibility());
@@ -437,6 +452,11 @@ public class ChartProperties implements Serializable {
         setBackgroundColor(chartProperties.getBackgroundColor());
         setFont(chartProperties.getFont());
         setFontColor(chartProperties.getFontColor());
+        setMarkerVisibility(chartProperties.getMarkerVisibility());
+        setToolbarVisibility(chartProperties.getToolbarVisibility());
+        setToolbarSmallIcons(chartProperties.getToolbarSmallIcons());
+        setToolbarShowLabels(chartProperties.getToolbarShowLabels());
+        setAnnotationLayerVisible(chartProperties.isAnnotationLayerVisible());
     }
 
     /**

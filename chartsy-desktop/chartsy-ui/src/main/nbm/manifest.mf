@@ -1,4 +1,5 @@
 Manifest-Version: 1.0
 AutoUpdate-Essential-Module: true
+OpenIDE-Module-Install: one/chartsy/ui/ChartsyModuleInstall.class
 OpenIDE-Module-Layer: one/chartsy/ui/resources/layer.xml
 OpenIDE-Module-Localizing-Bundle: one/chartsy/ui/Bundle.properties

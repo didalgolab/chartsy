@@ -31,7 +31,7 @@
       </option>
     </MavenSettings>
     <method v="2">
-      <option name="Maven.BeforeRunTask" enabled="true" file="$PROJECT_DIR$/pom.xml" goal="clean install -T 2C" />
+      <option name="Maven.BeforeRunTask" enabled="true" file="$PROJECT_DIR$/pom.xml" goal="clean install -T 2C -DskipTests=true" />
     </method>
   </configuration>
 </component>

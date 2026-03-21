@@ -8,6 +8,9 @@ import one.chartsy.Candle;
 import one.chartsy.SymbolIdentity;
 import one.chartsy.SymbolResource;
 import one.chartsy.TimeFrame;
+import one.chartsy.charting.ChartRendererLegendItem;
+import one.chartsy.charting.Legend;
+import one.chartsy.charting.LegendEntry;
 import one.chartsy.core.Range;
 import one.chartsy.data.CandleSeries;
 import one.chartsy.data.provider.DataProvider;
@@ -18,7 +21,9 @@ import org.junit.jupiter.api.Test;
 import java.awt.Dimension;
 import java.awt.Rectangle;
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.List;
+import javax.swing.SwingUtilities;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -71,5 +76,58 @@ class ChartStudyIntegrationTest {
 
         assertThat(range.contains(0.0)).isTrue();
         assertThat(zeroY).isBetween(overlayBounds.getMinY(), overlayBounds.getMaxY() + 1.0);
+    }
+
+    @Test
+    void pricePaneLegendUsesNativeOverlayEntriesWithSymbolFirst() {
+        ChartTemplate template = ChartTemplateDefaults.basicChartTemplate();
+        CandleSeries dataset = CandleSeries.of(
+                SymbolResource.of(SymbolIdentity.of("LEGEND-FIXTURE"), TimeFrame.Period.DAILY).withDataType(Candle.class),
+                List.of(
+                        Candle.of(LocalDate.of(2026, 1, 1).atStartOfDay(), 100, 104, 98, 103, 1_000),
+                        Candle.of(LocalDate.of(2026, 1, 2).atStartOfDay(), 103, 106, 101, 105, 6_000),
+                        Candle.of(LocalDate.of(2026, 1, 3).atStartOfDay(), 105, 107, 102, 104, 3_500),
+                        Candle.of(LocalDate.of(2026, 1, 4).atStartOfDay(), 104, 108, 103, 107, 8_000),
+                        Candle.of(LocalDate.of(2026, 1, 5).atStartOfDay(), 107, 111, 106, 110, 7_400)
+                )
+        );
+
+        ChartFrame chartFrame = ChartExporter.createChartFrame(DataProvider.EMPTY, dataset, template, new Dimension(1280, 800));
+        flushEdt();
+        Legend legend = Arrays.stream(chartFrame.getMainPanel().getChartPanel().getComponents())
+                .filter(Legend.class::isInstance)
+                .map(Legend.class::cast)
+                .findFirst()
+                .orElseThrow();
+        List<LegendEntry> entries = Arrays.stream(legend.getComponents())
+                .filter(LegendEntry.class::isInstance)
+                .map(LegendEntry.class::cast)
+                .toList();
+
+        assertThat(entries)
+                .extracting(LegendEntry::getLabel)
+                .containsExactly(
+                        "LEGEND-FIXTURE, Daily",
+                        "FRAMA, Leading",
+                        "FRAMA, Trailing",
+                        "Sfora",
+                        "Volume",
+                        "Sentiment Bands"
+                );
+        assertThat(entries.getFirst().getClass().getName()).contains("HiLoOpenCloseRendererLegendItem");
+        assertThat(entries.stream().skip(1))
+                .allMatch(ChartRendererLegendItem.class::isInstance);
+        assertThat(entries)
+                .extracting(entry -> entry.getClass().getName())
+                .allMatch(name -> !name.contains("EnginePlotRenderTarget$"));
+    }
+
+    private static void flushEdt() {
+        try {
+            SwingUtilities.invokeAndWait(() -> { });
+            SwingUtilities.invokeAndWait(() -> { });
+        } catch (Exception ex) {
+            throw new IllegalStateException("Unable to flush EDT", ex);
+        }
     }
 }
