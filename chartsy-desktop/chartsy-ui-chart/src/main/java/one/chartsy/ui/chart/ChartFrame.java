@@ -500,7 +500,7 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
         addChartFrameListener(data);
         if (chartTemplate != null)
             chartData.setChart(chartTemplate.getChart());
-        setName(NbBundle.getMessage(ChartFrame.class, "ChartFrame.name", chartData.getSymbol().name()));
+        updateChartTitle(chartData.getSymbol());
     }
 
     @Override
@@ -535,16 +535,14 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
      *            the {@code ChartAction} to perform on this {@code ChartFrame}
      */
     public void navigationChange(ChartHistoryEntry action) {
+        navigationChange(action, 0);
+    }
+
+    public void navigationChange(ChartHistoryEntry action, int historyRollbackStep) {
         SymbolIdentity symbol = action.getSymbol();
         TimeFrame timeFrame = action.getTimeFrame();
 
-        datasetLoading(symbol, timeFrame);
-
-        if (!timeFrame.equals(chartData.getTimeFrame()))
-            chartFrameListeners.fire().timeFrameChanged(timeFrame);
-
-        // notify listeners
-        chartFrameListeners.fire().symbolChanged(symbol);
+        datasetLoading(SymbolResource.of(symbol, timeFrame), historyRollbackStep);
     }
 
     /**
@@ -558,62 +556,187 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
     public void symbolChanged(SymbolIdentity newSymbol) {
         TimeFrame timeFrame = chartData.getTimeFrame();
         datasetLoading(newSymbol, timeFrame);
-
-        // notify listeners
-        chartFrameListeners.fire().symbolChanged(newSymbol);
     }
 
     public void timeFrameChanged(TimeFrame newTimeFrame) {
         SymbolIdentity symbol = chartData.getSymbol();
         datasetLoading(symbol, newTimeFrame);
-
-        chartFrameListeners.fire().timeFrameChanged(newTimeFrame);
     }
 
     private void datasetLoading(SymbolIdentity newSymbol, TimeFrame timeFrame) {
-        datasetLoading(SymbolResource.of(newSymbol, timeFrame));
+        datasetLoading(SymbolResource.of(newSymbol, timeFrame), 0);
     }
 
-    private volatile ChartHistoryEntry previousChart;
+    private static ChartHistoryEntry chartHistoryEntry(SymbolIdentity symbol, TimeFrame timeFrame) {
+        return new ChartHistoryEntry(symbol, timeFrame);
+    }
+
+    private record PendingLoad(ChartHistoryEntry previousChart,
+                               CandleSeries previousDataset,
+                               int previousVisibleStartSlot,
+                               int historyRollbackStep) {
+
+        private static final PendingLoad NONE = new PendingLoad(null, null, 0, 0);
+
+        private boolean canRestore() {
+            return previousChart != null && previousDataset != null;
+        }
+    }
+
+    private transient volatile PendingLoad pendingLoad = PendingLoad.NONE;
     private final AtomicReference<CompletableFuture<Series<Candle>>> activeLoader = new AtomicReference<>();
 
-    protected void datasetLoading(SymbolResource<Candle> resource) {
-        // start a parallel data loading task, as soon as possible
-        var provider = getChartData().getDataProvider();
-        var task = new SymbolResourceLoaderTask<>(provider, resource);
-        activeLoader.set(task);
-        ForkJoinPool.commonPool().execute(task);
+    private static ChartHistoryEntry chartHistoryEntry(SymbolResource<?> resource) {
+        return chartHistoryEntry(resource.symbol(), resource.timeFrame());
+    }
 
-        // remember currently opened Symbol, TimeFrame and Quotes
-        if (chartData.hasDataset()) {
-            CandleSeries oldQuotes = chartData.getDataset();
-            previousChart = new ChartHistoryEntry(resource.symbol(), resource.timeFrame());
-            //previousData = new SoftReference<>(oldQuotes);
+    private ChartHistoryEntry displayedChart() {
+        CandleSeries dataset = chartData.getDataset();
+        return (dataset != null) ? chartHistoryEntry(dataset.getResource()) : null;
+    }
+
+    private void clearWaitLayer() {
+        chartLayer.setUI(new LayerUI<>());
+    }
+
+    private void updateChartTitle(SymbolIdentity symbol) {
+        setName(NbBundle.getMessage(ChartFrame.class, "ChartFrame.name", symbol.name()));
+    }
+
+    private void refreshToolbarIfInitialized() {
+        if (chartToolbar != null)
+            chartToolbar.updateToolbar();
+    }
+
+    private void updateDisplayedChartMetadata(SymbolIdentity symbol) {
+        updateChartTitle(symbol);
+        refreshToolbarIfInitialized();
+    }
+
+    private void clearPendingLoadState() {
+        pendingLoad = PendingLoad.NONE;
+    }
+
+    private void capturePendingLoadState(int historyRollbackStep) {
+        pendingLoad = new PendingLoad(
+                displayedChart(),
+                chartData.getDataset(),
+                chartData.getVisibleStartSlot(),
+                historyRollbackStep
+        );
+    }
+
+    private void rollbackHistoryPosition(PendingLoad load) {
+        if (load.historyRollbackStep() != 0)
+            history.go(load.historyRollbackStep());
+    }
+
+    private boolean currentChartStateDiffersFromPrevious(PendingLoad load) {
+        return load.canRestore()
+                && (chartData.getDataset() != load.previousDataset()
+                || !Objects.equals(chartData.getSymbol(), load.previousChart().getSymbol())
+                || !Objects.equals(chartData.getTimeFrame(), load.previousChart().getTimeFrame()));
+    }
+
+    private void restoreViewport(int visibleStartSlot) {
+        chartData.setVisibleStartSlot(visibleStartSlot);
+        int missingTail = visibleStartSlot - chartData.getVisibleStartSlot();
+        if (missingTail > 0)
+            chartData.scrollVisibleBy(missingTail);
+    }
+
+    private void restorePreviousDatasetIfNeeded(PendingLoad load) {
+        if (chartData.getDataset() != load.previousDataset())
+            chartFrameListeners.fire().datasetChanged(load.previousDataset());
+    }
+
+    private void notifySelectionChange(SymbolIdentity currentSymbol,
+                                       TimeFrame currentTimeFrame,
+                                       SymbolIdentity newSymbol,
+                                       TimeFrame newTimeFrame) {
+        if (!Objects.equals(currentTimeFrame, newTimeFrame))
+            chartFrameListeners.fire().timeFrameChanged(newTimeFrame);
+        if (!Objects.equals(currentSymbol, newSymbol))
+            chartFrameListeners.fire().symbolChanged(newSymbol);
+    }
+
+    private void restorePreviousSelection(PendingLoad load, SymbolIdentity currentSymbol, TimeFrame currentTimeFrame) {
+        ChartHistoryEntry previousChart = load.previousChart();
+        if (chartData.getDataset() == load.previousDataset()) {
+            if (!Objects.equals(currentSymbol, previousChart.getSymbol()))
+                chartData.setSymbol(previousChart.getSymbol());
+            if (!Objects.equals(currentTimeFrame, previousChart.getTimeFrame()))
+                chartData.setTimeFrame(previousChart.getTimeFrame());
         }
-        history.actionPerformed(new ChartHistoryEntry(resource.symbol(), resource.timeFrame()));
+        notifySelectionChange(currentSymbol, currentTimeFrame, previousChart.getSymbol(), previousChart.getTimeFrame());
+    }
 
-        // enable the wait layer on the chart frame
-        JLabel loadingLabel = createDatasetLoadingLabel(resource.symbol());
+    private void restorePreviousChartState(PendingLoad load) {
+        if (!load.canRestore())
+            return;
+
+        SymbolIdentity currentSymbol = chartData.getSymbol();
+        TimeFrame currentTimeFrame = chartData.getTimeFrame();
+
+        restorePreviousDatasetIfNeeded(load);
+        restoreViewport(load.previousVisibleStartSlot());
+        restorePreviousSelection(load, currentSymbol, currentTimeFrame);
+        updateDisplayedChartMetadata(load.previousChart().getSymbol());
+        refreshChartView();
+    }
+
+    private JLabel showWaitLayer(SymbolIdentity symbol) {
+        JLabel loadingLabel = createDatasetLoadingLabel(symbol);
         chartLayer.setUI(new WaitLayerUI(loadingLabel));
+        return loadingLabel;
+    }
 
-        // start a progress indicator
+    private static ProgressHandle startProgressHandle(JLabel loadingLabel) {
         @SuppressWarnings("java:S2095")
         ProgressHandle handle = ProgressHandle.createHandle(loadingLabel.getText());
         handle.start();
         handle.switchToIndeterminate();
+        return handle;
+    }
 
-        task.whenCompleteAsync((quotes, exception) -> {
-            handle.finish();
-            if (activeLoader.get() == task) {
-                if (quotes != null) {
-                    datasetLoaded(quotes);
-                } else {
-                    datasetLoadingFailed(resource.symbol(), exception);
-                }
-                revalidate();
-                repaint();
-            }
-        }, /*using Executor:*/SwingUtilities::invokeLater);
+    private void finishDatasetLoading(CompletableFuture<Series<Candle>> task,
+                                      SymbolResource<Candle> resource,
+                                      Series<Candle> quotes,
+                                      Throwable exception,
+                                      ProgressHandle handle) {
+        handle.finish();
+        if (activeLoader.get() != task)
+            return;
+
+        if (quotes != null)
+            datasetLoaded(quotes);
+        else
+            datasetLoadingFailed(resource.symbol(), exception);
+
+        revalidate();
+        repaint();
+    }
+
+    private void startDatasetLoadingTask(SymbolResource<Candle> resource, ProgressHandle handle) {
+        var provider = getChartData().getDataProvider();
+        var task = new SymbolResourceLoaderTask<>(provider, resource);
+        activeLoader.set(task);
+        task.whenCompleteAsync(
+                (quotes, exception) -> finishDatasetLoading(task, resource, quotes, exception, handle),
+                SwingUtilities::invokeLater
+        );
+        ForkJoinPool.commonPool().execute(task);
+    }
+
+    protected void datasetLoading(SymbolResource<Candle> resource) {
+        datasetLoading(resource, 0);
+    }
+
+    protected void datasetLoading(SymbolResource<Candle> resource, int historyRollbackStep) {
+        capturePendingLoadState(historyRollbackStep);
+        JLabel loadingLabel = showWaitLayer(resource.symbol());
+        ProgressHandle handle = startProgressHandle(loadingLabel);
+        startDatasetLoadingTask(resource, handle);
     }
 
     static class WaitLayerUI extends LayerUI<JComponent> {
@@ -694,24 +817,24 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
      */
     protected void datasetLoaded(Series<Candle> quotes) {
         SymbolIdentity symbol = quotes.getResource().symbol();
+        PendingLoad load = pendingLoad;
         try {
             TimeFrame timeFrame = quotes.getResource().timeFrame();
-            boolean symbolChanged = !symbol.equals(chartData.getSymbol());
-
-            // notify listeners about newly loaded dataset
-            chartFrameListeners.fire().datasetChanged(CandleSeries.from(quotes));
-            //remove(loading);
+            SymbolIdentity currentSymbol = chartData.getSymbol();
+            TimeFrame currentTimeFrame = chartData.getTimeFrame();
             boolean firstLaunch = (mainPanel == null);
+
+            chartFrameListeners.fire().datasetChanged(CandleSeries.from(quotes));
             if (firstLaunch)
                 initComponents(false);
-            else {
-                setName(NbBundle.getMessage(ChartFrame.class, "ChartFrame.name", symbol.name()));
-                chartToolbar.updateToolbar();
-            }
+            notifySelectionChange(currentSymbol, currentTimeFrame, symbol, timeFrame);
+            updateDisplayedChartMetadata(symbol);
             refreshChartView();
-            chartLayer.setUI(new LayerUI<>());
-            if (firstLaunch || previousChart == null || !symbol.equals(previousChart.getSymbol()))
+            clearWaitLayer();
+            if (firstLaunch || load.previousChart() == null || !Objects.equals(symbol, load.previousChart().getSymbol()))
                 fireOnChart();
+            history.actionPerformed(chartHistoryEntry(symbol, timeFrame));
+            clearPendingLoadState();
 
         } catch (Exception e) {
             datasetLoadingFailed(symbol, e);
@@ -726,39 +849,37 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
 
     void datasetLoadingFailed(SymbolIdentity symbol, Throwable x) {
         Exceptions.printStackTrace(x);
+        PendingLoad load = pendingLoad;
 
         String name = symbol.name();
-        String text = NbBundle.getMessage(ChartFrame.class, "datasetLoadingFailed", name);
+        String text = NbBundle.getMessage(ChartFrame.class, "CF.loadingFailed", name);
         chartLayer.propertyChange(new PropertyChangeEvent(this, "datasetLoading.text", null, text));
 
-        if (previousChart != null)
-            datasetLoadingFailedQ(symbol);
+        boolean restoreRequested = false;
+        try {
+            if (load.previousChart() != null)
+                restoreRequested = shouldRestorePreviousChart(symbol);
+        } finally {
+            rollbackHistoryPosition(load);
+            if (restoreRequested || currentChartStateDiffersFromPrevious(load))
+                restorePreviousChartState(load);
+            clearWaitLayer();
+            clearPendingLoadState();
+        }
     }
 
-    private void datasetLoadingFailedQ(SymbolIdentity symbol) {
+    private boolean shouldRestorePreviousChart(SymbolIdentity symbol) {
         NotifyDescriptor descriptor = new NotifyDescriptor.Confirmation("");
         descriptor.setTitle("No Data");
         descriptor.setMessage(NbBundle.getMessage(ChartFrame.class, "CF.loadingFailedQ", symbol.name()));
         descriptor.setOptionType(NotifyDescriptor.YES_NO_OPTION);
 
-        Object result = DialogDisplayer.getDefault().notify(descriptor);
-        if (result.equals(NotifyDescriptor.YES_OPTION)) {
+        Object result = showDialog(descriptor);
+        return result.equals(NotifyDescriptor.YES_OPTION);
+    }
 
-            SymbolIdentity oldSymbol = previousChart.getSymbol();
-            if (!oldSymbol.equals(chartData.getSymbol())) {
-                chartData.setSymbol(oldSymbol);
-                chartFrameListeners.fire().symbolChanged(oldSymbol);
-            }
-
-            TimeFrame oldTimeFrame = previousChart.getTimeFrame();
-            if (!oldTimeFrame.equals(chartData.getTimeFrame())) {
-                chartData.setTimeFrame(oldTimeFrame);
-                chartFrameListeners.fire().timeFrameChanged(oldTimeFrame);
-            }
-
-            resetHorizontalScrollBar();
-            chartLayer.setUI(new LayerUI<>());
-        }
+    protected Object showDialog(NotifyDescriptor descriptor) {
+        return DialogDisplayer.getDefault().notify(descriptor);
     }
 
     public void resetHorizontalScrollBar() {
