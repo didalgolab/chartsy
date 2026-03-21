@@ -41,11 +41,8 @@ public class AutomaticRunner implements LaunchPerformer {
 
             newAttributes.putIfAbsent(attrDef.key().name(), attrValue);
         }
-        var newContext = ImmutableLaunchContext.builder()
+        var newContext = ImmutableLaunchContext.builder().from(context)
                 .attributes(newAttributes)
-                .progressHandle(context.progressHandle())
-                .projectDirectory(context.projectDirectory())
-                .launcher(context.launcher())
                 .build();
 
         var viewType = desc.getTopComponent();

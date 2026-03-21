@@ -44,8 +44,6 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class ChartFrame extends JPanel implements ChartContext, MouseWheelListener {
-    public static final String APPLIED_TEMPLATE_PROPERTY = "appliedTemplate";
-    public static final String TEMPLATE_DIRTY_PROPERTY = "templateDirty";
 
     private final transient Logger log = LogManager.getLogger(getClass());
     private final JLayer<JPanel> chartLayer = new JLayer<>();
@@ -59,9 +57,6 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
     private ChartData chartData;
     private ChartHistory history = new ChartHistory();
     private ChartTemplate chartTemplate;
-    private AppliedChartTemplateRef appliedChartTemplate;
-    private StoredChartTemplatePayload appliedTemplatePayload = StoredChartTemplatePayload.EMPTY;
-    private boolean templateDirty;
 
     private final transient ListenerList<ChartFrameListener> chartFrameListeners = ListenerList.of(ChartFrameListener.class);
 
@@ -140,14 +135,12 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
     public void indicatorRemoved(Indicator indicator) {
         removeChartFrameListener(indicator);
         chartFrameListeners.fire().indicatorRemoved(indicator);
-        refreshTemplateState();
     }
 
     @Override
     public void fireOverlayRemoved(Overlay overlay) {
         removeChartFrameListener(overlay);
         chartFrameListeners.fire().overlayRemoved(overlay);
-        refreshTemplateState();
     }
 
     @Override
@@ -182,71 +175,6 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
         return null;
     }
 
-    public AppliedChartTemplateRef getAppliedChartTemplate() {
-        return appliedChartTemplate;
-    }
-
-    public StoredChartTemplatePayload getAppliedTemplatePayload() {
-        return appliedTemplatePayload;
-    }
-
-    public boolean isTemplateDirty() {
-        return templateDirty;
-    }
-
-    public void applyLoadedTemplate(ChartTemplateCatalog.LoadedTemplate loadedTemplate) {
-        Objects.requireNonNull(loadedTemplate, "loadedTemplate");
-        setAppliedChartTemplate(loadedTemplate.summary(), loadedTemplate.payload());
-        setChartTemplate(loadedTemplate.chartTemplate());
-        refreshTemplateState();
-    }
-
-    public void setAppliedChartTemplate(ChartTemplateSummary summary, StoredChartTemplatePayload payload) {
-        AppliedChartTemplateRef oldValue = appliedChartTemplate;
-        appliedChartTemplate = (summary != null)
-                ? ChartTemplatePayloadMapper.getDefault().toAppliedReference(summary)
-                : null;
-        appliedTemplatePayload = (payload != null) ? payload : StoredChartTemplatePayload.EMPTY;
-        firePropertyChange(APPLIED_TEMPLATE_PROPERTY, oldValue, appliedChartTemplate);
-    }
-
-    public void revertToAppliedTemplate() {
-        if (appliedChartTemplate == null)
-            return;
-
-        ChartTemplate restoredTemplate = ChartTemplatePayloadMapper.getDefault()
-                .toChartTemplate(appliedChartTemplate.name(), appliedTemplatePayload);
-        setChartTemplate(restoredTemplate);
-        refreshTemplateState();
-    }
-
-    public StoredChartTemplatePayload captureCurrentStudyPayload() {
-        return ChartTemplatePayloadMapper.getDefault().captureCurrentStudies(this);
-    }
-
-    public ChartTemplate snapshotVisibleTemplate(String templateName) {
-        String snapshotName = (templateName != null && !templateName.isBlank())
-                ? templateName
-                : (chartTemplate != null ? chartTemplate.getName() : "Chart");
-
-        ChartTemplate snapshot = ChartTemplatePayloadMapper.getDefault()
-                .toChartTemplate(snapshotName, captureCurrentStudyPayload());
-        Chart chart = (chartData != null && chartData.getChart() != null)
-                ? chartData.getChart()
-                : (chartTemplate != null ? chartTemplate.getChart() : null);
-        snapshot.setChart(chart);
-        snapshot.setChartProperties(copyChartProperties(chartProperties));
-        return snapshot;
-    }
-
-    public void refreshTemplateState() {
-        boolean oldDirty = templateDirty;
-        templateDirty = (appliedChartTemplate != null)
-                && !ChartTemplatePayloadMapper.getDefault().equivalent(appliedTemplatePayload, captureCurrentStudyPayload());
-        if (oldDirty != templateDirty)
-            firePropertyChange(TEMPLATE_DIRTY_PROPERTY, oldDirty, templateDirty);
-    }
-
     public void setChartTemplate(ChartTemplate chartTemplate) {
         this.chartTemplate = chartTemplate;
         chartProperties.copyFrom(chartTemplate.getChartProperties());
@@ -265,7 +193,6 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
             // if the chart is not yet displayed use default bar width from the template
             chartProperties.setBarWidth(chartTemplate.getChartProperties().getBarWidth());
         }
-        refreshTemplateState();
     }
 
     public void setIndicators(List<Indicator> newIndicators) {
@@ -303,7 +230,6 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
             setIndicators(newIndicators);
             restoreIndicatorPanelStates(stackPanel, indicatorPanelStates);
         }
-        refreshTemplateState();
     }
 
     private Map<UUID, Boolean> captureIndicatorPanelStates(ChartStackPanel stackPanel) {
@@ -342,12 +268,6 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
         if (!Objects.equals(current.getName(), updated.getName()))
             return false;
         return ChartPluginParameterUtils.haveSameParameterValues(current, updated);
-    }
-
-    private static ChartProperties copyChartProperties(ChartProperties source) {
-        ChartProperties copy = new ChartProperties();
-        copy.copyFrom(source);
-        return copy;
     }
 
     @Override
@@ -395,7 +315,6 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
         }
         // notify listeners
         chartFrameListeners.fire().overlayAdded(overlay);
-        refreshTemplateState();
     }
 
     public void fireIndicatorAdded(Indicator indicator) {
@@ -411,7 +330,6 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
             indicator.calculate(); // TODO: make asynchronous
         }
         chartFrameListeners.fire().indicatorAdded(indicator);
-        refreshTemplateState();
     }
 
     @Override

@@ -191,8 +191,6 @@ public class IndicatorPanel extends JPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
                 ChartAction.openSettingsWindow(panel.getIndicator());
-                if (chartFrame instanceof one.chartsy.ui.chart.ChartFrame chart)
-                    chart.refreshTemplateState();
                 chartFrame.getMainPanel().repaint();
             }
         };

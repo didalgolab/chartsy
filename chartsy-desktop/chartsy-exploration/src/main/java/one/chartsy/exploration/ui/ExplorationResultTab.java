@@ -4,7 +4,6 @@ package one.chartsy.exploration.ui;
 
 import one.chartsy.TimeFrame;
 import one.chartsy.kernel.ExplorationFragment;
-import one.chartsy.ui.ChartOpenOptions;
 import one.chartsy.ui.ChartManager;
 import org.openide.util.Lookup;
 import org.openide.util.lookup.Lookups;
@@ -74,7 +73,7 @@ public class ExplorationResultTab extends TopComponent {
                         .toList();
 
                 Lookup.getDefault().lookup(ChartManager.class)
-                        .open(selectedSymbols, TimeFrame.Period.DAILY, ChartOpenOptions.DEFAULT);
+                        .open(selectedSymbols, TimeFrame.Period.DAILY, null);
             }
         });
         //popupMenu.add(org.openide.awt.Actions.forID("File", "com.softignition.chartsy.actions.ChartsyActions.TabDelimitedExportAction"));
