@@ -21,6 +21,8 @@ class StudyBackedChartPluginParameterUtilsTest {
         parameter(source, "priceBase").setValue(CandleField.OPEN);
         parameter(source, "periods").setValue(42);
         parameter(source, "markerVisibility").setValue(Boolean.TRUE);
+        source.setPanelId(2);
+        target.setPanelId(1);
 
         assertThat(ChartPluginParameterUtils.haveSameParameterValues(source, target)).isFalse();
 
@@ -28,6 +30,7 @@ class StudyBackedChartPluginParameterUtilsTest {
 
         assertThat(ChartPluginParameterUtils.haveSameParameterValues(source, target)).isTrue();
         assertThat(target.getLabel()).isEqualTo("Fractal Dimension (OPEN, 42)");
+        assertThat(target.getPanelId()).isEqualTo(2);
     }
 
     @Test

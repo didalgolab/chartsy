@@ -15,7 +15,6 @@ import java.text.DecimalFormat;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * The indicator displays new information derived from historical price and/or
@@ -38,8 +37,8 @@ public abstract class Indicator extends ChartPlugin<Indicator> {
     private transient CandleSeries dataset;
     /** Indicates whether the indicator plot should be paint when minimized. */
     private boolean minimizedPaint;
-    /** The identifier of the panel to which this indicator should be added to. */
-    private @Parameter(name = "panelId") UUID panelId = UUID.randomUUID();
+    /** The positive pane identifier to which this indicator should be added. */
+    private @Parameter(name = "panelId") int panelId;
     /** The native presentation plan used by the engine-backed renderer. */
     private transient StudyPresentationPlan presentationPlan = StudyPresentationPlan.empty(null);
     /** The indicator plots currently being displayed. */
@@ -182,11 +181,11 @@ public abstract class Indicator extends ChartPlugin<Indicator> {
         return html;
     }
 
-    public UUID getPanelId() {
+    public int getPanelId() {
         return panelId;
     }
 
-    public void setPanelId(UUID panelId) {
+    public void setPanelId(int panelId) {
         this.panelId = panelId;
     }
 }

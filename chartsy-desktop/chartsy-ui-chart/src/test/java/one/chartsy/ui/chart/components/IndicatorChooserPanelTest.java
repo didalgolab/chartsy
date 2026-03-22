@@ -20,7 +20,6 @@ import java.awt.Stroke;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.List;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -51,8 +50,8 @@ class IndicatorChooserPanelTest {
         IndicatorChooserPanel panel = new IndicatorChooserPanel();
         DummyIndicator left = new DummyIndicator("Left", new StudyAxisDescriptor(Double.NaN, Double.NaN, false, true, new double[]{20, 40}));
         DummyIndicator right = new DummyIndicator("Right", new StudyAxisDescriptor(Double.NaN, Double.NaN, true, true, new double[]{20, 40}));
-        left.setPanelId(UUID.fromString("00000000-0000-0000-0000-000000000101"));
-        right.setPanelId(UUID.fromString("00000000-0000-0000-0000-000000000202"));
+        left.setPanelId(1);
+        right.setPanelId(2);
 
         SwingUtilities.invokeAndWait(() -> panel.initForm(List.of(left, right), List.of(left, right), List.of(), List.of()));
 

@@ -2,14 +2,15 @@
  * SPDX-License-Identifier: Apache-2.0 */
 package one.chartsy.ui.chart;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
-
 import one.chartsy.ui.chart.Chart;
 import one.chartsy.ui.chart.ChartProperties;
 import one.chartsy.ui.chart.Indicator;
 import one.chartsy.ui.chart.Overlay;
+import one.chartsy.ui.chart.internal.IndicatorPaneSupport;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 
@@ -62,11 +63,19 @@ public class ChartTemplate implements Serializable {
     }
     
     public void addIndicator(Indicator indicator) {
-        if (indicator != null)
-            indicators.add(indicator);
+        if (indicator == null)
+            return;
+
+        assignPaneIdIfNeeded(indicator);
+        indicators.add(indicator);
     }
     
     public List<Indicator> getIndicators() {
         return indicators;
+    }
+
+    private void assignPaneIdIfNeeded(Indicator indicator) {
+        if (IndicatorPaneSupport.isOwnPanelIndicator(indicator) && indicator.getPanelId() <= 0)
+            indicator.setPanelId(IndicatorPaneSupport.nextPanelId(indicators));
     }
 }

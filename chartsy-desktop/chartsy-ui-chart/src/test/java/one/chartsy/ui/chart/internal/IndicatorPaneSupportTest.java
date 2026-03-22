@@ -11,7 +11,6 @@ import one.chartsy.ui.chart.Indicator;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -23,8 +22,8 @@ class IndicatorPaneSupportTest {
         DummyIndicator second = new DummyIndicator("Second", axis(false, new double[]{20, 40}, Double.NaN, Double.NaN));
         DummyIndicator third = new DummyIndicator("Third", axis(false, new double[]{20, 40}, Double.NaN, Double.NaN));
 
-        UUID paneA = UUID.fromString("00000000-0000-0000-0000-000000000011");
-        UUID paneB = UUID.fromString("00000000-0000-0000-0000-000000000022");
+        int paneA = 1;
+        int paneB = 2;
         first.setPanelId(paneA);
         second.setPanelId(paneB);
         third.setPanelId(paneA);

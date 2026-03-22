@@ -35,7 +35,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.UUID;
 import java.util.regex.Pattern;
 
 public final class ChartFrameScreenshotHarness {
@@ -281,7 +280,7 @@ public final class ChartFrameScreenshotHarness {
         Indicator extra = studyRegistry.getIndicator("Fractal Dimension");
         if (extra == null)
             return template;
-        UUID paneId = template.getIndicators().isEmpty() ? UUID.randomUUID() : template.getIndicators().getFirst().getPanelId();
+        int paneId = template.getIndicators().isEmpty() ? 1 : template.getIndicators().getFirst().getPanelId();
         extra.setPanelId(paneId);
         template.addIndicator(extra);
         return template;

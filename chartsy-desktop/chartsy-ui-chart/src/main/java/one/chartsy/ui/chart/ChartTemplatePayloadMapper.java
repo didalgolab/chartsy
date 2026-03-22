@@ -10,6 +10,7 @@ import one.chartsy.study.StudyKind;
 import one.chartsy.ui.chart.components.ChartPluginSelection;
 import one.chartsy.ui.chart.internal.ChartPluginParameter;
 import one.chartsy.ui.chart.internal.ChartPluginParameterUtils;
+import one.chartsy.ui.chart.internal.IndicatorPaneSupport;
 import one.chartsy.ui.chart.internal.StudyParameterSupport;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -32,7 +33,6 @@ final class ChartTemplatePayloadMapper {
     private static final String TYPE_INTEGER = "INTEGER";
     private static final String TYPE_STRING = "STRING";
     private static final String TYPE_STROKE = "STROKE";
-    private static final String PANEL_ID = "panelId";
 
     private static final ChartTemplatePayloadMapper INSTANCE = new ChartTemplatePayloadMapper();
 
@@ -45,18 +45,12 @@ final class ChartTemplatePayloadMapper {
 
     StoredChartTemplatePayload fromSelection(ChartPluginSelection selection) {
         Objects.requireNonNull(selection, "selection");
-        return new StoredChartTemplatePayload(
-                selection.overlays().stream().map(this::toPluginSpec).filter(Objects::nonNull).toList(),
-                selection.indicators().stream().map(this::toPluginSpec).filter(Objects::nonNull).toList()
-        );
+        return toStoredPayload(selection.overlays(), selection.indicators());
     }
 
     StoredChartTemplatePayload fromChartTemplate(ChartTemplate template) {
         Objects.requireNonNull(template, "template");
-        return new StoredChartTemplatePayload(
-                template.getOverlays().stream().map(this::toPluginSpec).filter(Objects::nonNull).toList(),
-                template.getIndicators().stream().map(this::toPluginSpec).filter(Objects::nonNull).toList()
-        );
+        return toStoredPayload(template.getOverlays(), template.getIndicators());
     }
 
     StoredChartTemplatePayload captureCurrentStudies(ChartFrame chartFrame) {
@@ -66,10 +60,7 @@ final class ChartTemplatePayloadMapper {
             ChartTemplate template = chartFrame.getChartTemplate();
             return (template != null) ? fromChartTemplate(template) : StoredChartTemplatePayload.EMPTY;
         }
-        return new StoredChartTemplatePayload(
-                stackPanel.getChartPanel().getOverlays().stream().map(this::toPluginSpec).filter(Objects::nonNull).toList(),
-                stackPanel.getIndicatorsList().stream().map(this::toPluginSpec).filter(Objects::nonNull).toList()
-        );
+        return toStoredPayload(stackPanel.getChartPanel().getOverlays(), stackPanel.getIndicatorsList());
     }
 
     boolean equivalent(StoredChartTemplatePayload left, StoredChartTemplatePayload right) {
@@ -88,6 +79,7 @@ final class ChartTemplatePayloadMapper {
             if (indicator != null)
                 template.addIndicator(indicator);
         }
+        IndicatorPaneSupport.normalizePaneIds(template.getIndicators());
         return template;
     }
 
@@ -111,7 +103,7 @@ final class ChartTemplatePayloadMapper {
     private StoredPluginSpec toPluginSpec(ChartPlugin<?> plugin) {
         LinkedHashMap<String, StoredParameterValue> parameters = new LinkedHashMap<>();
         for (ChartPluginParameter parameter : ChartPluginParameterUtils.getParameters(plugin)) {
-            if (!parameter.canRead() || PANEL_ID.equals(parameter.id()))
+            if (!parameter.canRead())
                 continue;
 
             StoredParameterValue stored = encodeParameter(parameter);
@@ -123,6 +115,14 @@ final class ChartTemplatePayloadMapper {
                 ? studyBacked.getStudyDescriptorId()
                 : null;
         return new StoredPluginSpec(descriptorId, plugin.getClass().getName(), plugin.getName(), parameters);
+    }
+
+    private StoredChartTemplatePayload toStoredPayload(List<? extends Overlay> overlays, List<? extends Indicator> indicators) {
+        IndicatorPaneSupport.normalizePaneIds(indicators);
+        return new StoredChartTemplatePayload(
+                overlays.stream().map(this::toPluginSpec).filter(Objects::nonNull).toList(),
+                indicators.stream().map(this::toPluginSpec).filter(Objects::nonNull).toList()
+        );
     }
 
     private Overlay instantiateOverlay(StoredPluginSpec spec) {

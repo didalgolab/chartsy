@@ -30,9 +30,8 @@ public final class ChartPluginParameterUtils {
 
     public static List<ChartPluginParameter> getParameters(ChartPlugin<?> plugin) {
         Objects.requireNonNull(plugin, "plugin");
-        if (plugin instanceof ChartPluginParameterSource parameterSource) {
-            return List.copyOf(parameterSource.getChartPluginParameters());
-        }
+        if (plugin instanceof ChartPluginParameterSource parameterSource)
+            return mergeParameters(parameterSource.getChartPluginParameters(), createReflectionParameters(plugin));
         return createReflectionParameters(plugin);
     }
 
@@ -77,6 +76,16 @@ public final class ChartPluginParameterUtils {
         for (ChartPluginParameter parameter : getParameters(plugin))
             parameters.put(parameter.id(), parameter);
         return parameters;
+    }
+
+    private static List<ChartPluginParameter> mergeParameters(List<? extends ChartPluginParameter> primary,
+                                                              List<? extends ChartPluginParameter> fallback) {
+        Map<String, ChartPluginParameter> parameters = new LinkedHashMap<>();
+        for (ChartPluginParameter parameter : primary)
+            parameters.put(parameter.id(), parameter);
+        for (ChartPluginParameter parameter : fallback)
+            parameters.putIfAbsent(parameter.id(), parameter);
+        return List.copyOf(parameters.values());
     }
 
     private static String configurationIdentity(ChartPlugin<?> plugin) {

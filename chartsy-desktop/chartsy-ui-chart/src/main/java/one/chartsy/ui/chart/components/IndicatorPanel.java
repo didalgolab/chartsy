@@ -45,7 +45,6 @@ import java.awt.geom.RoundRectangle2D;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * Indicator pane visual container. A single pane may host multiple indicators
@@ -56,7 +55,7 @@ public class IndicatorPanel extends JPanel {
     private final EngineChartHost engineHost;
     private final Legend nativeLegend;
     private final List<Indicator> indicators = new ArrayList<>();
-    private final UUID id;
+    private final int id;
 
     private AnnotationPanel annotationPanel;
     private IndicatorToolbox toolbox;
@@ -65,7 +64,7 @@ public class IndicatorPanel extends JPanel {
     private boolean minimized;
 
 
-    public IndicatorPanel(ChartContext frame, UUID paneId, List<? extends Indicator> paneIndicators, Scale sharedTimeScale) {
+    public IndicatorPanel(ChartContext frame, int paneId, List<? extends Indicator> paneIndicators, Scale sharedTimeScale) {
         this.chartFrame = frame;
         this.id = paneId;
         this.indicators.addAll(paneIndicators);
@@ -463,7 +462,7 @@ public class IndicatorPanel extends JPanel {
         }
     }
 
-    public UUID getId() {
+    public int getId() {
         return id;
     }
 

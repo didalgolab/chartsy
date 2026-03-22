@@ -29,7 +29,6 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.UUID;
 
 import javax.swing.BorderFactory;
 import javax.swing.JLayeredPane;
@@ -830,14 +829,14 @@ public class ChartStackPanel extends JLayeredPane {
                 .findFirst().orElse(null);
     }
 
-    public IndicatorPanel getIndicatorPanel(UUID paneId) {
+    public IndicatorPanel getIndicatorPanel(int paneId) {
         return getIndicatorPanels().stream()
-                .filter(panel -> paneId != null && paneId.equals(panel.getId()))
+                .filter(panel -> paneId > 0 && paneId == panel.getId())
                 .findFirst()
                 .orElse(null);
     }
 
-    private IndicatorPanel createIndicatorPanel(UUID paneId, List<? extends Indicator> indicators) {
+    private IndicatorPanel createIndicatorPanel(int paneId, List<? extends Indicator> indicators) {
         IndicatorPanel indicatorPanel = new IndicatorPanel(chartFrame, paneId, indicators, sharedTimeScale);
         add(indicatorPanel);
         installResizeListeners(indicatorPanel);

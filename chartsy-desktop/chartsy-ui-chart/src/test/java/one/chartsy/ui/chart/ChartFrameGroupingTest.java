@@ -8,6 +8,7 @@ import one.chartsy.TimeFrame;
 import one.chartsy.data.CandleSeries;
 import one.chartsy.data.DataQuery;
 import one.chartsy.data.provider.DataProvider;
+import one.chartsy.time.Chronological;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 
@@ -15,7 +16,6 @@ import java.awt.Dimension;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -23,32 +23,69 @@ class ChartFrameGroupingTest {
 
     @Test
     void chartFrameGroupsOwnPanelIndicatorsWithSharedPanelIdIntoOnePane() {
+        ChartFrame frame = createFrame(fixtureDataset(), groupedTemplate(1));
+
+        assertSingleIndicatorPane(frame);
+    }
+
+    @Test
+    void chartTemplateRoundTripPreservesSharedIndicatorPaneGrouping() {
         CandleSeries dataset = fixtureDataset();
+        ChartTemplate template = groupedTemplate(2);
+
+        StoredChartTemplatePayload payload = ChartTemplatePayloadMapper.getDefault().fromChartTemplate(template);
+
+        assertThat(payload.indicators()).hasSize(2);
+        assertThat(payload.indicators())
+                .extracting(spec -> spec.parametersView().get("panelId"))
+                .containsOnly(new StoredParameterValue("INTEGER", "1"));
+
+        ChartTemplate restoredTemplate = ChartTemplatePayloadMapper.getDefault()
+                .toChartTemplate(template.getName(), payload);
+
+        assertSingleIndicatorPane(createFrame(dataset, restoredTemplate));
+    }
+
+    @Test
+    void snapshotVisibleTemplatePreservesSharedIndicatorPaneGrouping() {
+        CandleSeries dataset = fixtureDataset();
+        ChartFrame source = createFrame(dataset, groupedTemplate(3));
+
+        ChartTemplate snapshot = source.snapshotVisibleTemplate("Grouped Snapshot");
+
+        assertSingleIndicatorPane(createFrame(dataset, snapshot));
+    }
+
+    private static ChartTemplate groupedTemplate(int sharedPaneId) {
         ChartTemplate template = ChartTemplateDefaults.basicChartTemplate();
         assertThat(template.getIndicators()).hasSize(1);
 
-        UUID sharedPaneId = UUID.fromString("00000000-0000-0000-0000-000000000321");
         template.getIndicators().forEach(indicator -> indicator.setPanelId(sharedPaneId));
 
         Indicator extra = StudyRegistry.getDefault().getIndicator("Fractal Dimension");
         assertThat(extra).isNotNull();
         extra.setPanelId(sharedPaneId);
         template.addIndicator(extra);
+        return template;
+    }
 
-        ChartFrame frame = ChartExporter.createChartFrame(
+    private static ChartFrame createFrame(CandleSeries dataset, ChartTemplate template) {
+        return ChartExporter.createChartFrame(
                 new FixtureProvider(dataset),
                 dataset,
                 template,
                 new Dimension(1280, 720),
                 true
         );
+    }
 
+    private static void assertSingleIndicatorPane(ChartFrame frame) {
         var panes = frame.getMainStackPanel().getIndicatorPanels();
         assertThat(panes).hasSize(1);
-        assertThat(panes.getFirst().getId()).isEqualTo(sharedPaneId);
+        assertThat(panes.getFirst().getId()).isEqualTo(1);
         assertThat(panes.getFirst().getIndicators())
                 .extracting(Indicator::getPanelId)
-                .containsOnly(sharedPaneId);
+                .containsOnly(1);
         assertThat(panes.getFirst().getIndicators()).hasSize(2);
     }
 
@@ -82,7 +119,7 @@ class ChartFrameGroupingTest {
         }
 
         @Override
-        public <T extends one.chartsy.time.Chronological> Flux<T> query(Class<T> type, DataQuery<T> request) {
+        public <T extends Chronological> Flux<T> query(Class<T> type, DataQuery<T> request) {
             if (!type.isAssignableFrom(Candle.class))
                 return Flux.empty();
             if (!dataset.getResource().symbol().equals(request.resource().symbol()))

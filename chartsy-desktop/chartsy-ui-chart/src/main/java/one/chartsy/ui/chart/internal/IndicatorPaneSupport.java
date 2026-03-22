@@ -12,9 +12,11 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
-import java.util.UUID;
 
 public final class IndicatorPaneSupport {
+    private static final int MAIN_PANEL_ID = 0;
+    private static final int FIRST_OWN_PANEL_ID = 1;
+
     private IndicatorPaneSupport() {
     }
 
@@ -23,7 +25,7 @@ public final class IndicatorPaneSupport {
         INCOMPATIBLE
     }
 
-    public record PaneGroup(UUID id, List<Indicator> indicators, int order) {
+    public record PaneGroup(int id, List<Indicator> indicators, int order) {
         public PaneGroup {
             indicators = List.copyOf(indicators);
         }
@@ -47,13 +49,54 @@ public final class IndicatorPaneSupport {
         }
     }
 
-    public static List<PaneGroup> groupByPane(List<? extends Indicator> indicators) {
-        LinkedHashMap<UUID, List<Indicator>> grouped = new LinkedHashMap<>();
-        int order = 0;
+    public static void normalizePaneIds(List<? extends Indicator> indicators) {
+        Objects.requireNonNull(indicators, "indicators");
+
+        LinkedHashMap<Integer, Integer> normalizedIds = new LinkedHashMap<>();
+        int nextPanelId = FIRST_OWN_PANEL_ID;
         for (Indicator indicator : indicators) {
             if (indicator == null)
                 continue;
-            UUID paneId = Objects.requireNonNullElseGet(indicator.getPanelId(), UUID::randomUUID);
+            if (isMainPanelIndicator(indicator)) {
+                indicator.setPanelId(MAIN_PANEL_ID);
+                continue;
+            }
+
+            int currentId = indicator.getPanelId();
+            if (currentId <= MAIN_PANEL_ID) {
+                indicator.setPanelId(nextPanelId++);
+                continue;
+            }
+
+            Integer normalizedId = normalizedIds.get(currentId);
+            if (normalizedId == null) {
+                normalizedId = nextPanelId++;
+                normalizedIds.put(currentId, normalizedId);
+            }
+            indicator.setPanelId(normalizedId);
+        }
+    }
+
+    public static int nextPanelId(List<? extends Indicator> indicators) {
+        normalizePaneIds(indicators);
+
+        int nextPanelId = FIRST_OWN_PANEL_ID;
+        for (Indicator indicator : indicators) {
+            if (indicator != null && isOwnPanelIndicator(indicator))
+                nextPanelId = Math.max(nextPanelId, indicator.getPanelId() + 1);
+        }
+        return nextPanelId;
+    }
+
+    public static List<PaneGroup> groupByPane(List<? extends Indicator> indicators) {
+        normalizePaneIds(indicators);
+
+        LinkedHashMap<Integer, List<Indicator>> grouped = new LinkedHashMap<>();
+        int order = 0;
+        for (Indicator indicator : indicators) {
+            if (indicator == null || !isOwnPanelIndicator(indicator))
+                continue;
+            int paneId = indicator.getPanelId();
             grouped.computeIfAbsent(paneId, ignored -> new ArrayList<>()).add(indicator);
         }
 

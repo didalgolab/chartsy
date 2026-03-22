@@ -19,6 +19,7 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
+import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.util.*;
 
@@ -108,12 +109,13 @@ public class AnnotationPanel extends JPanel implements OrganizedViewInteractorCo
      * @return the parent panel identifier
      */
     private UUID getGraphicModelUUID() {
-        UUID uuid;
-        if (getParent() instanceof IndicatorPanel)
-            uuid = ((IndicatorPanel) getParent()).getId();
-        else
-            uuid = ChartPanel.UUID;
-        return uuid;
+        if (getParent() instanceof IndicatorPanel indicatorPanel)
+            return indicatorPaneGraphicModelUuid(indicatorPanel.getId());
+        return ChartPanel.UUID;
+    }
+
+    private UUID indicatorPaneGraphicModelUuid(int paneId) {
+        return UUID.nameUUIDFromBytes(("indicator-pane:" + paneId).getBytes(StandardCharsets.UTF_8));
     }
     
     /**

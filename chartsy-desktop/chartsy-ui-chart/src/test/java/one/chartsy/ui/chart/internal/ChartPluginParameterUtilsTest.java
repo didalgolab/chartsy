@@ -10,7 +10,6 @@ import one.chartsy.ui.chart.Overlay;
 import org.junit.jupiter.api.Test;
 
 import java.awt.Color;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -21,7 +20,7 @@ class ChartPluginParameterUtilsTest {
         DummyIndicator source = new DummyIndicator("Source");
         source.length = 34;
         source.color = Color.BLUE;
-        source.setPanelId(UUID.randomUUID());
+        source.setPanelId(7);
 
         DummyIndicator copy = new DummyIndicator("Copy");
         ChartPluginParameterUtils.copyParameterValues(source, copy);

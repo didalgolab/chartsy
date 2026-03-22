@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.SequencedMap;
-import java.util.UUID;
 
 public class DynamicStudyIndicator extends Indicator implements StudyBackedChartPlugin, ChartPluginParameterSource {
     private final String descriptorId;
@@ -46,7 +45,6 @@ public class DynamicStudyIndicator extends Indicator implements StudyBackedChart
         this.parameterValues = StudyParameterSupport.copyUiParameters(descriptor, parameterValues);
         this.markerVisibility = markerVisibility;
         this.presentationPlan = StudyPresentationPlan.empty(descriptor.axis());
-        setPanelId(UUID.randomUUID());
     }
 
     @Override

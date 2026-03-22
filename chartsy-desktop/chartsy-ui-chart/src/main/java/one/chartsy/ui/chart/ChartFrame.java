@@ -20,6 +20,7 @@ import one.chartsy.ui.chart.components.SharedDateAxisFooter;
 import one.chartsy.ui.chart.data.SymbolResourceLoaderTask;
 import one.chartsy.ui.chart.internal.ChartPluginParameterUtils;
 import one.chartsy.ui.chart.internal.ChartFrameDropTarget;
+import one.chartsy.ui.chart.internal.IndicatorPaneSupport;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.netbeans.api.progress.ProgressHandle;
@@ -41,7 +42,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicReference;
@@ -263,6 +263,7 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
     }
 
     public void setChartTemplate(ChartTemplate chartTemplate) {
+        IndicatorPaneSupport.normalizePaneIds(chartTemplate.getIndicators());
         this.chartTemplate = chartTemplate;
         chartProperties.copyFrom(chartTemplate.getChartProperties());
         if (chartData != null)
@@ -285,6 +286,7 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
     }
 
     public void setIndicators(List<Indicator> newIndicators) {
+        IndicatorPaneSupport.normalizePaneIds(newIndicators);
         Indicator[] current = getMainStackPanel().getIndicators();
         for (Indicator indicator : current)
             indicatorRemoved(indicator);
@@ -312,7 +314,7 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
         if (!overlaysChanged && !indicatorsChanged)
             return;
 
-        Map<UUID, Boolean> indicatorPanelStates = indicatorsChanged ? captureIndicatorPanelStates(stackPanel) : Map.of();
+        Map<Integer, Boolean> indicatorPanelStates = indicatorsChanged ? captureIndicatorPanelStates(stackPanel) : Map.of();
         if (overlaysChanged)
             setOverlays(newOverlays);
         if (indicatorsChanged) {
@@ -322,14 +324,14 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
         refreshTemplateState();
     }
 
-    private Map<UUID, Boolean> captureIndicatorPanelStates(ChartStackPanel stackPanel) {
-        Map<UUID, Boolean> states = new java.util.LinkedHashMap<>();
+    private Map<Integer, Boolean> captureIndicatorPanelStates(ChartStackPanel stackPanel) {
+        Map<Integer, Boolean> states = new java.util.LinkedHashMap<>();
         for (IndicatorPanel panel : stackPanel.getIndicatorPanels())
             states.put(panel.getId(), panel.isMinimized());
         return states;
     }
 
-    private void restoreIndicatorPanelStates(ChartStackPanel stackPanel, Map<UUID, Boolean> indicatorPanelStates) {
+    private void restoreIndicatorPanelStates(ChartStackPanel stackPanel, Map<Integer, Boolean> indicatorPanelStates) {
         for (IndicatorPanel panel : stackPanel.getIndicatorPanels()) {
             Boolean minimized = indicatorPanelStates.get(panel.getId());
             if (minimized != null)
