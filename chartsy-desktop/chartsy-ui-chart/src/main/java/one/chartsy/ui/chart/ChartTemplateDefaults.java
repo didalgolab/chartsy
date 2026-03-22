@@ -38,9 +38,17 @@ public final class ChartTemplateDefaults {
 
     public static ChartTemplate baseChartTemplate(String name) {
         ChartTemplate template = new ChartTemplate(Objects.requireNonNull(name, "name"));
-        template.setChartProperties(createChartProperties());
-        template.setChart(Objects.requireNonNull(ChartManager.getDefault().getChart(DEFAULT_CHART), "default chart"));
+        template.setChartProperties(defaultChartProperties());
+        template.setChart(Objects.requireNonNull(ChartManager.getDefault().getChart(defaultChartName()), "default chart"));
         return template;
+    }
+
+    public static String defaultChartName() {
+        return DEFAULT_CHART;
+    }
+
+    public static ChartProperties defaultChartProperties() {
+        return createChartProperties();
     }
 
     public static ChartTemplate basicChartTemplate() {

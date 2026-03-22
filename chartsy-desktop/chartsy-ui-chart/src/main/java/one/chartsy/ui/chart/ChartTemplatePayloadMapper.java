@@ -7,7 +7,6 @@ package one.chartsy.ui.chart;
 import one.chartsy.persistence.domain.ChartTemplateAggregateData;
 import one.chartsy.study.StudyDescriptor;
 import one.chartsy.study.StudyKind;
-import one.chartsy.ui.chart.components.ChartPluginSelection;
 import one.chartsy.ui.chart.internal.ChartPluginParameter;
 import one.chartsy.ui.chart.internal.ChartPluginParameterUtils;
 import one.chartsy.ui.chart.internal.IndicatorPaneSupport;
@@ -43,32 +42,57 @@ final class ChartTemplatePayloadMapper {
     private ChartTemplatePayloadMapper() {
     }
 
-    StoredChartTemplatePayload fromSelection(ChartPluginSelection selection) {
-        Objects.requireNonNull(selection, "selection");
-        return toStoredPayload(selection.overlays(), selection.indicators());
-    }
-
     StoredChartTemplatePayload fromChartTemplate(ChartTemplate template) {
         Objects.requireNonNull(template, "template");
-        return toStoredPayload(template.getOverlays(), template.getIndicators());
+        return toStoredPayload(
+                template.getChart(),
+                template.getChartProperties(),
+                template.getOverlays(),
+                template.getIndicators()
+        );
     }
 
-    StoredChartTemplatePayload captureCurrentStudies(ChartFrame chartFrame) {
+    StoredChartTemplatePayload captureCurrentTemplate(ChartFrame chartFrame) {
         Objects.requireNonNull(chartFrame, "chartFrame");
         var stackPanel = chartFrame.getMainStackPanel();
-        if (stackPanel == null) {
-            ChartTemplate template = chartFrame.getChartTemplate();
-            return (template != null) ? fromChartTemplate(template) : StoredChartTemplatePayload.EMPTY;
-        }
-        return toStoredPayload(stackPanel.getChartPanel().getOverlays(), stackPanel.getIndicatorsList());
+        ChartTemplate template = chartFrame.getChartTemplate();
+        Chart chart = currentChart(chartFrame, template);
+        ChartProperties chartProperties = Objects.requireNonNullElseGet(
+                chartFrame.getChartProperties(),
+                ChartTemplateDefaults::defaultChartProperties
+        );
+        List<? extends Overlay> overlays = (stackPanel != null)
+                ? stackPanel.getChartPanel().getOverlays()
+                : (template != null ? template.getOverlays() : List.of());
+        List<? extends Indicator> indicators = (stackPanel != null)
+                ? stackPanel.getIndicatorsList()
+                : (template != null ? template.getIndicators() : List.of());
+        return toStoredPayload(chart, chartProperties, overlays, indicators);
     }
 
     boolean equivalent(StoredChartTemplatePayload left, StoredChartTemplatePayload right) {
-        return Objects.equals(left, right);
+        if (left == right)
+            return true;
+        if (left == null || right == null)
+            return false;
+        return Objects.equals(left.overlays(), right.overlays())
+                && Objects.equals(left.indicators(), right.indicators())
+                && sameChartType(left, right)
+                && sameChartProperties(left, right);
     }
 
     ChartTemplate toChartTemplate(String templateName, StoredChartTemplatePayload payload) {
+        return toChartTemplate(templateName, payload, null, null);
+    }
+
+    ChartTemplate toChartTemplate(String templateName,
+                                  StoredChartTemplatePayload payload,
+                                  Chart fallbackChart,
+                                  ChartProperties fallbackChartProperties) {
+        Objects.requireNonNull(payload, "payload");
         ChartTemplate template = ChartTemplateDefaults.baseChartTemplate(templateName);
+        template.setChart(resolveChart(payload, fallbackChart));
+        template.setChartProperties(resolveChartProperties(payload, fallbackChartProperties));
         for (StoredPluginSpec overlaySpec : payload.overlays()) {
             Overlay overlay = instantiateOverlay(overlaySpec);
             if (overlay != null)
@@ -117,12 +141,66 @@ final class ChartTemplatePayloadMapper {
         return new StoredPluginSpec(descriptorId, plugin.getClass().getName(), plugin.getName(), parameters);
     }
 
-    private StoredChartTemplatePayload toStoredPayload(List<? extends Overlay> overlays, List<? extends Indicator> indicators) {
+    private StoredChartTemplatePayload toStoredPayload(Chart chart,
+                                                       ChartProperties chartProperties,
+                                                       List<? extends Overlay> overlays,
+                                                       List<? extends Indicator> indicators) {
         IndicatorPaneSupport.normalizePaneIds(indicators);
         return new StoredChartTemplatePayload(
                 overlays.stream().map(this::toPluginSpec).filter(Objects::nonNull).toList(),
-                indicators.stream().map(this::toPluginSpec).filter(Objects::nonNull).toList()
+                indicators.stream().map(this::toPluginSpec).filter(Objects::nonNull).toList(),
+                chartTypeName(chart),
+                StoredChartProperties.fromChartProperties(chartProperties)
         );
+    }
+
+    private static boolean sameChartType(StoredChartTemplatePayload left, StoredChartTemplatePayload right) {
+        return !left.hasChartType()
+                || !right.hasChartType()
+                || Objects.equals(left.chartTypeNameOrDefault(), right.chartTypeNameOrDefault());
+    }
+
+    private static boolean sameChartProperties(StoredChartTemplatePayload left, StoredChartTemplatePayload right) {
+        return !left.hasChartProperties()
+                || !right.hasChartProperties()
+                || Objects.equals(left.chartPropertiesOrDefault(), right.chartPropertiesOrDefault());
+    }
+
+    private Chart resolveChart(StoredChartTemplatePayload payload, Chart fallbackChart) {
+        if (payload.hasChartType())
+            return resolveChart(payload.chartTypeNameOrDefault());
+        if (fallbackChart != null)
+            return fallbackChart;
+        return resolveChart(ChartTemplateDefaults.defaultChartName());
+    }
+
+    private ChartProperties resolveChartProperties(StoredChartTemplatePayload payload, ChartProperties fallbackChartProperties) {
+        if (payload.hasChartProperties())
+            return payload.chartPropertiesOrDefault().toChartProperties();
+        return ChartProperties.copyOf(Objects.requireNonNullElseGet(
+                fallbackChartProperties,
+                ChartTemplateDefaults::defaultChartProperties
+        ));
+    }
+
+    private Chart resolveChart(String chartTypeName) {
+        try {
+            return ChartManager.getDefault().getChart(chartTypeName);
+        } catch (RuntimeException ex) {
+            log.warn("Falling back to default chart for unresolved chart type `{}`", chartTypeName, ex);
+            return ChartManager.getDefault().getChart(ChartTemplateDefaults.defaultChartName());
+        }
+    }
+
+    private static Chart currentChart(ChartFrame chartFrame, ChartTemplate template) {
+        ChartData chartData = chartFrame.getChartData();
+        if (chartData != null && chartData.getChart() != null)
+            return chartData.getChart();
+        return (template != null) ? template.getChart() : null;
+    }
+
+    private static String chartTypeName(Chart chart) {
+        return (chart != null) ? chart.getName() : ChartTemplateDefaults.defaultChartName();
     }
 
     private Overlay instantiateOverlay(StoredPluginSpec spec) {

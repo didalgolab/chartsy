@@ -4,16 +4,18 @@
  */
 package one.chartsy.ui.chart;
 
+import one.chartsy.ui.chart.properties.AbstractPropertyListener;
+
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Stroke;
-import java.io.Serializable;
+import java.util.Objects;
 
 /**
  *
  * @author Mariusz Bernacki
  */
-public class ChartProperties implements Serializable {
+public class ChartProperties extends AbstractPropertyListener {
 
     public static final double AXIS_TICK = 6;
     public static final double AXIS_DATE_STICK = 10;
@@ -98,7 +100,9 @@ public class ChartProperties implements Serializable {
     {
         if (color == null)
             return;
+        Color old = axisColor;
         axisColor = color;
+        fire("axisColor", old, axisColor);
     }
     
     public int getAxisStrokeIndex() 
@@ -110,7 +114,9 @@ public class ChartProperties implements Serializable {
     {
         if (!BasicStrokes.isStrokeIndex(i))
             return;
+        int old = axisStrokeIndex;
         axisStrokeIndex = i;
+        fire("axisStrokeIndex", old, axisStrokeIndex);
     }
     
     public Stroke getAxisStroke() 
@@ -122,7 +128,9 @@ public class ChartProperties implements Serializable {
     {
         if (s == null)
             return;
+        int old = axisStrokeIndex;
         axisStrokeIndex = BasicStrokes.getStrokeIndex(s);
+        fire("axisStrokeIndex", old, axisStrokeIndex);
     }
     
     public boolean getAxisLogarithmicFlag() 
@@ -132,15 +140,21 @@ public class ChartProperties implements Serializable {
     
     public void setAxisLogarithmicFlag(boolean b) 
     {
+        boolean old = axisLogarithmicFlag;
         axisLogarithmicFlag = b;
+        fire("axisLogarithmicFlag", old, axisLogarithmicFlag);
     }
     
     public void setBarWidth(double itemWidth)
     {
         if (itemWidth <= 0)
             return;
+        double oldBarWidth = barWidth;
+        double oldSlotFillPercent = slotFillPercent;
         barWidth = PixelPerfectCandleGeometry.snapBodyWidth(itemWidth);
         slotFillPercent = PixelPerfectCandleGeometry.fillPercent(barWidth);
+        fire("barWidth", oldBarWidth, barWidth);
+        fire("slotFillPercent", oldSlotFillPercent, slotFillPercent);
     }
     
     public double getBarWidth()
@@ -155,7 +169,9 @@ public class ChartProperties implements Serializable {
     public void setSlotFillPercent(double slotFillPercent) {
         if (slotFillPercent <= 0)
             return;
+        double old = this.slotFillPercent;
         this.slotFillPercent = Math.clamp(slotFillPercent, 1.0, 100.0);
+        fire("slotFillPercent", old, this.slotFillPercent);
     }
     
     public Color getBarColor() 
@@ -167,7 +183,9 @@ public class ChartProperties implements Serializable {
     {
         if (color == null)
             return;
+        Color old = barColor;
         barColor = color;
+        fire("barColor", old, barColor);
     }
     
     public int getBarStrokeIndex() 
@@ -179,7 +197,9 @@ public class ChartProperties implements Serializable {
     {
         if (!BasicStrokes.isStrokeIndex(i))
             return;
+        int old = barStrokeIndex;
         barStrokeIndex = i;
+        fire("barStrokeIndex", old, barStrokeIndex);
     }
     
     public Stroke getBarStroke() 
@@ -191,7 +211,9 @@ public class ChartProperties implements Serializable {
     {
         if (s == null)
             return;
+        int old = barStrokeIndex;
         barStrokeIndex = BasicStrokes.getStrokeIndex(s);
+        fire("barStrokeIndex", old, barStrokeIndex);
     }
     
     public boolean getBarVisibility() 
@@ -201,7 +223,9 @@ public class ChartProperties implements Serializable {
     
     public void setBarVisibility(boolean b)
     {
+        boolean old = barVisibility;
         barVisibility = b;
+        fire("barVisibility", old, barVisibility);
     }
     
     public Color getBarDownColor() 
@@ -213,7 +237,9 @@ public class ChartProperties implements Serializable {
     {
         if (color == null)
             return;
+        Color old = barDownColor;
         barDownColor = color;
+        fire("barDownColor", old, barDownColor);
     }
     
     public boolean getBarDownVisibility() 
@@ -223,7 +249,9 @@ public class ChartProperties implements Serializable {
     
     public void setBarDownVisibility(boolean b)
     {
+        boolean old = barDownVisibility;
         barDownVisibility = b;
+        fire("barDownVisibility", old, barDownVisibility);
     }
     
     public Color getBarUpColor() 
@@ -235,7 +263,9 @@ public class ChartProperties implements Serializable {
     {
         if (color == null)
             return;
+        Color old = barUpColor;
         barUpColor = color;
+        fire("barUpColor", old, barUpColor);
     }
     
     public boolean getBarUpVisibility() 
@@ -245,7 +275,9 @@ public class ChartProperties implements Serializable {
     
     public void setBarUpVisibility(boolean b)
     {
+        boolean old = barUpVisibility;
         barUpVisibility = b;
+        fire("barUpVisibility", old, barUpVisibility);
     }
     
     public Color getGridHorizontalColor() 
@@ -257,7 +289,9 @@ public class ChartProperties implements Serializable {
     {
         if (color == null)
             return;
+        Color old = gridHorizontalColor;
         gridHorizontalColor = color;
+        fire("gridHorizontalColor", old, gridHorizontalColor);
     }
     
     public int getGridHorizontalStrokeIndex() 
@@ -269,7 +303,9 @@ public class ChartProperties implements Serializable {
     {
         if (!BasicStrokes.isStrokeIndex(i))
             return;
+        int old = gridHorizontalStrokeIndex;
         gridHorizontalStrokeIndex = i;
+        fire("gridHorizontalStrokeIndex", old, gridHorizontalStrokeIndex);
     }
     
     public Stroke getGridHorizontalStroke() 
@@ -281,7 +317,9 @@ public class ChartProperties implements Serializable {
     {
         if (s == null)
             return;
+        int old = gridHorizontalStrokeIndex;
         gridHorizontalStrokeIndex = BasicStrokes.getStrokeIndex(s);
+        fire("gridHorizontalStrokeIndex", old, gridHorizontalStrokeIndex);
     }
     
     public boolean getGridHorizontalVisibility() 
@@ -291,7 +329,9 @@ public class ChartProperties implements Serializable {
     
     public void setGridHorizontalVisibility(boolean b)
     {
+        boolean old = gridHorizontalVisibility;
         gridHorizontalVisibility = b;
+        fire("gridHorizontalVisibility", old, gridHorizontalVisibility);
     }
     
     public Color getGridVerticalColor() 
@@ -303,7 +343,9 @@ public class ChartProperties implements Serializable {
     {
         if (color == null)
             return;
+        Color old = gridVerticalColor;
         gridVerticalColor = color;
+        fire("gridVerticalColor", old, gridVerticalColor);
     }
     
     public int getGridVerticalStrokeIndex() 
@@ -315,7 +357,9 @@ public class ChartProperties implements Serializable {
     {
         if (!BasicStrokes.isStrokeIndex(i))
             return;
+        int old = gridVerticalStrokeIndex;
         gridVerticalStrokeIndex = i;
+        fire("gridVerticalStrokeIndex", old, gridVerticalStrokeIndex);
     }
     
     public Stroke getGridVerticalStroke() {
@@ -326,7 +370,9 @@ public class ChartProperties implements Serializable {
     {
         if (s == null)
             return;
+        int old = gridVerticalStrokeIndex;
         gridVerticalStrokeIndex = BasicStrokes.getStrokeIndex(s);
+        fire("gridVerticalStrokeIndex", old, gridVerticalStrokeIndex);
     }
     
     public boolean getGridVerticalVisibility() 
@@ -336,7 +382,9 @@ public class ChartProperties implements Serializable {
     
     public void setGridVerticalVisibility(boolean b)
     {
+        boolean old = gridVerticalVisibility;
         gridVerticalVisibility = b;
+        fire("gridVerticalVisibility", old, gridVerticalVisibility);
     }
     
     public Color getBackgroundColor() 
@@ -348,7 +396,9 @@ public class ChartProperties implements Serializable {
     {
         if (color == null)
             return;
+        Color old = backgroundColor;
         backgroundColor = color;
+        fire("backgroundColor", old, backgroundColor);
     }
     
     public Font getFont() 
@@ -360,7 +410,9 @@ public class ChartProperties implements Serializable {
     {
         if (font == null)
             return;
+        Font old = this.font;
         this.font = font;
+        fire("font", old, this.font);
     }
     
     public Color getFontColor() 
@@ -372,12 +424,16 @@ public class ChartProperties implements Serializable {
     {
         if (color == null)
             return;
+        Color old = fontColor;
         fontColor = color;
+        fire("fontColor", old, fontColor);
     }
     
     public void setMarkerVisibility(boolean b) 
     {
+        boolean old = markerVisibility;
         markerVisibility = b;
+        fire("markerVisibility", old, markerVisibility);
     }
     
     public boolean getMarkerVisibility()
@@ -392,7 +448,9 @@ public class ChartProperties implements Serializable {
     
     public void setToolbarVisibility(boolean b) 
     {
+        boolean old = toolbarVisibility;
         toolbarVisibility = b;
+        fire("toolbarVisibility", old, toolbarVisibility);
     }
     
     public void toggleToolbarVisibility()
@@ -407,7 +465,9 @@ public class ChartProperties implements Serializable {
     
     public void setToolbarSmallIcons(boolean b) 
     {
+        boolean old = toolbarSmallIcons;
         toolbarSmallIcons = b;
+        fire("toolbarSmallIcons", old, toolbarSmallIcons);
     }
     
     public void toggleToolbarSmallIcons()
@@ -422,41 +482,50 @@ public class ChartProperties implements Serializable {
     
     public void setToolbarShowLabels(boolean b) 
     {
+        boolean old = toolbarShowLabels;
         toolbarShowLabels = b;
+        fire("toolbarShowLabels", old, toolbarShowLabels);
     }
     
     public boolean toggleShowLabels() {
         setToolbarShowLabels(!toolbarShowLabels);
         return getToolbarShowLabels();
     }
+
+    public static ChartProperties copyOf(ChartProperties chartProperties) {
+        ChartProperties copy = new ChartProperties();
+        copy.copyFrom(Objects.requireNonNull(chartProperties, "chartProperties"));
+        return copy;
+    }
     
-    public void copyFrom(ChartProperties chartProperties)
+    public void copyFrom(ChartProperties source)
     {
-        setAxisColor(chartProperties.getAxisColor());
-        setAxisStrokeIndex(chartProperties.getAxisStrokeIndex());
-        setAxisLogarithmicFlag(chartProperties.getAxisLogarithmicFlag());
-        setBarWidth(chartProperties.getBarWidth());
-        setBarColor(chartProperties.getBarColor());
-        setBarStrokeIndex(chartProperties.getBarStrokeIndex());
-        setBarVisibility(chartProperties.getBarVisibility());
-        setBarDownColor(chartProperties.getBarDownColor());
-        setBarDownVisibility(chartProperties.getBarDownVisibility());
-        setBarUpColor(chartProperties.getBarUpColor());
-        setBarUpVisibility(chartProperties.getBarUpVisibility());
-        setGridHorizontalColor(chartProperties.getGridHorizontalColor());
-        setGridHorizontalStrokeIndex(chartProperties.getGridHorizontalStrokeIndex());
-        setGridHorizontalVisibility(chartProperties.getGridHorizontalVisibility());
-        setGridVerticalColor(chartProperties.getGridVerticalColor());
-        setGridVerticalStrokeIndex(chartProperties.getGridVerticalStrokeIndex());
-        setGridVerticalVisibility(chartProperties.getGridVerticalVisibility());
-        setBackgroundColor(chartProperties.getBackgroundColor());
-        setFont(chartProperties.getFont());
-        setFontColor(chartProperties.getFontColor());
-        setMarkerVisibility(chartProperties.getMarkerVisibility());
-        setToolbarVisibility(chartProperties.getToolbarVisibility());
-        setToolbarSmallIcons(chartProperties.getToolbarSmallIcons());
-        setToolbarShowLabels(chartProperties.getToolbarShowLabels());
-        setAnnotationLayerVisible(chartProperties.isAnnotationLayerVisible());
+        setAxisColor(source.getAxisColor());
+        setAxisStrokeIndex(source.getAxisStrokeIndex());
+        setAxisLogarithmicFlag(source.getAxisLogarithmicFlag());
+        setBarWidth(source.getBarWidth());
+        setSlotFillPercent(source.getSlotFillPercent());
+        setBarColor(source.getBarColor());
+        setBarStrokeIndex(source.getBarStrokeIndex());
+        setBarVisibility(source.getBarVisibility());
+        setBarDownColor(source.getBarDownColor());
+        setBarDownVisibility(source.getBarDownVisibility());
+        setBarUpColor(source.getBarUpColor());
+        setBarUpVisibility(source.getBarUpVisibility());
+        setGridHorizontalColor(source.getGridHorizontalColor());
+        setGridHorizontalStrokeIndex(source.getGridHorizontalStrokeIndex());
+        setGridHorizontalVisibility(source.getGridHorizontalVisibility());
+        setGridVerticalColor(source.getGridVerticalColor());
+        setGridVerticalStrokeIndex(source.getGridVerticalStrokeIndex());
+        setGridVerticalVisibility(source.getGridVerticalVisibility());
+        setBackgroundColor(source.getBackgroundColor());
+        setFont(source.getFont());
+        setFontColor(source.getFontColor());
+        setMarkerVisibility(source.getMarkerVisibility());
+        setToolbarVisibility(source.getToolbarVisibility());
+        setToolbarSmallIcons(source.getToolbarSmallIcons());
+        setToolbarShowLabels(source.getToolbarShowLabels());
+        setAnnotationLayerVisible(source.isAnnotationLayerVisible());
     }
 
     /**
@@ -470,7 +539,9 @@ public class ChartProperties implements Serializable {
      * @param annotationLayerVisible the annotationLayerVisible to set
      */
     public void setAnnotationLayerVisible(boolean annotationLayerVisible) {
+        boolean old = this.annotationLayerVisible;
         this.annotationLayerVisible = annotationLayerVisible;
+        fire("annotationLayerVisible", old, this.annotationLayerVisible);
     }
     
 }

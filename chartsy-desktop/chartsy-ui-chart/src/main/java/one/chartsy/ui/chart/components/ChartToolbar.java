@@ -377,12 +377,8 @@ public class ChartToolbar extends JToolBar implements Serializable {
                 return;
 
             try {
-                ChartTemplateSummary created = templateCatalog.createTemplate(name, captureCurrentSelection());
-                var loadedTemplate = templateCatalog.getTemplate(created.templateKey());
-                chartFrame.setAppliedChartTemplate(loadedTemplate.summary(), loadedTemplate.payload());
-                chartFrame.refreshTemplateState();
-                appliedTemplateDetachedFromCatalog = false;
-                updateTemplatesButtonState();
+                ChartTemplateSummary created = templateCatalog.createTemplate(chartFrame.snapshotVisibleTemplate(name));
+                reloadAppliedTemplate(created.templateKey());
                 return;
             } catch (RuntimeException ex) {
                 chartFrame.log().warn("Unable to create chart template `{}`", name, ex);
@@ -399,13 +395,8 @@ public class ChartToolbar extends JToolBar implements Serializable {
         try {
             ChartTemplateSummary updated = templateCatalog.updateTemplate(
                     appliedTemplate.templateKey(),
-                    appliedTemplate.name(),
-                    captureCurrentSelection());
-            var loadedTemplate = templateCatalog.getTemplate(updated.templateKey());
-            chartFrame.setAppliedChartTemplate(loadedTemplate.summary(), loadedTemplate.payload());
-            chartFrame.refreshTemplateState();
-            appliedTemplateDetachedFromCatalog = false;
-            updateTemplatesButtonState();
+                    chartFrame.snapshotVisibleTemplate(appliedTemplate.name()));
+            reloadAppliedTemplate(updated.templateKey());
         } catch (RuntimeException ex) {
             chartFrame.log().warn("Unable to update chart template `{}`", appliedTemplate.templateKey(), ex);
             showTemplateError("Unable to update the current template.", ex);
@@ -419,11 +410,7 @@ public class ChartToolbar extends JToolBar implements Serializable {
 
         try {
             ChartTemplateSummary updated = templateCatalog.setDefaultTemplate(appliedTemplate.templateKey());
-            var loadedTemplate = templateCatalog.getTemplate(updated.templateKey());
-            chartFrame.setAppliedChartTemplate(loadedTemplate.summary(), loadedTemplate.payload());
-            chartFrame.refreshTemplateState();
-            appliedTemplateDetachedFromCatalog = false;
-            updateTemplatesButtonState();
+            reloadAppliedTemplate(updated.templateKey());
         } catch (RuntimeException ex) {
             chartFrame.log().warn("Unable to set chart template `{}` as default", appliedTemplate.templateKey(), ex);
             showTemplateError("Unable to set the current template as default.", ex);
@@ -439,23 +426,21 @@ public class ChartToolbar extends JToolBar implements Serializable {
         }
 
         try {
-            LoadedTemplate loadedTemplate = templateCatalog.getTemplate(appliedTemplate.templateKey());
-            chartFrame.setAppliedChartTemplate(loadedTemplate.summary(), loadedTemplate.payload());
-            chartFrame.refreshTemplateState();
-            appliedTemplateDetachedFromCatalog = false;
+            reloadAppliedTemplate(appliedTemplate.templateKey());
         } catch (RuntimeException ex) {
             appliedTemplateDetachedFromCatalog = true;
             chartFrame.log().warn("Unable to refresh metadata for template `{}`", appliedTemplate.templateKey(), ex);
             showTemplateError(templateRefreshErrorTitle(ex), ex);
+            updateTemplatesButtonState();
         }
-        updateTemplatesButtonState();
     }
 
-    private ChartPluginSelection captureCurrentSelection() {
-        var stackPanel = chartFrame.getMainStackPanel();
-        return new ChartPluginSelection(
-                stackPanel.getIndicatorsList(),
-                stackPanel.getChartPanel().getOverlays());
+    private void reloadAppliedTemplate(UUID templateKey) {
+        LoadedTemplate loadedTemplate = templateCatalog.getTemplate(templateKey);
+        chartFrame.setAppliedChartTemplate(loadedTemplate);
+        chartFrame.refreshTemplateState();
+        appliedTemplateDetachedFromCatalog = false;
+        updateTemplatesButtonState();
     }
 
     private String promptForName(String title, String initialValue) {

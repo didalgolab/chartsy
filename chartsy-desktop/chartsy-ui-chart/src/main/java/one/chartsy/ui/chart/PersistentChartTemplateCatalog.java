@@ -9,7 +9,6 @@ import com.google.gson.GsonBuilder;
 import one.chartsy.kernel.Kernel;
 import one.chartsy.persistence.domain.ChartTemplateAggregateData;
 import one.chartsy.persistence.domain.model.ChartTemplateRepository;
-import one.chartsy.ui.chart.components.ChartPluginSelection;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openide.util.lookup.ServiceProvider;
@@ -72,28 +71,26 @@ public class PersistentChartTemplateCatalog implements ChartTemplateCatalog {
     }
 
     @Override
-    public ChartTemplateSummary createTemplate(String name, ChartPluginSelection selection) {
+    public ChartTemplateSummary createTemplate(ChartTemplate chartTemplate) {
         return inTransaction(repo -> {
             ensureInitialized(repo);
-            String normalizedName = normalizeName(name);
-            String nameKey = normalizeNameKey(normalizedName);
-            if (repo.existsByNameKey(nameKey))
-                throw new IllegalArgumentException("Chart template already exists: " + normalizedName);
+            TemplateContent content = describeTemplate(chartTemplate);
+            if (repo.existsByNameKey(content.nameKey()))
+                throw new IllegalArgumentException("Chart template already exists: " + content.normalizedName());
 
             ChartTemplateAggregateData entity = new ChartTemplateAggregateData();
             entity.setTemplateKey(UUID.randomUUID());
-            entity.setName(normalizedName);
-            entity.setNameKey(nameKey);
+            entity.setName(content.normalizedName());
+            entity.setNameKey(content.nameKey());
             entity.setOrigin(ChartTemplateAggregateData.Origin.USER);
             entity.setDefaultTemplate(false);
-            entity.setPayloadVersion(PAYLOAD_VERSION);
-            entity.setPayloadJson(serialize(mapper.fromSelection(selection)));
+            applyTemplateContent(entity, content);
             return mapper.toSummary(repo.save(entity));
         });
     }
 
     @Override
-    public ChartTemplateSummary updateTemplate(UUID templateKey, String name, ChartPluginSelection selection) {
+    public ChartTemplateSummary updateTemplate(UUID templateKey, ChartTemplate chartTemplate) {
         return inTransaction(repo -> {
             ensureInitialized(repo);
             ChartTemplateAggregateData entity = repo.findByTemplateKey(Objects.requireNonNull(templateKey, "templateKey"))
@@ -101,15 +98,11 @@ public class PersistentChartTemplateCatalog implements ChartTemplateCatalog {
             if (entity.getOrigin() == ChartTemplateAggregateData.Origin.SYSTEM)
                 throw new IllegalStateException("The built-in chart template is immutable");
 
-            String normalizedName = normalizeName(name);
-            String nameKey = normalizeNameKey(normalizedName);
-            if (repo.existsByNameKeyAndTemplateKeyNot(nameKey, entity.getTemplateKey()))
-                throw new IllegalArgumentException("Chart template already exists: " + normalizedName);
+            TemplateContent content = describeTemplate(chartTemplate);
+            if (repo.existsByNameKeyAndTemplateKeyNot(content.nameKey(), entity.getTemplateKey()))
+                throw new IllegalArgumentException("Chart template already exists: " + content.normalizedName());
 
-            entity.setName(normalizedName);
-            entity.setNameKey(nameKey);
-            entity.setPayloadVersion(PAYLOAD_VERSION);
-            entity.setPayloadJson(serialize(mapper.fromSelection(selection)));
+            applyTemplateContent(entity, content);
             return mapper.toSummary(repo.save(entity));
         });
     }
@@ -300,6 +293,23 @@ public class PersistentChartTemplateCatalog implements ChartTemplateCatalog {
         }
     }
 
+    private TemplateContent describeTemplate(ChartTemplate chartTemplate) {
+        ChartTemplate template = Objects.requireNonNull(chartTemplate, "chartTemplate");
+        String normalizedName = normalizeName(template.getName());
+        return new TemplateContent(
+                normalizedName,
+                normalizeNameKey(normalizedName),
+                serialize(mapper.fromChartTemplate(template))
+        );
+    }
+
+    private void applyTemplateContent(ChartTemplateAggregateData entity, TemplateContent content) {
+        entity.setName(content.normalizedName());
+        entity.setNameKey(content.nameKey());
+        entity.setPayloadVersion(PAYLOAD_VERSION);
+        entity.setPayloadJson(content.payloadJson());
+    }
+
     private StoredChartTemplatePayload deserialize(String templateName, String payloadJson) {
         if (payloadJson == null || payloadJson.isBlank())
             return StoredChartTemplatePayload.EMPTY;
@@ -342,5 +352,8 @@ public class PersistentChartTemplateCatalog implements ChartTemplateCatalog {
 
     private static String normalizeNameKey(String name) {
         return name.strip().toLowerCase(Locale.ROOT);
+    }
+
+    private record TemplateContent(String normalizedName, String nameKey, String payloadJson) {
     }
 }

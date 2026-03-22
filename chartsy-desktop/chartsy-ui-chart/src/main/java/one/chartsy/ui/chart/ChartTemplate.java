@@ -11,6 +11,7 @@ import one.chartsy.ui.chart.internal.IndicatorPaneSupport;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * 
@@ -30,9 +31,21 @@ public class ChartTemplate implements Serializable {
         this.overlays = new ArrayList<>();
         this.indicators = new ArrayList<>();
     }
+
+    public static ChartTemplate copyVisualState(String name, ChartTemplate source) {
+        ChartTemplate template = new ChartTemplate(name);
+        template.copyVisualStateFrom(source);
+        return template;
+    }
     
     public String getName() {
         return name;
+    }
+
+    public void copyVisualStateFrom(ChartTemplate source) {
+        ChartTemplate template = Objects.requireNonNull(source, "source");
+        setChart(template.getChart());
+        setChartProperties(ChartProperties.copyOf(template.getChartProperties()));
     }
     
     public void setChart(Chart chart) {

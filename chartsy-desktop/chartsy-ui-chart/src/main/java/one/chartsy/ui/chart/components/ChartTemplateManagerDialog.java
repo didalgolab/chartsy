@@ -4,6 +4,7 @@
  */
 package one.chartsy.ui.chart.components;
 
+import one.chartsy.ui.chart.ChartTemplate;
 import one.chartsy.ui.chart.ChartTemplateCatalog;
 import one.chartsy.ui.chart.ChartTemplateSummary;
 import one.chartsy.ui.chart.Indicator;
@@ -44,6 +45,7 @@ import java.awt.event.WindowEvent;
 import java.io.Serial;
 import java.util.Collection;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
@@ -67,6 +69,7 @@ public class ChartTemplateManagerDialog extends JDialog {
 
     private ChartTemplateSummary selectedTemplate;
     private boolean selectedTemplateLoaded;
+    private ChartTemplate loadedChartTemplate;
 
     public ChartTemplateManagerDialog(Component locationAnchor, UUID preferredTemplateKey) {
         this(locationAnchor, preferredTemplateKey,
@@ -177,19 +180,15 @@ public class ChartTemplateManagerDialog extends JDialog {
         try {
             templateCatalog.listTemplates().forEach(templateListModel::addElement);
         } catch (RuntimeException ex) {
-            selectedTemplate = null;
-            selectedTemplateLoaded = false;
-            chooserPanel.initForm(allIndicators, java.util.List.of(), allOverlays, java.util.List.of());
-            updateButtonStates();
+            clearSelection();
+            resetChooser();
             showTemplateError("Unable to load chart templates.", ex);
             return;
         }
 
         if (templateListModel.isEmpty()) {
-            chooserPanel.initForm(allIndicators, java.util.List.of(), allOverlays, java.util.List.of());
-            selectedTemplate = null;
-            selectedTemplateLoaded = false;
-            updateButtonStates();
+            clearSelection();
+            resetChooser();
             return;
         }
 
@@ -215,20 +214,16 @@ public class ChartTemplateManagerDialog extends JDialog {
     private void loadSelectedTemplate() {
         selectedTemplate = templateList.getSelectedValue();
         if (selectedTemplate == null) {
-            chooserPanel.initForm(allIndicators, java.util.List.of(), allOverlays, java.util.List.of());
-            selectedTemplateLoaded = false;
-            updateButtonStates();
+            clearSelection();
+            resetChooser();
             return;
         }
 
         try {
-            ChartTemplateCatalog.LoadedTemplate loadedTemplate = templateCatalog.getTemplate(selectedTemplate.templateKey());
-            chooserPanel.initForm(allIndicators, loadedTemplate.chartTemplate().getIndicators(),
-                    allOverlays, loadedTemplate.chartTemplate().getOverlays());
-            selectedTemplateLoaded = true;
+            showLoadedTemplate(templateCatalog.getTemplate(selectedTemplate.templateKey()));
         } catch (RuntimeException ex) {
-            chooserPanel.initForm(allIndicators, java.util.List.of(), allOverlays, java.util.List.of());
-            selectedTemplateLoaded = false;
+            clearLoadedTemplateState();
+            resetChooser();
             showTemplateError("Unable to load the selected template.", ex);
         }
         updateButtonStates();
@@ -236,11 +231,11 @@ public class ChartTemplateManagerDialog extends JDialog {
 
     private void updateButtonStates() {
         boolean hasSelection = selectedTemplate != null;
-        boolean editable = hasSelection && selectedTemplate.editable();
+        boolean editable = hasEditableSelection();
 
-        duplicateButton.setEnabled(hasSelection && selectedTemplateLoaded);
+        duplicateButton.setEnabled(hasLoadedSelection());
         moreActionsButton.setEnabled(hasOverflowActions(hasSelection, editable));
-        saveButton.setEnabled(editable && selectedTemplateLoaded);
+        saveButton.setEnabled(editable);
     }
 
     private boolean hasOverflowActions(boolean hasSelection, boolean editable) {
@@ -252,39 +247,18 @@ public class ChartTemplateManagerDialog extends JDialog {
     }
 
     private void onNewTemplate(ActionEvent event) {
-        while (true) {
-            String proposedName = suggestTemplateName("New Template");
-            String name = promptForName("Create Template", "Template name:", proposedName);
-            if (name == null)
-                return;
-
-            try {
-                ChartTemplateSummary created = templateCatalog.createTemplate(name, chooserPanel.getSelection());
-                refreshTemplates(created.templateKey());
-                return;
-            } catch (RuntimeException ex) {
-                showTemplateError("Unable to create the chart template.", ex);
-            }
-        }
+        createTemplate("Create Template", suggestTemplateName("New Template"), "Unable to create the chart template.");
     }
 
     private void onDuplicateTemplate(ActionEvent event) {
-        if (selectedTemplate == null || !selectedTemplateLoaded)
+        if (!hasLoadedSelection())
             return;
 
-        while (true) {
-            String name = promptForName("Duplicate Template", "Template name:", suggestTemplateName(selectedTemplate.name() + " Copy"));
-            if (name == null)
-                return;
-
-            try {
-                ChartTemplateSummary created = templateCatalog.createTemplate(name, chooserPanel.getSelection());
-                refreshTemplates(created.templateKey());
-                return;
-            } catch (RuntimeException ex) {
-                showTemplateError("Unable to duplicate the chart template.", ex);
-            }
-        }
+        createTemplate(
+                "Duplicate Template",
+                suggestTemplateName(selectedTemplate.name() + " Copy"),
+                "Unable to duplicate the chart template."
+        );
     }
 
     private void onMoreActions(ActionEvent event) {
@@ -299,7 +273,7 @@ public class ChartTemplateManagerDialog extends JDialog {
         if (selectedTemplate == null)
             return menu;
 
-        if (selectedTemplate.editable() && selectedTemplateLoaded)
+        if (hasEditableSelection())
             menu.add(menuItem("Rename", this::onRenameTemplate));
         if (selectedTemplate.editable())
             menu.add(menuItem("Delete", this::onDeleteTemplate));
@@ -317,7 +291,7 @@ public class ChartTemplateManagerDialog extends JDialog {
     }
 
     private void onRenameTemplate(ActionEvent event) {
-        if (selectedTemplate == null || !selectedTemplate.editable() || !selectedTemplateLoaded)
+        if (!hasEditableSelection())
             return;
 
         while (true) {
@@ -326,7 +300,7 @@ public class ChartTemplateManagerDialog extends JDialog {
                 return;
 
             try {
-                ChartTemplateSummary updated = templateCatalog.updateTemplate(selectedTemplate.templateKey(), name, chooserPanel.getSelection());
+                ChartTemplateSummary updated = updateSelectedTemplate(name);
                 refreshTemplates(updated.templateKey());
                 return;
             } catch (RuntimeException ex) {
@@ -376,18 +350,77 @@ public class ChartTemplateManagerDialog extends JDialog {
     }
 
     private void onSaveTemplate(ActionEvent event) {
-        if (selectedTemplate == null || !selectedTemplate.editable() || !selectedTemplateLoaded)
+        if (!hasEditableSelection())
             return;
 
         try {
-            ChartTemplateSummary updated = templateCatalog.updateTemplate(
-                    selectedTemplate.templateKey(),
-                    selectedTemplate.name(),
-                    chooserPanel.getSelection());
+            ChartTemplateSummary updated = updateSelectedTemplate(selectedTemplate.name());
             refreshTemplates(updated.templateKey());
         } catch (RuntimeException ex) {
             showTemplateError("Unable to save the chart template.", ex);
         }
+    }
+
+    private void createTemplate(String title, String suggestedName, String errorTitle) {
+        while (true) {
+            String name = promptForName(title, "Template name:", suggestedName);
+            if (name == null)
+                return;
+
+            try {
+                ChartTemplateSummary created = templateCatalog.createTemplate(buildTemplateSnapshot(name));
+                refreshTemplates(created.templateKey());
+                return;
+            } catch (RuntimeException ex) {
+                showTemplateError(errorTitle, ex);
+            }
+        }
+    }
+
+    private boolean hasLoadedSelection() {
+        return selectedTemplate != null && selectedTemplateLoaded;
+    }
+
+    private boolean hasEditableSelection() {
+        return hasLoadedSelection() && selectedTemplate.editable();
+    }
+
+    private ChartTemplateSummary updateSelectedTemplate(String name) {
+        return templateCatalog.updateTemplate(selectedTemplate.templateKey(), buildTemplateSnapshot(name));
+    }
+
+    private ChartTemplate buildTemplateSnapshot(String name) {
+        ChartPluginSelection selection = chooserPanel.getSelection();
+        if (loadedChartTemplate != null)
+            return ChartTemplateSelectionSnapshotFactory.create(name, loadedChartTemplate, selection);
+        return ChartTemplateSelectionSnapshotFactory.create(name, selection);
+    }
+
+    private void clearSelection() {
+        selectedTemplate = null;
+        clearLoadedTemplateState();
+    }
+
+    private void clearLoadedTemplateState() {
+        selectedTemplateLoaded = false;
+        loadedChartTemplate = null;
+    }
+
+    private void resetChooser() {
+        chooserPanel.initForm(allIndicators, List.of(), allOverlays, List.of());
+        updateButtonStates();
+    }
+
+    private void showLoadedTemplate(ChartTemplateCatalog.LoadedTemplate loadedTemplate) {
+        ChartTemplate chartTemplate = loadedTemplate.chartTemplate();
+        chooserPanel.initForm(
+                allIndicators,
+                chartTemplate.getIndicators(),
+                allOverlays,
+                chartTemplate.getOverlays()
+        );
+        loadedChartTemplate = chartTemplate;
+        selectedTemplateLoaded = true;
     }
 
     private String promptForName(String title, String message, String initialValue) {

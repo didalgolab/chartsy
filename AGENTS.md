@@ -5,5 +5,6 @@ Notes:
 
 Coding Guardrails:
 - Avoid overengineering.
+- Avoid using `Objects.requireNonNull` if code flow is guaranteed to throw NPE later on.
 - Simplify rather than layering workarounds.
 - In unit tests prefer existing value objects instead of dummies.

@@ -4,7 +4,6 @@
  */
 package one.chartsy.ui.chart;
 
-import one.chartsy.ui.chart.components.ChartPluginSelection;
 import org.openide.util.Lookup;
 
 import java.util.List;
@@ -30,9 +29,9 @@ public interface ChartTemplateCatalog {
 
     LoadedTemplate resolveTemplate(UUID templateKey);
 
-    ChartTemplateSummary createTemplate(String name, ChartPluginSelection selection);
+    ChartTemplateSummary createTemplate(ChartTemplate chartTemplate);
 
-    ChartTemplateSummary updateTemplate(UUID templateKey, String name, ChartPluginSelection selection);
+    ChartTemplateSummary updateTemplate(UUID templateKey, ChartTemplate chartTemplate);
 
     void deleteTemplate(UUID templateKey);
 
@@ -46,7 +45,7 @@ public interface ChartTemplateCatalog {
 
     static LoadedTemplate builtInTemplate() {
         ChartTemplate chartTemplate = ChartTemplateDefaults.basicChartTemplate();
-        StoredChartTemplatePayload payload = ChartTemplatePayloadMapper.getDefault().fromChartTemplate(chartTemplate);
+        StoredChartTemplatePayload payload = StoredChartTemplatePayload.fromChartTemplate(chartTemplate);
         return new LoadedTemplate(builtInSummary(), chartTemplate, payload);
     }
 
