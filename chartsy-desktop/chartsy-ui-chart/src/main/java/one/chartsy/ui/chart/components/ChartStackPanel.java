@@ -146,10 +146,8 @@ public class ChartStackPanel extends JLayeredPane {
         }
 
         chartPanel.refreshEngine(footerOwner == null);
-        for (int i = 0; i < indicatorPanels.size(); i++) {
-            IndicatorPanel panel = indicatorPanels.get(i);
+        for (IndicatorPanel panel : indicatorPanels)
             panel.refreshEngine(panel == footerOwner, chartPanel.getEngineChart());
-        }
         if (chartFrame.getDateAxisFooter() != null)
             chartFrame.getDateAxisFooter().repaint();
     }

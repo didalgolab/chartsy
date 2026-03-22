@@ -307,6 +307,9 @@ public final class EngineChartHost implements AutoCloseable {
     }
 
     private void attachTimeScaleOwner(ChartContext context) {
+        var owner = sharedTimeScale.getChart();
+        if (owner != null && owner != chart)
+            owner.setXScale(null);
         if (chart.getXScale() != sharedTimeScale) {
             if (chart.getXScale() != null)
                 chart.setXScale(null);
@@ -322,9 +325,6 @@ public final class EngineChartHost implements AutoCloseable {
     }
 
     private void detachSharedTimeScale() {
-        var owner = sharedTimeScale.getChart();
-        if (owner != null && owner != chart)
-            owner.setXScale(null);
         if (chart.getXScale() == sharedTimeScale)
             chart.setXScale(null);
     }
