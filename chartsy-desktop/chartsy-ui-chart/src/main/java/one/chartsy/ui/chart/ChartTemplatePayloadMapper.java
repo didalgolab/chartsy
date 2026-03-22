@@ -4,6 +4,7 @@
  */
 package one.chartsy.ui.chart;
 
+import one.chartsy.kernel.StartupMetrics;
 import one.chartsy.persistence.domain.ChartTemplateAggregateData;
 import one.chartsy.study.StudyDescriptor;
 import one.chartsy.study.StudyKind;
@@ -34,6 +35,8 @@ final class ChartTemplatePayloadMapper {
     private static final String TYPE_STROKE = "STROKE";
 
     private static final ChartTemplatePayloadMapper INSTANCE = new ChartTemplatePayloadMapper();
+
+    private volatile StoredChartTemplatePayload builtInPayload;
 
     static ChartTemplatePayloadMapper getDefault() {
         return INSTANCE;
@@ -108,7 +111,19 @@ final class ChartTemplatePayloadMapper {
     }
 
     StoredChartTemplatePayload builtInPayload() {
-        return fromChartTemplate(ChartTemplateDefaults.basicChartTemplate());
+        StoredChartTemplatePayload payload = builtInPayload;
+        if (payload == null) {
+            synchronized (this) {
+                payload = builtInPayload;
+                if (payload == null) {
+                    StartupMetrics.mark("chartTemplates:builtInPayload:create:start");
+                    payload = fromChartTemplate(ChartTemplateDefaults.basicChartTemplate());
+                    StartupMetrics.mark("chartTemplates:builtInPayload:create:ready");
+                    builtInPayload = payload;
+                }
+            }
+        }
+        return payload;
     }
 
     ChartTemplateSummary toSummary(ChartTemplateAggregateData entity) {

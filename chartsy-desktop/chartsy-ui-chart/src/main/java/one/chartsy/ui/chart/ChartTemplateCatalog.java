@@ -44,8 +44,9 @@ public interface ChartTemplateCatalog {
     }
 
     static LoadedTemplate builtInTemplate() {
-        ChartTemplate chartTemplate = ChartTemplateDefaults.basicChartTemplate();
-        StoredChartTemplatePayload payload = StoredChartTemplatePayload.fromChartTemplate(chartTemplate);
+        ChartTemplatePayloadMapper mapper = ChartTemplatePayloadMapper.getDefault();
+        StoredChartTemplatePayload payload = mapper.builtInPayload();
+        ChartTemplate chartTemplate = mapper.toChartTemplate(BUILT_IN_TEMPLATE_NAME, payload);
         return new LoadedTemplate(builtInSummary(), chartTemplate, payload);
     }
 

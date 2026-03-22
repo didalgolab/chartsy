@@ -23,7 +23,9 @@ import javax.swing.JDialog;
 import javax.swing.JList;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
 import javax.swing.SwingConstants;
+import javax.swing.UIManager;
 import javax.swing.WindowConstants;
 import java.awt.Color;
 import java.awt.Component;
@@ -48,6 +50,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 public class NewChartDialog extends JDialog {
 
@@ -111,7 +114,7 @@ public class NewChartDialog extends JDialog {
     }
 
     private void initForm(DataProvider dataProvider) {
-        messageLabel.setForeground(Color.red);
+        messageLabel.setForeground(defaultMessageColor());
         messageLabel.setVisible(false);
         updateMessageLabelCursor();
 
@@ -129,7 +132,7 @@ public class NewChartDialog extends JDialog {
         this.dataProvider = dataProvider;
 
         symbolSelector.setDataProvider(dataProvider);
-        refreshTemplateChoices(null);
+        refreshTemplateChoicesAsync(null, false);
     }
 
     public DataProvider getDataProvider() {
@@ -286,7 +289,7 @@ public class NewChartDialog extends JDialog {
         UUID selectedTemplateKey = Optional.ofNullable(dialog.getSelectedTemplate())
                 .map(ChartTemplateSummary::templateKey)
                 .orElse(preferredTemplateKey);
-        refreshTemplateChoices(selectedTemplateKey);
+        refreshTemplateChoicesAsync(selectedTemplateKey, true);
     }
 
     private void onMessageClicked(MouseEvent evt) {
@@ -307,20 +310,59 @@ public class NewChartDialog extends JDialog {
         return (selectedItem instanceof ChartTemplateSummary template) ? template.templateKey() : null;
     }
 
-    private void refreshTemplateChoices(UUID preferredTemplateKey) {
-        try {
-            setAvailableTemplates(templateCatalog.listTemplates());
-            manageTemplatesButton.setEnabled(true);
-            hideTemplateMessage();
-        } catch (RuntimeException ex) {
-            setAvailableTemplates(List.of(ChartTemplateCatalog.builtInSummary()));
-            manageTemplatesButton.setEnabled(false);
-            showTemplateMessage(rb.getString("NewChartDialog.templateUnavailable"));
-        }
+    private void refreshTemplateChoicesAsync(UUID preferredTemplateKey, boolean forceReload) {
+        showTemplateLoadingState();
+        CompletableFuture<List<ChartTemplateSummary>> future = forceReload
+                ? StartupServices.refreshChartTemplates()
+                : StartupServices.chartTemplates();
+        future.whenComplete((templates, error) -> SwingUtilities.invokeLater(() -> {
+            if (!isDisplayable())
+                return;
+
+            if (error == null) {
+                applyAvailableTemplates(templates, preferredTemplateKey);
+                return;
+            }
+
+            showTemplateFailureState();
+        }));
+    }
+
+    private void applyAvailableTemplates(List<ChartTemplateSummary> templates, UUID preferredTemplateKey) {
+        setAvailableTemplates(templates);
+        manageTemplatesButton.setEnabled(true);
+        clearTemplateLoadingHints();
+        hideTemplateMessage();
         UUID templateKeyToSelect = (preferredTemplateKey != null)
                 ? preferredTemplateKey
                 : getDefaultTemplate().map(ChartTemplateSummary::templateKey).orElse(null);
         setDefaultTemplate(templateKeyToSelect);
+    }
+
+    private void showTemplateLoadingState() {
+        setAvailableTemplates(List.of(ChartTemplateCatalog.builtInSummary()));
+        templateChoice.setEnabled(true);
+        manageTemplatesButton.setEnabled(false);
+        showTemplateLoadingHints();
+        hideTemplateMessage();
+    }
+
+    private void showTemplateFailureState() {
+        setAvailableTemplates(List.of(ChartTemplateCatalog.builtInSummary()));
+        manageTemplatesButton.setEnabled(false);
+        clearTemplateLoadingHints();
+        showTemplateErrorMessage(rb.getString("NewChartDialog.templateUnavailable"));
+    }
+
+    private void showTemplateLoadingHints() {
+        String tooltip = rb.getString("NewChartDialog.templateLoadingTooltip");
+        templateChoice.setToolTipText(tooltip);
+        manageTemplatesButton.setToolTipText(tooltip);
+    }
+
+    private void clearTemplateLoadingHints() {
+        templateChoice.setToolTipText(null);
+        manageTemplatesButton.setToolTipText(null);
     }
 
     private void showTemplateMessage(String message) {
@@ -333,9 +375,15 @@ public class NewChartDialog extends JDialog {
         pack();
     }
 
+    private void showTemplateErrorMessage(String message) {
+        messageLabel.setForeground(Color.red);
+        showTemplateMessage(message);
+    }
+
     private void hideTemplateMessage() {
         messageUrl = "";
         messageLabel.setVisible(false);
+        messageLabel.setForeground(defaultMessageColor());
         updateMessageLabelCursor();
         getContentPane().revalidate();
         getContentPane().repaint();
@@ -346,6 +394,11 @@ public class NewChartDialog extends JDialog {
         messageLabel.setCursor(messageUrl.isBlank()
                 ? Cursor.getDefaultCursor()
                 : Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+    }
+
+    private Color defaultMessageColor() {
+        Color color = UIManager.getColor("Label.foreground");
+        return (color != null) ? color : Color.black;
     }
 
     private JButton cancelButton;

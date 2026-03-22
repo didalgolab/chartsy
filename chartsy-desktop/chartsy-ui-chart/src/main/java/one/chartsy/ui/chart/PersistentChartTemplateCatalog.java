@@ -6,6 +6,7 @@ package one.chartsy.ui.chart;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import one.chartsy.kernel.StartupMetrics;
 import one.chartsy.kernel.Kernel;
 import one.chartsy.persistence.domain.ChartTemplateAggregateData;
 import one.chartsy.persistence.domain.model.ChartTemplateRepository;
@@ -28,14 +29,29 @@ public class PersistentChartTemplateCatalog implements ChartTemplateCatalog {
 
     private final Gson gson = new GsonBuilder().create();
     private final ChartTemplatePayloadMapper mapper = ChartTemplatePayloadMapper.getDefault();
+    private volatile String builtInPayloadJson;
 
     @Override
     public List<ChartTemplateSummary> listTemplates() {
-        return inTransaction(repo -> {
+        StartupMetrics.mark("chartTemplates:list:transactionTemplate:start");
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager());
+        StartupMetrics.mark("chartTemplates:list:transactionTemplate:ready");
+        return transactionTemplate.execute(status -> {
+            StartupMetrics.mark("chartTemplates:list:repository:start");
+            ChartTemplateRepository repo = repository();
+            StartupMetrics.mark("chartTemplates:list:repository:ready");
+            StartupMetrics.mark("chartTemplates:list:ensureInitialized:start");
             ensureInitialized(repo);
-            return repo.findAllByOrderByDefaultTemplateDescNameAsc().stream()
+            StartupMetrics.mark("chartTemplates:list:ensureInitialized:ready");
+            StartupMetrics.mark("chartTemplates:list:query:start");
+            var entities = repo.findAllByOrderByDefaultTemplateDescNameAsc();
+            StartupMetrics.mark("chartTemplates:list:query:ready");
+            StartupMetrics.mark("chartTemplates:list:summaries:start");
+            var summaries = entities.stream()
                     .map(mapper::toSummary)
                     .toList();
+            StartupMetrics.mark("chartTemplates:list:summaries:ready");
+            return summaries;
         });
     }
 
@@ -267,12 +283,30 @@ public class PersistentChartTemplateCatalog implements ChartTemplateCatalog {
             entity.setPayloadVersion(PAYLOAD_VERSION);
             changed = true;
         }
-        String builtInPayloadJson = serialize(mapper.builtInPayload());
-        if (!Objects.equals(entity.getPayloadJson(), builtInPayloadJson)) {
-            entity.setPayloadJson(builtInPayloadJson);
+        StartupMetrics.mark("chartTemplates:normalizeBuiltIn:payloadJson:start");
+        String payloadJson = builtInPayloadJson();
+        StartupMetrics.mark("chartTemplates:normalizeBuiltIn:payloadJson:ready");
+        if (!Objects.equals(entity.getPayloadJson(), payloadJson)) {
+            entity.setPayloadJson(payloadJson);
             changed = true;
         }
         return changed;
+    }
+
+    private String builtInPayloadJson() {
+        String payloadJson = builtInPayloadJson;
+        if (payloadJson == null) {
+            synchronized (this) {
+                payloadJson = builtInPayloadJson;
+                if (payloadJson == null) {
+                    StartupMetrics.mark("chartTemplates:builtInPayloadJson:create:start");
+                    payloadJson = serialize(mapper.builtInPayload());
+                    StartupMetrics.mark("chartTemplates:builtInPayloadJson:create:ready");
+                    builtInPayloadJson = payloadJson;
+                }
+            }
+        }
+        return payloadJson;
     }
 
     private void setBuiltInDefault(ChartTemplateRepository repo, boolean logFallback) {

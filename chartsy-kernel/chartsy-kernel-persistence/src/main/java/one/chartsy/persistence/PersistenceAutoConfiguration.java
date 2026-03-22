@@ -2,11 +2,10 @@
  * SPDX-License-Identifier: Apache-2.0 */
 package one.chartsy.persistence;
 
-import one.chartsy.Workspace;
-import liquibase.exception.LiquibaseException;
 import liquibase.integration.spring.SpringLiquibase;
-import one.chartsy.kernel.config.KernelConfiguration;
 import one.chartsy.SymbolGroupContent;
+import one.chartsy.kernel.StartupMetrics;
+import one.chartsy.kernel.config.KernelConfiguration;
 import one.chartsy.persistence.domain.ChartTemplateAggregateData;
 import one.chartsy.persistence.domain.RunnerAggregateData;
 import one.chartsy.persistence.domain.SymbolGroupAggregateData;
@@ -20,14 +19,11 @@ import one.chartsy.persistence.domain.model.SpringGeneratedRunnerRepository;
 import one.chartsy.persistence.domain.model.SpringGeneratedSymbolGroupRepository;
 import one.chartsy.persistence.domain.model.SymbolGroupRepository;
 import one.chartsy.persistence.domain.services.PersistentSymbolGroupHierarchy;
-import one.chartsy.kernel.StartupMetrics;
-import org.h2.jdbcx.JdbcDataSource;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.beans.factory.BeanFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.data.convert.ReadingConverter;
 import org.springframework.data.convert.WritingConverter;
 import org.springframework.data.jdbc.core.convert.DataAccessStrategy;
@@ -48,9 +44,6 @@ import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.sql.DataSource;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.Files;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Set;
@@ -61,17 +54,7 @@ public class PersistenceAutoConfiguration extends AbstractJdbcConfiguration {
 
     @Bean
     public DataSource dataSource() {
-        try {
-            Files.createDirectories(Workspace.current().path());
-        } catch (IOException e) {
-            throw new UncheckedIOException("Cannot create workspace directory", e);
-        }
-
-        var dataSource = new JdbcDataSource();
-        dataSource.setURL("jdbc:h2:file:" + Workspace.current().path().resolve("application") + ";COMPRESS=true");
-        dataSource.setUser("chartsy");
-        dataSource.setPassword("chartsy");
-        return dataSource;
+        return SharedPersistenceBootstrap.dataSource();
     }
 
     @Bean
@@ -105,7 +88,6 @@ public class PersistenceAutoConfiguration extends AbstractJdbcConfiguration {
     }
 
     @Bean
-    @Lazy
     public GeneratedRunnerRepository generatedRunnerRepository(
             DataAccessStrategy dataAccessStrategy,
             JdbcMappingContext mappingContext,
@@ -126,7 +108,6 @@ public class PersistenceAutoConfiguration extends AbstractJdbcConfiguration {
     }
 
     @Bean
-    @Lazy
     public GeneratedChartTemplateRepository generatedChartTemplateRepository(
             DataAccessStrategy dataAccessStrategy,
             JdbcMappingContext mappingContext,
@@ -156,13 +137,11 @@ public class PersistenceAutoConfiguration extends AbstractJdbcConfiguration {
     }
 
     @Bean
-    @Lazy
     public RunnerRepository runnerRepository(GeneratedRunnerRepository delegate, SpringLiquibase liquibase) {
         return new SpringGeneratedRunnerRepository(delegate);
     }
 
     @Bean
-    @Lazy
     public ChartTemplateRepository chartTemplateRepository(
             GeneratedChartTemplateRepository delegate,
             SpringLiquibase liquibase
@@ -177,11 +156,21 @@ public class PersistenceAutoConfiguration extends AbstractJdbcConfiguration {
 
     @Bean
     public SpringLiquibase liquibase(DataSource dataSource) {
-        SpringLiquibase liquibase = new MeasuredSpringLiquibase("kernelContext:liquibase");
+        SpringLiquibase liquibase = new BootstrappedSpringLiquibase("kernelContext:liquibase");
         liquibase.setDataSource(dataSource);
         liquibase.setChangeLog("classpath:db/changelog/db.changelog-master.yaml");
 
         return liquibase;
+    }
+
+    @Bean
+    public PersistenceReadyMarker persistenceReadyMarker(
+            RunnerRepository runnerRepository,
+            ChartTemplateRepository chartTemplateRepository,
+            PlatformTransactionManager transactionManager
+    ) {
+        StartupMetrics.mark("kernelContext:persistenceReady");
+        return new PersistenceReadyMarker();
     }
 
     @Override
@@ -256,6 +245,8 @@ public class PersistenceAutoConfiguration extends AbstractJdbcConfiguration {
             ApplicationEventPublisher eventPublisher,
             BeanFactory beanFactory
     ) {
+        var stagePrefix = "kernelContext:repository:" + repositoryType.getSimpleName();
+        StartupMetrics.mark(stagePrefix + ":start");
         var factory = new JdbcRepositoryFactory(
                 dataAccessStrategy,
                 mappingContext,
@@ -267,7 +258,11 @@ public class PersistenceAutoConfiguration extends AbstractJdbcConfiguration {
         factory.setBeanFactory(beanFactory);
         factory.setEntityCallbacks(EntityCallbacks.create(beanFactory));
         factory.setQueryMappingConfiguration(QueryMappingConfiguration.EMPTY);
-        return factory.getRepository(repositoryType);
+        try {
+            return factory.getRepository(repositoryType);
+        } finally {
+            StartupMetrics.mark(stagePrefix + ":ready");
+        }
     }
 
     private static long nextId(DataSource dataSource, String sequenceName) {
@@ -305,19 +300,22 @@ public class PersistenceAutoConfiguration extends AbstractJdbcConfiguration {
         }
     }
 
-    static final class MeasuredSpringLiquibase extends SpringLiquibase {
+    record PersistenceReadyMarker() {
+    }
+
+    static final class BootstrappedSpringLiquibase extends SpringLiquibase {
 
         private final String stagePrefix;
 
-        MeasuredSpringLiquibase(String stagePrefix) {
+        BootstrappedSpringLiquibase(String stagePrefix) {
             this.stagePrefix = stagePrefix;
         }
 
         @Override
-        public void afterPropertiesSet() throws LiquibaseException {
+        public void afterPropertiesSet() {
             StartupMetrics.mark(stagePrefix + ":start");
             try {
-                super.afterPropertiesSet();
+                SharedPersistenceBootstrap.awaitReady();
             } finally {
                 StartupMetrics.mark(stagePrefix + ":ready");
             }

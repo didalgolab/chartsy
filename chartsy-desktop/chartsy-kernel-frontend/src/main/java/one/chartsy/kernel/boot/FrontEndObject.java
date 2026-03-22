@@ -8,14 +8,14 @@ import one.chartsy.kernel.boot.config.FrontEndConfiguration;
 import org.openide.util.Lookup;
 import org.openide.util.lookup.ServiceProvider;
 import org.springframework.boot.context.metrics.buffering.BufferingApplicationStartup;
-import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.support.GenericApplicationContext;
 
 @ServiceProvider(service = FrontEnd.class)
 public class FrontEndObject implements FrontEnd {
 
-    private final SpringApplicationBuilder current;
+    private final ConfigurableApplicationContext current;
 
     public FrontEndObject() {
         this(Kernel.getDefault());
@@ -28,10 +28,8 @@ public class FrontEndObject implements FrontEnd {
     public FrontEndObject(FrontEndConfiguration configuration, Kernel kernel) {
         StartupMetrics.mark("frontend:start");
         BufferingApplicationStartup startup = StartupMetrics.createSpringTimeline(4_096);
-        current = configuration.createSpringApplicationBuilder();
-        if (startup != null)
-            current.application().setApplicationStartup(startup);
-        var ctx = (GenericApplicationContext) current.run();
+        var ctx = (GenericApplicationContext) configuration.createApplicationContext(startup);
+        current = ctx;
         ctx.registerBean("frontEnd", FrontEnd.class, () -> this);
         ctx.registerBean("kernel", Kernel.class, () -> kernel);
         StartupMetrics.dumpSpringTimeline("frontend", startup);
@@ -40,6 +38,6 @@ public class FrontEndObject implements FrontEnd {
 
     @Override
     public ApplicationContext getApplicationContext() {
-        return current.context();
+        return current;
     }
 }

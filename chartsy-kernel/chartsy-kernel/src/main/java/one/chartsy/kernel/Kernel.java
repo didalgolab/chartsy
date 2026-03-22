@@ -5,17 +5,15 @@ package one.chartsy.kernel;
 import one.chartsy.kernel.config.KernelConfiguration;
 import org.openide.util.Lookup;
 import org.springframework.boot.context.metrics.buffering.BufferingApplicationStartup;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.support.GenericApplicationContext;
 
-@SpringBootApplication
 public class Kernel {
 
     private static final String[] EMPTY_ARGS = new String[0];
 
-    private final SpringApplicationBuilder current;
+    private final ConfigurableApplicationContext current;
 
     public Kernel() {
         this(Lookup.getDefault().lookup(KernelConfiguration.class), EMPTY_ARGS);
@@ -24,10 +22,8 @@ public class Kernel {
     public Kernel(KernelConfiguration configuration, String[] args) {
         StartupMetrics.mark("kernel:start");
         BufferingApplicationStartup startup = StartupMetrics.createSpringTimeline(4_096);
-        current = configuration.createSpringApplicationBuilder();
-        if (startup != null)
-            current.application().setApplicationStartup(startup);
-        ((GenericApplicationContext) current.run(args))
+        current = configuration.createApplicationContext(startup, args);
+        ((GenericApplicationContext) current)
                 .registerBean("kernel", Kernel.class, () -> this);
         StartupMetrics.dumpSpringTimeline("kernel", startup);
         StartupMetrics.mark("kernel:ready");
@@ -38,7 +34,7 @@ public class Kernel {
     }
 
     public ApplicationContext getApplicationContext() {
-        return current.context();
+        return current;
     }
 
     public void publishEvent(Object event) {

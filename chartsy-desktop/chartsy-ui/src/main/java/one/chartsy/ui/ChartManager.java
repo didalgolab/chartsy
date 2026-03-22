@@ -29,7 +29,8 @@ import static one.chartsy.ui.chart.ChartManager.getDefault;
 @ServiceProvider(service = ChartManager.class)
 public class ChartManager {
     private static final Logger log = LogManager.getLogger(ChartManager.class);
-    private static final ChartFrameCustomizer NONE = __ -> {};
+    private static final ChartFrameCustomizer NONE = __ -> {
+    };
     private static final String DEFAULT_CHART_TYPE = "Candle Stick";
 
     public ChartTopComponent open(Symbol symbol, TimeFrame period, JsonObject chartOptions) {
@@ -94,6 +95,8 @@ public class ChartManager {
 
     static TemplateResolution resolveLoadedTemplate(ChartOpenOptions options, ChartTemplateCatalog catalog) {
         ChartOpenOptions resolvedOptions = (options != null) ? options : ChartOpenOptions.DEFAULT;
+        if (ChartTemplateCatalog.BUILT_IN_TEMPLATE_KEY.equals(resolvedOptions.templateKey()))
+            return new TemplateResolution(ChartTemplateCatalog.builtInTemplate(), null);
         try {
             return new TemplateResolution(catalog.resolveTemplate(resolvedOptions.templateKey()), null);
         } catch (IllegalArgumentException ex) {

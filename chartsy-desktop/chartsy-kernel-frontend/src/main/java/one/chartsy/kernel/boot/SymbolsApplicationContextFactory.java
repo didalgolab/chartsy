@@ -2,12 +2,11 @@
  * SPDX-License-Identifier: Apache-2.0 */
 package one.chartsy.kernel.boot;
 
-import liquibase.exception.LiquibaseException;
-import liquibase.integration.spring.SpringLiquibase;
-import one.chartsy.Workspace;
 import one.chartsy.kernel.DataProviderRegistry;
 import one.chartsy.kernel.StartupMetrics;
 import one.chartsy.kernel.SymbolGroupHierarchy;
+import one.chartsy.Workspace;
+import one.chartsy.persistence.SharedPersistenceBootstrap;
 import one.chartsy.persistence.domain.model.JdbcSymbolGroupRepository;
 import one.chartsy.persistence.domain.model.SymbolGroupRepository;
 import one.chartsy.persistence.domain.services.PersistentSymbolGroupHierarchy;
@@ -22,19 +21,38 @@ import javax.sql.DataSource;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
+import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 public final class SymbolsApplicationContextFactory {
 
     private SymbolsApplicationContextFactory() {
     }
 
+    public static CompletableFuture<? extends DataSource> prewarmPersistence(Executor executor) {
+        return SharedPersistenceBootstrap.startAsync(executor);
+    }
+
     public static ConfigurableApplicationContext createApplicationContext() {
         StartupMetrics.mark("symbolsContext:start");
 
-        var dataSource = createDataSource();
+        DataSource dataSource = createDataSource();
+        StartupMetrics.mark("symbolsContext:schemaCheck:start");
+        boolean symbolsSchemaReady = isSymbolsSchemaReady(dataSource);
+        StartupMetrics.mark("symbolsContext:schemaCheck:ready");
+        SharedPersistenceBootstrap.startAsync();
+        StartupMetrics.mark("symbolsContext:persistencePrewarm:started");
+        if (!symbolsSchemaReady) {
+            StartupMetrics.mark("symbolsContext:persistenceAwait:start");
+            SharedPersistenceBootstrap.awaitReady();
+            StartupMetrics.mark("symbolsContext:persistenceAwait:ready");
+        } else {
+            StartupMetrics.mark("symbolsContext:persistenceAwait:skipped");
+        }
         StartupMetrics.mark("symbolsContext:dataSourceReady");
-        initializeLiquibase(dataSource);
+        DataSource symbolsDataSource = dataSource;
 
         var context = new GenericApplicationContext();
         var classLoader = Lookup.getDefault().lookup(ClassLoader.class);
@@ -44,9 +62,9 @@ public final class SymbolsApplicationContextFactory {
         context.registerBean(ExpressionParser.class, () -> new SpelExpressionParser());
         context.registerBean(DataProviderRegistry.class,
                 () -> new DataProviderRegistry(context.getBean(ExpressionParser.class)));
-        context.registerBean(DataSource.class, () -> dataSource);
+        context.registerBean(DataSource.class, () -> symbolsDataSource);
         context.registerBean(SymbolGroupRepository.class,
-                () -> new JdbcSymbolGroupRepository(dataSource, context));
+                () -> new JdbcSymbolGroupRepository(symbolsDataSource, context));
         context.registerBean(SymbolGroupHierarchy.class,
                 () -> new PersistentSymbolGroupHierarchy(context.getBean(SymbolGroupRepository.class)));
         context.refresh();
@@ -70,20 +88,6 @@ public final class SymbolsApplicationContextFactory {
         return dataSource;
     }
 
-    private static void initializeLiquibase(DataSource dataSource) {
-        if (isSymbolsSchemaReady(dataSource))
-            return;
-
-        var liquibase = new SpringLiquibase();
-        liquibase.setDataSource(dataSource);
-        liquibase.setChangeLog("classpath:db/changelog/db.changelog-symbols.yaml");
-        try {
-            liquibase.afterPropertiesSet();
-        } catch (LiquibaseException e) {
-            throw new IllegalStateException("Cannot initialize symbols schema", e);
-        }
-    }
-
     private static boolean isSymbolsSchemaReady(DataSource dataSource) {
         try (var connection = dataSource.getConnection()) {
             return exists(connection, """
@@ -103,7 +107,7 @@ public final class SymbolsApplicationContextFactory {
         }
     }
 
-    private static boolean exists(java.sql.Connection connection, String sql) throws SQLException {
+    private static boolean exists(Connection connection, String sql) throws SQLException {
         try (var statement = connection.prepareStatement(sql);
              var resultSet = statement.executeQuery()) {
             return resultSet.next();
