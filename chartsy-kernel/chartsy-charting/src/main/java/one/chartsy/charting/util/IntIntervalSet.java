@@ -10,9 +10,8 @@ import one.chartsy.charting.util.collections.BalancedBinaryTree;
 /// adjacencies.
 ///
 /// The set is optimized for charting update paths that repeatedly add, subtract, and
-/// iterate changed index ranges. Internally each stored interval keeps its upper bound in
-/// exclusive form even though the public API and {@link IntInterval} views expose
-/// inclusive endpoints.
+/// iterate changed index ranges. Stored intervals keep both endpoints inclusive, and
+/// adjacency checks handle `Integer.MIN_VALUE` and `Integer.MAX_VALUE` explicitly.
 ///
 /// ### API Notes
 ///
@@ -26,17 +25,13 @@ import one.chartsy.charting.util.collections.BalancedBinaryTree;
 public class IntIntervalSet {
 
     /// Internal tree entry representing one stored interval.
-    ///
-    /// The lower bound is inclusive and the upper bound is kept in exclusive form so
-    /// adjacency checks can treat `value == exclusiveEnd` as the first uncovered value
-    /// after the interval.
-    static class IntervalEntry extends BalancedBinaryTree.Entry implements IntInterval {
+    private static final class IntervalEntry extends BalancedBinaryTree.Entry implements IntInterval {
         int first;
-        int exclusiveEnd;
+        int lastInclusive;
 
-        IntervalEntry(int first, int exclusiveEnd) {
+        IntervalEntry(int first, int lastInclusive) {
             this.first = first;
-            this.exclusiveEnd = exclusiveEnd;
+            this.lastInclusive = lastInclusive;
         }
 
         @Override
@@ -46,7 +41,7 @@ public class IntIntervalSet {
 
         @Override
         public int getLast() {
-            return exclusiveEnd - 1;
+            return lastInclusive;
         }
 
         @Override
@@ -69,12 +64,12 @@ public class IntIntervalSet {
         if (entryCount <= 1)
             return 0;
 
-        int exclusiveEnd = entry.exclusiveEnd;
+        int lastInclusive = entry.lastInclusive;
         int low = 0;
         int high = entryCount - 1;
         while (low <= high) {
             int mid = low + ((high - low) >> 1);
-            if (entryAt(node, mid).exclusiveEnd >= exclusiveEnd)
+            if (entryAt(node, mid).lastInclusive >= lastInclusive)
                 high = mid - 1;
             else
                 low = mid + 1;
@@ -92,25 +87,12 @@ public class IntIntervalSet {
         return entryAt(node, node.getEntriesCount() - 1);
     }
 
-    private static int findFirstIndexWithExclusiveEndAtLeast(BalancedBinaryTree.Node node, int value) {
+    private static int findFirstIndexWithLastAtLeast(BalancedBinaryTree.Node node, int value) {
         int low = 0;
         int high = node.getEntriesCount() - 1;
         while (low < high) {
             int mid = low + ((high - low) >> 1);
-            if (entryAt(node, mid).exclusiveEnd >= value)
-                high = mid;
-            else
-                low = mid + 1;
-        }
-        return low;
-    }
-
-    private static int findFirstIndexWithExclusiveEndGreaterThan(BalancedBinaryTree.Node node, int value) {
-        int low = 0;
-        int high = node.getEntriesCount() - 1;
-        while (low < high) {
-            int mid = low + ((high - low) >> 1);
-            if (entryAt(node, mid).exclusiveEnd > value)
+            if (entryAt(node, mid).lastInclusive >= value)
                 high = mid;
             else
                 low = mid + 1;
@@ -131,19 +113,6 @@ public class IntIntervalSet {
         return low;
     }
 
-    private static int findLastIndexWithFirstLessThan(BalancedBinaryTree.Node node, int value) {
-        int low = 0;
-        int high = node.getEntriesCount() - 1;
-        while (low < high) {
-            int mid = low + ((high - low + 1) >> 1);
-            if (entryAt(node, mid).first < value)
-                low = mid;
-            else
-                high = mid - 1;
-        }
-        return low;
-    }
-
     private IntervalEntry firstEntry() {
         return (tree.getSize() == 0) ? null : (IntervalEntry) tree.getEntryAt(0);
     }
@@ -152,28 +121,12 @@ public class IntIntervalSet {
         BalancedBinaryTree.Node node = tree.getRoot();
         IntervalEntry candidate = null;
         while (node != null) {
-            if (lastEntryOf(node).exclusiveEnd < value) {
+            if (lastEntryOf(node).lastInclusive < value) {
                 node = node.getRightBranch();
                 continue;
             }
 
-            int index = findFirstIndexWithExclusiveEndAtLeast(node, value);
-            candidate = entryAt(node, index);
-            node = (index == 0) ? node.getLeftBranch() : null;
-        }
-        return candidate;
-    }
-
-    private IntervalEntry findFirstEntryEndingAfter(int value) {
-        BalancedBinaryTree.Node node = tree.getRoot();
-        IntervalEntry candidate = null;
-        while (node != null) {
-            if (lastEntryOf(node).exclusiveEnd <= value) {
-                node = node.getRightBranch();
-                continue;
-            }
-
-            int index = findFirstIndexWithExclusiveEndGreaterThan(node, value);
+            int index = findFirstIndexWithLastAtLeast(node, value);
             candidate = entryAt(node, index);
             node = (index == 0) ? node.getLeftBranch() : null;
         }
@@ -190,22 +143,6 @@ public class IntIntervalSet {
             }
 
             int index = findLastIndexWithFirstAtMost(node, value);
-            candidate = entryAt(node, index);
-            node = (index == node.getEntriesCount() - 1) ? node.getRightBranch() : null;
-        }
-        return candidate;
-    }
-
-    private IntervalEntry findLastEntryStartingBefore(int value) {
-        BalancedBinaryTree.Node node = tree.getRoot();
-        IntervalEntry candidate = null;
-        while (node != null) {
-            if (entryAt(node, 0).first >= value) {
-                node = node.getLeftBranch();
-                continue;
-            }
-
-            int index = findLastIndexWithFirstLessThan(node, value);
             candidate = entryAt(node, index);
             node = (index == node.getEntriesCount() - 1) ? node.getRightBranch() : null;
         }
@@ -270,62 +207,116 @@ public class IntIntervalSet {
         }
     }
 
+    private static boolean hasUncoveredValueBetween(IntervalEntry previousEntry, IntervalEntry nextEntry) {
+        return previousEntry.lastInclusive != Integer.MAX_VALUE
+                && previousEntry.lastInclusive + 1 < nextEntry.first;
+    }
+
+    private static int predecessorOrSelf(int value) {
+        return (value == Integer.MIN_VALUE) ? Integer.MIN_VALUE : value - 1;
+    }
+
+    private static int successorOrSelf(int value) {
+        return (value == Integer.MAX_VALUE) ? Integer.MAX_VALUE : value + 1;
+    }
+
+    /// Looks one value to the left so adjacency merges with an interval ending at `first - 1`.
+    ///
+    /// The lookup clamps at `Integer.MIN_VALUE` because there is no representable predecessor.
+    private IntervalEntry findFirstEntryEndingAtOrAfterOrAdjacent(int first) {
+        return findFirstEntryEndingAtOrAfter(predecessorOrSelf(first));
+    }
+
+    /// Looks one value to the right so adjacency merges with an interval starting at `last + 1`.
+    ///
+    /// The lookup clamps at `Integer.MAX_VALUE` because there is no representable successor.
+    private IntervalEntry findLastEntryStartingAtOrBeforeOrAdjacent(int last) {
+        return findLastEntryStartingAtOrBefore(successorOrSelf(last));
+    }
+
+    private void appendRange(int first, int last) {
+        modCount++;
+        appendEntry(new IntervalEntry(first, last));
+    }
+
+    private void prependRange(int first, int last) {
+        modCount++;
+        prependEntry(new IntervalEntry(first, last));
+    }
+
+    private void insertDisjointRange(IntervalEntry previousEntry, IntervalEntry nextEntry, int first, int last) {
+        modCount++;
+        insertEntryBetween(previousEntry, nextEntry, new IntervalEntry(first, last));
+    }
+
+    private static boolean rangeFallsBetweenCandidates(int first, IntervalEntry leftCandidate, IntervalEntry rightCandidate) {
+        return rightCandidate.first > first && hasUncoveredValueBetween(leftCandidate, rightCandidate);
+    }
+
+    private static boolean mergedRangeChangesStoredEntries(IntervalEntry firstMergedEntry, IntervalEntry lastMergedEntry,
+                                                           int mergedFirst, int mergedLastInclusive) {
+        return firstMergedEntry != lastMergedEntry
+                || mergedFirst != firstMergedEntry.first
+                || mergedLastInclusive != firstMergedEntry.lastInclusive;
+    }
+
+    private int deleteMergedFollowers(IntervalEntry firstMergedEntry, IntervalEntry lastMergedEntry,
+                                      int mergedLastInclusive) {
+        IntervalEntry afterMergedEntries = nextEntry(lastMergedEntry);
+        IntervalEntry current = nextEntry(firstMergedEntry);
+        while (current != null && current != afterMergedEntries) {
+            mergedLastInclusive = Math.max(mergedLastInclusive, current.lastInclusive);
+            IntervalEntry next = nextEntry(current);
+            tree.deleteEntry(current);
+            current = next;
+        }
+        return mergedLastInclusive;
+    }
+
+    private void mergeRangeIntoStoredEntries(IntervalEntry firstMergedEntry, IntervalEntry lastMergedEntry,
+                                             int first, int last) {
+        int mergedFirst = Math.min(first, firstMergedEntry.first);
+        int mergedLastInclusive = Math.max(last, firstMergedEntry.lastInclusive);
+        if (!mergedRangeChangesStoredEntries(firstMergedEntry, lastMergedEntry, mergedFirst, mergedLastInclusive))
+            return;
+
+        modCount++;
+        if (firstMergedEntry != lastMergedEntry)
+            mergedLastInclusive = deleteMergedFollowers(firstMergedEntry, lastMergedEntry, mergedLastInclusive);
+
+        firstMergedEntry.first = mergedFirst;
+        firstMergedEntry.lastInclusive = mergedLastInclusive;
+    }
+
     /// Adds an inclusive interval to the set.
     ///
     /// Overlapping or directly adjacent stored intervals are merged into one interval.
     /// Calls with `first > last` are ignored.
     ///
     /// @param first inclusive lower bound
-    /// @param last inclusive upper bound
+    /// @param last  inclusive upper bound
     public void add(int first, int last) {
         if (first > last)
             return;
 
-        int exclusiveEnd = last + 1;
-        IntervalEntry firstIntersectingOrAdjacent = findFirstEntryEndingAtOrAfter(first);
-        if (firstIntersectingOrAdjacent == null) {
-            modCount++;
-            appendEntry(new IntervalEntry(first, exclusiveEnd));
+        IntervalEntry firstCandidateEntry = findFirstEntryEndingAtOrAfterOrAdjacent(first);
+        if (firstCandidateEntry == null) {
+            appendRange(first, last);
             return;
         }
 
-        IntervalEntry lastIntersectingOrAdjacent = findLastEntryStartingAtOrBefore(exclusiveEnd);
-        if (lastIntersectingOrAdjacent == null) {
-            modCount++;
-            prependEntry(new IntervalEntry(first, exclusiveEnd));
+        IntervalEntry lastCandidateEntry = findLastEntryStartingAtOrBeforeOrAdjacent(last);
+        if (lastCandidateEntry == null) {
+            prependRange(first, last);
             return;
         }
 
-        if (firstIntersectingOrAdjacent.first > first
-                && lastIntersectingOrAdjacent.exclusiveEnd < firstIntersectingOrAdjacent.first) {
-            modCount++;
-            insertEntryBetween(lastIntersectingOrAdjacent, firstIntersectingOrAdjacent,
-                    new IntervalEntry(first, exclusiveEnd));
+        if (rangeFallsBetweenCandidates(first, lastCandidateEntry, firstCandidateEntry)) {
+            insertDisjointRange(lastCandidateEntry, firstCandidateEntry, first, last);
             return;
         }
 
-        int mergedFirst = Math.min(first, firstIntersectingOrAdjacent.first);
-        int mergedExclusiveEnd = Math.max(exclusiveEnd, firstIntersectingOrAdjacent.exclusiveEnd);
-        boolean changed = firstIntersectingOrAdjacent != lastIntersectingOrAdjacent
-                || mergedFirst != firstIntersectingOrAdjacent.first
-                || mergedExclusiveEnd != firstIntersectingOrAdjacent.exclusiveEnd;
-        if (!changed)
-            return;
-
-        modCount++;
-        if (firstIntersectingOrAdjacent != lastIntersectingOrAdjacent) {
-            IntervalEntry afterMergedEntries = nextEntry(lastIntersectingOrAdjacent);
-            IntervalEntry current = nextEntry(firstIntersectingOrAdjacent);
-            while (current != null && current != afterMergedEntries) {
-                mergedExclusiveEnd = Math.max(mergedExclusiveEnd, current.exclusiveEnd);
-                IntervalEntry next = nextEntry(current);
-                tree.deleteEntry(current);
-                current = next;
-            }
-        }
-
-        firstIntersectingOrAdjacent.first = mergedFirst;
-        firstIntersectingOrAdjacent.exclusiveEnd = mergedExclusiveEnd;
+        mergeRangeIntoStoredEntries(firstCandidateEntry, lastCandidateEntry, first, last);
     }
 
     private IntervalEntry nextEntry(IntervalEntry entry) {
@@ -351,7 +342,7 @@ public class IntIntervalSet {
     /// @param value value to test
     /// @return `true` when `value` falls inside at least one stored interval
     public boolean contains(int value) {
-        IntervalEntry candidate = findFirstEntryEndingAfter(value);
+        IntervalEntry candidate = findFirstEntryEndingAtOrAfter(value);
         return candidate != null && candidate.first <= value;
     }
 
@@ -404,30 +395,39 @@ public class IntIntervalSet {
     /// `first > last` are ignored.
     ///
     /// @param first inclusive lower bound
-    /// @param last inclusive upper bound
+    /// @param last  inclusive upper bound
     public void remove(int first, int last) {
         if (first > last)
             return;
 
-        int exclusiveEnd = last + 1;
-        IntervalEntry firstAffectedEntry = findFirstEntryEndingAfter(first);
+        IntervalEntry firstAffectedEntry = findFirstEntryEndingAtOrAfter(first);
         if (firstAffectedEntry == null)
             return;
 
-        IntervalEntry lastAffectedEntry = findLastEntryStartingBefore(exclusiveEnd);
+        IntervalEntry lastAffectedEntry = findLastEntryStartingAtOrBefore(last);
         if (lastAffectedEntry == null)
             return;
-        if (firstAffectedEntry != lastAffectedEntry
-                && lastAffectedEntry.exclusiveEnd <= firstAffectedEntry.first)
+        if (removalFallsBetweenStoredEntries(firstAffectedEntry, lastAffectedEntry))
             return;
 
         if (firstAffectedEntry == lastAffectedEntry) {
-            removeFromSingleEntry(firstAffectedEntry, first, exclusiveEnd);
+            removeWithinSingleEntry(firstAffectedEntry, first, last);
             return;
         }
 
+        removeAcrossAffectedEntries(firstAffectedEntry, lastAffectedEntry, first, last);
+    }
+
+    private static boolean removalFallsBetweenStoredEntries(IntervalEntry firstAffectedEntry,
+                                                            IntervalEntry lastAffectedEntry) {
+        return firstAffectedEntry != lastAffectedEntry
+                && lastAffectedEntry.lastInclusive < firstAffectedEntry.first;
+    }
+
+    private void removeAcrossAffectedEntries(IntervalEntry firstAffectedEntry, IntervalEntry lastAffectedEntry,
+                                             int first, int last) {
         boolean keepLeftFragment = firstAffectedEntry.first < first;
-        boolean keepRightFragment = lastAffectedEntry.exclusiveEnd > exclusiveEnd;
+        boolean keepRightFragment = lastAffectedEntry.lastInclusive > last;
 
         modCount++;
         IntervalEntry afterAffectedEntries = nextEntry(lastAffectedEntry);
@@ -435,37 +435,49 @@ public class IntIntervalSet {
         IntervalEntry afterDeletedEntries = keepRightFragment ? lastAffectedEntry : afterAffectedEntries;
 
         if (keepLeftFragment)
-            firstAffectedEntry.exclusiveEnd = first;
+            firstAffectedEntry.lastInclusive = first - 1;
         if (keepRightFragment)
-            lastAffectedEntry.first = exclusiveEnd;
+            lastAffectedEntry.first = last + 1;
 
         deleteEntries(firstDeletedEntry, afterDeletedEntries);
     }
 
-    private void removeFromSingleEntry(IntervalEntry entry, int first, int exclusiveEnd) {
+    private void removeWithinSingleEntry(IntervalEntry entry, int first, int last) {
         if (first <= entry.first) {
-            if (exclusiveEnd >= entry.exclusiveEnd) {
-                modCount++;
-                tree.deleteEntry(entry);
-            } else if (entry.first != exclusiveEnd) {
-                modCount++;
-                entry.first = exclusiveEnd;
-            }
+            removeFromEntryStart(entry, last);
             return;
         }
 
-        if (exclusiveEnd >= entry.exclusiveEnd) {
-            if (entry.exclusiveEnd != first) {
-                modCount++;
-                entry.exclusiveEnd = first;
-            }
+        if (last >= entry.lastInclusive) {
+            removeFromEntryEnd(entry, first);
             return;
         }
 
+        splitEntryAroundRemovedRange(entry, first, last);
+    }
+
+    private void removeFromEntryStart(IntervalEntry entry, int last) {
+        if (last >= entry.lastInclusive) {
+            modCount++;
+            tree.deleteEntry(entry);
+        } else if (entry.first != last + 1) {
+            modCount++;
+            entry.first = last + 1;
+        }
+    }
+
+    private void removeFromEntryEnd(IntervalEntry entry, int first) {
+        if (entry.lastInclusive != first - 1) {
+            modCount++;
+            entry.lastInclusive = first - 1;
+        }
+    }
+
+    private void splitEntryAroundRemovedRange(IntervalEntry entry, int first, int last) {
         modCount++;
-        IntervalEntry tail = new IntervalEntry(exclusiveEnd, entry.exclusiveEnd);
-        entry.exclusiveEnd = first;
-        insertEntryAfter(entry, tail);
+        IntervalEntry rightFragment = new IntervalEntry(last + 1, entry.lastInclusive);
+        entry.lastInclusive = first - 1;
+        insertEntryAfter(entry, rightFragment);
     }
 
     /// Returns the number of disjoint intervals currently stored in the set.

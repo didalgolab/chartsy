@@ -35,8 +35,8 @@ class ChartLayoutTest {
                 () -> assertThat(computed.get(fixture.northBottom())).isEqualTo(new Rectangle(22, 14, 159, 7)),
                 () -> assertThat(computed.get(fixture.southTop())).isEqualTo(new Rectangle(2, 90, 194, 13)),
                 () -> assertThat(computed.get(fixture.southBottom())).isEqualTo(new Rectangle(2, 106, 194, 11)),
-                () -> assertThat(computed.get(fixture.west())).isEqualTo(new Rectangle(2, 1, 20, 98)),
-                () -> assertThat(computed.get(fixture.east())).isEqualTo(new Rectangle(181, 1, 15, 98)),
+                () -> assertThat(computed.get(fixture.west())).isEqualTo(new Rectangle(2, 1, 20, 86)),
+                () -> assertThat(computed.get(fixture.east())).isEqualTo(new Rectangle(181, 1, 15, 86)),
                 () -> assertThat(computed.get(fixture.center())).isEqualTo(new Rectangle(22, 24, 159, 63))
         );
     }

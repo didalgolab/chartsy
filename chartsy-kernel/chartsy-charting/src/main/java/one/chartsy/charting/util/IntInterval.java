@@ -15,7 +15,6 @@ public interface IntInterval {
     
     /// Returns the last covered index.
     ///
-    /// The returned bound is inclusive, even when the producing collection stores its
-    /// upper bound internally in exclusive form.
+    /// The returned bound is inclusive.
     int getLast();
 }
