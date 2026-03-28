@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 
@@ -28,16 +27,36 @@ class ChartsyBenchCliTest {
     }
 
     @Test
-    void run_catalog_list_json_returns_scaffold_payload() throws IOException {
+    void run_catalog_list_json_returns_seed_catalog_payload() throws Exception {
         CommandCapture capture = run("catalog", "list", "--format", "json");
 
         assertEquals(0, capture.exitCode());
         assertTrue(capture.errText().isBlank());
-        assertEquals(expectedCatalogPayload(), objectMapper.readTree(capture.outText()));
+
+        JsonNode payload = objectMapper.readTree(capture.outText());
+
+        assertEquals("ok", payload.path("status").asText());
+        assertEquals("default", payload.path("catalogId").asText());
+        assertEquals(1, payload.path("cases").size());
+        assertEquals("double-tree-map", payload.path("cases").get(0).path("id").asText());
     }
 
     @Test
-    void run_provide_json_returns_structured_not_yet_implemented_error() throws IOException {
+    void run_catalog_show_unknown_case_returns_structured_error() throws Exception {
+        CommandCapture capture = run("catalog", "show", "--case", "missing-case", "--format", "json");
+
+        assertEquals(1, capture.exitCode());
+        assertTrue(capture.outText().isBlank());
+
+        JsonNode payload = objectMapper.readTree(capture.errText());
+        assertEquals("error", payload.path("status").asText());
+        assertEquals("MISSING_CASE", payload.path("errorCode").asText());
+        assertEquals("missing-case", payload.path("caseId").asText());
+        assertEquals("classpath:/benchmark/catalog/default-catalog.json", payload.path("catalogSource").asText());
+    }
+
+    @Test
+    void run_provide_json_returns_structured_not_yet_implemented_error() throws Exception {
         CommandCapture capture = run("provide", "--case", "double-tree-map", "--mode", "gold", "--workspace", "tmp/workspace", "--json");
 
         assertEquals(2, capture.exitCode());
@@ -53,12 +72,6 @@ class ChartsyBenchCliTest {
     @Test
     void agent_bench_snapshot_dependency_exposes_upstream_cli_entrypoint() {
         assertDoesNotThrow(() -> Class.forName("org.springaicommunity.bench.core.cli.BenchMain"));
-    }
-
-    private static JsonNode expectedCatalogPayload() throws IOException {
-        try (var input = ChartsyBenchCliTest.class.getResourceAsStream("/contracts/scaffold/catalog-list.expected.json")) {
-            return objectMapper.readTree(input);
-        }
     }
 
     private static CommandCapture run(String... args) {

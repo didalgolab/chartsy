@@ -8,6 +8,7 @@ import java.util.Optional;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import one.chartsy.bench.catalog.BenchmarkCatalog;
 
 public class ChartsyBenchCli {
 
@@ -16,11 +17,11 @@ public class ChartsyBenchCli {
             "org.springaicommunity:bench-core:0.2.0-SNAPSHOT",
             "org.springaicommunity:bench-app:0.2.0-SNAPSHOT");
     private static final String upstreamCliMainClass = "org.springaicommunity.bench.core.cli.BenchMain";
-    private static final String catalogVersion = "0.1.0-SNAPSHOT";
 
     private final PrintStream out;
     private final PrintStream err;
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final BenchmarkCatalog catalog = BenchmarkCatalog.loadDefault(objectMapper);
 
     public ChartsyBenchCli(PrintStream out, PrintStream err) {
         this.out = out;
@@ -52,7 +53,8 @@ public class ChartsyBenchCli {
 
         return switch (args[0]) {
             case "list" -> catalogList(optionValue(args, "--format").orElse("text"));
-            case "contracts", "show" -> notYetImplemented("catalog " + args[0], wantsJson(args));
+            case "show" -> catalogShow(args);
+            case "contracts" -> notYetImplemented("catalog " + args[0], wantsJson(args));
             default -> unknownCommand("catalog " + args[0], wantsJson(args));
         };
     }
@@ -63,20 +65,61 @@ public class ChartsyBenchCli {
             return 0;
         }
 
-        out.println("chartsy-refactor-bench scaffold (0 cases)");
-        out.println("Upstream CLI: " + upstreamCliMainClass);
+        out.println("chartsy-refactor-bench default catalog");
+        out.println("Purpose: " + catalog.purpose());
+        out.println("Cases: " + catalog.listEntries().size());
+        for (BenchmarkCatalog.CaseListEntry caseEntry : catalog.listEntries()) {
+            out.println("- " + caseEntry.id() + " :: " + caseEntry.title() + " [" + caseEntry.lineage().snapshotCommitAbbrev() + "]");
+        }
         return 0;
     }
 
     private Map<String, Object> catalogListPayload() {
         Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("status", "scaffold");
-        payload.put("suiteId", "chartsy-refactor-bench");
-        payload.put("catalogVersion", catalogVersion);
-        payload.put("cases", List.of());
+        payload.put("status", "ok");
+        payload.put("catalogId", catalog.catalogId());
+        payload.put("catalogVersion", catalog.catalogVersion());
+        payload.put("purpose", catalog.purpose());
+        payload.put("seedOnly", catalog.seedOnly());
+        payload.put("balancedV1Ready", catalog.balancedV1Ready());
+        payload.put("description", catalog.description());
+        payload.put("catalogSource", catalog.catalogSource());
+        payload.put("cases", catalog.listEntries());
         payload.put("supportedCommands", supportedCommands);
         payload.put("upstreamDependencies", upstreamDependencies);
         payload.put("upstreamCliMainClass", upstreamCliMainClass);
+        return payload;
+    }
+
+    private int catalogShow(String[] args) {
+        String caseId = optionValue(args, "--case").orElse(null);
+        boolean json = wantsJson(args);
+        if (caseId == null || caseId.isBlank()) {
+            return missingRequiredOption("catalog show", "--case", json);
+        }
+
+        BenchmarkCatalog.BenchmarkCase benchmarkCase = catalog.findCase(caseId);
+        if (benchmarkCase == null) {
+            return missingCase(caseId, json);
+        }
+
+        if (json) {
+            out.println(toJson(catalogShowPayload(benchmarkCase)));
+        } else {
+            out.println(benchmarkCase.id() + " :: " + benchmarkCase.title());
+            out.println("Snapshot: " + benchmarkCase.lineage().snapshotCommit());
+            out.println("Source: " + benchmarkCase.lineage().sourcePath());
+        }
+        return 0;
+    }
+
+    private Map<String, Object> catalogShowPayload(BenchmarkCatalog.BenchmarkCase benchmarkCase) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("status", "ok");
+        payload.put("catalogId", catalog.catalogId());
+        payload.put("catalogVersion", catalog.catalogVersion());
+        payload.put("catalogSource", catalog.catalogSource());
+        payload.put("case", benchmarkCase);
         return payload;
     }
 
@@ -97,6 +140,31 @@ public class ChartsyBenchCli {
         } else {
             err.println(message);
             printUsage(err);
+        }
+        return 1;
+    }
+
+    private int missingRequiredOption(String command, String option, boolean json) {
+        String message = "Missing required option " + option + " for " + command;
+        if (json) {
+            Map<String, Object> payload = errorPayload("MISSING_REQUIRED_OPTION", command, message);
+            payload.put("option", option);
+            err.println(toJson(payload));
+        } else {
+            err.println(message);
+        }
+        return 1;
+    }
+
+    private int missingCase(String caseId, boolean json) {
+        String message = "Unknown case ID '" + caseId + "' in " + catalog.catalogSource();
+        if (json) {
+            Map<String, Object> payload = errorPayload("MISSING_CASE", "catalog show", message);
+            payload.put("caseId", caseId);
+            payload.put("catalogSource", catalog.catalogSource());
+            err.println(toJson(payload));
+        } else {
+            err.println(message);
         }
         return 1;
     }
