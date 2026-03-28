@@ -1,0 +1,17 @@
+{
+  "status": "scaffold",
+  "suiteId": "chartsy-refactor-bench",
+  "catalogVersion": "0.1.0-SNAPSHOT",
+  "cases": [],
+  "supportedCommands": [
+    "catalog",
+    "provide",
+    "grade",
+    "run"
+  ],
+  "upstreamDependencies": [
+    "org.springaicommunity:bench-core:0.2.0-SNAPSHOT",
+    "org.springaicommunity:bench-app:0.2.0-SNAPSHOT"
+  ],
+  "upstreamCliMainClass": "org.springaicommunity.bench.core.cli.BenchMain"
+}
