@@ -1,6 +1,7 @@
 package one.chartsy.bench.cli;
 
 import java.io.PrintStream;
+import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -9,6 +10,7 @@ import java.util.Optional;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import one.chartsy.bench.catalog.BenchmarkCatalog;
+import one.chartsy.bench.workspace.GitSnapshotWorkspaceMaterializer;
 
 public class ChartsyBenchCli {
 
@@ -21,7 +23,8 @@ public class ChartsyBenchCli {
     private final PrintStream out;
     private final PrintStream err;
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final BenchmarkCatalog catalog = BenchmarkCatalog.loadDefault(objectMapper);
+    private final BenchmarkCatalog defaultCatalog = BenchmarkCatalog.loadDefault(objectMapper);
+    private final GitSnapshotWorkspaceMaterializer workspaceMaterializer = new GitSnapshotWorkspaceMaterializer();
 
     public ChartsyBenchCli(PrintStream out, PrintStream err) {
         this.out = out;
@@ -40,7 +43,8 @@ public class ChartsyBenchCli {
 
         return switch (args[0]) {
             case "catalog" -> handleCatalogCommand(tail(args));
-            case "provide", "grade", "run" -> notYetImplemented(args[0], wantsJson(args));
+            case "provide" -> handleProvideCommand(tail(args));
+            case "grade", "run" -> notYetImplemented(args[0], wantsJson(args));
             default -> unknownCommand(args[0], wantsJson(args));
         };
     }
@@ -66,9 +70,9 @@ public class ChartsyBenchCli {
         }
 
         out.println("chartsy-refactor-bench default catalog");
-        out.println("Purpose: " + catalog.purpose());
-        out.println("Cases: " + catalog.listEntries().size());
-        for (BenchmarkCatalog.CaseListEntry caseEntry : catalog.listEntries()) {
+        out.println("Purpose: " + defaultCatalog.purpose());
+        out.println("Cases: " + defaultCatalog.listEntries().size());
+        for (BenchmarkCatalog.CaseListEntry caseEntry : defaultCatalog.listEntries()) {
             out.println("- " + caseEntry.id() + " :: " + caseEntry.title() + " [" + caseEntry.lineage().snapshotCommitAbbrev() + "]");
         }
         return 0;
@@ -77,14 +81,14 @@ public class ChartsyBenchCli {
     private Map<String, Object> catalogListPayload() {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("status", "ok");
-        payload.put("catalogId", catalog.catalogId());
-        payload.put("catalogVersion", catalog.catalogVersion());
-        payload.put("purpose", catalog.purpose());
-        payload.put("seedOnly", catalog.seedOnly());
-        payload.put("balancedV1Ready", catalog.balancedV1Ready());
-        payload.put("description", catalog.description());
-        payload.put("catalogSource", catalog.catalogSource());
-        payload.put("cases", catalog.listEntries());
+        payload.put("catalogId", defaultCatalog.catalogId());
+        payload.put("catalogVersion", defaultCatalog.catalogVersion());
+        payload.put("purpose", defaultCatalog.purpose());
+        payload.put("seedOnly", defaultCatalog.seedOnly());
+        payload.put("balancedV1Ready", defaultCatalog.balancedV1Ready());
+        payload.put("description", defaultCatalog.description());
+        payload.put("catalogSource", defaultCatalog.catalogSource());
+        payload.put("cases", defaultCatalog.listEntries());
         payload.put("supportedCommands", supportedCommands);
         payload.put("upstreamDependencies", upstreamDependencies);
         payload.put("upstreamCliMainClass", upstreamCliMainClass);
@@ -98,9 +102,9 @@ public class ChartsyBenchCli {
             return missingRequiredOption("catalog show", "--case", json);
         }
 
-        BenchmarkCatalog.BenchmarkCase benchmarkCase = catalog.findCase(caseId);
+        BenchmarkCatalog.BenchmarkCase benchmarkCase = defaultCatalog.findCase(caseId);
         if (benchmarkCase == null) {
-            return missingCase(caseId, json);
+            return missingCase("catalog show", caseId, defaultCatalog.catalogSource(), json);
         }
 
         if (json) {
@@ -116,10 +120,84 @@ public class ChartsyBenchCli {
     private Map<String, Object> catalogShowPayload(BenchmarkCatalog.BenchmarkCase benchmarkCase) {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("status", "ok");
+        payload.put("catalogId", defaultCatalog.catalogId());
+        payload.put("catalogVersion", defaultCatalog.catalogVersion());
+        payload.put("catalogSource", defaultCatalog.catalogSource());
+        payload.put("case", benchmarkCase);
+        return payload;
+    }
+
+    private int handleProvideCommand(String[] args) {
+        boolean json = wantsJson(args);
+        String caseId = optionValue(args, "--case").orElse(null);
+        if (caseId == null || caseId.isBlank())
+            return missingRequiredOption("provide", "--case", json);
+
+        String modeValue = optionValue(args, "--mode").orElse(null);
+        if (modeValue == null || modeValue.isBlank())
+            return missingRequiredOption("provide", "--mode", json);
+
+        String workspaceValue = optionValue(args, "--workspace").orElse(null);
+        if (workspaceValue == null || workspaceValue.isBlank())
+            return missingRequiredOption("provide", "--workspace", json);
+
+        ProvideMode mode = ProvideMode.fromCliValue(modeValue);
+        if (mode == null)
+            return unsupportedMode(modeValue, json);
+
+        try {
+            BenchmarkCatalog catalog = loadCatalog(optionValue(args, "--catalog").orElse(null));
+            BenchmarkCatalog.BenchmarkCase benchmarkCase = catalog.findCase(caseId);
+            if (benchmarkCase == null)
+                return missingCase("provide", caseId, catalog.catalogSource(), json);
+
+            Path workspace = Path.of(workspaceValue).toAbsolutePath().normalize();
+            GitSnapshotWorkspaceMaterializer.MaterializationResult result =
+                    workspaceMaterializer.materialize(benchmarkCase, workspace);
+
+            if (json) {
+                out.println(toJson(providePayload(catalog, benchmarkCase, mode, result)));
+            } else {
+                out.println("Prepared case " + benchmarkCase.id() + " in " + mode.cliValue + " mode");
+                out.println("Workspace: " + result.workspace());
+                out.println("Snapshot: " + benchmarkCase.lineage().snapshotCommit());
+            }
+            return 0;
+        } catch (BenchmarkCatalog.InvalidCaseSchemaException e) {
+            return invalidCaseSchema(e, json);
+        } catch (BenchmarkCatalog.CatalogLoadingException e) {
+            return catalogLoadFailure(e, json);
+        } catch (IllegalStateException e) {
+            return provideFailure("PROVIDE_FAILED", e.getMessage(), json);
+        }
+    }
+
+    private BenchmarkCatalog loadCatalog(String catalogPath) {
+        if (catalogPath == null || catalogPath.isBlank())
+            return defaultCatalog;
+        return BenchmarkCatalog.load(Path.of(catalogPath), objectMapper);
+    }
+
+    private Map<String, Object> providePayload(
+            BenchmarkCatalog catalog,
+            BenchmarkCatalog.BenchmarkCase benchmarkCase,
+            ProvideMode mode,
+            GitSnapshotWorkspaceMaterializer.MaterializationResult result) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("status", "ok");
+        payload.put("command", "provide");
         payload.put("catalogId", catalog.catalogId());
         payload.put("catalogVersion", catalog.catalogVersion());
         payload.put("catalogSource", catalog.catalogSource());
-        payload.put("case", benchmarkCase);
+        payload.put("caseId", benchmarkCase.id());
+        payload.put("workspace", result.workspace().toString());
+        payload.put("mode", mode.cliValue);
+        payload.put("snapshotCommit", benchmarkCase.lineage().snapshotCommit());
+        payload.put("snapshotObjectId", benchmarkCase.lineage().snapshotObjectId());
+        payload.put("sourcePath", benchmarkCase.lineage().sourcePath());
+        payload.put("editScopeCount", benchmarkCase.editScope().size());
+        payload.put("validationCommandCount", benchmarkCase.validationCommands().size());
+        payload.put("preparedFiles", result.preparedFiles());
         return payload;
     }
 
@@ -156,13 +234,64 @@ public class ChartsyBenchCli {
         return 1;
     }
 
-    private int missingCase(String caseId, boolean json) {
-        String message = "Unknown case ID '" + caseId + "' in " + catalog.catalogSource();
+    private int missingCase(String command, String caseId, String catalogSource, boolean json) {
+        String message = "Unknown case ID '" + caseId + "' in " + catalogSource;
         if (json) {
-            Map<String, Object> payload = errorPayload("MISSING_CASE", "catalog show", message);
+            Map<String, Object> payload = errorPayload("MISSING_CASE", command, message);
             payload.put("caseId", caseId);
-            payload.put("catalogSource", catalog.catalogSource());
+            payload.put("catalogSource", catalogSource);
             err.println(toJson(payload));
+        } else {
+            err.println(message);
+        }
+        return 1;
+    }
+
+    private int unsupportedMode(String mode, boolean json) {
+        String message = "Unsupported mode '" + mode + "'. Supported modes: " + String.join(", ", ProvideMode.supportedValues());
+        if (json) {
+            Map<String, Object> payload = errorPayload("UNSUPPORTED_MODE", "provide", message);
+            payload.put("mode", mode);
+            payload.put("supportedModes", ProvideMode.supportedValues());
+            err.println(toJson(payload));
+        } else {
+            err.println(message);
+        }
+        return 1;
+    }
+
+    private int invalidCaseSchema(BenchmarkCatalog.InvalidCaseSchemaException e, boolean json) {
+        if (json) {
+            Map<String, Object> payload = errorPayload("INVALID_CASE_SCHEMA", "provide", e.getMessage());
+            payload.put("catalogSource", e.catalogSource());
+            payload.put("caseId", e.caseId());
+            payload.put("caseFile", e.caseSource());
+            payload.put("issues", e.issues());
+            err.println(toJson(payload));
+        } else {
+            err.println(e.getMessage());
+            for (BenchmarkCatalog.ValidationIssue issue : e.issues()) {
+                err.println(" - " + issue.fieldPath() + ": " + issue.message());
+            }
+        }
+        return 1;
+    }
+
+    private int catalogLoadFailure(BenchmarkCatalog.CatalogLoadingException e, boolean json) {
+        String message = e.getMessage();
+        if (json) {
+            Map<String, Object> payload = errorPayload("CATALOG_LOAD_FAILURE", "provide", message);
+            payload.put("catalogSource", e.catalogSource());
+            err.println(toJson(payload));
+        } else {
+            err.println(message);
+        }
+        return 1;
+    }
+
+    private int provideFailure(String errorCode, String message, boolean json) {
+        if (json) {
+            err.println(toJson(errorPayload(errorCode, "provide", message)));
         } else {
             err.println(message);
         }
@@ -229,5 +358,31 @@ public class ChartsyBenchCli {
         stream.println("  provide --case <case-id> --mode <gold|noop|live> --workspace <path> [--json]");
         stream.println("  grade --workspace <path> [--format text|json]");
         stream.println("  run --case <case-id> --mode <gold|noop|live> [--output <path>] [--json]");
+    }
+
+    private enum ProvideMode {
+        GOLD("gold"),
+        NOOP("noop"),
+        LIVE("live");
+
+        private static final List<String> supportedValues = List.of("gold", "noop", "live");
+
+        private final String cliValue;
+
+        ProvideMode(String cliValue) {
+            this.cliValue = cliValue;
+        }
+
+        private static ProvideMode fromCliValue(String cliValue) {
+            for (ProvideMode mode : values()) {
+                if (mode.cliValue.equalsIgnoreCase(cliValue))
+                    return mode;
+            }
+            return null;
+        }
+
+        private static List<String> supportedValues() {
+            return supportedValues;
+        }
     }
 }

@@ -2,7 +2,6 @@ package one.chartsy.bench.cli;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
@@ -56,17 +55,17 @@ class ChartsyBenchCliTest {
     }
 
     @Test
-    void run_provide_json_returns_structured_not_yet_implemented_error() throws Exception {
-        CommandCapture capture = run("provide", "--case", "double-tree-map", "--mode", "gold", "--workspace", "tmp/workspace", "--json");
+    void run_provide_unsupported_mode_returns_structured_error() throws Exception {
+        CommandCapture capture = run("provide", "--case", "double-tree-map", "--mode", "banana", "--workspace", "tmp/workspace", "--json");
 
-        assertEquals(2, capture.exitCode());
+        assertEquals(1, capture.exitCode());
         assertTrue(capture.outText().isBlank());
 
         JsonNode payload = objectMapper.readTree(capture.errText());
         assertEquals("error", payload.path("status").asText());
-        assertEquals("NOT_YET_IMPLEMENTED", payload.path("errorCode").asText());
+        assertEquals("UNSUPPORTED_MODE", payload.path("errorCode").asText());
         assertEquals("provide", payload.path("command").asText());
-        assertFalse(payload.path("message").asText().isBlank());
+        assertEquals("banana", payload.path("mode").asText());
     }
 
     @Test
