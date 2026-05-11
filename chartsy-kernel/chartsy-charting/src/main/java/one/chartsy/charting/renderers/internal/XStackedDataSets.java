@@ -81,22 +81,7 @@ public class XStackedDataSets {
 
         /// Finds this dataset's contribution inside the supplied x-aligned tower.
         private XStackedDataSets.StackedPoint findContribution(XStackedDataSets.StackedTower tower) {
-            ArrayList<XStackedDataSets.StackedPoint> stackedPoints = tower.contributions;
-            int upperBound = stackedPoints.size();
-            int lowerBound = 0;
-            while (upperBound > lowerBound) {
-                int midIndex = lowerBound + upperBound >> 1;
-                XStackedDataSets.StackedPoint point = stackedPoints.get(midIndex);
-                int comparison = point.dataSetIndex - sourceDataSetIndex;
-                if (comparison < 0) {
-                    lowerBound = midIndex + 1;
-                } else {
-                    if (comparison == 0)
-                        return point;
-                    upperBound = midIndex;
-                }
-            }
-            return null;
+            return XStackedDataSets.this.getContribution(tower, sourceDataSetIndex);
         }
 
         private ArrayList<DoubleTreeMap.Entry<XStackedDataSets.StackedTower>> getTowerEntries() {
@@ -438,6 +423,7 @@ public class XStackedDataSets {
         @Override
         public void map(DataSetPoint point) {
             double x = point.getXData();
+            validateSourceX(x);
             XStackedDataSets.StackedTower tower = towersByX.get(x);
             if (tower == null) {
                 point.index = -1;
@@ -640,6 +626,8 @@ public class XStackedDataSets {
     /// `stacked100Percent` switches derived y-values and baselines to percentages.
     /// `diverging` separates positive and negative accumulations, but only when
     /// `stacked100Percent` is `false`.
+    /// Source x values must not be `Double.NaN`; construction and later source-driven updates reject
+    /// them before mutating the shared tower model.
     ///
     /// @param sourceDataSets source datasets in stacking order
     /// @param renderer owning renderer whose chart batching is reused for stacked-view
@@ -664,6 +652,7 @@ public class XStackedDataSets {
     /// duplicate x values, the later source point replaces the earlier contribution before the
     /// cumulative totals for that tower are finalized.
     private void rebuildTowerModel() {
+        validateAllSourceXValues();
         towersByX.clear();
         for (int dataSetIndex = 0; dataSetIndex < sourceDataSets.length; dataSetIndex++) {
             DataSet sourceDataSet = sourceDataSets[dataSetIndex];
@@ -701,7 +690,33 @@ public class XStackedDataSets {
         return y != undefinedY && !Double.isNaN(y);
     }
 
+    private static void validateSourceX(double x) {
+        if (Double.isNaN(x))
+            throw new IllegalArgumentException("X values must not be NaN");
+    }
+
+    private static void validateSourceXValues(DataSet sourceDataSet, int firstIndex, int lastIndex) {
+        for (int sourceIndex = firstIndex; sourceIndex <= lastIndex; sourceIndex++)
+            validateSourceX(sourceDataSet.getXData(sourceIndex));
+    }
+
+    private void validateAllSourceXValues() {
+        for (DataSet sourceDataSet : sourceDataSets) {
+            DataPoints sourcePoints = sourceDataSet.getData();
+            if (sourcePoints == null)
+                continue;
+
+            try {
+                for (int pointIndex = 0, pointCount = sourcePoints.size(); pointIndex < pointCount; pointIndex++)
+                    validateSourceX(sourcePoints.getX(pointIndex));
+            } finally {
+                sourcePoints.dispose();
+            }
+        }
+    }
+
     private XStackedDataSets.StackedTower getOrCreateTower(double x) {
+        validateSourceX(x);
         XStackedDataSets.StackedTower tower = towersByX.get(x);
         if (tower == null) {
             tower = createTower();
@@ -909,6 +924,7 @@ public class XStackedDataSets {
 
     private void queueAppendRange(int dataSetIndex, int firstIndex, int lastIndex) {
         DataSet sourceDataSet = sourceDataSets[dataSetIndex];
+        validateSourceXValues(sourceDataSet, firstIndex, lastIndex);
         if (pendingAddedXValues == null)
             pendingAddedXValues = new DoubleTreeMap<>(1);
         for (int sourceIndex = firstIndex; sourceIndex <= lastIndex; sourceIndex++) {
@@ -938,6 +954,7 @@ public class XStackedDataSets {
         if (sourceDataSet.isXValuesSorted()) {
             for (int sourceIndex = firstIndex; sourceIndex <= lastIndex; sourceIndex++) {
                 double x = sourceDataSet.getXData(sourceIndex);
+                validateSourceX(x);
                 if (x > maximumKnownX)
                     return true;
                 if (!towersByX.containsKey(x))
@@ -947,6 +964,7 @@ public class XStackedDataSets {
         }
         for (int sourceIndex = firstIndex; sourceIndex <= lastIndex; sourceIndex++) {
             double x = sourceDataSet.getXData(sourceIndex);
+            validateSourceX(x);
             if (x <= maximumKnownX && !towersByX.containsKey(x))
                 return false;
         }
@@ -1019,6 +1037,7 @@ public class XStackedDataSets {
             if (sourceIndex > lastIndex)
                 return;
             double x = sourceDataSet.getXData(sourceIndex);
+            validateSourceX(x);
             XStackedDataSets.StackedTower tower = towersByX.get(x);
             if (tower == null)
                 break;
@@ -1130,7 +1149,7 @@ public class XStackedDataSets {
         int upperBound = stackedPoints.size();
         int lowerBound = 0;
         while (upperBound > lowerBound) {
-            int midIndex = lowerBound + upperBound >> 1;
+            int midIndex = (lowerBound + upperBound) >>> 1;
             XStackedDataSets.StackedPoint contribution = stackedPoints.get(midIndex);
             int comparison = contribution.dataSetIndex - dataSetIndex;
             if (comparison < 0) {
@@ -1142,6 +1161,15 @@ public class XStackedDataSets {
             }
         }
         return -1 - lowerBound;
+    }
+
+    /// Returns the tower contribution owned by `dataSetIndex`, or `null` when absent.
+    private XStackedDataSets.StackedPoint getContribution(
+            XStackedDataSets.StackedTower tower,
+            int dataSetIndex
+    ) {
+        int contributionIndex = findContributionIndex(tower, dataSetIndex);
+        return (contributionIndex < 0) ? null : tower.contributions.get(contributionIndex);
     }
 
     /// Installs one derived stacked dataset per source dataset.
@@ -1162,6 +1190,7 @@ public class XStackedDataSets {
             if (sourceIndex > lastIndex)
                 return;
             double x = sourceDataSet.getXData(sourceIndex);
+            validateSourceX(x);
             XStackedDataSets.StackedTower tower = towersByX.get(x);
             if (tower == null)
                 break;
@@ -1337,6 +1366,8 @@ public class XStackedDataSets {
             int pointCount = sourcePoints.size();
             if (pointCount <= 0)
                 return;
+            for (int pointIndex = 0; pointIndex < pointCount; pointIndex++)
+                validateSourceX(sourcePoints.getX(pointIndex));
 
             ArrayList<DoubleTreeMap.Entry<XStackedDataSets.StackedTower>> dataSetTowerEntries =
                     towerEntriesByDataSet[dataSetIndex];

@@ -2,6 +2,7 @@
 .factory
 .gradle
 .idea
+.playwright-cli
 bin
 build
 logs

@@ -15,16 +15,17 @@ import java.util.Set;
 /// ascending order.
 ///
 /// `null` values are allowed, so callers should use [#containsKey(double)] to distinguish an absent
-/// key from a present key whose value is `null`. [#getEntry(double)] exposes the live stored entry
-/// object rather than a snapshot, and [#clone()] performs a structural copy while reusing the same
-/// value references.
-public class DoubleTreeMap<V extends Object> implements Cloneable {
+/// key from a present key whose value is `null`. `Double.NaN` keys are not supported and are
+/// rejected by the direct public key-based operations. [#getEntry(double)] exposes the live stored
+/// entry object rather than a snapshot, and [#clone()] performs a structural copy while reusing the
+/// same value references.
+public class DoubleTreeMap<V> implements Cloneable {
 
     /// Shared fail-fast state for iterators that walk the map one stored entry at a time.
     ///
     /// The iterator traverses the threaded node chain rather than rebuilding a sorted snapshot, so
     /// subclasses only need to choose whether iteration moves toward larger or smaller keys.
-    static class AbstractMapIterator<V extends Object> {
+    static class AbstractMapIterator<V> {
         DoubleTreeMap<V> a;
         int b;
         DoubleTreeMap.Node<V> c;
@@ -103,7 +104,7 @@ public class DoubleTreeMap<V extends Object> implements Cloneable {
     ///
     /// The entry is retained by the map, so callers should treat it as a view of the current
     /// stored state rather than as an owned snapshot.
-    public static final class Entry<V extends Object> {
+    public static final class Entry<V> {
         double a;
         V b;
 
@@ -128,7 +129,7 @@ public class DoubleTreeMap<V extends Object> implements Cloneable {
     ///
     /// Each node stores one or two live entries plus explicit predecessor and successor links so
     /// ordered traversal can move between nodes without re-searching from the root.
-    static class Node<V extends Object> implements Cloneable {
+    static class Node<V> implements Cloneable {
         static final int a = 2;
         DoubleTreeMap.Node<V> b;
         DoubleTreeMap.Node<V> c;
@@ -169,9 +170,9 @@ public class DoubleTreeMap<V extends Object> implements Cloneable {
         }
 
         @Override
-        public Node clone() {
+        public Node<V> clone() {
             try {
-                return (Node) super.clone();
+                return (Node<V>) super.clone();
             } catch (CloneNotSupportedException e) {
                 throw new InternalError("shouldn't happen");
             }
@@ -179,7 +180,7 @@ public class DoubleTreeMap<V extends Object> implements Cloneable {
     }
 
     /// Iterator over the entire map in the direction selected by the owning map.
-    static class UnboundedEntryIterator<V extends Object> extends DoubleTreeMap.AbstractMapIterator<V>
+    static class UnboundedEntryIterator<V> extends DoubleTreeMap.AbstractMapIterator<V>
             implements Iterator<DoubleTreeMap.Entry<V>> {
 
         UnboundedEntryIterator(DoubleTreeMap<V> map) {
@@ -202,7 +203,7 @@ public class DoubleTreeMap<V extends Object> implements Cloneable {
         }
     }
 
-    static <V extends Object> DoubleTreeMap.Node<V> leftmost(DoubleTreeMap.Node<V> node) {
+    static <V> DoubleTreeMap.Node<V> leftmost(DoubleTreeMap.Node<V> node) {
         DoubleTreeMap.Node<V> current = node;
         if (current == null)
             return null;
@@ -211,7 +212,7 @@ public class DoubleTreeMap<V extends Object> implements Cloneable {
         return current;
     }
 
-    static <V extends Object> DoubleTreeMap.Node<V> rightmost(DoubleTreeMap.Node<V> node) {
+    static <V> DoubleTreeMap.Node<V> rightmost(DoubleTreeMap.Node<V> node) {
         DoubleTreeMap.Node<V> current = node;
         if (current == null)
             return null;
@@ -220,7 +221,7 @@ public class DoubleTreeMap<V extends Object> implements Cloneable {
         return current;
     }
 
-    private static <V extends Object> DoubleTreeMap.Node<V> successor(DoubleTreeMap.Node<V> node) {
+    private static <V> DoubleTreeMap.Node<V> successor(DoubleTreeMap.Node<V> node) {
         DoubleTreeMap.Node<V> current = node;
         if (current.f != null)
             return leftmost(current.f);
@@ -257,6 +258,55 @@ public class DoubleTreeMap<V extends Object> implements Cloneable {
         if (leftKey == rightKey)
             return 0;
         return -1;
+    }
+
+    /// Looks up the live entry stored for `key` after callers have validated the key.
+    ///
+    /// Each node stores at most two entries, so probing the lower and upper occupied slots is
+    /// sufficient before descending to the next child.
+    private DoubleTreeMap.Entry<V> findEntry(double key) {
+        DoubleTreeMap.Node<V> currentNode = this.e;
+        while (currentNode != null) {
+            DoubleTreeMap.Entry<V>[] entries = currentNode.k;
+            int firstIndex = currentNode.firstEntryIndex;
+            int comparison = this.compareKeys(key, entries[firstIndex].a);
+            if (comparison < 0) {
+                currentNode = currentNode.e;
+                continue;
+            }
+            if (comparison == 0)
+                return entries[firstIndex];
+
+            int lastIndex = currentNode.h;
+            if (firstIndex != lastIndex)
+                comparison = this.compareKeys(key, entries[lastIndex].a);
+            if (comparison > 0) {
+                currentNode = currentNode.f;
+                continue;
+            }
+            if (comparison == 0)
+                return entries[lastIndex];
+            return null;
+        }
+        return null;
+    }
+
+    private static void validateKey(double key) {
+        if (Double.isNaN(key))
+            throw new IllegalArgumentException("Key must not be NaN");
+    }
+
+    private static boolean valuesEqual(Object storedValue, Object candidateValue) {
+        return (storedValue != null) ? storedValue.equals(candidateValue) : candidateValue == null;
+    }
+
+    /// Returns the live stored entry for `candidate`, or `null` when either the key is absent or
+    /// the stored value differs.
+    private DoubleTreeMap.Entry<V> findMatchingEntry(DoubleTreeMap.Entry<?> candidate) {
+        DoubleTreeMap.Entry<V> storedEntry = getEntry(candidate.getKey());
+        if (storedEntry == null)
+            return null;
+        return valuesEqual(storedEntry.getValue(), candidate.getValue()) ? storedEntry : null;
     }
 
     /// Creates a fresh one-entry node for a primitive key/value pair.
@@ -532,7 +582,7 @@ public class DoubleTreeMap<V extends Object> implements Cloneable {
     /// The copy rebuilds the threaded predecessor and successor chain over cloned nodes, but it
     /// still reuses the original value references stored in each entry.
     @Override
-    public Object clone() {
+    public DoubleTreeMap<V> clone() {
         try {
             DoubleTreeMap<V> clonedMap = (DoubleTreeMap<V>) super.clone();
             clonedMap.d = null;
@@ -555,42 +605,11 @@ public class DoubleTreeMap<V extends Object> implements Cloneable {
     }
 
     /// Returns `true` when the map currently stores an entry for `key`.
+    ///
+    /// `Double.NaN` keys are rejected.
     public boolean containsKey(double key) {
-        DoubleTreeMap.Node<V> currentNode = this.e;
-        while (currentNode != null) {
-            DoubleTreeMap.Entry<V>[] entries = currentNode.k;
-            int firstIndex = currentNode.firstEntryIndex;
-            int comparison = this.compareKeys(key, entries[firstIndex].a);
-            if (comparison < 0) {
-                currentNode = currentNode.e;
-                continue;
-            }
-            if (comparison == 0)
-                return true;
-            int lastIndex = currentNode.h;
-            if (firstIndex != lastIndex)
-                comparison = this.compareKeys(key, entries[lastIndex].a);
-            if (comparison > 0) {
-                currentNode = currentNode.f;
-                continue;
-            }
-            if (comparison == 0)
-                return true;
-            int lowIndex = firstIndex + 1;
-            int highIndex = lastIndex - 1;
-            while (lowIndex <= highIndex) {
-                int middleIndex = lowIndex + highIndex >> 1;
-                comparison = this.compareKeys(key, entries[middleIndex].a);
-                if (comparison > 0)
-                    lowIndex = middleIndex + 1;
-                else if (comparison < 0)
-                    highIndex = middleIndex - 1;
-                else
-                    return true;
-            }
-            return false;
-        }
-        return false;
+        validateKey(key);
+        return findEntry(key) != null;
     }
 
     /// Removes the first stored entry from `node`.
@@ -686,39 +705,36 @@ public class DoubleTreeMap<V extends Object> implements Cloneable {
     public Set<DoubleTreeMap.Entry<V>> entrySet() {
         if (this.d == null)
             this.d = new AbstractSet<DoubleTreeMap.Entry<V>>() {
-                /* synthetic */ final DoubleTreeMap a = DoubleTreeMap.this;
-
                 @Override
                 public void clear() {
-                    this.a.clear();
+                    DoubleTreeMap.this.clear();
                 }
 
                 @Override
                 public boolean contains(Object candidate) {
                     if (!(candidate instanceof DoubleTreeMap.Entry<?> entry))
                         return false;
-                    Object storedValue = this.a.get(entry.getKey());
-                    Object candidateValue = entry.getValue();
-                    return (storedValue != null) ? storedValue.equals(candidateValue) : candidateValue == null;
+                    return DoubleTreeMap.this.findMatchingEntry(entry) != null;
                 }
 
                 @Override
                 public Iterator<DoubleTreeMap.Entry<V>> iterator() {
-                    return new DoubleTreeMap.UnboundedEntryIterator(this.a);
+                    return new DoubleTreeMap.UnboundedEntryIterator(DoubleTreeMap.this);
                 }
 
                 @Override
                 public boolean remove(Object candidate) {
-                    if (!this.contains(candidate))
+                    if (!(candidate instanceof DoubleTreeMap.Entry<?> entry))
                         return false;
-                    DoubleTreeMap.Entry<?> entry = (DoubleTreeMap.Entry<?>) candidate;
-                    this.a.remove(entry.getKey());
+                    if (DoubleTreeMap.this.findMatchingEntry(entry) == null)
+                        return false;
+                    DoubleTreeMap.this.remove(entry.getKey());
                     return true;
                 }
 
                 @Override
                 public int size() {
-                    return this.a.a;
+                    return DoubleTreeMap.this.a;
                 }
             };
         return this.d;
@@ -747,86 +763,20 @@ public class DoubleTreeMap<V extends Object> implements Cloneable {
     /// Returns the value currently stored for `key`, or `null` when the key is absent.
     ///
     /// Because `null` values are permitted, use [#containsKey(double)] to distinguish absence from
-    /// an explicit `null` mapping.
+    /// an explicit `null` mapping. `Double.NaN` keys are rejected.
     public V get(double key) {
-        DoubleTreeMap.Node<V> currentNode = this.e;
-        while (currentNode != null) {
-            DoubleTreeMap.Entry<V>[] entries = currentNode.k;
-            int firstIndex = currentNode.firstEntryIndex;
-            int comparison = this.compareKeys(key, entries[firstIndex].a);
-            if (comparison < 0) {
-                currentNode = currentNode.e;
-                continue;
-            }
-            if (comparison == 0)
-                return currentNode.k[firstIndex].b;
-            int lastIndex = currentNode.h;
-            if (firstIndex != lastIndex)
-                comparison = this.compareKeys(key, entries[lastIndex].a);
-            if (comparison > 0) {
-                currentNode = currentNode.f;
-                continue;
-            }
-            if (comparison == 0)
-                return currentNode.k[lastIndex].b;
-            int lowIndex = firstIndex + 1;
-            int highIndex = lastIndex - 1;
-            while (lowIndex <= highIndex) {
-                int middleIndex = lowIndex + highIndex >> 1;
-                comparison = this.compareKeys(key, entries[middleIndex].a);
-                if (comparison > 0)
-                    lowIndex = middleIndex + 1;
-                else if (comparison < 0)
-                    highIndex = middleIndex - 1;
-                else
-                    return currentNode.k[middleIndex].b;
-            }
-            return null;
-        }
-        return null;
+        validateKey(key);
+        DoubleTreeMap.Entry<V> entry = findEntry(key);
+        return (entry == null) ? null : entry.b;
     }
 
     /// Returns the live stored entry for `key`, or `null` when the key is absent.
     ///
     /// The returned entry is owned by the map; callers should treat it as read-only.
+    /// `Double.NaN` keys are rejected.
     public DoubleTreeMap.Entry<V> getEntry(double key) {
-        if (this.a == 0)
-            return null;
-        DoubleTreeMap.Node<V> currentNode = this.e;
-        while (currentNode != null) {
-            DoubleTreeMap.Entry<V>[] entries = currentNode.k;
-            int firstIndex = currentNode.firstEntryIndex;
-            int comparison = this.compareKeys(key, entries[firstIndex].a);
-            if (comparison < 0) {
-                currentNode = currentNode.e;
-                continue;
-            }
-            if (comparison == 0)
-                return currentNode.k[firstIndex];
-            int lastIndex = currentNode.h;
-            if (firstIndex != lastIndex)
-                comparison = this.compareKeys(key, entries[lastIndex].a);
-            if (comparison > 0) {
-                currentNode = currentNode.f;
-                continue;
-            }
-            if (comparison == 0)
-                return currentNode.k[lastIndex];
-            int lowIndex = firstIndex + 1;
-            int highIndex = lastIndex - 1;
-            while (lowIndex <= highIndex) {
-                int middleIndex = lowIndex + highIndex >> 1;
-                comparison = this.compareKeys(key, entries[middleIndex].a);
-                if (comparison > 0)
-                    lowIndex = middleIndex + 1;
-                else if (comparison < 0)
-                    highIndex = middleIndex - 1;
-                else
-                    return currentNode.k[middleIndex];
-            }
-            return null;
-        }
-        return null;
+        validateKey(key);
+        return (this.a == 0) ? null : findEntry(key);
     }
 
     /// Rotates the subtree rooted at `node` one step to the left.
@@ -1021,8 +971,9 @@ public class DoubleTreeMap<V extends Object> implements Cloneable {
     /// Associates `value` with `key` and returns the previous value for that key.
     ///
     /// Inserting a new key returns `null`. Updating an existing key replaces only the stored value;
-    /// the key's position in iteration order remains unchanged.
+    /// the key's position in iteration order remains unchanged. `Double.NaN` keys are rejected.
     public V put(double key, V value) {
+        validateKey(key);
         if (this.e == null) {
             this.e = this.createNode(key, value);
             this.a = 1;
@@ -1179,8 +1130,9 @@ public class DoubleTreeMap<V extends Object> implements Cloneable {
     /// Removes the entry for `key` and returns its previous value.
     ///
     /// A `null` result means either that the key was absent or that the removed entry stored a
-    /// `null` value.
+    /// `null` value. `Double.NaN` keys are rejected.
     public V remove(double key) {
+        validateKey(key);
         if (this.a == 0)
             return null;
         DoubleTreeMap.Node<V> currentNode = this.e;
