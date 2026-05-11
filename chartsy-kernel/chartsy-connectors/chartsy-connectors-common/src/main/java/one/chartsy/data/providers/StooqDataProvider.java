@@ -14,7 +14,11 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.OptionalDouble;
 
 import com.github.mizosoft.methanol.MoreBodyHandlers;
 import one.chartsy.*;
@@ -194,7 +198,7 @@ public class StooqDataProvider extends AbstractDataProvider implements SymbolPro
         return parseAutocompletionResponse(response.body());
     }
     
-    private List<Symbol> parseAutocompletionResponse(String response) {
+    List<Symbol> parseAutocompletionResponse(String response) {
         int i = response.indexOf('\''), j = response.lastIndexOf('\'');
         if (i < 0 || j < 0 || i == j)
             return List.of();
@@ -206,19 +210,36 @@ public class StooqDataProvider extends AbstractDataProvider implements SymbolPro
         List<Symbol> list = new ArrayList<>();
         String[] rows = response.split("\\|");
         for (String row : rows) {
-            String[] c = row.split("~");
+            String[] c = row.split("~", -1);
             if (c.length <= 2)
                 continue;
 
             var symb = new Symbol.Builder(SymbolIdentity.of(c[0]), this)
                     .displayName(c[1])
                     .exchange(c[2]);
-            if (c.length > 3 && c[3] != null && !c[3].isEmpty())
-                symb = symb.lastPrice(Double.parseDouble(c[3]));
-            if (c.length > 4 && c[4] != null && !c[4].isEmpty())
-                symb = symb.dailyChangePercentage(Double.parseDouble(c[4].replace('%',' ')));
+            parseNumericColumn(c, 3).ifPresent(symb::lastPrice);
+            parseNumericColumn(c, 4).ifPresent(symb::dailyChangePercentage);
             list.add(symb.build());
         }
         return list;
+    }
+
+    private static OptionalDouble parseNumericColumn(String[] columns, int index) {
+        if (index >= columns.length)
+            return OptionalDouble.empty();
+
+        String column = columns[index];
+        if (column == null)
+            return OptionalDouble.empty();
+
+        String value = column.strip().replace("%", "");
+        if (value.isEmpty() || value.charAt(0) == '#')
+            return OptionalDouble.empty();
+
+        try {
+            return OptionalDouble.of(Double.parseDouble(value));
+        } catch (NumberFormatException ignored) {
+            return OptionalDouble.empty();
+        }
     }
 }

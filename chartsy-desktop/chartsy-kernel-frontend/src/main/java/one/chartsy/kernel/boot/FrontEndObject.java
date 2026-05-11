@@ -3,18 +3,19 @@
 package one.chartsy.kernel.boot;
 
 import one.chartsy.kernel.Kernel;
+import one.chartsy.kernel.StartupMetrics;
 import one.chartsy.kernel.boot.config.FrontEndConfiguration;
-import org.apache.catalina.webresources.TomcatURLStreamHandlerFactory;
 import org.openide.util.Lookup;
 import org.openide.util.lookup.ServiceProvider;
-import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.boot.context.metrics.buffering.BufferingApplicationStartup;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.support.GenericApplicationContext;
 
 @ServiceProvider(service = FrontEnd.class)
 public class FrontEndObject implements FrontEnd {
 
-    private final SpringApplicationBuilder current;
+    private final ConfigurableApplicationContext current;
 
     public FrontEndObject() {
         this(Kernel.getDefault());
@@ -25,16 +26,18 @@ public class FrontEndObject implements FrontEnd {
     }
 
     public FrontEndObject(FrontEndConfiguration configuration, Kernel kernel) {
-        current = configuration.createSpringApplicationBuilder();
-        // FIXME: why do I need to do this? (fails in maven build without it)
-        TomcatURLStreamHandlerFactory.disable();
-        var ctx = (GenericApplicationContext) current.run();
+        StartupMetrics.mark("frontend:start");
+        BufferingApplicationStartup startup = StartupMetrics.createSpringTimeline(4_096);
+        var ctx = (GenericApplicationContext) configuration.createApplicationContext(startup);
+        current = ctx;
         ctx.registerBean("frontEnd", FrontEnd.class, () -> this);
         ctx.registerBean("kernel", Kernel.class, () -> kernel);
+        StartupMetrics.dumpSpringTimeline("frontend", startup);
+        StartupMetrics.mark("frontend:ready");
     }
 
     @Override
     public ApplicationContext getApplicationContext() {
-        return current.context();
+        return current;
     }
 }

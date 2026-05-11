@@ -1,0 +1,4 @@
+databaseChangeLog:
+  - include:
+      file: '0.1/20220119_0119_one_symbol_groups.xml'
+      relativeToChangelogFile: true

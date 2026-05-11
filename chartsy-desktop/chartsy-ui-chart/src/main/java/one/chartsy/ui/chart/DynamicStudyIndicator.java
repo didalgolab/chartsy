@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.SequencedMap;
-import java.util.UUID;
 
 public class DynamicStudyIndicator extends Indicator implements StudyBackedChartPlugin, ChartPluginParameterSource {
     private final String descriptorId;
@@ -46,7 +45,6 @@ public class DynamicStudyIndicator extends Indicator implements StudyBackedChart
         this.parameterValues = StudyParameterSupport.copyUiParameters(descriptor, parameterValues);
         this.markerVisibility = markerVisibility;
         this.presentationPlan = StudyPresentationPlan.empty(descriptor.axis());
-        setPanelId(UUID.randomUUID());
     }
 
     @Override
@@ -57,7 +55,7 @@ public class DynamicStudyIndicator extends Indicator implements StudyBackedChart
     @Override
     public Indicator newInstance() {
         DynamicStudyIndicator copy = new DynamicStudyIndicator(getStudyDescriptor(), parameterValues, markerVisibility);
-        copy.setPanelId(UUID.randomUUID());
+        copy.setPanelId(getPanelId());
         return copy;
     }
 
@@ -68,14 +66,15 @@ public class DynamicStudyIndicator extends Indicator implements StudyBackedChart
         StudyDescriptor descriptor = getStudyDescriptor();
         if (dataset == null) {
             presentationPlan = StudyPresentationPlan.empty(descriptor.axis());
+            setPresentationPlan(presentationPlan);
             return;
         }
 
         var outputs = StudySeriesEvaluator.evaluate(descriptor, dataset, parameterValues).outputs();
         presentationPlan = StudyPresentationFactory.createPlan(descriptor, dataset, parameterValues, outputs);
-        for (var entry : StudyPresentationFactory.createPlots(presentationPlan)) {
+        setPresentationPlan(presentationPlan);
+        for (var entry : StudyPresentationFactory.createPlots(presentationPlan))
             addPlot(entry.key(), entry.plot());
-        }
     }
 
     @Override

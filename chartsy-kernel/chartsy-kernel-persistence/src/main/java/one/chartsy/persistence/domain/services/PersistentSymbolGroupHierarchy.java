@@ -7,14 +7,16 @@ import one.chartsy.kernel.SymbolGroupHierarchy;
 import one.chartsy.persistence.domain.SymbolGroupAggregateData;
 import one.chartsy.persistence.domain.model.SymbolGroupRepository;
 import org.openide.util.NbBundle;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 
 public class PersistentSymbolGroupHierarchy implements SymbolGroupHierarchy {
 
-    @Autowired
-    private SymbolGroupRepository repository;
+    private final SymbolGroupRepository repository;
+
+    public PersistentSymbolGroupHierarchy(SymbolGroupRepository repository) {
+        this.repository = repository;
+    }
 
     /**
      * The default root context (top-most symbol group node) that is used by the

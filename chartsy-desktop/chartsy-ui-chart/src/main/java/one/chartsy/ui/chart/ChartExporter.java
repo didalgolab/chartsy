@@ -23,14 +23,16 @@ import org.w3c.dom.DOMImplementation;
 import org.w3c.dom.Document;
 
 import javax.imageio.ImageIO;
+import javax.swing.JComponent;
 import javax.swing.JLayer;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Dimension;
-import java.awt.Font;
+import java.awt.Graphics2D;
 import java.awt.LayoutManager;
+import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -228,6 +230,14 @@ public final class ChartExporter {
                                        CandleSeries dataset,
                                        ChartTemplate template,
                                        Dimension size) {
+        return createChartFrame(provider, dataset, template, size, true);
+    }
+
+    static ChartFrame createChartFrame(DataProvider provider,
+                                       CandleSeries dataset,
+                                       ChartTemplate template,
+                                       Dimension size,
+                                       boolean trimChrome) {
         return FrontEndSupport.getDefault().execute(() -> {
             var chartData = new ChartData();
             chartData.setDataProvider(provider);
@@ -247,13 +257,53 @@ public final class ChartExporter {
             chartFrame.datasetLoaded(dataset);
             layoutRecursively(chartFrame);
 
-            removeScreenshotChrome(chartFrame);
+            if (trimChrome)
+                removeScreenshotChrome(chartFrame);
             return chartFrame;
         });
     }
 
     static ChartTemplate basicChartTemplate() {
         return ChartTemplateDefaults.basicChartTemplate();
+    }
+
+    static BufferedImage renderPngImage(ChartFrame chartFrame, ExportOptions options) {
+        return FrontEndSupport.getDefault().execute(() -> {
+            Dimension size = applyDimensions(chartFrame, options);
+            layoutRecursively(chartFrame);
+            primePngLayout(chartFrame, size);
+            chartFrame.refreshChartView();
+            layoutRecursively(chartFrame);
+            return paintPngImage(chartFrame, size);
+        });
+    }
+
+    private static void primePngLayout(ChartFrame chartFrame, Dimension size) {
+        BufferedImage scratch = new BufferedImage(size.width, size.height, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = scratch.createGraphics();
+        try {
+            paintForPngExport(chartFrame, size, g);
+        } finally {
+            g.dispose();
+        }
+    }
+
+    private static BufferedImage paintPngImage(JComponent component, Dimension size) {
+        BufferedImage image = new BufferedImage(size.width, size.height, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = image.createGraphics();
+        try {
+            paintForPngExport(component, size, g);
+            return image;
+        } finally {
+            g.dispose();
+        }
+    }
+
+    private static void paintForPngExport(JComponent component, Dimension size, Graphics2D g) {
+        g.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_NORMALIZE);
+        g.setColor(component.getBackground() != null ? component.getBackground() : Color.WHITE);
+        g.fillRect(0, 0, size.width, size.height);
+        component.paint(g);
     }
 
     private static Dimension applyDimensions(ChartFrame chartFrame, ExportOptions options) {
@@ -266,12 +316,43 @@ public final class ChartExporter {
         return size;
     }
 
-    private static void layoutRecursively(Component component) {
+    static void layoutRecursively(Component component) {
+        if (isEngineLayoutRoot(component)) {
+            forceEngineLayout(component);
+            return;
+        }
         component.doLayout();
+        if (component instanceof Container container)
+            container.validate();
         if (component instanceof Container container) {
             for (Component child : container.getComponents()) {
                 layoutRecursively(child);
             }
+        }
+    }
+
+    private static boolean isEngineLayoutRoot(Component component) {
+        String className = component.getClass().getName();
+        return className.equals("one.chartsy.charting.Chart")
+                || className.equals("one.chartsy.charting.Chart$Area");
+    }
+
+    private static void forceEngineLayout(Component component) {
+        if (component instanceof one.chartsy.charting.Chart chart) {
+            chart.doLayout();
+            if (chart.getChartArea() != null && chart.getWidth() > 0 && chart.getHeight() > 0) {
+                if (chart.getChartArea().getWidth() <= 0 || chart.getChartArea().getHeight() <= 0)
+                    chart.getChartArea().setBounds(0, 0, chart.getWidth(), chart.getHeight());
+                chart.getChartArea().doLayout();
+            }
+            chart.revalidate();
+            if (chart.getChartArea() != null)
+                chart.getChartArea().revalidateLayout();
+            return;
+        }
+        if (component instanceof one.chartsy.charting.Chart.Area area) {
+            area.doLayout();
+            area.revalidateLayout();
         }
     }
 
@@ -287,8 +368,15 @@ public final class ChartExporter {
                             if (north != null)
                                 container.remove(north);
                             Component south = borderLayout.getLayoutComponent(container, BorderLayout.SOUTH);
-                            if (south != null)
+                            if (south instanceof Container southContainer && southContainer.getLayout() instanceof BorderLayout southLayout) {
+                                Component scrollbar = southLayout.getLayoutComponent(southContainer, BorderLayout.SOUTH);
+                                if (scrollbar != null)
+                                    southContainer.remove(scrollbar);
+                                if (southContainer.getComponentCount() == 0)
+                                    container.remove(southContainer);
+                            } else if (south != null) {
                                 container.remove(south);
+                            }
                             container.revalidate();
                             container.doLayout();
                         }
@@ -361,8 +449,7 @@ public final class ChartExporter {
         }
 
         private static byte[] toPng(ChartFrame chartFrame, ExportOptions options) {
-            applyDimensions(chartFrame, options);
-            BufferedImage image = FrontEndSupport.getDefault().paintComponent(chartFrame);
+            BufferedImage image = renderPngImage(chartFrame, options);
             try (var out = new ByteArrayOutputStream(128 * 1024)) {
                 ImageIO.write(image, "png", out);
                 return out.toByteArray();

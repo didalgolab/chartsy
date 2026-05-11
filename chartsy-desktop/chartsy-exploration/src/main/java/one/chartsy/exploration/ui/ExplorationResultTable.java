@@ -145,7 +145,7 @@ public class ExplorationResultTable extends ETable implements ExplorationListene
 
                         ExplorationFragment row = result.getRowAt(rowIndex);
                         Lookup.getDefault().lookup(ChartManager.class)
-                                .open(row.symbol(), TimeFrame.Period.DAILY, null);
+                                .open(row.symbol(), TimeFrame.Period.DAILY);
                     }
                 }
             }

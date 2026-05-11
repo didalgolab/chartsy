@@ -3,26 +3,51 @@
 package one.chartsy.kernel.starter;
 
 import org.openide.util.Lookup;
-import org.springframework.boot.Banner;
-import org.springframework.boot.builder.SpringApplicationBuilder;
-import org.springframework.core.io.DefaultResourceLoader;
+import org.springframework.boot.LazyInitializationBeanFactoryPostProcessor;
+import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.core.env.MapPropertySource;
+import org.springframework.core.metrics.ApplicationStartup;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public abstract class AbstractSpringApplicationBuilderFactory implements SpringApplicationBuilderFactory {
 
     @Override
-    public SpringApplicationBuilder createSpringApplicationBuilder() {
-        SpringApplicationBuilder appBuilder = new SpringApplicationBuilder(getClass())
-                .lazyInitialization(true)
-                .bannerMode(Banner.Mode.OFF)
-                .resourceLoader(new DefaultResourceLoader(Lookup.getDefault().lookup(ClassLoader.class)));
-        appBuilder.application().setAllowBeanDefinitionOverriding(true);
+    public ConfigurableApplicationContext createApplicationContext(ApplicationStartup applicationStartup, String... args) {
+        var context = new AnnotationConfigApplicationContext();
+        context.setApplicationStartup((applicationStartup != null) ? applicationStartup : ApplicationStartup.DEFAULT);
+        context.setAllowBeanDefinitionOverriding(true);
 
-        // run customizers obtained from default Lookup
-        var customizers = Lookup.getDefault().lookupAll(SpringApplicationCustomizer.class);
-        if (!customizers.isEmpty())
-            for (var customizer : customizers)
-                appBuilder = customizer.customize(appBuilder);
+        var classLoader = Lookup.getDefault().lookup(ClassLoader.class);
+        if (classLoader != null)
+            context.setClassLoader(classLoader);
 
-        return appBuilder;
+        var properties = new HashMap<>(createDefaultProperties(args));
+        if (!properties.isEmpty())
+            context.getEnvironment().getPropertySources().addLast(new MapPropertySource("chartsyDefaults", properties));
+
+        // Preserve global lazy-init without paying SpringApplication startup costs.
+        context.addBeanFactoryPostProcessor(new LazyInitializationBeanFactoryPostProcessor());
+        registerConfigurationClasses(context);
+        context.refresh();
+        return context;
+    }
+
+    protected void registerConfigurationClasses(AnnotationConfigApplicationContext context) {
+        context.register(getClass());
+    }
+
+    protected final void registerConfigurationClass(AnnotationConfigApplicationContext context, String className) {
+        try {
+            context.register(Class.forName(className, false, context.getClassLoader()));
+        } catch (ClassNotFoundException e) {
+            throw new IllegalStateException("Missing required configuration class: " + className, e);
+        }
+    }
+
+    protected Map<String, Object> createDefaultProperties(String[] args) {
+        return Map.of();
     }
 }

@@ -214,6 +214,12 @@ public class SymbolChanger extends JToolBar implements Serializable {
                 t.getMessage(), NotifyDescriptor.ERROR_MESSAGE);
         DialogDisplayer.getDefault().notify(descriptor);
     }
+
+    private void navigateHistory(int step) {
+        ChartHistoryEntry item = chartFrame.getHistory().go(step);
+        if (item != null)
+            chartFrame.navigationChange(item, -step);
+    }
     
     private static abstract class SymbolChangerAction extends AbstractAction {
         
@@ -268,10 +274,7 @@ public class SymbolChanger extends JToolBar implements Serializable {
         
         @Override
         public void actionPerformed(ActionEvent e) {
-            ChartHistoryEntry action = chartFrame.getHistory().go(-1);
-            if (action != null)
-                chartFrame.navigationChange(action);
-            
+            navigateHistory(-1);
             updateToolbar();
         }
     }
@@ -293,10 +296,7 @@ public class SymbolChanger extends JToolBar implements Serializable {
         
         @Override
         public void actionPerformed(ActionEvent e) {
-            ChartHistoryEntry item = chartFrame.getHistory().go(1);
-            if (item != null)
-                chartFrame.navigationChange(item);
-            
+            navigateHistory(1);
             updateToolbar();
         }
     }
@@ -317,9 +317,7 @@ public class SymbolChanger extends JToolBar implements Serializable {
         
         @Override
         public void actionPerformed(ActionEvent e) {
-            ChartHistoryEntry item = chartFrame.getHistory().go(step);
-            if (item != null)
-                chartFrame.navigationChange(item);
+            navigateHistory(step);
         }
     }
     

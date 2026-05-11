@@ -5,9 +5,14 @@
 package one.chartsy.ui.chart.components;
 
 import one.chartsy.ui.chart.BasicStrokes;
+import one.chartsy.ui.chart.Indicator;
 import one.chartsy.ui.chart.Overlay;
+import one.chartsy.study.StudyAxisDescriptor;
+import one.chartsy.study.StudyPresentationPlan;
 import org.junit.jupiter.api.Test;
 
+import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
 import javax.swing.JTable;
 import javax.swing.SwingUtilities;
 import java.awt.Color;
@@ -38,6 +43,28 @@ class IndicatorChooserPanelTest {
 
         assertThat(table.getValueAt(0, 7)).isEqualTo(Color.BLUE);
         assertThat(table.getValueAt(0, 4)).isEqualTo(Boolean.FALSE);
+    }
+
+    @Test
+    void paneSelectorHidesIncompatiblePanesUntilForceCombineIsEnabled() throws Exception {
+        IndicatorChooserPanel panel = new IndicatorChooserPanel();
+        DummyIndicator left = new DummyIndicator("Left", new StudyAxisDescriptor(Double.NaN, Double.NaN, false, true, new double[]{20, 40}));
+        DummyIndicator right = new DummyIndicator("Right", new StudyAxisDescriptor(Double.NaN, Double.NaN, true, true, new double[]{20, 40}));
+        left.setPanelId(1);
+        right.setPanelId(2);
+
+        SwingUtilities.invokeAndWait(() -> panel.initForm(List.of(left, right), List.of(left, right), List.of(), List.of()));
+
+        @SuppressWarnings("unchecked")
+        JComboBox<Object> paneSelector = getField(panel, "paneSelector", JComboBox.class);
+        JCheckBox forceCombine = getField(panel, "forceCombineCheckBox", JCheckBox.class);
+
+        assertThat(paneSelector.getItemCount()).isEqualTo(1);
+
+        SwingUtilities.invokeAndWait(forceCombine::doClick);
+
+        assertThat(paneSelector.getItemCount()).isEqualTo(2);
+        assertThat(paneSelector.getItemAt(1).toString()).contains("Force combine");
     }
 
     @SuppressWarnings("unchecked")
@@ -89,6 +116,45 @@ class IndicatorChooserPanelTest {
         @Override
         public boolean getMarkerVisibility() {
             return visible;
+        }
+    }
+
+    private static final class DummyIndicator extends Indicator {
+        private final String label;
+        private final StudyAxisDescriptor axis;
+
+        private DummyIndicator(String label, StudyAxisDescriptor axis) {
+            super(label);
+            this.label = label;
+            this.axis = axis;
+            setPresentationPlan(StudyPresentationPlan.empty(axis));
+        }
+
+        @Override
+        public String getLabel() {
+            return label;
+        }
+
+        @Override
+        public DummyIndicator newInstance() {
+            DummyIndicator copy = new DummyIndicator(label, axis);
+            copy.setPanelId(getPanelId());
+            return copy;
+        }
+
+        @Override
+        public void calculate() {
+            setPresentationPlan(StudyPresentationPlan.empty(axis));
+        }
+
+        @Override
+        public boolean getMarkerVisibility() {
+            return false;
+        }
+
+        @Override
+        public double[] getStepValues(one.chartsy.ui.chart.ChartContext cf) {
+            return axis.steps();
         }
     }
 }

@@ -1,7 +1,13 @@
 databaseChangeLog:
-  - includeAll:
-      path: '0.1'
+  - include:
+      file: '0.1/20220119_0119_one_symbol_groups.xml'
       relativeToChangelogFile: true
-  - includeAll:
-      path: '0.2'
+  - include:
+      file: '0.1/20220410_1343_runners.xml'
+      relativeToChangelogFile: true
+  - include:
+      file: '0.2/20260310_2130_rename_runner_key.xml'
+      relativeToChangelogFile: true
+  - include:
+      file: '0.2/20260311_0100_chart_templates.xml'
       relativeToChangelogFile: true

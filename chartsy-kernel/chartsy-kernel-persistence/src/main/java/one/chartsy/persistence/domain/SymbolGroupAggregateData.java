@@ -8,23 +8,21 @@ import one.chartsy.*;
 import one.chartsy.data.provider.DataProvider;
 import one.chartsy.data.provider.DataProviderLoader;
 import one.chartsy.data.provider.HierarchicalConfiguration;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
+import org.springframework.data.relational.core.mapping.Table;
 
-import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.*;
-
-import static jakarta.persistence.GenerationType.SEQUENCE;
 import static one.chartsy.SymbolGroupContent.Type.DATA_PROVIDER_FOLDER;
 import static one.chartsy.SymbolGroupContent.Type.FOLDER;
 
 @Getter
 @Setter
-@Entity
-@Table(name = "ONE_SYMBOL_GROUPS")
+@Table("ONE_SYMBOL_GROUPS")
 public class SymbolGroupAggregateData implements SymbolGroupContent {
+
     @Id
-    @GeneratedValue(strategy = SEQUENCE, generator = "ONE_SYMBOL_GROUP_IDS")
-    @SequenceGenerator(name = "ONE_SYMBOL_GROUP_IDS", sequenceName = "ONE_SYMBOL_GROUP_IDS")
     private Long id;
     private Long parentGroupId;
     private String name;
@@ -37,17 +35,14 @@ public class SymbolGroupAggregateData implements SymbolGroupContent {
     @Transient
     private LocalDateTime removed;
 
-    @PrePersist
     public void markNewlyCreated() {
         created = LocalDateTime.now();
     }
 
-    @PreUpdate
     public void markModified() {
         lastModified = LocalDateTime.now();
     }
 
-    @PreRemove
     public void markRemoved() {
         if (removed == null)
             removed = LocalDateTime.now();

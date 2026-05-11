@@ -4,12 +4,15 @@
  */
 package one.chartsy.ui.chart;
 
+import one.chartsy.kernel.StartupMetrics;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.awt.Color;
 import java.awt.Font;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -17,6 +20,7 @@ import java.util.Objects;
  */
 public final class ChartTemplateDefaults {
     private static final Logger log = LogManager.getLogger(ChartTemplateDefaults.class);
+    private static final String BASE_CHART_NAME = "Base Chart";
     private static final String BASIC_CHART_NAME = "Basic Chart";
     private static final String DEFAULT_CHART = "Candle Stick";
     private static final List<String> DEFAULT_OVERLAYS = List.of(
@@ -31,14 +35,39 @@ public final class ChartTemplateDefaults {
     private ChartTemplateDefaults() {
     }
 
-    public static ChartTemplate basicChartTemplate() {
-        ChartTemplate template = new ChartTemplate(BASIC_CHART_NAME);
-        template.setChartProperties(createChartProperties());
-        template.setChart(Objects.requireNonNull(ChartManager.getDefault().getChart(DEFAULT_CHART), "default chart"));
+    public static ChartTemplate baseChartTemplate() {
+        return baseChartTemplate(BASE_CHART_NAME);
+    }
 
+    public static ChartTemplate baseChartTemplate(String name) {
+        ChartTemplate template = new ChartTemplate(Objects.requireNonNull(name, "name"));
+        template.setChartProperties(defaultChartProperties());
+        template.setChart(Objects.requireNonNull(ChartManager.getDefault().getChart(defaultChartName()), "default chart"));
+        return template;
+    }
+
+    public static String defaultChartName() {
+        return DEFAULT_CHART;
+    }
+
+    public static ChartProperties defaultChartProperties() {
+        return createChartProperties();
+    }
+
+    public static ChartTemplate basicChartTemplate() {
+        StartupMetrics.mark("chartTemplates:basicTemplate:create:start");
+        ChartTemplate template = baseChartTemplate(BASIC_CHART_NAME);
         StudyRegistry studies = StudyRegistry.getDefault();
-        addOverlays(template, studies);
-        addIndicators(template, studies);
+        StartupMetrics.mark("chartTemplates:basicTemplate:registry:ready");
+        Map<String, Overlay> overlaysByName = overlaysByName(studies);
+        StartupMetrics.mark("chartTemplates:basicTemplate:overlaysLookup:ready");
+        addOverlays(template, overlaysByName);
+        StartupMetrics.mark("chartTemplates:basicTemplate:overlaysApplied:ready");
+        Map<String, Indicator> indicatorsByName = indicatorsByName(studies);
+        StartupMetrics.mark("chartTemplates:basicTemplate:indicatorsLookup:ready");
+        addIndicators(template, indicatorsByName);
+        StartupMetrics.mark("chartTemplates:basicTemplate:indicatorsApplied:ready");
+        StartupMetrics.mark("chartTemplates:basicTemplate:create:ready");
         return template;
     }
 
@@ -48,7 +77,7 @@ public final class ChartTemplateDefaults {
         props.setAxisStrokeIndex(0);
         props.setAxisLogarithmicFlag(true);
 
-        props.setBarWidth(4.0);
+        props.setBarWidth(PixelPerfectCandleGeometry.DEFAULT_BODY_WIDTH);
         props.setBarColor(new Color(0x2e3436));
         props.setBarStrokeIndex(0);
         props.setBarVisibility(true);
@@ -76,9 +105,9 @@ public final class ChartTemplateDefaults {
         return props;
     }
 
-    private static void addOverlays(ChartTemplate template, StudyRegistry studies) {
+    private static void addOverlays(ChartTemplate template, Map<String, Overlay> overlaysByName) {
         for (String name : DEFAULT_OVERLAYS) {
-            Overlay overlay = studies.getOverlay(name);
+            Overlay overlay = overlaysByName.get(name);
             if (overlay != null)
                 template.addOverlay(overlay);
             else
@@ -86,13 +115,31 @@ public final class ChartTemplateDefaults {
         }
     }
 
-    private static void addIndicators(ChartTemplate template, StudyRegistry studies) {
+    private static void addIndicators(ChartTemplate template, Map<String, Indicator> indicatorsByName) {
         for (String name : DEFAULT_INDICATORS) {
-            Indicator indicator = studies.getIndicator(name);
+            Indicator indicator = indicatorsByName.get(name);
             if (indicator != null)
                 template.addIndicator(indicator);
             else
                 log.warn("Skipping unavailable default indicator `{}`", name);
         }
+    }
+
+    private static Map<String, Overlay> overlaysByName(StudyRegistry studies) {
+        var overlaysByName = new LinkedHashMap<String, Overlay>();
+        for (Overlay overlay : studies.getOverlaysList()) {
+            if (overlay != null)
+                overlaysByName.putIfAbsent(overlay.getName(), overlay);
+        }
+        return overlaysByName;
+    }
+
+    private static Map<String, Indicator> indicatorsByName(StudyRegistry studies) {
+        var indicatorsByName = new LinkedHashMap<String, Indicator>();
+        for (Indicator indicator : studies.getIndicatorsList()) {
+            if (indicator != null)
+                indicatorsByName.putIfAbsent(indicator.getName(), indicator);
+        }
+        return indicatorsByName;
     }
 }

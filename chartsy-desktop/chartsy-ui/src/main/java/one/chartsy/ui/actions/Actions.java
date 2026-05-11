@@ -25,8 +25,10 @@ public class Actions {
 
                 if (!dialog.isVisible()) {
                     var symbols = dialog.getSelectedSymbols();
-                    Lookup.getDefault().lookup(ChartManager.class)
-                            .open(symbols, TimeFrame.Period.DAILY);
+                    if (!symbols.isEmpty()) {
+                        Lookup.getDefault().lookup(ChartManager.class)
+                                .open(symbols, TimeFrame.Period.DAILY, dialog.getChartOpenOptions());
+                    }
                 }
             }
         };

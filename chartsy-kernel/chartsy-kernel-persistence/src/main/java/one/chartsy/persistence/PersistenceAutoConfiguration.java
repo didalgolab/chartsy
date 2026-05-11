@@ -3,41 +3,322 @@
 package one.chartsy.persistence;
 
 import liquibase.integration.spring.SpringLiquibase;
+import one.chartsy.SymbolGroupContent;
+import one.chartsy.kernel.StartupMetrics;
 import one.chartsy.kernel.config.KernelConfiguration;
+import one.chartsy.persistence.domain.ChartTemplateAggregateData;
+import one.chartsy.persistence.domain.RunnerAggregateData;
+import one.chartsy.persistence.domain.SymbolGroupAggregateData;
+import one.chartsy.persistence.domain.model.ChartTemplateRepository;
+import one.chartsy.persistence.domain.model.GeneratedChartTemplateRepository;
+import one.chartsy.persistence.domain.model.GeneratedRunnerRepository;
+import one.chartsy.persistence.domain.model.GeneratedSymbolGroupRepository;
+import one.chartsy.persistence.domain.model.RunnerRepository;
+import one.chartsy.persistence.domain.model.SpringGeneratedChartTemplateRepository;
+import one.chartsy.persistence.domain.model.SpringGeneratedRunnerRepository;
+import one.chartsy.persistence.domain.model.SpringGeneratedSymbolGroupRepository;
+import one.chartsy.persistence.domain.model.SymbolGroupRepository;
 import one.chartsy.persistence.domain.services.PersistentSymbolGroupHierarchy;
-import one.chartsy.persistence.event.HibernateEntityEventPublisher;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.beans.factory.BeanFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.data.convert.ReadingConverter;
+import org.springframework.data.convert.WritingConverter;
+import org.springframework.data.jdbc.core.convert.DataAccessStrategy;
+import org.springframework.data.jdbc.core.convert.JdbcConverter;
+import org.springframework.data.jdbc.core.convert.JdbcCustomConversions;
+import org.springframework.data.jdbc.core.mapping.JdbcMappingContext;
+import org.springframework.data.jdbc.repository.QueryMappingConfiguration;
+import org.springframework.data.jdbc.repository.config.AbstractJdbcConfiguration;
+import org.springframework.data.jdbc.repository.support.JdbcRepositoryFactory;
+import org.springframework.data.mapping.callback.EntityCallbacks;
+import org.springframework.data.relational.core.dialect.Dialect;
+import org.springframework.data.relational.core.dialect.H2Dialect;
+import org.springframework.data.relational.core.mapping.event.BeforeConvertCallback;
+import org.springframework.core.convert.converter.Converter;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.sql.DataSource;
+import java.sql.SQLException;
+import java.util.List;
+import java.util.Set;
 
 @AutoConfiguration
 @ConditionalOnBean(KernelConfiguration.class)
-@EnableJpaRepositories(basePackages = "one.chartsy.persistence.domain.model")
-@EntityScan(basePackages = "one.chartsy.persistence.domain")
-public class PersistenceAutoConfiguration {
+public class PersistenceAutoConfiguration extends AbstractJdbcConfiguration {
 
     @Bean
-    public PersistentSymbolGroupHierarchy symbolGroupHierarchy() {
-        return new PersistentSymbolGroupHierarchy();
+    public DataSource dataSource() {
+        return SharedPersistenceBootstrap.dataSource();
     }
 
     @Bean
-    @Lazy(false)
-    public HibernateEntityEventPublisher hibernateEntityEventPublisher() {
-        return new HibernateEntityEventPublisher();
+    public NamedParameterJdbcOperations namedParameterJdbcOperations(DataSource dataSource) {
+        return new NamedParameterJdbcTemplate(dataSource);
+    }
+
+    @Bean
+    public PlatformTransactionManager transactionManager(DataSource dataSource) {
+        return new DataSourceTransactionManager(dataSource);
+    }
+
+    @Bean
+    public GeneratedSymbolGroupRepository generatedSymbolGroupRepository(
+            DataAccessStrategy dataAccessStrategy,
+            JdbcMappingContext mappingContext,
+            JdbcConverter jdbcConverter,
+            NamedParameterJdbcOperations jdbcOperations,
+            ApplicationEventPublisher eventPublisher,
+            BeanFactory beanFactory
+    ) {
+        return createRepository(
+                GeneratedSymbolGroupRepository.class,
+                dataAccessStrategy,
+                mappingContext,
+                jdbcConverter,
+                jdbcOperations,
+                eventPublisher,
+                beanFactory
+        );
+    }
+
+    @Bean
+    public GeneratedRunnerRepository generatedRunnerRepository(
+            DataAccessStrategy dataAccessStrategy,
+            JdbcMappingContext mappingContext,
+            JdbcConverter jdbcConverter,
+            NamedParameterJdbcOperations jdbcOperations,
+            ApplicationEventPublisher eventPublisher,
+            BeanFactory beanFactory
+    ) {
+        return createRepository(
+                GeneratedRunnerRepository.class,
+                dataAccessStrategy,
+                mappingContext,
+                jdbcConverter,
+                jdbcOperations,
+                eventPublisher,
+                beanFactory
+        );
+    }
+
+    @Bean
+    public GeneratedChartTemplateRepository generatedChartTemplateRepository(
+            DataAccessStrategy dataAccessStrategy,
+            JdbcMappingContext mappingContext,
+            JdbcConverter jdbcConverter,
+            NamedParameterJdbcOperations jdbcOperations,
+            ApplicationEventPublisher eventPublisher,
+            BeanFactory beanFactory
+    ) {
+        return createRepository(
+                GeneratedChartTemplateRepository.class,
+                dataAccessStrategy,
+                mappingContext,
+                jdbcConverter,
+                jdbcOperations,
+                eventPublisher,
+                beanFactory
+        );
+    }
+
+    @Bean
+    public SymbolGroupRepository symbolGroupRepository(
+            GeneratedSymbolGroupRepository delegate,
+            ApplicationEventPublisher eventPublisher,
+            SpringLiquibase liquibase
+    ) {
+        return new SpringGeneratedSymbolGroupRepository(delegate, eventPublisher);
+    }
+
+    @Bean
+    public RunnerRepository runnerRepository(GeneratedRunnerRepository delegate, SpringLiquibase liquibase) {
+        return new SpringGeneratedRunnerRepository(delegate);
+    }
+
+    @Bean
+    public ChartTemplateRepository chartTemplateRepository(
+            GeneratedChartTemplateRepository delegate,
+            SpringLiquibase liquibase
+    ) {
+        return new SpringGeneratedChartTemplateRepository(delegate);
+    }
+
+    @Bean
+    public PersistentSymbolGroupHierarchy symbolGroupHierarchy(SymbolGroupRepository repository, SpringLiquibase liquibase) {
+        return new PersistentSymbolGroupHierarchy(repository);
     }
 
     @Bean
     public SpringLiquibase liquibase(DataSource dataSource) {
-        SpringLiquibase liquibase = new SpringLiquibase();
+        SpringLiquibase liquibase = new BootstrappedSpringLiquibase("kernelContext:liquibase");
         liquibase.setDataSource(dataSource);
         liquibase.setChangeLog("classpath:db/changelog/db.changelog-master.yaml");
 
         return liquibase;
+    }
+
+    @Bean
+    public PersistenceReadyMarker persistenceReadyMarker(
+            RunnerRepository runnerRepository,
+            ChartTemplateRepository chartTemplateRepository,
+            PlatformTransactionManager transactionManager
+    ) {
+        StartupMetrics.mark("kernelContext:persistenceReady");
+        return new PersistenceReadyMarker();
+    }
+
+    @Override
+    @Bean
+    public JdbcCustomConversions jdbcCustomConversions() {
+        return new JdbcCustomConversions(List.of(
+                new SymbolGroupContentTypeReadingConverter(),
+                new SymbolGroupContentTypeWritingConverter()
+        ));
+    }
+
+    @Override
+    @Bean
+    public Dialect jdbcDialect(NamedParameterJdbcOperations operations) {
+        return H2Dialect.INSTANCE;
+    }
+
+    @Bean
+    public BeforeConvertCallback<SymbolGroupAggregateData> symbolGroupAggregateBeforeConvert(DataSource dataSource) {
+        return aggregate -> {
+            if (aggregate.getId() == null) {
+                aggregate.setId(nextId(dataSource, "ONE_SYMBOL_GROUP_IDS"));
+                aggregate.markNewlyCreated();
+            } else {
+                aggregate.markModified();
+            }
+            return aggregate;
+        };
+    }
+
+    @Bean
+    public BeforeConvertCallback<RunnerAggregateData> runnerAggregateBeforeConvert(DataSource dataSource) {
+        return aggregate -> {
+            if (aggregate.getId() == null) {
+                aggregate.setId(nextId(dataSource, "ONE_RUNNER_IDS"));
+                aggregate.markNewlyCreated();
+            } else {
+                aggregate.markModified();
+            }
+            return aggregate;
+        };
+    }
+
+    @Bean
+    public BeforeConvertCallback<ChartTemplateAggregateData> chartTemplateAggregateBeforeConvert(DataSource dataSource) {
+        return aggregate -> {
+            if (aggregate.getId() == null) {
+                aggregate.setId(nextId(dataSource, "ONE_CHART_TEMPLATE_IDS"));
+                aggregate.markNewlyCreated();
+            } else {
+                aggregate.markModified();
+            }
+            return aggregate;
+        };
+    }
+
+    @Override
+    protected Set<Class<?>> getInitialEntitySet() {
+        return Set.of(
+                SymbolGroupAggregateData.class,
+                RunnerAggregateData.class,
+                ChartTemplateAggregateData.class
+        );
+    }
+
+    private <T> T createRepository(
+            Class<T> repositoryType,
+            DataAccessStrategy dataAccessStrategy,
+            JdbcMappingContext mappingContext,
+            JdbcConverter jdbcConverter,
+            NamedParameterJdbcOperations jdbcOperations,
+            ApplicationEventPublisher eventPublisher,
+            BeanFactory beanFactory
+    ) {
+        var stagePrefix = "kernelContext:repository:" + repositoryType.getSimpleName();
+        StartupMetrics.mark(stagePrefix + ":start");
+        var factory = new JdbcRepositoryFactory(
+                dataAccessStrategy,
+                mappingContext,
+                jdbcConverter,
+                H2Dialect.INSTANCE,
+                eventPublisher,
+                jdbcOperations
+        );
+        factory.setBeanFactory(beanFactory);
+        factory.setEntityCallbacks(EntityCallbacks.create(beanFactory));
+        factory.setQueryMappingConfiguration(QueryMappingConfiguration.EMPTY);
+        try {
+            return factory.getRepository(repositoryType);
+        } finally {
+            StartupMetrics.mark(stagePrefix + ":ready");
+        }
+    }
+
+    private static long nextId(DataSource dataSource, String sequenceName) {
+        try (var connection = dataSource.getConnection();
+             var statement = connection.prepareStatement("SELECT NEXT VALUE FOR " + sequenceName);
+             var resultSet = statement.executeQuery()) {
+            if (!resultSet.next())
+                throw new IllegalStateException("Sequence " + sequenceName + " did not return a value");
+            return resultSet.getLong(1);
+        } catch (SQLException e) {
+            throw new IllegalStateException("Cannot obtain next value from " + sequenceName, e);
+        }
+    }
+
+    @ReadingConverter
+    static final class SymbolGroupContentTypeReadingConverter implements Converter<String, SymbolGroupContent.Type> {
+
+        @Override
+        public SymbolGroupContent.Type convert(String value) {
+            try {
+                int ordinal = Integer.parseInt(value);
+                return SymbolGroupContent.Type.values()[ordinal];
+            } catch (NumberFormatException ignored) {
+                return SymbolGroupContent.Type.valueOf(value);
+            }
+        }
+    }
+
+    @WritingConverter
+    static final class SymbolGroupContentTypeWritingConverter implements Converter<SymbolGroupContent.Type, String> {
+
+        @Override
+        public String convert(SymbolGroupContent.Type value) {
+            return Integer.toString(value.ordinal());
+        }
+    }
+
+    record PersistenceReadyMarker() {
+    }
+
+    static final class BootstrappedSpringLiquibase extends SpringLiquibase {
+
+        private final String stagePrefix;
+
+        BootstrappedSpringLiquibase(String stagePrefix) {
+            this.stagePrefix = stagePrefix;
+        }
+
+        @Override
+        public void afterPropertiesSet() {
+            StartupMetrics.mark(stagePrefix + ":start");
+            try {
+                SharedPersistenceBootstrap.awaitReady();
+            } finally {
+                StartupMetrics.mark(stagePrefix + ":ready");
+            }
+        }
     }
 }

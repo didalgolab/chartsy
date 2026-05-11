@@ -12,6 +12,8 @@
     <artifactId>kernel</artifactId>
     <packaging>pom</packaging>
     <modules>
+        <module>chartsy-charting</module>
+        <module>chartsy-charting-financial</module>
         <module>chartsy-connectors</module>
         <module>chartsy-core</module>
         <module>chartsy-core-ml</module>

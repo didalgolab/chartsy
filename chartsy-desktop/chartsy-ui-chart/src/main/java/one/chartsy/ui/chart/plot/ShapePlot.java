@@ -3,14 +3,13 @@
 package one.chartsy.ui.chart.plot;
 
 import java.awt.Color;
-import java.awt.Graphics2D;
-import java.awt.Rectangle;
-import java.awt.Stroke;
 import java.util.function.IntFunction;
 
 import one.chartsy.base.DoubleDataset;
 import one.chartsy.core.Range;
 import one.chartsy.ui.chart.ChartContext;
+import one.chartsy.ui.chart.PlotRenderContext;
+import one.chartsy.ui.chart.PlotRenderTarget;
 import one.chartsy.ui.chart.data.VisibleValues;
 
 public class ShapePlot extends AbstractPlot {
@@ -34,23 +33,7 @@ public class ShapePlot extends AbstractPlot {
     }
 
     @Override
-    public void paint(Graphics2D g, ChartContext cf, Range range, Rectangle bounds) {
-        boolean isLog = cf.getChartProperties().getAxisLogarithmicFlag();
-        Stroke old = g.getStroke();
-        g.setPaint(primaryColor);
-        VisibleValues view = cf.getChartData().getVisible().getVisibleDataset(yCoordinates);
-
-        for (int index = 0; index < view.getLength(); index++) {
-            double value = view.getValueAt(index);
-            if (!Double.isNaN(value)) {
-                double x = cf.getChartData().getX(index, bounds);
-                double y = cf.getChartData().getY(value, bounds, range, isLog);
-
-                Marker marker = markerProvider.apply(index);
-                marker.draw(g, (int)(0.5 + x), (int)(0.5 + y), DEFAULT_MARKER_SIZE, primaryColor);
-
-            }
-        }
-        g.setStroke(old);
+    public void render(PlotRenderTarget target, PlotRenderContext context) {
+        target.addScatter(yCoordinates, markerProvider, primaryColor, DEFAULT_MARKER_SIZE, context);
     }
 }

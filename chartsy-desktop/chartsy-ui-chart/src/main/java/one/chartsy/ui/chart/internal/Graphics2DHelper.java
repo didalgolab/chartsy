@@ -15,8 +15,14 @@ import java.awt.geom.Rectangle2D;
 public class Graphics2DHelper {
 
     public static Graphics2D prepareGraphics2D(Graphics g) {
+        return prepareGraphics2D(g, true);
+    }
+
+    public static Graphics2D prepareGraphics2D(Graphics g, boolean antialias) {
         Graphics2D g2 = (Graphics2D) g;
-        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setRenderingHint(
+                RenderingHints.KEY_ANTIALIASING,
+                antialias ? RenderingHints.VALUE_ANTIALIAS_ON : RenderingHints.VALUE_ANTIALIAS_OFF);
         g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
         g2.setRenderingHint(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_DEFAULT);
         g2.setPaintMode();

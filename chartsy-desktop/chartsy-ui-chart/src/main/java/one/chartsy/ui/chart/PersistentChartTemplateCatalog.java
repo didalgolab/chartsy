@@ -1,0 +1,393 @@
+/*
+ * Copyright 2026 Mariusz Bernacki <consulting@didalgo.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
+package one.chartsy.ui.chart;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import one.chartsy.kernel.StartupMetrics;
+import one.chartsy.kernel.Kernel;
+import one.chartsy.persistence.domain.ChartTemplateAggregateData;
+import one.chartsy.persistence.domain.model.ChartTemplateRepository;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.openide.util.lookup.ServiceProvider;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
+
+import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.UUID;
+import java.util.function.Consumer;
+import java.util.function.Function;
+
+@ServiceProvider(service = ChartTemplateCatalog.class)
+public class PersistentChartTemplateCatalog implements ChartTemplateCatalog {
+    private static final Logger log = LogManager.getLogger(PersistentChartTemplateCatalog.class);
+
+    private final Gson gson = new GsonBuilder().create();
+    private final ChartTemplatePayloadMapper mapper = ChartTemplatePayloadMapper.getDefault();
+    private volatile String builtInPayloadJson;
+
+    @Override
+    public List<ChartTemplateSummary> listTemplates() {
+        StartupMetrics.mark("chartTemplates:list:transactionTemplate:start");
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager());
+        StartupMetrics.mark("chartTemplates:list:transactionTemplate:ready");
+        return transactionTemplate.execute(status -> {
+            StartupMetrics.mark("chartTemplates:list:repository:start");
+            ChartTemplateRepository repo = repository();
+            StartupMetrics.mark("chartTemplates:list:repository:ready");
+            StartupMetrics.mark("chartTemplates:list:ensureInitialized:start");
+            ensureInitialized(repo);
+            StartupMetrics.mark("chartTemplates:list:ensureInitialized:ready");
+            StartupMetrics.mark("chartTemplates:list:query:start");
+            var entities = repo.findAllByOrderByDefaultTemplateDescNameAsc();
+            StartupMetrics.mark("chartTemplates:list:query:ready");
+            StartupMetrics.mark("chartTemplates:list:summaries:start");
+            var summaries = entities.stream()
+                    .map(mapper::toSummary)
+                    .toList();
+            StartupMetrics.mark("chartTemplates:list:summaries:ready");
+            return summaries;
+        });
+    }
+
+    @Override
+    public LoadedTemplate getTemplate(UUID templateKey) {
+        return inTransaction(repo -> {
+            ensureInitialized(repo);
+            ChartTemplateAggregateData entity = repo.findByTemplateKey(Objects.requireNonNull(templateKey, "templateKey"))
+                    .orElseThrow(() -> new IllegalArgumentException("Unknown chart template: " + templateKey));
+            return toLoadedTemplate(entity);
+        });
+    }
+
+    @Override
+    public LoadedTemplate getDefaultTemplate() {
+        return inTransaction(repo -> {
+            ensureInitialized(repo);
+            return toLoadedTemplate(findDefaultEntity(repo));
+        });
+    }
+
+    @Override
+    public LoadedTemplate resolveTemplate(UUID templateKey) {
+        return inTransaction(repo -> {
+            ensureInitialized(repo);
+            ChartTemplateAggregateData entity = null;
+            if (templateKey != null)
+                entity = repo.findByTemplateKey(templateKey).orElse(null);
+            if (entity == null)
+                entity = findDefaultEntity(repo);
+            return toLoadedTemplate(entity);
+        });
+    }
+
+    @Override
+    public ChartTemplateSummary createTemplate(ChartTemplate chartTemplate) {
+        return inTransaction(repo -> {
+            ensureInitialized(repo);
+            TemplateContent content = describeTemplate(chartTemplate);
+            if (repo.existsByNameKey(content.nameKey()))
+                throw new IllegalArgumentException("Chart template already exists: " + content.normalizedName());
+
+            ChartTemplateAggregateData entity = new ChartTemplateAggregateData();
+            entity.setTemplateKey(UUID.randomUUID());
+            entity.setName(content.normalizedName());
+            entity.setNameKey(content.nameKey());
+            entity.setOrigin(ChartTemplateAggregateData.Origin.USER);
+            entity.setDefaultTemplate(false);
+            applyTemplateContent(entity, content);
+            return mapper.toSummary(repo.save(entity));
+        });
+    }
+
+    @Override
+    public ChartTemplateSummary updateTemplate(UUID templateKey, ChartTemplate chartTemplate) {
+        return inTransaction(repo -> {
+            ensureInitialized(repo);
+            ChartTemplateAggregateData entity = repo.findByTemplateKey(Objects.requireNonNull(templateKey, "templateKey"))
+                    .orElseThrow(() -> new IllegalArgumentException("Unknown chart template: " + templateKey));
+            if (entity.getOrigin() == ChartTemplateAggregateData.Origin.SYSTEM)
+                throw new IllegalStateException("The built-in chart template is immutable");
+
+            TemplateContent content = describeTemplate(chartTemplate);
+            if (repo.existsByNameKeyAndTemplateKeyNot(content.nameKey(), entity.getTemplateKey()))
+                throw new IllegalArgumentException("Chart template already exists: " + content.normalizedName());
+
+            applyTemplateContent(entity, content);
+            return mapper.toSummary(repo.save(entity));
+        });
+    }
+
+    @Override
+    public void deleteTemplate(UUID templateKey) {
+        inTransactionVoid(repo -> {
+            ensureInitialized(repo);
+            ChartTemplateAggregateData entity = repo.findByTemplateKey(Objects.requireNonNull(templateKey, "templateKey"))
+                    .orElseThrow(() -> new IllegalArgumentException("Unknown chart template: " + templateKey));
+            if (entity.getOrigin() == ChartTemplateAggregateData.Origin.SYSTEM)
+                throw new IllegalStateException("The built-in chart template cannot be deleted");
+
+            boolean deletedDefault = entity.isDefaultTemplate();
+            repo.delete(entity);
+            if (deletedDefault)
+                setBuiltInDefault(repo, false);
+        });
+    }
+
+    @Override
+    public ChartTemplateSummary setDefaultTemplate(UUID templateKey) {
+        return inTransaction(repo -> {
+            ensureInitialized(repo);
+            ChartTemplateAggregateData entity = repo.findByTemplateKey(Objects.requireNonNull(templateKey, "templateKey"))
+                    .orElseThrow(() -> new IllegalArgumentException("Unknown chart template: " + templateKey));
+            clearDefaultFlags(repo);
+            entity.setDefaultTemplate(true);
+            return mapper.toSummary(repo.save(entity));
+        });
+    }
+
+    @Override
+    public ChartTemplateSummary restoreBuiltIn() {
+        return inTransaction(repo -> {
+            ensureInitialized(repo);
+            ChartTemplateAggregateData entity = findOrCreateBuiltIn(repo);
+            clearDefaultFlags(repo);
+            normalizeBuiltInTemplate(entity);
+            entity.setDefaultTemplate(true);
+            return mapper.toSummary(repo.save(entity));
+        });
+    }
+
+    private LoadedTemplate toLoadedTemplate(ChartTemplateAggregateData entity) {
+        if (entity.getPayloadVersion() != PAYLOAD_VERSION) {
+            throw new IllegalStateException("Unsupported chart template payload version "
+                    + entity.getPayloadVersion() + " for `" + entity.getName() + '`');
+        }
+        ChartTemplateSummary summary = mapper.toSummary(entity);
+        StoredChartTemplatePayload payload = deserialize(summary.name(), entity.getPayloadJson());
+        ChartTemplate chartTemplate = mapper.toChartTemplate(summary.name(), payload);
+        return new LoadedTemplate(summary, chartTemplate, payload);
+    }
+
+    private void ensureInitialized(ChartTemplateRepository repo) {
+        ChartTemplateAggregateData builtIn = findOrCreateBuiltIn(repo);
+        findDefaultEntity(repo, builtIn);
+    }
+
+    private ChartTemplateAggregateData findDefaultEntity(ChartTemplateRepository repo) {
+        ChartTemplateAggregateData builtIn = findOrCreateBuiltIn(repo);
+        return findDefaultEntity(repo, builtIn);
+    }
+
+    private ChartTemplateAggregateData findDefaultEntity(ChartTemplateRepository repo, ChartTemplateAggregateData builtIn) {
+        ChartTemplateAggregateData effectiveDefault = null;
+        boolean normalizedDuplicates = false;
+        for (ChartTemplateAggregateData entity : repo.findAllByOrderByDefaultTemplateDescNameAsc()) {
+            if (!entity.isDefaultTemplate())
+                continue;
+            if (effectiveDefault == null) {
+                effectiveDefault = entity;
+                continue;
+            }
+
+            entity.setDefaultTemplate(false);
+            repo.save(entity);
+            normalizedDuplicates = true;
+        }
+        if (effectiveDefault == null) {
+            builtIn.setDefaultTemplate(true);
+            effectiveDefault = repo.save(builtIn);
+            log.info("Recovered missing default chart template by restoring the built-in template as default");
+        } else if (normalizedDuplicates) {
+            log.warn("Normalized duplicate default chart templates; keeping `{}` as the effective default",
+                    effectiveDefault.getName());
+        }
+        return effectiveDefault;
+    }
+
+    private ChartTemplateAggregateData findOrCreateBuiltIn(ChartTemplateRepository repo) {
+        ChartTemplateAggregateData builtIn = repo.findByTemplateKey(BUILT_IN_TEMPLATE_KEY).orElse(null);
+        List<ChartTemplateAggregateData> systemTemplates = repo.findAllByOriginOrderByNameAsc(ChartTemplateAggregateData.Origin.SYSTEM);
+        if (builtIn == null) {
+            ChartTemplateAggregateData candidate = selectBuiltInCandidate(systemTemplates);
+            if (candidate == null)
+                return createBuiltInTemplate(repo);
+
+            String recoveredFrom = candidate.getName();
+            normalizeBuiltInTemplate(candidate);
+            builtIn = repo.save(candidate);
+            log.warn("Recovered missing canonical built-in chart template from `{}`", recoveredFrom);
+        }
+        if (normalizeBuiltInTemplate(builtIn)) {
+            builtIn = repo.save(builtIn);
+            log.warn("Normalized built-in chart template content for the built-in key");
+        }
+
+        int convertedCount = 0;
+        for (ChartTemplateAggregateData entity : systemTemplates) {
+            if (Objects.equals(entity.getTemplateKey(), builtIn.getTemplateKey()))
+                continue;
+
+            entity.setOrigin(ChartTemplateAggregateData.Origin.USER);
+            repo.save(entity);
+            convertedCount++;
+        }
+        if (convertedCount > 0) {
+            log.warn("Converted {} unexpected SYSTEM chart template(s) to USER templates while normalizing the built-in template",
+                    convertedCount);
+        }
+        return builtIn;
+    }
+
+    private ChartTemplateAggregateData selectBuiltInCandidate(List<ChartTemplateAggregateData> systemTemplates) {
+        String builtInNameKey = normalizeNameKey(BUILT_IN_TEMPLATE_NAME);
+        for (ChartTemplateAggregateData entity : systemTemplates) {
+            if (builtInNameKey.equals(entity.getNameKey()))
+                return entity;
+        }
+        return systemTemplates.isEmpty() ? null : systemTemplates.getFirst();
+    }
+
+    private ChartTemplateAggregateData createBuiltInTemplate(ChartTemplateRepository repo) {
+        ChartTemplateAggregateData entity = new ChartTemplateAggregateData();
+        normalizeBuiltInTemplate(entity);
+        entity.setDefaultTemplate(false);
+        return repo.save(entity);
+    }
+
+    private boolean normalizeBuiltInTemplate(ChartTemplateAggregateData entity) {
+        boolean changed = false;
+        if (!Objects.equals(entity.getTemplateKey(), BUILT_IN_TEMPLATE_KEY)) {
+            entity.setTemplateKey(BUILT_IN_TEMPLATE_KEY);
+            changed = true;
+        }
+        if (entity.getOrigin() != ChartTemplateAggregateData.Origin.SYSTEM) {
+            entity.setOrigin(ChartTemplateAggregateData.Origin.SYSTEM);
+            changed = true;
+        }
+        if (!Objects.equals(entity.getName(), BUILT_IN_TEMPLATE_NAME)) {
+            entity.setName(BUILT_IN_TEMPLATE_NAME);
+            changed = true;
+        }
+        String builtInNameKey = normalizeNameKey(BUILT_IN_TEMPLATE_NAME);
+        if (!Objects.equals(entity.getNameKey(), builtInNameKey)) {
+            entity.setNameKey(builtInNameKey);
+            changed = true;
+        }
+        if (entity.getPayloadVersion() != PAYLOAD_VERSION) {
+            entity.setPayloadVersion(PAYLOAD_VERSION);
+            changed = true;
+        }
+        StartupMetrics.mark("chartTemplates:normalizeBuiltIn:payloadJson:start");
+        String payloadJson = builtInPayloadJson();
+        StartupMetrics.mark("chartTemplates:normalizeBuiltIn:payloadJson:ready");
+        if (!Objects.equals(entity.getPayloadJson(), payloadJson)) {
+            entity.setPayloadJson(payloadJson);
+            changed = true;
+        }
+        return changed;
+    }
+
+    private String builtInPayloadJson() {
+        String payloadJson = builtInPayloadJson;
+        if (payloadJson == null) {
+            synchronized (this) {
+                payloadJson = builtInPayloadJson;
+                if (payloadJson == null) {
+                    StartupMetrics.mark("chartTemplates:builtInPayloadJson:create:start");
+                    payloadJson = serialize(mapper.builtInPayload());
+                    StartupMetrics.mark("chartTemplates:builtInPayloadJson:create:ready");
+                    builtInPayloadJson = payloadJson;
+                }
+            }
+        }
+        return payloadJson;
+    }
+
+    private void setBuiltInDefault(ChartTemplateRepository repo, boolean logFallback) {
+        ChartTemplateAggregateData builtIn = findOrCreateBuiltIn(repo);
+        clearDefaultFlags(repo);
+        builtIn.setDefaultTemplate(true);
+        repo.save(builtIn);
+        if (logFallback)
+            log.info("Reverted chart template default to the built-in template");
+    }
+
+    private void clearDefaultFlags(ChartTemplateRepository repo) {
+        for (ChartTemplateAggregateData entity : repo.findAllByOrderByDefaultTemplateDescNameAsc()) {
+            if (entity.isDefaultTemplate()) {
+                entity.setDefaultTemplate(false);
+                repo.save(entity);
+            }
+        }
+    }
+
+    private TemplateContent describeTemplate(ChartTemplate chartTemplate) {
+        ChartTemplate template = Objects.requireNonNull(chartTemplate, "chartTemplate");
+        String normalizedName = normalizeName(template.getName());
+        return new TemplateContent(
+                normalizedName,
+                normalizeNameKey(normalizedName),
+                serialize(mapper.fromChartTemplate(template))
+        );
+    }
+
+    private void applyTemplateContent(ChartTemplateAggregateData entity, TemplateContent content) {
+        entity.setName(content.normalizedName());
+        entity.setNameKey(content.nameKey());
+        entity.setPayloadVersion(PAYLOAD_VERSION);
+        entity.setPayloadJson(content.payloadJson());
+    }
+
+    private StoredChartTemplatePayload deserialize(String templateName, String payloadJson) {
+        if (payloadJson == null || payloadJson.isBlank())
+            return StoredChartTemplatePayload.EMPTY;
+        try {
+            StoredChartTemplatePayload payload = gson.fromJson(payloadJson, StoredChartTemplatePayload.class);
+            return payload != null ? payload : StoredChartTemplatePayload.EMPTY;
+        } catch (RuntimeException ex) {
+            throw new IllegalStateException("Invalid chart template payload for `" + templateName + '`', ex);
+        }
+    }
+
+    private String serialize(StoredChartTemplatePayload payload) {
+        return gson.toJson(payload);
+    }
+
+    private <T> T inTransaction(Function<ChartTemplateRepository, T> callback) {
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager());
+        return transactionTemplate.execute(status -> callback.apply(repository()));
+    }
+
+    private void inTransactionVoid(Consumer<ChartTemplateRepository> callback) {
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager());
+        transactionTemplate.executeWithoutResult(status -> callback.accept(repository()));
+    }
+
+    private ChartTemplateRepository repository() {
+        return Kernel.getDefault().getApplicationContext().getBean(ChartTemplateRepository.class);
+    }
+
+    private PlatformTransactionManager transactionManager() {
+        return Kernel.getDefault().getApplicationContext().getBean(PlatformTransactionManager.class);
+    }
+
+    private static String normalizeName(String name) {
+        String normalized = Objects.requireNonNull(name, "name").strip();
+        if (normalized.isEmpty())
+            throw new IllegalArgumentException("Chart template name is blank");
+        return normalized;
+    }
+
+    private static String normalizeNameKey(String name) {
+        return name.strip().toLowerCase(Locale.ROOT);
+    }
+
+    private record TemplateContent(String normalizedName, String nameKey, String payloadJson) {
+    }
+}

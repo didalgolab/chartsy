@@ -351,6 +351,10 @@ public class GraphicLayer implements DrawingLayer {
     public int getAnnotationCount() {
         return annotations.size();
     }
+
+    public List<Annotation> getAnnotations() {
+        return List.copyOf(annotations.keySet());
+    }
     
     /**
      * Gives the model to which this layer belongs.

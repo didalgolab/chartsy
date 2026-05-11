@@ -5,10 +5,11 @@ package one.chartsy.ui;
 import one.chartsy.ui.chart.ChartData;
 import one.chartsy.ui.chart.ChartFrame;
 import one.chartsy.ui.chart.ChartTemplate;
+import one.chartsy.ui.chart.ChartTemplateSummary;
 import org.openide.util.NbBundle;
 import org.openide.windows.TopComponent;
 
-import java.awt.*;
+import java.awt.BorderLayout;
 
 /**
  * The main chart display component.
@@ -50,12 +51,21 @@ public class ChartTopComponent extends TopComponent implements TopComponent.Clon
         chartData.setSymbol(currChartData.getSymbol());
         chartData.setDataProvider(currChartData.getDataProvider());
         chartData.setTimeFrame(currChartData.getTimeFrame());
-        //chartData.setChart(ChartManager.getDefault().getChart(currChartData.getChart().getName()));
         chartData.setChart(currChartData.getChart());
 
         var chartFrame = new ChartFrame();
         chartFrame.setChartData(chartData);
-        chartFrame.setChartTemplate(getChartTemplate());
+        String templateName = (getChartTemplate() != null) ? getChartTemplate().getName() : getName();
+        chartFrame.setChartTemplate(chart.snapshotVisibleTemplate(templateName));
+        if (chart.getAppliedChartTemplate() != null)
+            chartFrame.setAppliedChartTemplate(
+                    new ChartTemplateSummary(
+                            chart.getAppliedChartTemplate().templateKey(),
+                            chart.getAppliedChartTemplate().name(),
+                            chart.getAppliedChartTemplate().defaultTemplate(),
+                            chart.getAppliedChartTemplate().builtIn()),
+                    chart.getAppliedTemplatePayload());
+        chartFrame.refreshTemplateState();
 
         return new ChartTopComponent(chartFrame);
     }

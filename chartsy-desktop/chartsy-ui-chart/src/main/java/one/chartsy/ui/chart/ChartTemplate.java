@@ -2,14 +2,16 @@
  * SPDX-License-Identifier: Apache-2.0 */
 package one.chartsy.ui.chart;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
-
 import one.chartsy.ui.chart.Chart;
 import one.chartsy.ui.chart.ChartProperties;
 import one.chartsy.ui.chart.Indicator;
 import one.chartsy.ui.chart.Overlay;
+import one.chartsy.ui.chart.internal.IndicatorPaneSupport;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
 /**
  * 
@@ -29,9 +31,21 @@ public class ChartTemplate implements Serializable {
         this.overlays = new ArrayList<>();
         this.indicators = new ArrayList<>();
     }
+
+    public static ChartTemplate copyVisualState(String name, ChartTemplate source) {
+        ChartTemplate template = new ChartTemplate(name);
+        template.copyVisualStateFrom(source);
+        return template;
+    }
     
     public String getName() {
         return name;
+    }
+
+    public void copyVisualStateFrom(ChartTemplate source) {
+        ChartTemplate template = Objects.requireNonNull(source, "source");
+        setChart(template.getChart());
+        setChartProperties(ChartProperties.copyOf(template.getChartProperties()));
     }
     
     public void setChart(Chart chart) {
@@ -62,11 +76,19 @@ public class ChartTemplate implements Serializable {
     }
     
     public void addIndicator(Indicator indicator) {
-        if (indicator != null)
-            indicators.add(indicator);
+        if (indicator == null)
+            return;
+
+        assignPaneIdIfNeeded(indicator);
+        indicators.add(indicator);
     }
     
     public List<Indicator> getIndicators() {
         return indicators;
+    }
+
+    private void assignPaneIdIfNeeded(Indicator indicator) {
+        if (IndicatorPaneSupport.isOwnPanelIndicator(indicator) && indicator.getPanelId() <= 0)
+            indicator.setPanelId(IndicatorPaneSupport.nextPanelId(indicators));
     }
 }

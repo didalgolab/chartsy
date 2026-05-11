@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.List;
-import java.util.UUID;
 import java.util.function.Consumer;
 
 import javax.swing.DefaultListCellRenderer;
@@ -44,6 +43,7 @@ import one.chartsy.ui.chart.ChartPlugin;
 import one.chartsy.core.ObjectInstantiator;
 import one.chartsy.ui.chart.ChartFrame;
 import one.chartsy.ui.chart.Indicator;
+import one.chartsy.ui.chart.internal.IndicatorPaneSupport;
 import one.chartsy.ui.chart.properties.NamedPluginNode;
 import org.openide.explorer.propertysheet.PropertySheet;
 import org.openide.nodes.Node;
@@ -444,16 +444,13 @@ public class ChartPluginChooser<T extends ChartPlugin<T> & ObjectInstantiator<T>
     
     private void onAdd(ActionEvent evt) {
         T selectedPlugin = availablePluginsList.getSelectedValue();
-        if (selectedPlugin != null) {
-            selectedPlugin = selectedPlugin.newInstance();
-            // Make sure that always a new panel UUID is generated, regardless
-            // how the copy() method works.
-            // TODO: panel selectable from properties?
-            if (selectedPlugin instanceof Indicator)
-                ((Indicator) selectedPlugin).setPanelId(UUID.randomUUID());
-            selectedPlugins.addElement(selectedPlugin);
-            setPropertySheet(selectedPlugin);
-        }
+        if (selectedPlugin == null)
+            return;
+
+        T newPlugin = selectedPlugin.newInstance();
+        assignPaneIdIfNeeded(newPlugin);
+        selectedPlugins.addElement(newPlugin);
+        setPropertySheet(newPlugin);
     }
     
     private void onRemove(ActionEvent evt) {
@@ -508,5 +505,24 @@ public class ChartPluginChooser<T extends ChartPlugin<T> & ObjectInstantiator<T>
      */
     protected void setSelectedPluginsLabelText(String text) {
         selectedPluginsLabel.setText(text);
+    }
+
+    private void assignPaneIdIfNeeded(T plugin) {
+        if (plugin instanceof Indicator indicator && IndicatorPaneSupport.isOwnPanelIndicator(indicator))
+            indicator.setPanelId(nextIndicatorPanelId());
+    }
+
+    private int nextIndicatorPanelId() {
+        return IndicatorPaneSupport.nextPanelId(selectedOwnPanelIndicators());
+    }
+
+    private List<Indicator> selectedOwnPanelIndicators() {
+        List<Indicator> indicators = new ArrayList<>();
+        for (int i = 0; i < selectedPlugins.size(); i++) {
+            T plugin = selectedPlugins.getElementAt(i);
+            if (plugin instanceof Indicator indicator && IndicatorPaneSupport.isOwnPanelIndicator(indicator))
+                indicators.add(indicator);
+        }
+        return indicators;
     }
 }

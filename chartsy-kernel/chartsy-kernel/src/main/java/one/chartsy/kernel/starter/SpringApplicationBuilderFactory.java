@@ -2,10 +2,14 @@
  * SPDX-License-Identifier: Apache-2.0 */
 package one.chartsy.kernel.starter;
 
-import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.core.metrics.ApplicationStartup;
 
-@FunctionalInterface
 public interface SpringApplicationBuilderFactory {
 
-    SpringApplicationBuilder createSpringApplicationBuilder();
+    default ConfigurableApplicationContext createApplicationContext(String... args) {
+        return createApplicationContext(ApplicationStartup.DEFAULT, args);
+    }
+
+    ConfigurableApplicationContext createApplicationContext(ApplicationStartup applicationStartup, String... args);
 }

@@ -5,7 +5,6 @@
 package one.chartsy.ui.chart.overlays;
 
 import java.awt.Color;
-import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.text.DecimalFormat;
 
@@ -14,8 +13,7 @@ import one.chartsy.data.CandleSeries;
 import one.chartsy.data.DoubleSeries;
 import one.chartsy.ui.chart.*;
 import one.chartsy.ui.chart.data.VisibleValues;
-import one.chartsy.ui.chart.internal.ColorServices;
-import one.chartsy.ui.chart.internal.Graphics2DHelper;
+import one.chartsy.ui.chart.plot.AbstractTimeSeriesPlot;
 import org.openide.util.lookup.ServiceProvider;
 
 /**
@@ -52,29 +50,6 @@ public class Volume extends AbstractOverlay {
     }
     
     @Override
-    public void paint(Graphics2D g, ChartContext cf, Rectangle bounds) {
-        int boundsX = bounds.x, boundsWidth = bounds.width;
-        bounds = cf.getMainPanel().getChartPanel().getBounds();
-        bounds.x = boundsX;
-        bounds.width = boundsWidth;
-        VisibleValues d = visibleDataset(cf, VOLUME);
-        VisibleValues sma = visibleDataset(cf, SMA);
-        if (d != null) {
-            int height = bounds.height / 4;
-            Range range = getRange(cf);
-            Rectangle rect = new Rectangle(bounds.x, bounds.y + bounds.height - height, bounds.width, height);
-            ColorServices colorServices = ColorServices.getDefault();
-            Color colorVolume = colorServices.getTransparentColor(color, transparency);
-            Graphics2DHelper.bar(g, cf, range, rect, d, colorVolume);
-            
-            if (sma != null) {
-                //Color colorSma = colorServices.getTransparentColor(properties.getSmaColor(), properties.getAlpha());
-                //Graphics2DHelper.line(g, cf, range, rect, sma, colorSma, properties.getSmaStroke()); // paint
-            }
-        }
-    }
-
-    @Override
     public Range getRange(ChartContext cf) {
         VisibleValues values = visibleDataset(cf, VOLUME);
         Range.Builder builder = new Range.Builder().add(0.0);
@@ -99,7 +74,7 @@ public class Volume extends AbstractOverlay {
             Range range = Range.of(0, max(volume));
             double factor = Math.pow(10, String.valueOf(Math.round(range.max())).length() - 1);
             volume = volume.div(factor);
-            addPlot(VOLUME, new EmptyPlot(volume.values(), color));
+            addPlot(VOLUME, new VolumeBarsPlot(volume.values(), color, widthPercent));
             //addPlot(SMA, new EmptyPlot(volume.sma(properties.getSmaPeriod()), properties.getColor()));
         }
     }
@@ -113,11 +88,13 @@ public class Volume extends AbstractOverlay {
     }
 
     @Parameter(name = "Color")
-    public Color color = new Color(0xf57900);
+    public Color color = new Color(0xFABC7F);
     @Parameter(name = "SMA Color")
     public Color smaColor = Color.BLUE;
     @Parameter(name = "Transparency")
     public int transparency = 128;
+    @Parameter(name = "Width (%)")
+    public double widthPercent = 55.0;
 
     @Override
     public Color[] getColors() {
@@ -130,11 +107,77 @@ public class Volume extends AbstractOverlay {
     }
     
     private double getVolumeFactor(ChartFrame cf) {
-        return Math.pow(10, String.valueOf(Math.round(cf.getChartData().getVisible().getVolumes().getMaximum())).length() - 1);
+        VisibleValues values = visibleDataset(cf, VOLUME);
+        if (values == null || values.getLength() == 0)
+            return 1.0;
+        double max = values.getMaximum();
+        if (!Double.isFinite(max) || max <= 0.0)
+            return 1.0;
+        return Math.pow(10, String.valueOf(Math.round(max)).length() - 1);
     }
     
     @Override
     public boolean isIncludedInRange() {
         return false;
+    }
+
+    private static final class VolumeBarsPlot extends AbstractTimeSeriesPlot {
+        private final double widthPercent;
+
+        private VolumeBarsPlot(one.chartsy.base.DoubleDataset values, Color primaryColor, double widthPercent) {
+            super(values, primaryColor);
+            this.widthPercent = widthPercent;
+        }
+
+        @Override
+        public void render(PlotRenderTarget target, PlotRenderContext context) {
+            target.addDecoration((graphics, renderContext, coordinateSystem) -> {
+                VisibleValues values = getVisibleData(renderContext.chartContext());
+                if (values == null || values.getLength() == 0)
+                    return;
+
+                Rectangle plotBounds = coordinateSystem.plotBounds();
+                if (plotBounds == null || plotBounds.isEmpty())
+                    return;
+
+                Range range = values.getRange(new Range.Builder().add(0.0)).toRange();
+                double max = Math.max(1.0, range.max());
+                double bottom = plotBounds.getMaxY();
+                double bandHeight = plotBounds.height * 0.24;
+                double baseY = bottom - 1.0;
+                int barWidth = resolveBarWidth(renderContext.chartContext().getChartProperties());
+
+                graphics.setColor(getPrimaryColor());
+                for (int index = 0; index < values.getLength(); index++) {
+                    double value = values.getValueAt(index);
+                    if (!Double.isFinite(value))
+                        continue;
+
+                    double slot = renderContext.chartContext().getChartData().getVisibleStartSlot() + index;
+                    double centerX = coordinateSystem.toDisplay(slot, 0.0).x;
+                    double height = (value / max) * bandHeight;
+                    int left = (int) Math.round(centerX - barWidth / 2.0);
+                    int top = (int) Math.round(baseY - height);
+                    int barHeight = Math.max(1, (int) Math.round(height));
+                    graphics.fillRect(left, top, barWidth, barHeight);
+                }
+            }, context);
+            if (context.legended())
+                target.addLegendEntry(context.legendName(), LegendMarkerSpec.bar(getPrimaryColor()));
+        }
+
+        private int resolveBarWidth(ChartProperties chartProperties) {
+            int candleBodyWidth = PixelPerfectCandleGeometry.snapBodyWidth(chartProperties.getBarWidth());
+            double clampedWidthPercent = Math.clamp(widthPercent, 1.0, 100.0);
+            int resolvedWidth = Math.max(1, (int) Math.round(candleBodyWidth * clampedWidthPercent / 100.0));
+            if (clampedWidthPercent < 100.0 && candleBodyWidth > 1 && resolvedWidth >= candleBodyWidth)
+                resolvedWidth = candleBodyWidth - 1;
+            return resolvedWidth;
+        }
+
+        @Override
+        public Range.Builder contributeRange(Range.Builder range, ChartContext cf) {
+            return range == null ? new Range.Builder() : range;
+        }
     }
 }

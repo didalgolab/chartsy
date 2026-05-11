@@ -3,8 +3,6 @@
 package one.chartsy.ui.chart.plot;
 
 import java.awt.Color;
-import java.awt.Graphics2D;
-import java.awt.Rectangle;
 
 import one.chartsy.core.Range;
 import one.chartsy.ui.chart.ChartContext;
@@ -23,8 +21,9 @@ public abstract class AbstractPlot implements Plot {
     public Color getPrimaryColor() {
         return primaryColor;
     }
-    
+
     @Override
-    public abstract void paint(Graphics2D g, ChartContext cf, Range range, Rectangle bounds);
-    
+    public Range.Builder contributeRange(Range.Builder range, ChartContext cf) {
+        return Plot.super.contributeRange(range, cf);
+    }
 }

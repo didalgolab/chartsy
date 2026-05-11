@@ -2,6 +2,7 @@
  * SPDX-License-Identifier: Apache-2.0 */
 package one.chartsy.ui.chart;
 
+import one.chartsy.ui.chart.components.SharedDateAxisFooter;
 import one.chartsy.ui.chart.components.MainPanel;
 import org.apache.logging.log4j.Logger;
 
@@ -22,7 +23,13 @@ public interface ChartContext {
 
     MainPanel getMainPanel();
 
+    SharedDateAxisFooter getDateAxisFooter();
+
     void updateHorizontalScrollBar();
+
+    void refreshChartView();
+
+    void refreshAnnotationFutureTail();
 
     void addChartFrameListener(ChartFrameListener listener);
 
