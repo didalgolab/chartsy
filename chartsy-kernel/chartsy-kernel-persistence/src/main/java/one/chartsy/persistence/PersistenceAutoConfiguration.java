@@ -27,7 +27,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.data.convert.ReadingConverter;
 import org.springframework.data.convert.WritingConverter;
-import org.springframework.data.jdbc.core.convert.DataAccessStrategy;
+import org.springframework.data.jdbc.core.JdbcAggregateOperations;
 import org.springframework.data.jdbc.core.convert.JdbcConverter;
 import org.springframework.data.jdbc.core.convert.JdbcCustomConversions;
 import org.springframework.data.jdbc.core.convert.QueryMappingConfiguration;
@@ -36,7 +36,6 @@ import org.springframework.data.jdbc.core.dialect.JdbcDialect;
 import org.springframework.data.jdbc.core.mapping.JdbcMappingContext;
 import org.springframework.data.jdbc.repository.config.AbstractJdbcConfiguration;
 import org.springframework.data.jdbc.repository.support.JdbcRepositoryFactory;
-import org.springframework.data.mapping.callback.EntityCallbacks;
 import org.springframework.data.relational.core.mapping.event.BeforeConvertCallback;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
@@ -71,69 +70,39 @@ public class PersistenceAutoConfiguration extends AbstractJdbcConfiguration {
     @Bean
     @DependsOn("liquibase")
     public GeneratedSymbolGroupRepository generatedSymbolGroupRepository(
-            DataAccessStrategy dataAccessStrategy,
-            JdbcMappingContext mappingContext,
-            JdbcConverter jdbcConverter,
-            NamedParameterJdbcOperations jdbcOperations,
-            ApplicationEventPublisher eventPublisher,
             BeanFactory beanFactory,
-            JdbcDialect jdbcDialect
+            JdbcAggregateOperations aggregateOperations
     ) {
         return createRepository(
                 GeneratedSymbolGroupRepository.class,
-                dataAccessStrategy,
-                mappingContext,
-                jdbcConverter,
-                jdbcOperations,
-                eventPublisher,
                 beanFactory,
-                jdbcDialect
+                aggregateOperations
         );
     }
 
     @Bean
     @DependsOn("liquibase")
     public GeneratedRunnerRepository generatedRunnerRepository(
-            DataAccessStrategy dataAccessStrategy,
-            JdbcMappingContext mappingContext,
-            JdbcConverter jdbcConverter,
-            NamedParameterJdbcOperations jdbcOperations,
-            ApplicationEventPublisher eventPublisher,
             BeanFactory beanFactory,
-            JdbcDialect jdbcDialect
+            JdbcAggregateOperations aggregateOperations
     ) {
         return createRepository(
                 GeneratedRunnerRepository.class,
-                dataAccessStrategy,
-                mappingContext,
-                jdbcConverter,
-                jdbcOperations,
-                eventPublisher,
                 beanFactory,
-                jdbcDialect
+                aggregateOperations
         );
     }
 
     @Bean
     @DependsOn("liquibase")
     public GeneratedChartTemplateRepository generatedChartTemplateRepository(
-            DataAccessStrategy dataAccessStrategy,
-            JdbcMappingContext mappingContext,
-            JdbcConverter jdbcConverter,
-            NamedParameterJdbcOperations jdbcOperations,
-            ApplicationEventPublisher eventPublisher,
             BeanFactory beanFactory,
-            JdbcDialect jdbcDialect
+            JdbcAggregateOperations aggregateOperations
     ) {
         return createRepository(
                 GeneratedChartTemplateRepository.class,
-                dataAccessStrategy,
-                mappingContext,
-                jdbcConverter,
-                jdbcOperations,
-                eventPublisher,
                 beanFactory,
-                jdbcDialect
+                aggregateOperations
         );
     }
 
@@ -248,26 +217,13 @@ public class PersistenceAutoConfiguration extends AbstractJdbcConfiguration {
 
     private <T> T createRepository(
             Class<T> repositoryType,
-            DataAccessStrategy dataAccessStrategy,
-            JdbcMappingContext mappingContext,
-            JdbcConverter jdbcConverter,
-            NamedParameterJdbcOperations jdbcOperations,
-            ApplicationEventPublisher eventPublisher,
             BeanFactory beanFactory,
-            JdbcDialect jdbcDialect
+            JdbcAggregateOperations aggregateOperations
     ) {
         var stagePrefix = "kernelContext:repository:" + repositoryType.getSimpleName();
         StartupMetrics.mark(stagePrefix + ":start");
-        var factory = new JdbcRepositoryFactory(
-                dataAccessStrategy,
-                mappingContext,
-                jdbcConverter,
-                jdbcDialect,
-                eventPublisher,
-                jdbcOperations
-        );
+        var factory = new JdbcRepositoryFactory(aggregateOperations);
         factory.setBeanFactory(beanFactory);
-        factory.setEntityCallbacks(EntityCallbacks.create(beanFactory));
         factory.setQueryMappingConfiguration(QueryMappingConfiguration.EMPTY);
         try {
             return factory.getRepository(repositoryType);
