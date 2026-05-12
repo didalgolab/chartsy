@@ -24,18 +24,19 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.data.convert.ReadingConverter;
 import org.springframework.data.convert.WritingConverter;
 import org.springframework.data.jdbc.core.convert.DataAccessStrategy;
 import org.springframework.data.jdbc.core.convert.JdbcConverter;
 import org.springframework.data.jdbc.core.convert.JdbcCustomConversions;
+import org.springframework.data.jdbc.core.convert.QueryMappingConfiguration;
+import org.springframework.data.jdbc.core.dialect.DialectResolver;
+import org.springframework.data.jdbc.core.dialect.JdbcDialect;
 import org.springframework.data.jdbc.core.mapping.JdbcMappingContext;
-import org.springframework.data.jdbc.repository.QueryMappingConfiguration;
 import org.springframework.data.jdbc.repository.config.AbstractJdbcConfiguration;
 import org.springframework.data.jdbc.repository.support.JdbcRepositoryFactory;
 import org.springframework.data.mapping.callback.EntityCallbacks;
-import org.springframework.data.relational.core.dialect.Dialect;
-import org.springframework.data.relational.core.dialect.H2Dialect;
 import org.springframework.data.relational.core.mapping.event.BeforeConvertCallback;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
@@ -68,13 +69,15 @@ public class PersistenceAutoConfiguration extends AbstractJdbcConfiguration {
     }
 
     @Bean
+    @DependsOn("liquibase")
     public GeneratedSymbolGroupRepository generatedSymbolGroupRepository(
             DataAccessStrategy dataAccessStrategy,
             JdbcMappingContext mappingContext,
             JdbcConverter jdbcConverter,
             NamedParameterJdbcOperations jdbcOperations,
             ApplicationEventPublisher eventPublisher,
-            BeanFactory beanFactory
+            BeanFactory beanFactory,
+            JdbcDialect jdbcDialect
     ) {
         return createRepository(
                 GeneratedSymbolGroupRepository.class,
@@ -83,18 +86,21 @@ public class PersistenceAutoConfiguration extends AbstractJdbcConfiguration {
                 jdbcConverter,
                 jdbcOperations,
                 eventPublisher,
-                beanFactory
+                beanFactory,
+                jdbcDialect
         );
     }
 
     @Bean
+    @DependsOn("liquibase")
     public GeneratedRunnerRepository generatedRunnerRepository(
             DataAccessStrategy dataAccessStrategy,
             JdbcMappingContext mappingContext,
             JdbcConverter jdbcConverter,
             NamedParameterJdbcOperations jdbcOperations,
             ApplicationEventPublisher eventPublisher,
-            BeanFactory beanFactory
+            BeanFactory beanFactory,
+            JdbcDialect jdbcDialect
     ) {
         return createRepository(
                 GeneratedRunnerRepository.class,
@@ -103,18 +109,21 @@ public class PersistenceAutoConfiguration extends AbstractJdbcConfiguration {
                 jdbcConverter,
                 jdbcOperations,
                 eventPublisher,
-                beanFactory
+                beanFactory,
+                jdbcDialect
         );
     }
 
     @Bean
+    @DependsOn("liquibase")
     public GeneratedChartTemplateRepository generatedChartTemplateRepository(
             DataAccessStrategy dataAccessStrategy,
             JdbcMappingContext mappingContext,
             JdbcConverter jdbcConverter,
             NamedParameterJdbcOperations jdbcOperations,
             ApplicationEventPublisher eventPublisher,
-            BeanFactory beanFactory
+            BeanFactory beanFactory,
+            JdbcDialect jdbcDialect
     ) {
         return createRepository(
                 GeneratedChartTemplateRepository.class,
@@ -123,7 +132,8 @@ public class PersistenceAutoConfiguration extends AbstractJdbcConfiguration {
                 jdbcConverter,
                 jdbcOperations,
                 eventPublisher,
-                beanFactory
+                beanFactory,
+                jdbcDialect
         );
     }
 
@@ -184,8 +194,8 @@ public class PersistenceAutoConfiguration extends AbstractJdbcConfiguration {
 
     @Override
     @Bean
-    public Dialect jdbcDialect(NamedParameterJdbcOperations operations) {
-        return H2Dialect.INSTANCE;
+    public JdbcDialect jdbcDialect(NamedParameterJdbcOperations operations) {
+        return DialectResolver.getDialect(operations.getJdbcOperations());
     }
 
     @Bean
@@ -243,7 +253,8 @@ public class PersistenceAutoConfiguration extends AbstractJdbcConfiguration {
             JdbcConverter jdbcConverter,
             NamedParameterJdbcOperations jdbcOperations,
             ApplicationEventPublisher eventPublisher,
-            BeanFactory beanFactory
+            BeanFactory beanFactory,
+            JdbcDialect jdbcDialect
     ) {
         var stagePrefix = "kernelContext:repository:" + repositoryType.getSimpleName();
         StartupMetrics.mark(stagePrefix + ":start");
@@ -251,7 +262,7 @@ public class PersistenceAutoConfiguration extends AbstractJdbcConfiguration {
                 dataAccessStrategy,
                 mappingContext,
                 jdbcConverter,
-                H2Dialect.INSTANCE,
+                jdbcDialect,
                 eventPublisher,
                 jdbcOperations
         );
