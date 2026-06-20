@@ -622,7 +622,7 @@ public class AnnotationPanel extends JPanel implements OrganizedViewInteractorCo
             Container parent = getParent();
             if (parent instanceof ChartPanel) {
                 ChartPanel chartPanel = (ChartPanel) parent;
-                long epochMicros = chartData.getSlotTime(slot);
+                long epochMicros = chartData.getSlotDisplayTime(slot);
                 
                 builder.append("<html>");
                 builder.append("Date: ")
@@ -663,7 +663,7 @@ public class AnnotationPanel extends JPanel implements OrganizedViewInteractorCo
                 builder.append("</html>");
             } else {
                 IndicatorPanel indicatorPanel = (IndicatorPanel) parent;
-                long epochMicros = chartData.getSlotTime(slot);
+                long epochMicros = chartData.getSlotDisplayTime(slot);
                 
                 builder.append("<html>");
                 builder.append("Date: ")

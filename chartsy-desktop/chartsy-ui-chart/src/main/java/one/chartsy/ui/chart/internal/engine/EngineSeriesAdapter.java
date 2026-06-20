@@ -1,6 +1,8 @@
 package one.chartsy.ui.chart.internal.engine;
 
+import one.chartsy.Candle;
 import one.chartsy.TimeFrame;
+import one.chartsy.TimeFrameHelper;
 import one.chartsy.base.DoubleDataset;
 import one.chartsy.charting.TimeUnit;
 import one.chartsy.charting.data.DefaultDataSet;
@@ -88,17 +90,22 @@ final class EngineSeriesAdapter {
     }
 
     static Date[] dates(ChartData data) {
-        CandleSeries series = data.getDataset();
+        CandleSeries series = data.getDisplayDataset();
         if (series == null || series.length() == 0)
             return new Date[0];
 
         int length = series.length();
         Date[] dates = new Date[length];
-        for (int slot = 0; slot < length; slot++) {
-            int seriesIndex = length - slot - 1;
-            dates[slot] = Date.from(Chronological.toInstant(series.get(seriesIndex).time()));
-        }
+        for (int slot = 0; slot < length; slot++)
+            dates[slot] = axisDate(data, slot);
         return dates;
+    }
+
+    private static Date axisDate(ChartData data, int slot) {
+        Candle candle = data.getCandleAtSlot(slot);
+        if (candle != null && !TimeFrameHelper.isIntraday(data.getTimeFrame()))
+            return Date.from(data.getSlotDisplayDate(slot).atStartOfDay(Chronological.TIME_ZONE).toInstant());
+        return Date.from(Chronological.toInstant(data.getSlotTime(slot)));
     }
 
     static TimeUnit timeUnit(TimeFrame timeFrame) {

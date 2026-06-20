@@ -12,6 +12,7 @@ import java.awt.RenderingHints;
 import java.io.Serial;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
@@ -41,6 +42,8 @@ public class QuoteHoverStatusLineComponent extends JComponent
     private Candle candle;
     /** Indicates whether the source chart time frame is intraday. */
     private boolean intraday;
+    /** Daily date displayed by the source chart slot. */
+    private LocalDate dailyDisplayDate;
     /** The decimal format used to display bar numeric data. */
     private final NumberFormat numberFormat = new DecimalFormat("0.00###");
     /** The pure date format used to display data. */
@@ -62,6 +65,7 @@ public class QuoteHoverStatusLineComponent extends JComponent
     public void mouseEntered(HoverEvent event) {
         Object source = event.getSource();
         this.candle = (Candle) event.getValue();
+        this.dailyDisplayDate = null;
         if (source instanceof ChartFrame) {
             ChartData chartData = ((ChartFrame) source).getChartData();
 
@@ -69,12 +73,15 @@ public class QuoteHoverStatusLineComponent extends JComponent
             boolean isIntraday = this.intraday = TimeFrameHelper.isIntraday(timeFrame);
             if (!isIntraday) {
                 SymbolIdentity symbol = chartData.getSymbol();
+                if (candle != null)
+                    this.dailyDisplayDate = chartData.getSlotDisplayDate(chartData.getSlotIndex(candle.time()));
                 //if (symbol.getProvider() != null)
                 //    this.dailyAlignmentTimeZone = symbol.getProvider().getCandleAlignment(symbol).map(CandleAlignment::getDailyAlignmentTimeZone).orElse(null);
             }
         } else {
             this.intraday = false;
             this.dailyAlignmentTimeZone = null;
+            this.dailyDisplayDate = null;
         }
         repaint();
     }
@@ -82,6 +89,8 @@ public class QuoteHoverStatusLineComponent extends JComponent
     @Override
     public void mouseExited(HoverEvent event) {
         this.candle = null;
+        this.dailyDisplayDate = null;
+        repaint();
     }
     
     public Font getStrongFont() {
@@ -120,6 +129,8 @@ public class QuoteHoverStatusLineComponent extends JComponent
             String date;
             if (intraday)
                 date = intradayDateFormat.format(candle.getDateTime(displayTimeZone));
+            else if (dailyDisplayDate != null)
+                date = DateTimeFormatter.ISO_LOCAL_DATE.format(dailyDisplayDate);
             else if (dailyAlignmentTimeZone != null)
                 date = eodDateFormat.format(candle.getDateTime(dailyAlignmentTimeZone));
             else

@@ -51,7 +51,8 @@ class EngineSeriesAdapterTest {
         assertThat(dates).hasSize(3);
         assertThat(dates[0].toInstant()).isBefore(dates[1].toInstant());
         assertThat(dates[1].toInstant()).isBefore(dates[2].toInstant());
-        assertThat(dates[2].toInstant()).isEqualTo(Chronological.toInstant(series.get(0).time()));
+        assertThat(displayDate(dates[0])).isEqualTo(data.getSlotDisplayDate(0));
+        assertThat(displayDate(dates[2])).isEqualTo(data.getSlotDisplayDate(2));
     }
 
     @Test
@@ -108,5 +109,9 @@ class EngineSeriesAdapterTest {
                 Candle.of(LocalDate.of(2024, 1, 4).atStartOfDay(), 30.0, 31.0, 29.0, 30.5, 3_000.0)
         );
         return CandleSeries.of(resource, candles);
+    }
+
+    private static LocalDate displayDate(Date date) {
+        return date.toInstant().atZone(Chronological.TIME_ZONE).toLocalDate();
     }
 }

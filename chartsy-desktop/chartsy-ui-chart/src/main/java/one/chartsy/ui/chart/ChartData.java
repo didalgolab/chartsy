@@ -13,7 +13,10 @@ import java.awt.geom.Rectangle2D;
 import java.io.Serializable;
 import java.text.DecimalFormat;
 import java.text.ParseException;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -64,6 +67,10 @@ public class ChartData implements Serializable, ChartFrameListener {
     private PriceChartStyle priceChartStyle = PriceChartStyle.CANDLE;
     /** Optional slot policy used to project future slots for regular time frames. */
     private transient TimeFrameSlotPolicy slotPolicy;
+    /** Dataset whose daily display-date convention has been inferred. */
+    private transient CandleSeries displayDateConventionDataset;
+    /** Whether daily candles in {@link #displayDateConventionDataset} are exclusive-end stamped. */
+    private transient boolean displayDateUsesPreviousDate;
     private VisibleCandles visible;
     private Range visibleRange;
     private List<Indicator> savedIndicators;
@@ -103,6 +110,7 @@ public class ChartData implements Serializable, ChartFrameListener {
     public void setTimeFrame(TimeFrame interval) {
         this.timeFrame = interval;
         this.slotPolicy = null;
+        this.displayDateConventionDataset = null;
     }
     
     public void updateDataset() {
@@ -221,6 +229,7 @@ public class ChartData implements Serializable, ChartFrameListener {
             this.timeFrame = timeFrame;
         this.dataset = quotes;
         this.slotPolicy = null;
+        this.displayDateConventionDataset = null;
         this.userTailSlots = 0;
         this.annotationTailSlots = 0;
         this.viewportInitialized = false;
@@ -672,6 +681,83 @@ public class ChartData implements Serializable, ChartFrameListener {
         return slotPolicy.timeAtOffset(slot - historicalSlots + 1);
     }
 
+    public long getSlotDisplayTime(int slot) {
+        long slotTime = getSlotTime(slot);
+        if (TimeFrameHelper.isIntraday(timeFrame))
+            return slotTime;
+
+        return Chronological.toEpochNanos(getSlotDisplayDate(slot).atStartOfDay());
+    }
+
+    public LocalDate getSlotDisplayDate(int slot) {
+        Candle candle = getCandleAtSlot(slot);
+        if (candle != null)
+            return getCandleDisplayDate(candle);
+
+        long slotTime = getSlotTime(slot);
+        if (TimeFrameHelper.isIntraday(timeFrame))
+            return Chronological.toDateTime(slotTime).toLocalDate();
+        if (isDailyTimeFrame() && !usesPreviousDateForDailyDisplay())
+            return Chronological.toDateTime(slotTime).toLocalDate();
+        return Chronological.toDateTime(slotTime - 1).toLocalDate();
+    }
+
+    public LocalDate getCandleDisplayDate(Candle candle) {
+        if (candle == null)
+            return Chronological.toDateTime(0L).toLocalDate();
+        if (TimeFrameHelper.isIntraday(timeFrame))
+            return Chronological.toDateTime(candle.time()).toLocalDate();
+        if (!isDailyTimeFrame() || usesPreviousDateForDailyDisplay())
+            return candle.getDate();
+        return Chronological.toDateTime(candle.time()).toLocalDate();
+    }
+
+    private boolean usesPreviousDateForDailyDisplay() {
+        CandleSeries dataset = getDisplayDataset();
+        if (displayDateConventionDataset != dataset) {
+            displayDateConventionDataset = dataset;
+            displayDateUsesPreviousDate = inferDailyDisplayUsesPreviousDate(dataset);
+        }
+        return displayDateUsesPreviousDate;
+    }
+
+    private boolean inferDailyDisplayUsesPreviousDate(CandleSeries dataset) {
+        if (!isDailyTimeFrame() || dataset == null || dataset.length() == 0)
+            return false;
+
+        int rawWeekendDates = 0;
+        int previousWeekendDates = 0;
+        int samples = Math.min(dataset.length(), 512);
+        for (int i = 0; i < samples; i++) {
+            Candle candle = dataset.get(i);
+            LocalDateTime rawDateTime = Chronological.toDateTime(candle.time());
+            if (!LocalTime.MIDNIGHT.equals(rawDateTime.toLocalTime()))
+                continue;
+
+            if (isWeekend(rawDateTime.toLocalDate()))
+                rawWeekendDates++;
+            if (isWeekend(candle.getDate()))
+                previousWeekendDates++;
+        }
+        return rawWeekendDates > previousWeekendDates;
+    }
+
+    private boolean isDailyTimeFrame() {
+        return timeFrame != null
+                && timeFrame.getAsSeconds()
+                        .map(seconds -> Math.abs(seconds.getAmount()) == 86_400)
+                        .orElse(false);
+    }
+
+    private static boolean isWeekend(LocalDate date) {
+        DayOfWeek day = date.getDayOfWeek();
+        return day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY;
+    }
+
+    public String getSlotDateLabel(int slot) {
+        return TimeFrameHelper.formatDate(timeFrame, getSlotDisplayTime(slot));
+    }
+
     public int getSlotIndex(long epochNanos) {
         CandleSeries dataset = getDisplayDataset();
         int historicalSlots = getHistoricalSlotCount();
@@ -705,6 +791,10 @@ public class ChartData implements Serializable, ChartFrameListener {
     }
 
     public double getSlotCenterX(int slot, Rectangle rect) {
+        return getSlotCenterX((double) slot, rect);
+    }
+
+    public double getSlotCenterX(double slot, Rectangle rect) {
         if (rect == null)
             return 0.0;
         if (visibleSlots <= 0 || rect.width <= 0)
@@ -799,20 +889,46 @@ public class ChartData implements Serializable, ChartFrameListener {
         @Override
         public double mapMark(int i) {
             LocalDateTime datetime = dates[i];
-            return visible.binarySearch(datetime);
+            if (TimeFrameHelper.isIntraday(timeFrame))
+                return visible.binarySearch(datetime);
+
+            LocalDateTime displayDateTime = datetime.atZone(ZoneOffset.UTC)
+                    .withZoneSameInstant(Chronological.TIME_ZONE)
+                    .toLocalDate()
+                    .atStartOfDay();
+            return binarySearchVisibleDisplayTime(Chronological.toEpochNanos(displayDateTime));
         }
     }
-    
+
+    private int binarySearchVisibleDisplayTime(long time) {
+        int low = (visible.getQuoteAt(-1) != null)? -1: 0;
+        int high = visible.getLength() - 1;
+
+        while (low <= high) {
+            int mid = (low + high) >> 1;
+            Candle midVal = visible.getQuoteAt(mid);
+            long midTime = Chronological.toEpochNanos(getCandleDisplayDate(midVal).atStartOfDay());
+
+            if (midTime < time)
+                low = mid + 1;
+            else if (midTime > time)
+                high = mid - 1;
+            else
+                return mid;
+        }
+        return low;
+    }
+
     public AxisScale getDateAxisScale() {
         if (isVisibleNull())
             return null;
         
         int barCount = getVisible().getLength();
-        ZonedDateTime endDate = Chronological.toDateTime(visible.getQuoteAt(barCount - 1).time(), (ZoneId)null);
+        ZonedDateTime endDate = getAxisDateTime(visible.getQuoteAt(barCount - 1));
         Candle firstBar = visible.getQuoteAt(-1);
         if (firstBar == null)
             firstBar = visible.getQuoteAt(0);
-        ZonedDateTime startDate = Chronological.toDateTime(firstBar.time(), (ZoneId)null);
+        ZonedDateTime startDate = getAxisDateTime(firstBar);
         int years = endDate.getYear() - startDate.getYear();
         if (ChronoUnit.DAYS.between(startDate, endDate) < 7)
             return new DefaultDateScale(ChronoUnit.DAYS, 1, startDate, endDate); //TODO
@@ -820,6 +936,14 @@ public class ChartData implements Serializable, ChartFrameListener {
             return new DefaultDateScale(ChronoUnit.YEARS, 1, startDate, endDate); //TODO
         else
             return new DefaultDateScale(ChronoUnit.MONTHS, 1, startDate, endDate); //TODO
+    }
+
+    private ZonedDateTime getAxisDateTime(Candle candle) {
+        if (candle == null)
+            return Chronological.toDateTime(0L, (ZoneId) null);
+        if (TimeFrameHelper.isIntraday(timeFrame))
+            return Chronological.toDateTime(candle.time(), (ZoneId) null);
+        return getCandleDisplayDate(candle).atStartOfDay(Chronological.TIME_ZONE);
     }
     
     private static DecimalFormat D1 = new DecimalFormat("0.###");

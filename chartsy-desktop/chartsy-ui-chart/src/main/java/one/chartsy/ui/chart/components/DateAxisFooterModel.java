@@ -13,7 +13,6 @@ import one.chartsy.ui.chart.ChartData;
 
 import java.awt.Rectangle;
 import java.util.ArrayList;
-import java.util.ConcurrentModificationException;
 import java.util.List;
 
 final class DateAxisFooterModel {
@@ -36,7 +35,7 @@ final class DateAxisFooterModel {
 
         DataInterval visibleRange = resolveVisibleRange(chartFrame, chartData, timeScale);
         AdaptiveCategoryTimeSteps steps = resolveAdaptiveSteps(timeScale);
-        var upperTicks = buildUpperTicks(plotBounds, visibleRange, steps);
+        var upperTicks = buildUpperTicks(chartData, plotBounds, visibleRange, steps);
         LowerLane lowerLane = buildLowerLane(chartData, plotBounds, visibleRange, steps, timeScale);
         return new SharedDateAxisFooter.FooterSnapshot(
                 new Rectangle(plotBounds),
@@ -49,13 +48,12 @@ final class DateAxisFooterModel {
 
     static SharedDateAxisFooter.HoverLabel buildHoverLabel(ChartData chartData,
                                                            Rectangle plotBounds,
-                                                           DataInterval visibleRange,
                                                            int hoverSlot) {
         if (hoverSlot < 0)
             return null;
 
-        int x = projectValueX(plotBounds, visibleRange, hoverSlot);
-        long epochMicros = chartData.getSlotTime(hoverSlot);
+        int x = projectSlotCenterX(chartData, plotBounds, hoverSlot);
+        long epochMicros = chartData.getSlotDisplayTime(hoverSlot);
         String label = TimeFrameHelper.formatDate(chartData.getTimeFrame(), epochMicros);
         return new SharedDateAxisFooter.HoverLabel(hoverSlot, epochMicros, x, label);
     }
@@ -85,7 +83,8 @@ final class DateAxisFooterModel {
         return null;
     }
 
-    private static List<SharedDateAxisFooter.TickMark> buildUpperTicks(Rectangle plotBounds,
+    private static List<SharedDateAxisFooter.TickMark> buildUpperTicks(ChartData chartData,
+                                                                       Rectangle plotBounds,
                                                                        DataInterval visibleRange,
                                                                        AdaptiveCategoryTimeSteps steps) {
         if (visibleRange == null || visibleRange.isEmpty() || steps == null)
@@ -100,7 +99,7 @@ final class DateAxisFooterModel {
 
         List<SharedDateAxisFooter.TickMark> ticks = new ArrayList<>(upperTicks.size());
         for (AdaptiveCategoryTimeSteps.TickValue tick : upperTicks) {
-            int x = projectValueX(plotBounds, visibleRange, tick.value());
+            int x = projectSlotCenterX(chartData, plotBounds, tick.value());
             if (x < plotBounds.x - 1 || x > plotBounds.x + plotBounds.width + 1)
                 continue;
             ticks.add(new SharedDateAxisFooter.TickMark(tick.value(), x, x + 4, tick.label(), false));
@@ -123,8 +122,8 @@ final class DateAxisFooterModel {
 
         int firstSlot = visibleStart;
         int lastSlot = visibleEnd - 1;
-        long firstTime = chartData.getSlotTime(firstSlot);
-        long lastTime = chartData.getSlotTime(lastSlot);
+        long firstTime = chartData.getSlotDisplayTime(firstSlot);
+        long lastTime = chartData.getSlotDisplayTime(lastSlot);
         AdaptiveCategoryTimeSteps.LanePlan plan = (steps != null && visibleRange != null && !visibleRange.isEmpty())
                 ? steps.plan(visibleRange, Math.max(1, plotBounds.width))
                 : AdaptiveCategoryTimeSteps.plan(firstTime, lastTime, observedBaseUnitMillis(timeScale, chartData));
@@ -145,12 +144,12 @@ final class DateAxisFooterModel {
         String previousKey = firstKey;
 
         for (int slot = firstSlot + 1; slot < visibleEnd; slot++) {
-            long slotTime = chartData.getSlotTime(slot);
+            long slotTime = chartData.getSlotDisplayTime(slot);
             String currentKey = AdaptiveCategoryTimeSteps.key(level, slotTime);
             if (currentKey.equals(previousKey))
                 continue;
 
-            int x = projectValueX(plotBounds, visibleRange, slot);
+            int x = projectSlotCenterX(chartData, plotBounds, slot);
             ticks.add(new SharedDateAxisFooter.TickMark(
                     slot,
                     x,
@@ -171,14 +170,12 @@ final class DateAxisFooterModel {
                 : one.chartsy.charting.TimeUnit.DAY.getMillis();
     }
 
-    private static int projectValueX(Rectangle plotBounds,
-                                     DataInterval visibleRange,
-                                     double value) {
-        if (plotBounds == null || plotBounds.isEmpty() || visibleRange == null || visibleRange.isEmpty())
+    private static int projectSlotCenterX(ChartData chartData,
+                                          Rectangle plotBounds,
+                                          double slot) {
+        if (plotBounds == null || plotBounds.isEmpty())
             return (plotBounds != null) ? plotBounds.x : 0;
-        double visibleSpan = Math.max(1.0d, visibleRange.getLength());
-        double projectorSpan = Math.max(1.0d, plotBounds.width - 1.0d);
-        return plotBounds.x + (int) Math.round((value - visibleRange.getMin()) * projectorSpan / visibleSpan);
+        return (int) Math.round(chartData.getSlotCenterX(slot, plotBounds));
     }
 
     private record LowerLane(List<SharedDateAxisFooter.TickMark> ticks,

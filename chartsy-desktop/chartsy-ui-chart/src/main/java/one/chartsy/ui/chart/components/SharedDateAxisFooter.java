@@ -75,7 +75,7 @@ public final class SharedDateAxisFooter extends JComponent {
             }
         }
 
-        var hoverLabel = DateAxisFooterModel.buildHoverLabel(chartData, plotBounds, visibleRange, hoverSlot);
+        var hoverLabel = DateAxisFooterModel.buildHoverLabel(chartData, plotBounds, hoverSlot);
         return baseSnapshot.withHover(hoverLabel);
     }
 
@@ -231,6 +231,17 @@ public final class SharedDateAxisFooter extends JComponent {
     }
 
     private Rectangle resolvePlotBounds(Scale scale) {
+        if (chartFrame.getMainPanel() != null
+                && chartFrame.getMainPanel().getStackPanel() != null
+                && chartFrame.getMainPanel().getStackPanel().getChartPanel() != null) {
+            ChartPanel chartPanel = chartFrame.getMainPanel().getStackPanel().getChartPanel();
+            Rectangle renderBounds = chartPanel.getRenderBounds();
+            if (renderBounds != null && !renderBounds.isEmpty()) {
+                Rectangle converted = SwingUtilities.convertRectangle(chartPanel, renderBounds, this);
+                return new Rectangle(converted.x, 0, converted.width, getHeight());
+            }
+        }
+
         if (scale == null || scale.getChart() == null || scale.getChart().getChartArea() == null)
             return new Rectangle();
         var chart = scale.getChart();

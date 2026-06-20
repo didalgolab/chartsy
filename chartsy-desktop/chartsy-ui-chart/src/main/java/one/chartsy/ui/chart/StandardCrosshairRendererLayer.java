@@ -3,12 +3,10 @@
 package one.chartsy.ui.chart;
 
 import one.chartsy.Candle;
-import one.chartsy.TimeFrameHelper;
 import one.chartsy.charting.LabelRenderer;
 import one.chartsy.charting.Scale;
 import one.chartsy.ui.chart.components.AnnotationPanel;
 import one.chartsy.ui.chart.components.ChartPanel;
-import one.chartsy.ui.chart.components.ChartStackPanel;
 import one.chartsy.ui.chart.components.IndicatorPanel;
 import one.chartsy.ui.chart.components.SharedDateAxisFooter;
 import one.chartsy.ui.chart.hover.HoverEvent;
@@ -165,7 +163,7 @@ public class StandardCrosshairRendererLayer extends LayerUI<JComponent> {
         }
 
         Point mouseLayerPoint = SwingUtilities.convertPoint(pane, e.getPoint(), layer);
-        Point layerPoint = new Point(resolveSlotLayerX(chartFrame, chartData, slot, plotBounds, pane, layer), mouseLayerPoint.y);
+        Point layerPoint = new Point(resolveSlotLayerX(chartData, slot, plotBounds, pane, layer), mouseLayerPoint.y);
         int alignedLayerY = updateScaleAnnotations(pane, chartData, slot, e.getY(), layer);
         if (alignedLayerY >= 0)
             layerPoint.y = alignedLayerY;
@@ -239,27 +237,13 @@ public class StandardCrosshairRendererLayer extends LayerUI<JComponent> {
             footer.clearHover();
     }
 
-    private int resolveSlotLayerX(ChartContext chartFrame,
-                                  ChartData chartData,
+    private int resolveSlotLayerX(ChartData chartData,
                                   int slot,
                                   Rectangle plotBounds,
                                   AnnotationPanel pane,
                                   JLayer<? extends JComponent> layer) {
-        Scale timeScale = resolveSharedTimeScale(chartFrame);
-        if (timeScale != null && timeScale.getChart() != null && timeScale.getChart().getChartArea() != null) {
-            Point chartAreaPoint = timeScale.toPoint(slot);
-            Point layerPoint = SwingUtilities.convertPoint(timeScale.getChart().getChartArea(), chartAreaPoint.x, chartAreaPoint.y, layer);
-            return layerPoint.x;
-        }
         int x = (int) Math.round(chartData.getSlotCenterX(slot, plotBounds));
         return SwingUtilities.convertPoint(pane, x, 0, layer).x;
-    }
-
-    private Scale resolveSharedTimeScale(ChartContext chartFrame) {
-        if (chartFrame == null || chartFrame.getMainPanel() == null)
-            return null;
-        ChartStackPanel stackPanel = chartFrame.getMainPanel().getStackPanel();
-        return (stackPanel != null) ? stackPanel.getSharedTimeScale() : null;
     }
 
     private String formatValue(double value) {

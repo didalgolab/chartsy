@@ -10,8 +10,10 @@ import one.chartsy.SymbolResource;
 import one.chartsy.TimeFrame;
 import one.chartsy.core.Range;
 import one.chartsy.data.CandleSeries;
+import one.chartsy.data.provider.DataProvider;
 import org.junit.jupiter.api.Test;
 
+import java.awt.Dimension;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -50,6 +52,43 @@ class ChartDataReverseIndexingTest {
         assertThat(data.getSlotIndex(firstFutureTime)).isEqualTo(firstFutureSlot);
         assertThat(data.getSlotIndex(secondFutureTime)).isEqualTo(firstFutureSlot + 1);
         assertThat(secondFutureTime).isGreaterThan(firstFutureTime);
+    }
+
+    @Test
+    void dailySlotDisplayTimeKeepsStartStampedTradingDate() {
+        ChartData data = new ChartData();
+        data.setDataset(sampleSeries());
+
+        assertThat(data.getSlotDateLabel(0)).isEqualTo("2024-01-02");
+        assertThat(data.getSlotDateLabel(1)).isEqualTo("2024-01-03");
+        assertThat(data.getSlotDateLabel(2)).isEqualTo("2024-01-04");
+    }
+
+    @Test
+    void dailySlotDisplayTimeUsesPreviousDateForExclusiveEndStampedCandles() {
+        ChartData data = new ChartData();
+        data.setDataset(exclusiveEndStampedSeries());
+
+        assertThat(data.getSlotDateLabel(0)).isEqualTo("2026-01-02");
+        assertThat(data.getSlotDateLabel(1)).isEqualTo("2026-01-05");
+        assertThat(data.getSlotDateLabel(2)).isEqualTo("2026-01-06");
+    }
+
+    @Test
+    void legacyDailyDateAxisMapsTicksToDisplayedCandleDates() {
+        ChartFrame chartFrame = ChartExporter.createChartFrame(
+                DataProvider.EMPTY,
+                sampleSeries(),
+                ChartTemplateDefaults.basicChartTemplate(),
+                new Dimension(640, 480)
+        );
+
+        var dateScale = chartFrame.getChartData().getDateAxisScale();
+
+        assertThat(dateScale.getMarkCount()).isEqualTo(3);
+        assertThat(dateScale.mapMark(0)).isEqualTo(0.0);
+        assertThat(dateScale.mapMark(1)).isEqualTo(1.0);
+        assertThat(dateScale.mapMark(2)).isEqualTo(2.0);
     }
 
     @Test
@@ -96,6 +135,16 @@ class ChartDataReverseIndexingTest {
                 Candle.of(LocalDate.of(2024, 1, 2).atStartOfDay(), 10.0, 11.0, 9.0, 10.5, 1_000.0),
                 Candle.of(LocalDate.of(2024, 1, 3).atStartOfDay(), 20.0, 21.0, 19.0, 20.5, 2_000.0),
                 Candle.of(LocalDate.of(2024, 1, 4).atStartOfDay(), 30.0, 31.0, 29.0, 30.5, 3_000.0)
+        );
+        return CandleSeries.of(resource, candles);
+    }
+
+    private static CandleSeries exclusiveEndStampedSeries() {
+        SymbolResource<Candle> resource = SymbolResource.of(SymbolIdentity.of("EXCLUSIVE-END-TEST"), TimeFrame.Period.DAILY);
+        List<Candle> candles = List.of(
+                Candle.of(LocalDate.of(2026, 1, 3).atStartOfDay(), 10.0, 11.0, 9.0, 10.5, 1_000.0),
+                Candle.of(LocalDate.of(2026, 1, 6).atStartOfDay(), 20.0, 21.0, 19.0, 20.5, 2_000.0),
+                Candle.of(LocalDate.of(2026, 1, 7).atStartOfDay(), 30.0, 31.0, 29.0, 30.5, 3_000.0)
         );
         return CandleSeries.of(resource, candles);
     }
