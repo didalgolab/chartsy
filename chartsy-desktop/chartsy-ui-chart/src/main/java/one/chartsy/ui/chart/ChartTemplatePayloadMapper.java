@@ -25,6 +25,10 @@ import java.util.Map;
 import java.util.Objects;
 
 final class ChartTemplatePayloadMapper {
+    private static final String FRACTAL_DIMENSION_STUDY_ID = "one.chartsy.financial.indicators.FractalDimension";
+    private static final String LEGACY_INSIDE_VISIBILITY_PARAMETER = "insideVisibility";
+    private static final String INSIDE_NEUTRAL_VISIBILITY_PARAMETER = "insideNeutralVisibility";
+    private static final String INSIDE_HIGH_VISIBILITY_PARAMETER = "insideHighVisibility";
     private static final Logger log = LogManager.getLogger(ChartTemplatePayloadMapper.class);
     private static final String TYPE_BOOLEAN = "BOOLEAN";
     private static final String TYPE_COLOR = "COLOR";
@@ -299,6 +303,7 @@ final class ChartTemplatePayloadMapper {
     }
 
     private void applyParameters(ChartPlugin<?> plugin, Map<String, StoredParameterValue> parameters) {
+        parameters = migrateLegacyStudyParameters(plugin, parameters);
         List<ChartPluginParameter> writableParameters = new ArrayList<>(ChartPluginParameterUtils.getParameters(plugin));
         Map<String, ChartPluginParameter> byId = new LinkedHashMap<>();
         for (ChartPluginParameter parameter : writableParameters)
@@ -314,6 +319,22 @@ final class ChartTemplatePayloadMapper {
                 log.warn("Skipping template parameter `{}` for plugin `{}`", entry.getKey(), plugin.getName(), ex);
             }
         }
+    }
+
+    private static Map<String, StoredParameterValue> migrateLegacyStudyParameters(
+            ChartPlugin<?> plugin, Map<String, StoredParameterValue> parameters) {
+        if (!(plugin instanceof StudyBackedChartPlugin studyPlugin)
+                || !FRACTAL_DIMENSION_STUDY_ID.equals(studyPlugin.getStudyDescriptorId()))
+            return parameters;
+
+        StoredParameterValue insideVisibility = parameters.get(LEGACY_INSIDE_VISIBILITY_PARAMETER);
+        if (insideVisibility == null)
+            return parameters;
+
+        Map<String, StoredParameterValue> migrated = new LinkedHashMap<>(parameters);
+        migrated.putIfAbsent(INSIDE_NEUTRAL_VISIBILITY_PARAMETER, insideVisibility);
+        migrated.putIfAbsent(INSIDE_HIGH_VISIBILITY_PARAMETER, insideVisibility);
+        return migrated;
     }
 
     private StoredParameterValue encodeParameter(ChartPluginParameter parameter) {
