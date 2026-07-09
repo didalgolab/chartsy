@@ -13,6 +13,10 @@ import one.chartsy.ui.chart.internal.ChartPluginParameter;
 import one.chartsy.ui.chart.internal.ChartPluginParameterUtils;
 import one.chartsy.ui.chart.internal.IndicatorPaneSupport;
 import one.chartsy.ui.chart.properties.NamedPluginNode;
+import org.netbeans.swing.outline.DefaultOutlineModel;
+import org.netbeans.swing.outline.Outline;
+import org.netbeans.swing.outline.RenderDataProvider;
+import org.netbeans.swing.outline.RowModel;
 import org.openide.explorer.propertysheet.PropertySheet;
 import org.openide.nodes.Node;
 import org.openide.util.NbBundle;
@@ -20,6 +24,7 @@ import org.openide.util.NbBundle;
 import javax.swing.BorderFactory;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.DefaultListCellRenderer;
+import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
@@ -39,7 +44,6 @@ import javax.swing.border.Border;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.event.ListSelectionEvent;
-import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -93,9 +97,9 @@ public class IndicatorChooserPanel extends JPanel {
     private final List<ChartPlugin<?>> selectedPlugins = new ArrayList<>();
     private final DefaultTreeModel availableTreeModel = new DefaultTreeModel(new DefaultMutableTreeNode("root"));
     private final DefaultComboBoxModel<ChartPlugin<?>> pluginSelectorModel = new DefaultComboBoxModel<>();
-    private final PlotObjectTableModel plotObjectTableModel = new PlotObjectTableModel();
+    private final PlotObjectTreeModel plotObjectTreeModel = new PlotObjectTreeModel();
     private final JTree availableTree = new JTree(availableTreeModel);
-    private final JTable plotObjectTable = new JTable(plotObjectTableModel);
+    private final Outline plotObjectTable = new Outline();
     private final JSplitPane topSplit = new JSplitPane();
     private final JSplitPane mainSplit = new JSplitPane();
     private final JTextField filterField = new JTextField();
@@ -372,24 +376,30 @@ public class IndicatorChooserPanel extends JPanel {
 
         JLabel titleLabel = createSectionTitle("Plot Objects:");
         plotObjectTable.setName("indicatorChooser.plotTable");
+        plotObjectTable.setModel(DefaultOutlineModel.createOutlineModel(
+                plotObjectTreeModel, plotObjectTreeModel, false, "Plot Object"));
+        plotObjectTable.setRenderDataProvider(new PlotObjectRenderDataProvider());
+        plotObjectTable.setRootVisible(false);
         plotObjectTable.setRowHeight(22);
         plotObjectTable.setFillsViewportHeight(true);
         plotObjectTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         plotObjectTable.setAutoResizeMode(JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS);
+        plotObjectTable.setColumnHidingAllowed(false);
+        plotObjectTable.setShowVerticalLines(false);
+        plotObjectTable.setGridColor(resolveTableGridColor());
         plotObjectTable.getTableHeader().setReorderingAllowed(false);
-        plotObjectTable.setDefaultRenderer(Object.class, new PlotObjectCellRenderer());
-        plotObjectTable.setDefaultRenderer(Boolean.class, new PlotObjectCellRenderer());
-        plotObjectTable.setDefaultRenderer(Color.class, new ColorSwatchRenderer());
-        plotObjectTable.getColumnModel().getColumn(0).setPreferredWidth(260);
+        plotObjectTable.getColumnModel().getColumn(0).setPreferredWidth(330);
         plotObjectTable.getColumnModel().getColumn(1).setPreferredWidth(90);
         plotObjectTable.getColumnModel().getColumn(2).setPreferredWidth(120);
-        plotObjectTable.getColumnModel().getColumn(3).setPreferredWidth(190);
-        plotObjectTable.getColumnModel().getColumn(4).setPreferredWidth(70);
-        plotObjectTable.getColumnModel().getColumn(5).setPreferredWidth(120);
-        plotObjectTable.getColumnModel().getColumn(6).setPreferredWidth(60);
-        plotObjectTable.getColumnModel().getColumn(7).setMinWidth(68);
-        plotObjectTable.getColumnModel().getColumn(7).setPreferredWidth(76);
-        plotObjectTable.getColumnModel().getColumn(7).setMaxWidth(84);
+        plotObjectTable.getColumnModel().getColumn(3).setPreferredWidth(70);
+        plotObjectTable.getColumnModel().getColumn(4).setPreferredWidth(140);
+        plotObjectTable.getColumnModel().getColumn(5).setPreferredWidth(60);
+        plotObjectTable.getColumnModel().getColumn(6).setMinWidth(68);
+        plotObjectTable.getColumnModel().getColumn(6).setPreferredWidth(76);
+        plotObjectTable.getColumnModel().getColumn(6).setMaxWidth(84);
+        for (int column = 1; column < 6; column++)
+            plotObjectTable.getColumnModel().getColumn(column).setCellRenderer(new PlotObjectCellRenderer());
+        plotObjectTable.getColumnModel().getColumn(6).setCellRenderer(new ColorSwatchRenderer());
 
         JScrollPane tableScrollPane = new JScrollPane(plotObjectTable);
         tableScrollPane.setBorder(createInnerBorder());
@@ -454,8 +464,8 @@ public class IndicatorChooserPanel extends JPanel {
         int viewRow = plotObjectTable.getSelectedRow();
         if (viewRow < 0)
             return;
-        PlotObjectRow row = plotObjectTableModel.getRow(viewRow);
-        selectPlugin(row == null ? null : row.plugin(), false);
+        PlotObjectTreeNode node = getPlotObjectNode(viewRow);
+        selectPlugin(node == null ? null : node.plugin(), false);
     }
 
     private void addSelectedPlugin() {
@@ -489,8 +499,10 @@ public class IndicatorChooserPanel extends JPanel {
                 pluginSelectorModel.addElement(plugin);
 
             pluginSelector.setEnabled(!selectedPlugins.isEmpty());
-            plotObjectTableModel.setPlugins(selectedPlugins);
-            plotObjectCountLabel.setText(selectedPlugins.size() + " study(s), " + plotObjectTableModel.getRowCount() + " visual row(s)");
+            plotObjectTreeModel.setPlugins(selectedPlugins);
+            expandAllPlotObjects();
+            plotObjectCountLabel.setText(selectedPlugins.size() + " study(s), "
+                    + plotObjectTreeModel.getPlotObjectCount() + " plot object(s)");
             refreshVisualSummary();
 
             ChartPlugin<?> effectiveSelection = selection;
@@ -510,7 +522,11 @@ public class IndicatorChooserPanel extends JPanel {
     }
 
     private void refreshVisualSummary() {
-        plotObjectTableModel.refresh();
+        ChartPlugin<?> selectedPlugin = getCurrentlySelectedPlugin();
+        Set<ChartPlugin<?>> expandedPlugins = expandedPlotObjectPlugins();
+        plotObjectTreeModel.refresh();
+        restorePlotObjectExpansion(expandedPlugins);
+        selectPlotObject(selectedPlugin);
         plotObjectTable.repaint();
         pluginSelector.repaint();
         refreshPaneAssignmentControls(getCurrentlySelectedPlugin());
@@ -534,12 +550,7 @@ public class IndicatorChooserPanel extends JPanel {
             propertySheet.setNodes(new Node[]{createPluginNode(plugin)});
             showPropertyCard(PROPERTY_CARD);
             if (updateTableSelection) {
-                int rowIndex = plotObjectTableModel.indexOf(plugin);
-                if (rowIndex >= 0) {
-                    plotObjectTable.getSelectionModel().setSelectionInterval(rowIndex, rowIndex);
-                    Rectangle rowBounds = plotObjectTable.getCellRect(rowIndex, 0, true);
-                    plotObjectTable.scrollRectToVisible(rowBounds);
-                }
+                selectPlotObject(plugin);
             }
         } finally {
             synchronizingSelection = false;
@@ -557,8 +568,8 @@ public class IndicatorChooserPanel extends JPanel {
             return plugin;
 
         int viewRow = plotObjectTable.getSelectedRow();
-        PlotObjectRow row = viewRow >= 0 ? plotObjectTableModel.getRow(viewRow) : null;
-        return row == null ? null : row.plugin();
+        PlotObjectTreeNode node = viewRow >= 0 ? getPlotObjectNode(viewRow) : null;
+        return node == null ? null : node.plugin();
     }
 
     private void refreshPaneAssignmentControls(ChartPlugin<?> plugin) {
@@ -893,6 +904,76 @@ public class IndicatorChooserPanel extends JPanel {
         return color != null ? color : new Color(0x5F6773);
     }
 
+    private Color resolveTableGridColor() {
+        Color color = UIManager.getColor("Table.gridColor");
+        return color != null ? color : new Color(0xE2E5E9);
+    }
+
+    private static Color blend(Color background, Color foreground, float foregroundWeight) {
+        float backgroundWeight = 1.0f - foregroundWeight;
+        return new Color(
+                Math.round(background.getRed() * backgroundWeight + foreground.getRed() * foregroundWeight),
+                Math.round(background.getGreen() * backgroundWeight + foreground.getGreen() * foregroundWeight),
+                Math.round(background.getBlue() * backgroundWeight + foreground.getBlue() * foregroundWeight)
+        );
+    }
+
+    private void expandAllPlotObjects() {
+        DefaultMutableTreeNode root = (DefaultMutableTreeNode) plotObjectTreeModel.getRoot();
+        Enumeration<?> nodes = root.breadthFirstEnumeration();
+        while (nodes.hasMoreElements()) {
+            Object value = nodes.nextElement();
+            if (value instanceof PlotObjectTreeNode node && node.isStudy())
+                plotObjectTable.expandPath(new TreePath(node.getPath()));
+        }
+    }
+
+    private Set<ChartPlugin<?>> expandedPlotObjectPlugins() {
+        Set<ChartPlugin<?>> expandedPlugins = new LinkedHashSet<>();
+        PlotObjectTreeNode root = (PlotObjectTreeNode) plotObjectTreeModel.getRoot();
+        for (int i = 0; i < root.getChildCount(); i++) {
+            PlotObjectTreeNode node = (PlotObjectTreeNode) root.getChildAt(i);
+            if (plotObjectTable.isExpanded(new TreePath(node.getPath())))
+                expandedPlugins.add(node.plugin());
+        }
+        return expandedPlugins;
+    }
+
+    private void restorePlotObjectExpansion(Set<ChartPlugin<?>> expandedPlugins) {
+        PlotObjectTreeNode root = (PlotObjectTreeNode) plotObjectTreeModel.getRoot();
+        for (int i = 0; i < root.getChildCount(); i++) {
+            PlotObjectTreeNode node = (PlotObjectTreeNode) root.getChildAt(i);
+            if (expandedPlugins.contains(node.plugin()))
+                plotObjectTable.expandPath(new TreePath(node.getPath()));
+        }
+    }
+
+    private PlotObjectTreeNode getPlotObjectNode(int viewRow) {
+        int modelRow = plotObjectTable.convertRowIndexToModel(viewRow);
+        Object value = plotObjectTable.getModel().getValueAt(modelRow, 0);
+        return value instanceof PlotObjectTreeNode node ? node : null;
+    }
+
+    private void selectPlotObject(ChartPlugin<?> plugin) {
+        if (plugin == null) {
+            plotObjectTable.clearSelection();
+            return;
+        }
+
+        PlotObjectTreeNode node = plotObjectTreeModel.findStudyNode(plugin);
+        if (node == null)
+            return;
+
+        TreePath path = new TreePath(node.getPath());
+        int modelRow = plotObjectTable.getLayoutCache().getRowForPath(path);
+        int viewRow = modelRow < 0 ? -1 : plotObjectTable.convertRowIndexToView(modelRow);
+        if (viewRow >= 0) {
+            plotObjectTable.getSelectionModel().setSelectionInterval(viewRow, viewRow);
+            Rectangle rowBounds = plotObjectTable.getCellRect(viewRow, 0, true);
+            plotObjectTable.scrollRectToVisible(rowBounds);
+        }
+    }
+
 
     private List<PlotObjectRow> describePlotObjects(ChartPlugin<?> plugin) {
         if (plugin instanceof StudyBackedChartPlugin studyPlugin)
@@ -916,46 +997,34 @@ public class IndicatorChooserPanel extends JPanel {
         List<PlotObjectRow> rows = new ArrayList<>();
         Set<String> consumedVisibilityKeys = new LinkedHashSet<>();
         Boolean singleVisibility = visibilityDescriptors.size() == 1 ? visibilityDescriptors.values().iterator().next() : null;
-        boolean firstRow = true;
         for (Map.Entry<String, VisualDescriptor> entry : descriptors.entrySet()) {
             String elementName = entry.getKey();
             Boolean visible = resolveVisibility(elementName, visibilityDescriptors, singleVisibility, consumedVisibilityKeys);
-            rows.add(new PlotObjectRow(plugin, firstRow, plugin.getLabel(), describePluginType(plugin), describePanelPlacement(plugin),
-                    elementName, visible, entry.getValue().stroke, entry.getValue().color));
-            firstRow = false;
+            rows.add(new PlotObjectRow(elementName, visible, entry.getValue().stroke, entry.getValue().color));
         }
 
         for (Map.Entry<String, Boolean> entry : visibilityDescriptors.entrySet()) {
             if (consumedVisibilityKeys.contains(entry.getKey()))
                 continue;
-            rows.add(new PlotObjectRow(plugin, firstRow, plugin.getLabel(), describePluginType(plugin), describePanelPlacement(plugin),
-                    entry.getKey(), entry.getValue(), null, null));
-            firstRow = false;
+            rows.add(new PlotObjectRow(entry.getKey(), entry.getValue(), null, null));
         }
 
-        if (rows.isEmpty()) {
-            rows.add(new PlotObjectRow(plugin, true, plugin.getLabel(), describePluginType(plugin), describePanelPlacement(plugin),
-                    "Result", null, null, null));
-        }
+        if (rows.isEmpty())
+            rows.add(new PlotObjectRow("Result", null, null, null));
         return rows;
     }
 
     private List<PlotObjectRow> describeStudyPlotObjects(ChartPlugin<?> plugin, StudyBackedChartPlugin studyPlugin) {
         List<PlotObjectRow> rows = new ArrayList<>();
         java.util.SequencedMap<String, Object> parameterValues = studyPlugin.getStudyParameterValues();
-        boolean firstRow = true;
         for (var plot : studyPlugin.getStudyDescriptor().plots()) {
             Color color = plot.colorParameter().isBlank() ? null : (Color) parameterValues.get(plot.colorParameter());
             Stroke stroke = plot.strokeParameter().isBlank() ? null : (Stroke) parameterValues.get(plot.strokeParameter());
             Boolean visible = plot.visibleParameter().isBlank() ? null : (Boolean) parameterValues.get(plot.visibleParameter());
-            rows.add(new PlotObjectRow(plugin, firstRow, plugin.getLabel(), describePluginType(plugin), describePanelPlacement(plugin),
-                    plot.label(), visible, stroke, color));
-            firstRow = false;
+            rows.add(new PlotObjectRow(plot.label(), visible, stroke, color));
         }
-        if (rows.isEmpty()) {
-            rows.add(new PlotObjectRow(plugin, true, plugin.getLabel(), describePluginType(plugin), describePanelPlacement(plugin),
-                    "Result", null, null, null));
-        }
+        if (rows.isEmpty())
+            rows.add(new PlotObjectRow("Result", null, null, null));
         return rows;
     }
 
@@ -1068,14 +1137,17 @@ public class IndicatorChooserPanel extends JPanel {
         }
     }
 
-    private record PlotObjectRow(ChartPlugin<?> plugin, boolean firstRow, String pluginLabel, String pluginType,
-                                 String placement, String elementLabel, Boolean visible, Stroke stroke, Color color) {
+    private record PlotObjectRow(String elementLabel, Boolean visible, Stroke stroke, Color color) {
     }
 
-    private final class PlotObjectTableModel extends AbstractTableModel {
+    private final class PlotObjectTreeModel extends DefaultTreeModel implements RowModel {
         private final List<ChartPlugin<?>> plugins = new ArrayList<>();
-        private final List<PlotObjectRow> rows = new ArrayList<>();
-        private final String[] columnNames = {"Study", "Type", "Panel", "Element", "Visible", "Style", "Width", "Color"};
+        private final String[] columnNames = {"Type", "Panel", "Visible", "Style", "Width", "Color"};
+        private int plotObjectCount;
+
+        private PlotObjectTreeModel() {
+            super(new PlotObjectTreeNode(null, null));
+        }
 
         void setPlugins(List<ChartPlugin<?>> plugins) {
             this.plugins.clear();
@@ -1084,26 +1156,32 @@ public class IndicatorChooserPanel extends JPanel {
         }
 
         void refresh() {
-            rows.clear();
-            plugins.forEach(plugin -> rows.addAll(describePlotObjects(plugin)));
-            fireTableDataChanged();
-        }
-
-        PlotObjectRow getRow(int rowIndex) {
-            return rowIndex >= 0 && rowIndex < rows.size() ? rows.get(rowIndex) : null;
-        }
-
-        int indexOf(ChartPlugin<?> plugin) {
-            for (int i = 0; i < rows.size(); i++) {
-                if (rows.get(i).plugin() == plugin)
-                    return i;
+            PlotObjectTreeNode root = new PlotObjectTreeNode(null, null);
+            plotObjectCount = 0;
+            for (ChartPlugin<?> plugin : plugins) {
+                PlotObjectTreeNode studyNode = new PlotObjectTreeNode(plugin, null);
+                for (PlotObjectRow row : describePlotObjects(plugin)) {
+                    studyNode.add(new PlotObjectTreeNode(plugin, row));
+                    plotObjectCount++;
+                }
+                root.add(studyNode);
             }
-            return -1;
+            setRoot(root);
+            reload();
         }
 
-        @Override
-        public int getRowCount() {
-            return rows.size();
+        int getPlotObjectCount() {
+            return plotObjectCount;
+        }
+
+        PlotObjectTreeNode findStudyNode(ChartPlugin<?> plugin) {
+            PlotObjectTreeNode root = (PlotObjectTreeNode) getRoot();
+            for (int i = 0; i < root.getChildCount(); i++) {
+                PlotObjectTreeNode node = (PlotObjectTreeNode) root.getChildAt(i);
+                if (node.plugin() == plugin)
+                    return node;
+            }
+            return null;
         }
 
         @Override
@@ -1117,28 +1195,80 @@ public class IndicatorChooserPanel extends JPanel {
         }
 
         @Override
-        public Class<?> getColumnClass(int columnIndex) {
-            return switch (columnIndex) {
-                case 4 -> Boolean.class;
-                case 7 -> Color.class;
+        public Class<?> getColumnClass(int column) {
+            return switch (column) {
+                case 2 -> Boolean.class;
+                case 5 -> Color.class;
                 default -> Object.class;
             };
         }
 
         @Override
-        public Object getValueAt(int rowIndex, int columnIndex) {
-            PlotObjectRow row = rows.get(rowIndex);
-            return switch (columnIndex) {
-                case 0 -> row.firstRow() ? row.pluginLabel() : "";
-                case 1 -> row.firstRow() ? row.pluginType() : "";
-                case 2 -> row.firstRow() ? row.placement() : "";
-                case 3 -> row.elementLabel();
-                case 4 -> row.visible();
-                case 5 -> describeStroke(row.stroke());
-                case 6 -> describeWidth(row.stroke());
-                case 7 -> row.color();
+        public Object getValueFor(Object value, int column) {
+            if (!(value instanceof PlotObjectTreeNode node) || node.plugin() == null)
+                return null;
+
+            PlotObjectRow row = node.plotObject();
+            if (row == null) {
+                return switch (column) {
+                    case 0 -> describePluginType(node.plugin());
+                    case 1 -> describePanelPlacement(node.plugin());
+                    default -> null;
+                };
+            }
+
+            return switch (column) {
+                case 0, 1 -> "";
+                case 2 -> row.visible();
+                case 3 -> describeStroke(row.stroke());
+                case 4 -> describeWidth(row.stroke());
+                case 5 -> row.color();
                 default -> "";
             };
+        }
+
+        @Override
+        public boolean isCellEditable(Object node, int column) {
+            return false;
+        }
+
+        @Override
+        public void setValueFor(Object node, int column, Object value) {
+            // Plot appearance is edited in the property sheet.
+        }
+    }
+
+    private static final class PlotObjectTreeNode extends DefaultMutableTreeNode {
+        private final ChartPlugin<?> plugin;
+        private final PlotObjectRow plotObject;
+
+        private PlotObjectTreeNode(ChartPlugin<?> plugin, PlotObjectRow plotObject) {
+            super(null, plotObject == null);
+            this.plugin = plugin;
+            this.plotObject = plotObject;
+        }
+
+        ChartPlugin<?> plugin() {
+            return plugin;
+        }
+
+        PlotObjectRow plotObject() {
+            return plotObject;
+        }
+
+        boolean isStudy() {
+            return plugin != null && plotObject == null;
+        }
+
+        String label() {
+            if (plotObject != null)
+                return plotObject.elementLabel();
+            return plugin == null ? "" : plugin.getLabel();
+        }
+
+        @Override
+        public String toString() {
+            return label();
         }
     }
 
@@ -1168,18 +1298,101 @@ public class IndicatorChooserPanel extends JPanel {
         }
     }
 
+    private final class PlotObjectRenderDataProvider implements RenderDataProvider {
+        private static final Icon EMPTY_ICON = new Icon() {
+            @Override
+            public void paintIcon(Component component, Graphics graphics, int x, int y) {
+            }
+
+            @Override
+            public int getIconWidth() {
+                return 0;
+            }
+
+            @Override
+            public int getIconHeight() {
+                return 0;
+            }
+        };
+
+        @Override
+        public String getDisplayName(Object value) {
+            if (!(value instanceof PlotObjectTreeNode node))
+                return "";
+            return node.isStudy() ? "<html><b>" + escapeHtml(node.label()) + "</b></html>" : node.label();
+        }
+
+        @Override
+        public boolean isHtmlDisplayName(Object value) {
+            return value instanceof PlotObjectTreeNode node && node.isStudy();
+        }
+
+        @Override
+        public Color getBackground(Object value) {
+            return value instanceof PlotObjectTreeNode node && node.isStudy()
+                    ? resolveGroupBackground(plotObjectTable)
+                    : null;
+        }
+
+        @Override
+        public Color getForeground(Object value) {
+            return null;
+        }
+
+        @Override
+        public String getTooltipText(Object value) {
+            if (!(value instanceof PlotObjectTreeNode node) || node.plugin() == null)
+                return null;
+            return node.isStudy()
+                    ? describePluginType(node.plugin()) + " - " + describePanelPlacement(node.plugin())
+                    : node.label();
+        }
+
+        @Override
+        public Icon getIcon(Object value) {
+            return EMPTY_ICON;
+        }
+    }
+
+    private static String escapeHtml(String text) {
+        return text.replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#39;");
+    }
+
+    private static boolean isStudyRow(JTable table, int viewRow) {
+        return table.getValueAt(viewRow, 0) instanceof PlotObjectTreeNode node && node.isStudy();
+    }
+
+    private static Color resolveGroupBackground(JTable table) {
+        Color background = table.getBackground();
+        Color accent = table.getSelectionBackground();
+        if (background == null)
+            background = Color.WHITE;
+        if (accent == null)
+            accent = new Color(0x5B8FD1);
+        return blend(background, accent, 0.08f);
+    }
+
     private static class PlotObjectCellRenderer extends DefaultTableCellRenderer {
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus,
                                                        int row, int column) {
             super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-            setHorizontalAlignment(column == 4 || column == 6 ? SwingConstants.CENTER : SwingConstants.LEFT);
+            setHorizontalAlignment(column == 3 || column == 5 ? SwingConstants.CENTER : SwingConstants.LEFT);
             if (value instanceof Boolean visible)
                 setText(visible ? "Yes" : "No");
-            if (column == 0 && value instanceof String text && !text.isBlank())
+            if (isStudyRow(table, row)) {
                 setFont(getFont().deriveFont(Font.BOLD));
-            else
+                if (!isSelected)
+                    setBackground(resolveGroupBackground(table));
+            } else {
                 setFont(table.getFont());
+                if (!isSelected)
+                    setBackground(table.getBackground());
+            }
             return this;
         }
     }
@@ -1198,7 +1411,9 @@ public class IndicatorChooserPanel extends JPanel {
                                                        int row, int column) {
             color = value instanceof Color swatch ? swatch : null;
             selected = isSelected;
-            setBackground(isSelected ? table.getSelectionBackground() : table.getBackground());
+            setBackground(isSelected
+                    ? table.getSelectionBackground()
+                    : isStudyRow(table, row) ? resolveGroupBackground(table) : table.getBackground());
             return this;
         }
 
