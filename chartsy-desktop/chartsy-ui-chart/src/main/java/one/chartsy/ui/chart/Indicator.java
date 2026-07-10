@@ -168,7 +168,10 @@ public abstract class Indicator extends ChartPlugin<Indicator> {
                 double value = getValues(cf, i)[j];
                 String text = Double.isNaN(value) ? "n/a" : df.format(value);
                 Color color = (j < colors.length) ? colors[j] : Color.BLACK;
-                ht.put(getFontHTML(color, key.concat(":")), getFontHTML(color, text));
+                String plotLabel = this instanceof ChartPluginPlotSource plotSource
+                        ? plotSource.getPlotLabel(key)
+                        : key;
+                ht.put(getFontHTML(color, plotLabel.concat(":")), getFontHTML(color, text));
                 j++;
             }
         }

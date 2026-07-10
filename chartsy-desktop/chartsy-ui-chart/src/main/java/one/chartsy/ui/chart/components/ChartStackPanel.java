@@ -25,10 +25,10 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionListener;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.swing.BorderFactory;
 import javax.swing.JLayeredPane;
@@ -42,6 +42,7 @@ import one.chartsy.data.CandleSeries;
 import one.chartsy.ui.chart.*;
 import one.chartsy.ui.chart.internal.ColorServices;
 import one.chartsy.ui.chart.internal.CoordCalc;
+import one.chartsy.ui.chart.internal.ChartPlotRouting;
 import one.chartsy.ui.chart.internal.Graphics2DHelper;
 import org.openide.util.NbBundle;
 
@@ -55,6 +56,7 @@ public class ChartStackPanel extends JLayeredPane {
     private final ChartContext chartFrame;
     
     private final ChartPanel chartPanel;
+    private final List<Indicator> indicators = new ArrayList<>();
     private final Scale sharedTimeScale = new Scale();
     private final JDataBox label;
     private final Resizeable resizeable;
@@ -100,30 +102,31 @@ public class ChartStackPanel extends JLayeredPane {
         ChartFrameListener frameAdapter = new ChartFrameListener() {
             @Override
             public void indicatorAdded(Indicator indicator) {
-                IndicatorPanel indicatorPanel = getIndicatorPanel(indicator);
-                if (indicatorPanel == null) {
-                    indicatorPanel = getIndicatorPanel(indicator.getPanelId());
-                    if (indicatorPanel == null)
-                        indicatorPanel = createIndicatorPanel(indicator.getPanelId(), List.of(indicator));
-                    else
-                        indicatorPanel.addIndicator(indicator);
-                }
+                if (!indicators.contains(indicator))
+                    indicators.add(indicator);
+                rebuildPlotPanels();
                 afterIndicatorStructureChanged();
             }
             
             @Override
             public void indicatorRemoved(Indicator indicator) {
-                IndicatorPanel indicatorPanel = getIndicatorPanel(indicator);
-                if (indicatorPanel != null) {
-                    indicatorPanel.removeIndicator(indicator);
+                if (indicators.remove(indicator)) {
                     indicator.close();
-                    if (indicatorPanel.isEmpty()) {
-                        uninstallResizeListeners(indicatorPanel);
-                        indicatorPanel.disposeResources();
-                        remove(indicatorPanel);
-                    }
+                    rebuildPlotPanels();
                     afterIndicatorStructureChanged();
                 }
+            }
+
+            @Override
+            public void overlayAdded(Overlay overlay) {
+                rebuildPlotPanels();
+                afterIndicatorStructureChanged();
+            }
+
+            @Override
+            public void overlayRemoved(Overlay overlay) {
+                rebuildPlotPanels();
+                afterIndicatorStructureChanged();
             }
         };
         chartFrame.addChartFrameListener(frameAdapter);
@@ -156,8 +159,12 @@ public class ChartStackPanel extends JLayeredPane {
         if (panel == null)
             return;
 
-        for (Indicator indicator : List.copyOf(panel.getIndicators()))
-            chartFrame.indicatorRemoved(indicator);
+        for (ChartPlugin<?> owner : panel.getPlotOwners())
+            ChartPlotRouting.movePanel(owner, panel.getId(), ChartPlotRouting.MAIN_PANEL_ID);
+        rebuildPlotPanels();
+        afterIndicatorStructureChanged();
+        if (chartFrame instanceof ChartFrame frame)
+            frame.refreshTemplateState();
     }
     
     /**
@@ -374,9 +381,7 @@ public class ChartStackPanel extends JLayeredPane {
     }
     
     public Indicator[] getIndicators() {
-        return getIndicatorPanels().stream()
-                .flatMap(panel -> panel.getIndicators().stream())
-                .toArray(Indicator[]::new);
+        return indicators.toArray(Indicator[]::new);
     }
     
     public void moveLeft() {
@@ -764,14 +769,11 @@ public class ChartStackPanel extends JLayeredPane {
     }
     
     public List<Indicator> getIndicatorsList() {
-        Indicator[] inds = getIndicators();
-        return new ArrayList<>(Arrays.asList(inds));
+        return new ArrayList<>(indicators);
     }
     
     public int getIndicatorsCount() {
-        return getIndicatorPanels().stream()
-                .mapToInt(panel -> panel.getIndicators().size())
-                .sum();
+        return indicators.size();
     }
     
     public List<IndicatorPanel> getIndicatorPanels() {
@@ -834,11 +836,35 @@ public class ChartStackPanel extends JLayeredPane {
                 .orElse(null);
     }
 
-    private IndicatorPanel createIndicatorPanel(int paneId, List<? extends Indicator> indicators) {
-        IndicatorPanel indicatorPanel = new IndicatorPanel(chartFrame, paneId, indicators, sharedTimeScale);
+    private IndicatorPanel createIndicatorPanel(int paneId, List<? extends ChartPlugin<?>> plotOwners) {
+        IndicatorPanel indicatorPanel = new IndicatorPanel(chartFrame, paneId, plotOwners, sharedTimeScale);
         add(indicatorPanel);
         installResizeListeners(indicatorPanel);
         return indicatorPanel;
+    }
+
+    private void rebuildPlotPanels() {
+        Map<Integer, Boolean> minimizedByPanel = new LinkedHashMap<>();
+        for (IndicatorPanel panel : getIndicatorPanels()) {
+            minimizedByPanel.put(panel.getId(), panel.isMinimized());
+            uninstallResizeListeners(panel);
+            panel.disposeResources();
+            remove(panel);
+        }
+
+        Map<Integer, List<ChartPlugin<?>>> ownersByPanel = new LinkedHashMap<>();
+        List<ChartPlugin<?>> plotOwners = new ArrayList<>(chartPanel.getOverlays());
+        plotOwners.addAll(indicators);
+        for (ChartPlugin<?> owner : plotOwners) {
+            for (int panelId : ChartPlotRouting.configuredPanelIds(owner))
+                ownersByPanel.computeIfAbsent(panelId, ignored -> new ArrayList<>()).add(owner);
+        }
+
+        for (var entry : ownersByPanel.entrySet()) {
+            IndicatorPanel panel = createIndicatorPanel(entry.getKey(), entry.getValue());
+            if (Boolean.TRUE.equals(minimizedByPanel.get(entry.getKey())))
+                panel.setMinimized(true);
+        }
     }
 
     private void installResizeListeners(IndicatorPanel indicatorPanel) {

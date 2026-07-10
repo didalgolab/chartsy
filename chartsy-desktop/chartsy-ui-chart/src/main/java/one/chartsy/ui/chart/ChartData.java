@@ -35,6 +35,7 @@ import one.chartsy.ui.chart.axis.AxisScale;
 import one.chartsy.ui.chart.axis.DateScale;
 import one.chartsy.collections.DoubleArray;
 import one.chartsy.ui.chart.data.VisibleCandles;
+import one.chartsy.ui.chart.internal.ChartPlotRouting;
 
 /**
  * Holds data associated with the displayed chart.
@@ -331,6 +332,13 @@ public class ChartData implements Serializable, ChartFrameListener {
     }
     
     public void calculateRange(ChartContext chartFrame, List<Overlay> overlays) {
+        calculateRange(chartFrame, overlays, List.of());
+    }
+
+    public void calculateRange(
+            ChartContext chartFrame,
+            List<? extends Overlay> overlays,
+            List<? extends Indicator> indicators) {
         Range.Builder range = new Range.Builder();
         if (!isVisibleNull() && getVisible().getLength() > 0) {
             Range di = getVisible().getRange(null).toRange();
@@ -338,19 +346,13 @@ public class ChartData implements Serializable, ChartFrameListener {
             double max = di.max();
             range.add(min - (max - min) * 0.00, max + (max - min) * 0.00);//TODO: changed
             
-            if (!overlays.isEmpty())
-                for (int i = 0; i < overlays.size(); i++) {
-                    Overlay overlay = overlays.get(i);
-                    if (overlay.isIncludedInRange()) {
-                        Range oRange = overlay.getRange(chartFrame);
-                        if (oRange != null) {
-                            if (oRange.min() > 0)
-                                range.add(oRange.min());
-                            if (!Double.isInfinite(oRange.max()))
-                                range.add(oRange.max());
-                        }
-                    }
-                }
+            for (ChartPlotRouting.Route route : ChartPlotRouting.routes(overlays, indicators)) {
+                if (route.panelId() != ChartPlotRouting.MAIN_PANEL_ID)
+                    continue;
+                if (route.owner() instanceof Overlay overlay && !overlay.isIncludedInRange())
+                    continue;
+                range = route.plot().contributeRange(range, chartFrame);
+            }
         }
         CandleSeries dataset = getDataset();
         if (range.toRange().isEmpty() && dataset != null && dataset.length() > 0) {

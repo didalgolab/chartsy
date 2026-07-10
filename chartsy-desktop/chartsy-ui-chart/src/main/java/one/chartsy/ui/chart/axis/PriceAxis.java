@@ -118,15 +118,16 @@ public class PriceAxis extends JPanel implements Serializable {
             // paint values for indicators
             if (chartFrame.getMainPanel().getStackPanel().getIndicatorsCount() > 0) {
                 for (IndicatorPanel panel : chartFrame.getMainPanel().getStackPanel().getIndicatorPanels()) {
-                    if (!panel.isMinimized()) {
+                    Indicator indicator = panel.getIndicator();
+                    if (!panel.isMinimized() && indicator != null) {
                         g2.translate(0, panel.getY());
                         
                         Rectangle indicatorBounds = panel.getBounds();
                         indicatorBounds.setLocation(0, 0);
-                        VisualRange indicatorRange = panel.getIndicator().getRange(chartFrame);
-                        
-                        if (panel.getIndicator().paintValues()) {
-                            double[] stepValues = panel.getIndicator().getStepValues(chartFrame);
+                        VisualRange indicatorRange = indicator.getRange(chartFrame);
+
+                        if (indicator.paintValues()) {
+                            double[] stepValues = indicator.getStepValues(chartFrame);
                             for (double stepValue : stepValues) {
                                 y = cd.getY(stepValue, indicatorBounds, indicatorRange.range(), indicatorRange.isLogarithmic());
                                 if (indicatorBounds.contains(indicatorBounds.getCenterX(), y)) {
@@ -148,10 +149,10 @@ public class PriceAxis extends JPanel implements Serializable {
                             }
                             
                             // paint indicators marker
-                            if (panel.getIndicator().getMarkerVisibility()) {
-                                double[] ds = panel.getIndicator().getValues(chartFrame);
+                            if (indicator.getMarkerVisibility()) {
+                                double[] ds = indicator.getValues(chartFrame);
                                 if (ds.length > 0) {
-                                    Color[] cs = panel.getIndicator().getColors();
+                                    Color[] cs = indicator.getColors();
                                     for (int i = 0; i < ds.length; i++) {
                                         y = cd.getY(ds[i], indicatorBounds, indicatorRange.range(), indicatorRange.isLogarithmic());
                                         if (cs[i] != null)

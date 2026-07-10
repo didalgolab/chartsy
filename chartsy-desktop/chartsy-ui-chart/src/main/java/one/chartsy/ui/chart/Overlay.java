@@ -107,7 +107,10 @@ public abstract class Overlay extends ChartPlugin<Overlay> implements Serializab
             if (dataset != null) {
                 double value = dataset.getValueAt(i);
                 Color color = plots.get(key).getPrimaryColor();
-                ht.put(getFontHTML(color, key.concat(":")), getFontHTML(color, df.format(value)));
+                String plotLabel = this instanceof ChartPluginPlotSource plotSource
+                        ? plotSource.getPlotLabel(key)
+                        : key;
+                ht.put(getFontHTML(color, plotLabel.concat(":")), getFontHTML(color, df.format(value)));
             }
         }
         

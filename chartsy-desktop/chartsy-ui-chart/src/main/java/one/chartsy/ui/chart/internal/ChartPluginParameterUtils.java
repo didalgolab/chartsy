@@ -41,7 +41,7 @@ public final class ChartPluginParameterUtils {
         if (!Objects.equals(configurationIdentity(source), configurationIdentity(target)))
             throw new IllegalArgumentException("Parameter copy requires matching plugin identities");
 
-        Map<String, ChartPluginParameter> targetParameters = parameterMap(target);
+        Map<String, ChartPluginParameter> targetParameters = getParametersById(target);
         for (ChartPluginParameter sourceParameter : getParameters(source)) {
             ChartPluginParameter targetParameter = targetParameters.get(sourceParameter.id());
             if (targetParameter != null && targetParameter.canWrite())
@@ -57,8 +57,8 @@ public final class ChartPluginParameterUtils {
         if (!Objects.equals(configurationIdentity(left), configurationIdentity(right)))
             return false;
 
-        Map<String, ChartPluginParameter> leftParameters = parameterMap(left);
-        Map<String, ChartPluginParameter> rightParameters = parameterMap(right);
+        Map<String, ChartPluginParameter> leftParameters = getParametersById(left);
+        Map<String, ChartPluginParameter> rightParameters = getParametersById(right);
         if (!leftParameters.keySet().equals(rightParameters.keySet()))
             return false;
 
@@ -71,11 +71,11 @@ public final class ChartPluginParameterUtils {
         return true;
     }
 
-    private static Map<String, ChartPluginParameter> parameterMap(ChartPlugin<?> plugin) {
+    public static Map<String, ChartPluginParameter> getParametersById(ChartPlugin<?> plugin) {
         Map<String, ChartPluginParameter> parameters = new LinkedHashMap<>();
         for (ChartPluginParameter parameter : getParameters(plugin))
             parameters.put(parameter.id(), parameter);
-        return parameters;
+        return Map.copyOf(parameters);
     }
 
     private static List<ChartPluginParameter> mergeParameters(List<? extends ChartPluginParameter> primary,

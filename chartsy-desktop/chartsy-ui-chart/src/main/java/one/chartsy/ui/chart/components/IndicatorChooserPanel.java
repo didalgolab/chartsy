@@ -11,6 +11,7 @@ import one.chartsy.ui.chart.Overlay;
 import one.chartsy.ui.chart.StudyBackedChartPlugin;
 import one.chartsy.ui.chart.internal.ChartPluginParameter;
 import one.chartsy.ui.chart.internal.ChartPluginParameterUtils;
+import one.chartsy.ui.chart.internal.ChartPlotRouting;
 import one.chartsy.ui.chart.internal.IndicatorPaneSupport;
 import one.chartsy.ui.chart.properties.NamedPluginNode;
 import one.chartsy.study.StudyPlacement;
@@ -22,7 +23,6 @@ import javax.swing.BorderFactory;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JButton;
-import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -95,9 +95,8 @@ public class IndicatorChooserPanel extends JPanel {
     private final JButton expandButton = new JButton("+");
     private final JButton collapseButton = new JButton("-");
     private final JComboBox<ChartPlugin<?>> pluginSelector = new JComboBox<>(pluginSelectorModel);
-    private final DefaultComboBoxModel<PaneChoice> paneSelectorModel = new DefaultComboBoxModel<>();
-    private final JComboBox<PaneChoice> paneSelector = new JComboBox<>(paneSelectorModel);
-    private final JCheckBox forceCombineCheckBox = new JCheckBox("Force combine");
+    private final DefaultComboBoxModel<PlotObjectTreeTable.PanelChoice> paneSelectorModel = new DefaultComboBoxModel<>();
+    private final JComboBox<PlotObjectTreeTable.PanelChoice> paneSelector = new JComboBox<>(paneSelectorModel);
     private final JLabel paneAssignmentLabel = new JLabel("Pane:");
     private final JLabel selectionMetaLabel = new JLabel(" ");
     private final JPanel propertyContentPanel = new JPanel(new CardLayout());
@@ -107,7 +106,6 @@ public class IndicatorChooserPanel extends JPanel {
     private boolean synchronizingSelection;
     private boolean synchronizingPaneControls;
     private boolean splitLayoutInitialized;
-    private ChartPlugin<?> paneSelectionOwner;
 
     public IndicatorChooserPanel() {
         initComponents();
@@ -294,7 +292,7 @@ public class IndicatorChooserPanel extends JPanel {
             @Override
             public Component getListCellRendererComponent(JList<?> list, Object value, int index,
                                                           boolean isSelected, boolean cellHasFocus) {
-                String label = value instanceof PaneChoice paneChoice ? paneChoice.label() : "";
+                String label = value instanceof PlotObjectTreeTable.PanelChoice choice ? choice.label() : "";
                 return super.getListCellRendererComponent(list, label, index, isSelected, cellHasFocus);
             }
         });
@@ -304,22 +302,11 @@ public class IndicatorChooserPanel extends JPanel {
         gbc.insets = new Insets(0, 0, 4, 8);
         selectorPanel.add(paneSelector, gbc);
 
-        forceCombineCheckBox.setName("indicatorChooser.forceCombine");
-        forceCombineCheckBox.setOpaque(false);
-        forceCombineCheckBox.setVisible(false);
-        gbc.gridx = 1;
-        gbc.gridy = 2;
-        gbc.weightx = 0.0;
-        gbc.fill = GridBagConstraints.NONE;
-        gbc.insets = new Insets(0, 0, 4, 8);
-        gbc.anchor = GridBagConstraints.WEST;
-        selectorPanel.add(forceCombineCheckBox, gbc);
-
         selectionMetaLabel.setName("indicatorChooser.selectionMeta");
         selectionMetaLabel.setForeground(resolveSecondaryTextColor());
         selectionMetaLabel.setFont(selectionMetaLabel.getFont().deriveFont(Font.PLAIN,
                 Math.max(11.0f, selectionMetaLabel.getFont().getSize2D() - 1.0f)));
-        gbc.gridy = 3;
+        gbc.gridy = 2;
         gbc.gridx = 1;
         gbc.insets = new Insets(0, 0, 4, 8);
         gbc.anchor = GridBagConstraints.WEST;
@@ -416,9 +403,12 @@ public class IndicatorChooserPanel extends JPanel {
                 selectPlugin((ChartPlugin<?>) pluginSelector.getSelectedItem(), true);
         });
         paneSelector.addActionListener(event -> applyPaneAssignment());
-        forceCombineCheckBox.addActionListener(event -> refreshPaneAssignmentControls(getCurrentlySelectedPlugin()));
         plotObjectTable.getSelectionModel().addListSelectionListener(this::onPlotObjectSelectionChanged);
         plotObjectTable.addVisibilityChangeListener(event -> propertySheet.repaint());
+        plotObjectTable.addPanelChangeListener(event -> {
+            propertySheet.repaint();
+            refreshVisualSummary();
+        });
         propertySheet.addPropertyChangeListener(event -> refreshVisualSummary());
     }
 
@@ -454,7 +444,6 @@ public class IndicatorChooserPanel extends JPanel {
     }
 
     private void refreshSelectedPlugins(ChartPlugin<?> selection) {
-        normalizeSelectedPaneIds();
         synchronizingSelection = true;
         try {
             pluginSelectorModel.removeAllElements();
@@ -462,6 +451,7 @@ public class IndicatorChooserPanel extends JPanel {
                 pluginSelectorModel.addElement(plugin);
 
             pluginSelector.setEnabled(!selectedPlugins.isEmpty());
+            plotObjectTable.setPanelChoices(panelChoices());
             plotObjectTable.setStudies(describeSelectedPlotObjects());
             plotObjectCountLabel.setText(selectedPlugins.size() + " study(s), "
                     + plotObjectTable.getPlotObjectCount() + " plot object(s)");
@@ -484,6 +474,7 @@ public class IndicatorChooserPanel extends JPanel {
 
     private void refreshVisualSummary() {
         ChartPlugin<?> selectedPlugin = getCurrentlySelectedPlugin();
+        plotObjectTable.setPanelChoices(panelChoices());
         plotObjectTable.refreshStudies(describeSelectedPlotObjects());
         plotObjectTable.selectPlugin(selectedPlugin);
         pluginSelector.repaint();
@@ -529,52 +520,56 @@ public class IndicatorChooserPanel extends JPanel {
     }
 
     private void refreshPaneAssignmentControls(ChartPlugin<?> plugin) {
-        if (!(plugin instanceof Indicator indicator) || IndicatorPaneSupport.isMainPanelIndicator(indicator)) {
+        if (!(plugin instanceof ChartPluginPlotSource plotSource)) {
             hidePaneAssignmentControls(plugin);
             return;
         }
-
-        boolean currentIncompatible = isForcedCombination(indicator);
-        if (paneSelectionOwner != plugin) {
-            paneSelectionOwner = plugin;
-            forceCombineCheckBox.setSelected(currentIncompatible);
-        }
-
-        List<PaneCandidate> candidates = paneCandidates(indicator);
-        boolean forceCombine = forceCombineCheckBox.isSelected();
 
         synchronizingPaneControls = true;
         try {
             paneAssignmentLabel.setVisible(true);
             paneSelector.setVisible(true);
             paneSelector.setEnabled(true);
-            forceCombineCheckBox.setVisible(!candidates.isEmpty());
             paneSelectorModel.removeAllElements();
 
-            PaneChoice selectedChoice = PaneChoice.newPaneChoice();
-            paneSelectorModel.addElement(selectedChoice);
-
-            int paneNumber = 1;
-            for (PaneCandidate candidate : candidates) {
-                boolean isCurrent = candidate.group().id() == indicator.getPanelId();
-                boolean compatible = candidate.compatibility() == IndicatorPaneSupport.Compatibility.COMPATIBLE;
-                if (!compatible && !forceCombine && !isCurrent)
-                    continue;
-
-                PaneChoice choice = new PaneChoice(
-                        candidate.group().id(),
-                        formatPaneChoice(candidate.group(), paneNumber++, compatible, isCurrent),
-                        false
-                );
-                paneSelectorModel.addElement(choice);
-                if (isCurrent)
-                    selectedChoice = choice;
+            List<PlotObjectTreeTable.PanelChoice> choices = panelChoices();
+            choices.forEach(paneSelectorModel::addElement);
+            Integer commonPanelId = commonPanelId(plugin, plotSource);
+            PlotObjectTreeTable.PanelChoice selectedChoice;
+            if (commonPanelId == null) {
+                selectedChoice = PlotObjectTreeTable.PanelChoice.mixed();
+                paneSelectorModel.insertElementAt(selectedChoice, 0);
+            } else {
+                selectedChoice = choices.stream()
+                        .filter(choice -> !choice.createsPane() && choice.panelId() == commonPanelId)
+                        .findFirst()
+                        .orElse(choices.getFirst());
             }
-
             paneSelector.setSelectedItem(selectedChoice);
         } finally {
             synchronizingPaneControls = false;
         }
+    }
+
+    private Integer commonPanelId(ChartPlugin<?> plugin, ChartPluginPlotSource plotSource) {
+        Integer commonPanelId = null;
+        for (ChartPluginPlotSource.PlotDescriptor plot : plotSource.getPlotDescriptors()) {
+            int panelId = ChartPlotRouting.panelId(plugin, plot);
+            if (commonPanelId != null && commonPanelId != panelId)
+                return null;
+            commonPanelId = panelId;
+        }
+        return commonPanelId;
+    }
+
+    private List<PlotObjectTreeTable.PanelChoice> panelChoices() {
+        List<PlotObjectTreeTable.PanelChoice> choices = new ArrayList<>();
+        choices.add(PlotObjectTreeTable.PanelChoice.mainChart());
+        int paneNumber = 1;
+        for (int panelId : ChartPlotRouting.configuredPanelIds(selectedPlugins))
+            choices.add(PlotObjectTreeTable.PanelChoice.pane(panelId, paneNumber++));
+        choices.add(PlotObjectTreeTable.PanelChoice.newPane(ChartPlotRouting.nextPanelId(selectedPlugins)));
+        return List.copyOf(choices);
     }
 
     private void applyPaneAssignment() {
@@ -582,54 +577,18 @@ public class IndicatorChooserPanel extends JPanel {
             return;
 
         ChartPlugin<?> plugin = getCurrentlySelectedPlugin();
-        if (!(plugin instanceof Indicator indicator) || IndicatorPaneSupport.isMainPanelIndicator(indicator))
+        if (!(plugin instanceof ChartPluginPlotSource))
             return;
 
-        PaneChoice choice = (PaneChoice) paneSelector.getSelectedItem();
-        if (choice == null)
+        PlotObjectTreeTable.PanelChoice choice =
+                (PlotObjectTreeTable.PanelChoice) paneSelector.getSelectedItem();
+        if (choice == null || choice.panelId() < 0)
             return;
 
-        int panelId = selectedPaneId(choice);
-        if (panelId != indicator.getPanelId()) {
-            indicator.setPanelId(panelId);
-            refreshSelectedPlugins(indicator);
-        }
-    }
-
-    private boolean isForcedCombination(Indicator indicator) {
-        return paneCandidates(indicator).stream()
-                .filter(candidate -> candidate.group().id() == indicator.getPanelId())
-                .findFirst()
-                .map(candidate -> candidate.compatibility() == IndicatorPaneSupport.Compatibility.INCOMPATIBLE)
-                .orElse(false);
-    }
-
-    private List<PaneCandidate> paneCandidates(Indicator indicator) {
-        List<PaneCandidate> candidates = new ArrayList<>();
-        for (IndicatorPaneSupport.PaneGroup group : selectedPaneGroups()) {
-            List<Indicator> occupants = group.indicators().stream()
-                    .filter(candidate -> candidate != indicator)
-                    .toList();
-            if (occupants.isEmpty())
-                continue;
-            candidates.add(new PaneCandidate(group.withIndicators(occupants), IndicatorPaneSupport.compatibility(indicator, occupants)));
-        }
-        return candidates;
-    }
-
-    private String formatPaneChoice(IndicatorPaneSupport.PaneGroup group, int paneNumber, boolean compatible, boolean current) {
-        StringBuilder label = new StringBuilder("Pane ").append(paneNumber);
-        if (current)
-            label.append(" (Current)");
-        else if (!compatible)
-            label.append(" (Force combine)");
-        label.append(" - ").append(group.indicators().stream()
-                .map(ChartPlugin::getLabel)
-                .distinct()
-                .limit(3)
-                .reduce((left, right) -> left + ", " + right)
-                .orElse("Empty"));
-        return label.toString();
+        ChartPlotRouting.setAllPanelIds(plugin, choice.panelId());
+        if (plugin instanceof Indicator indicator && choice.panelId() > ChartPlotRouting.MAIN_PANEL_ID)
+            indicator.setPanelId(choice.panelId());
+        refreshSelectedPlugins(plugin);
     }
 
     private void rebuildAvailableTree() {
@@ -766,41 +725,15 @@ public class IndicatorChooserPanel extends JPanel {
 
     private void assignPaneIdIfNeeded(ChartPlugin<?> plugin) {
         if (plugin instanceof Indicator indicator && IndicatorPaneSupport.isOwnPanelIndicator(indicator))
-            indicator.setPanelId(nextSelectedPaneId());
-    }
-
-    private void normalizeSelectedPaneIds() {
-        IndicatorPaneSupport.normalizePaneIds(selectedOwnPanelIndicators());
-    }
-
-    private List<Indicator> selectedOwnPanelIndicators() {
-        return selectedPlugins.stream()
-                .filter(Indicator.class::isInstance)
-                .map(Indicator.class::cast)
-                .filter(IndicatorPaneSupport::isOwnPanelIndicator)
-                .toList();
-    }
-
-    private List<IndicatorPaneSupport.PaneGroup> selectedPaneGroups() {
-        return IndicatorPaneSupport.groupByPane(selectedOwnPanelIndicators());
-    }
-
-    private int nextSelectedPaneId() {
-        return IndicatorPaneSupport.nextPanelId(selectedOwnPanelIndicators());
-    }
-
-    private int selectedPaneId(PaneChoice choice) {
-        return choice.newPane() ? nextSelectedPaneId() : choice.panelId();
+            indicator.setPanelId(ChartPlotRouting.nextPanelId(selectedPlugins));
     }
 
     private void hidePaneAssignmentControls(ChartPlugin<?> plugin) {
-        paneSelectionOwner = plugin;
         synchronizingPaneControls = true;
         try {
             paneAssignmentLabel.setVisible(false);
             paneSelector.setVisible(false);
             paneSelector.setEnabled(false);
-            forceCombineCheckBox.setVisible(false);
             paneSelectorModel.removeAllElements();
         } finally {
             synchronizingPaneControls = false;
@@ -865,7 +798,6 @@ public class IndicatorChooserPanel extends JPanel {
                 .map(plugin -> new PlotObjectTreeTable.Study(
                         plugin,
                         describePluginType(plugin),
-                        describePanelPlacement(plugin),
                         describePlotObjects(plugin)))
                 .toList();
     }
@@ -878,21 +810,16 @@ public class IndicatorChooserPanel extends JPanel {
 
     private List<PlotObjectTreeTable.Plot> describeDeclaredPlotObjects(
             ChartPlugin<?> plugin, ChartPluginPlotSource plotSource) {
-        Map<String, ChartPluginParameter> parametersById = parametersById(plugin);
+        Map<String, ChartPluginParameter> parametersById = ChartPluginParameterUtils.getParametersById(plugin);
         return plotSource.getPlotDescriptors().stream()
-                .map(plot -> PlotObjectTreeTable.Plot.withVisibility(
+                .map(plot -> PlotObjectTreeTable.Plot.withBindings(
                         plot.label(),
                         parameterValue(parametersById, plot.strokeParameterId(), Stroke.class),
                         parameterValue(parametersById, plot.colorParameterId(), Color.class),
-                        parametersById.get(plot.visibilityParameterId())))
+                        parametersById.get(plot.visibilityParameterId()),
+                        parametersById.get(plot.panelParameterId()),
+                        () -> ChartPlotRouting.panelId(plugin, plot)))
                 .toList();
-    }
-
-    private static Map<String, ChartPluginParameter> parametersById(ChartPlugin<?> plugin) {
-        Map<String, ChartPluginParameter> parameters = new LinkedHashMap<>();
-        for (ChartPluginParameter parameter : ChartPluginParameterUtils.getParameters(plugin))
-            parameters.put(parameter.id(), parameter);
-        return parameters;
     }
 
     private static <T> T parameterValue(
@@ -918,28 +845,17 @@ public class IndicatorChooserPanel extends JPanel {
     }
 
     private String describePanelPlacement(ChartPlugin<?> plugin) {
-        if (plugin instanceof StudyBackedChartPlugin studyPlugin) {
-            if (studyPlugin.getStudyDescriptor().placement() == StudyPlacement.MAIN_PANEL)
-                return "Main Panel";
-        }
-        if (plugin instanceof Indicator indicator && IndicatorPaneSupport.isOwnPanelIndicator(indicator)) {
-            List<IndicatorPaneSupport.PaneGroup> panes = selectedPaneGroups();
-            for (int i = 0; i < panes.size(); i++) {
-                if (panes.get(i).id() == indicator.getPanelId())
-                    return "Pane " + (i + 1);
-            }
-            return "Pane";
+        if (plugin instanceof ChartPluginPlotSource plotSource) {
+            Integer panelId = commonPanelId(plugin, plotSource);
+            if (panelId == null)
+                return "Mixed";
+            return panelChoices().stream()
+                    .filter(choice -> !choice.createsPane() && choice.panelId() == panelId)
+                    .map(PlotObjectTreeTable.PanelChoice::label)
+                    .findFirst()
+                    .orElse("Pane " + panelId);
         }
         return PluginKind.from(plugin).placementLabel();
-    }
-
-    private record PaneCandidate(IndicatorPaneSupport.PaneGroup group, IndicatorPaneSupport.Compatibility compatibility) {
-    }
-
-    private record PaneChoice(int panelId, String label, boolean newPane) {
-        static PaneChoice newPaneChoice() {
-            return new PaneChoice(0, "New Pane", true);
-        }
     }
 
     private static final class PluginTreeCellRenderer extends DefaultTreeCellRenderer {

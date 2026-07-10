@@ -8,12 +8,13 @@ import one.chartsy.charting.Legend;
 import one.chartsy.charting.Scale;
 import one.chartsy.core.Range;
 import one.chartsy.ui.chart.ChartContext;
+import one.chartsy.ui.chart.ChartPlugin;
 import one.chartsy.ui.chart.IconResource;
 import one.chartsy.ui.chart.Indicator;
 import one.chartsy.ui.chart.action.ChartActions;
 import one.chartsy.ui.chart.internal.ColorServices;
+import one.chartsy.ui.chart.internal.ChartPlotRouting;
 import one.chartsy.ui.chart.internal.Graphics2DHelper;
-import one.chartsy.ui.chart.internal.IndicatorPaneSupport;
 import one.chartsy.ui.chart.internal.engine.EngineChartHost;
 import one.chartsy.ui.chart.data.VisualRange;
 
@@ -54,7 +55,7 @@ public class IndicatorPanel extends JPanel {
     private final ChartContext chartFrame;
     private final EngineChartHost engineHost;
     private final Legend nativeLegend;
-    private final List<Indicator> indicators = new ArrayList<>();
+    private final List<ChartPlugin<?>> plotOwners = new ArrayList<>();
     private final int id;
 
     private AnnotationPanel annotationPanel;
@@ -64,10 +65,14 @@ public class IndicatorPanel extends JPanel {
     private boolean minimized;
 
 
-    public IndicatorPanel(ChartContext frame, int paneId, List<? extends Indicator> paneIndicators, Scale sharedTimeScale) {
+    public IndicatorPanel(
+            ChartContext frame,
+            int paneId,
+            List<? extends ChartPlugin<?>> plotOwners,
+            Scale sharedTimeScale) {
         this.chartFrame = frame;
         this.id = paneId;
-        this.indicators.addAll(paneIndicators);
+        this.plotOwners.addAll(plotOwners);
         this.engineHost = new EngineChartHost(sharedTimeScale);
         this.nativeLegend = engineHost.legend();
         initializeUIElements();
@@ -163,28 +168,19 @@ public class IndicatorPanel extends JPanel {
     }
 
     public Indicator getIndicator() {
-        return indicators.isEmpty() ? null : indicators.getFirst();
+        return getIndicators().stream().findFirst().orElse(null);
     }
 
     public List<Indicator> getIndicators() {
-        return List.copyOf(indicators);
+        return plotOwners.stream().filter(Indicator.class::isInstance).map(Indicator.class::cast).toList();
+    }
+
+    public List<ChartPlugin<?>> getPlotOwners() {
+        return List.copyOf(plotOwners);
     }
 
     public boolean containsIndicator(Indicator indicator) {
-        return indicators.contains(indicator);
-    }
-
-    public void addIndicator(Indicator indicator) {
-        if (indicator != null && !indicators.contains(indicator))
-            indicators.add(indicator);
-    }
-
-    public boolean removeIndicator(Indicator indicator) {
-        return indicators.remove(indicator);
-    }
-
-    public boolean isEmpty() {
-        return indicators.isEmpty();
+        return plotOwners.contains(indicator);
     }
 
     public VisualRange getPaneRange() {
@@ -222,26 +218,25 @@ public class IndicatorPanel extends JPanel {
 
     public void refreshEngine(boolean showTimeScale, one.chartsy.charting.Chart masterChart) {
         updateToolbox();
-        if (!chartFrame.getChartData().hasDataset() || indicators.isEmpty()) {
+        if (!chartFrame.getChartData().hasDataset() || plotOwners.isEmpty()) {
             updatePaneVisibility();
             annotationPanel.repaint();
             return;
         }
-        paneRange = IndicatorPaneSupport.combinedRange(indicators, chartFrame);
-        engineHost.configureIndicatorChart(chartFrame, indicators, paneRange, showTimeScale, masterChart);
+        paneRange = ChartPlotRouting.combinedRange(plotOwners, id, chartFrame);
+        engineHost.configureIndicatorChart(chartFrame, id, plotOwners, paneRange, showTimeScale, masterChart);
         updatePaneVisibility();
         annotationPanel.repaint();
     }
 
     private void updatePaneVisibility() {
-        boolean showPlot = !isMinimized() || indicators.stream().anyMatch(Indicator::isMinimizedPaint);
+        boolean showPlot = !isMinimized() || getIndicators().stream().anyMatch(Indicator::isMinimizedPaint);
         engineHost.chart().setVisible(showPlot);
         annotationPanel.setVisible(showPlot);
         nativeLegend.setVisible(showPlot && nativeLegend.getComponentCount() > 0);
     }
 
     public void disposeResources() {
-        indicators.forEach(Indicator::close);
         engineHost.close();
     }
 
@@ -291,7 +286,7 @@ public class IndicatorPanel extends JPanel {
     }
 
     private Action removeAction(ChartContext frame, IndicatorPanel panel) {
-        return new AbstractAction("Remove Indicator Pane", IconResource.getIcon("remove")) {
+        return new AbstractAction("Remove Pane", IconResource.getIcon("remove")) {
             @Override
             public void actionPerformed(ActionEvent e) {
                 frame.getMainPanel().getStackPanel().removePane(panel);
@@ -382,7 +377,7 @@ public class IndicatorPanel extends JPanel {
 
             container.add(button = new ToolboxButton(removeAction(chartFrame, IndicatorPanel.this)));
             button.setText("");
-            button.setToolTipText("Remove Pane");
+            button.setToolTipText("Remove Pane (move plots to Main chart)");
 
             revalidate();
             repaint();
@@ -467,10 +462,10 @@ public class IndicatorPanel extends JPanel {
     }
 
     private String paneTitle() {
-        if (indicators.isEmpty())
+        if (plotOwners.isEmpty())
             return "Pane";
-        if (indicators.size() == 1)
-            return indicators.getFirst().getLabel();
-        return indicators.getFirst().getLabel() + " +" + (indicators.size() - 1);
+        if (plotOwners.size() == 1)
+            return plotOwners.getFirst().getLabel();
+        return plotOwners.getFirst().getLabel() + " +" + (plotOwners.size() - 1);
     }
 }

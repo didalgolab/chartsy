@@ -130,7 +130,7 @@ public class ChartPanel extends JLayeredPane implements Serializable {
             @Override
             public void overlayAdded(Overlay overlay) {
                 addOverlay(overlay);
-                chartFrame.getChartData().calculateRange(chartFrame, overlays);
+                chartFrame.getChartData().calculateRange(chartFrame, overlays, currentIndicators());
                 refreshEngine(getParent() == null || ((ChartStackPanel) getParent()).getIndicatorPanels().isEmpty());
                 chartFrame.getMainPanel().revalidate();
                 chartFrame.getMainPanel().repaint();
@@ -139,7 +139,7 @@ public class ChartPanel extends JLayeredPane implements Serializable {
             @Override
             public void overlayRemoved(Overlay overlay) {
                 removeOverlay(overlay);
-                chartFrame.getChartData().calculateRange(chartFrame, overlays);
+                chartFrame.getChartData().calculateRange(chartFrame, overlays, currentIndicators());
                 refreshEngine(getParent() == null || ((ChartStackPanel) getParent()).getIndicatorPanels().isEmpty());
                 chartFrame.getMainPanel().revalidate();
                 chartFrame.getMainPanel().repaint();
@@ -242,9 +242,16 @@ public class ChartPanel extends JLayeredPane implements Serializable {
             annotationPanel.repaint();
             return;
         }
-        chartFrame.getChartData().calculateRange(chartFrame, overlays);
-        engineHost.configurePriceChart(chartFrame, overlays, showTimeScale);
+        List<Indicator> indicators = currentIndicators();
+        chartFrame.getChartData().calculateRange(chartFrame, overlays, indicators);
+        engineHost.configurePriceChart(chartFrame, overlays, indicators, showTimeScale);
         annotationPanel.repaint();
+    }
+
+    private List<Indicator> currentIndicators() {
+        return getParent() instanceof ChartStackPanel stackPanel
+                ? stackPanel.getIndicatorsList()
+                : List.of();
     }
     
     @Override

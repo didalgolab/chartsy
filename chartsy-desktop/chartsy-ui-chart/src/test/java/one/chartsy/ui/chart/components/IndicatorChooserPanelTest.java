@@ -10,7 +10,6 @@ import one.chartsy.SymbolResource;
 import one.chartsy.TimeFrame;
 import one.chartsy.data.CandleSeries;
 import one.chartsy.ui.chart.BasicStrokes;
-import one.chartsy.ui.chart.ChartContext;
 import one.chartsy.ui.chart.ChartPluginPlotSource;
 import one.chartsy.ui.chart.DynamicStudyIndicator;
 import one.chartsy.ui.chart.DynamicStudyOverlay;
@@ -18,8 +17,6 @@ import one.chartsy.ui.chart.Indicator;
 import one.chartsy.ui.chart.Overlay;
 import one.chartsy.ui.chart.StudyBackedChartPlugin;
 import one.chartsy.ui.chart.StudyRegistry;
-import one.chartsy.study.StudyAxisDescriptor;
-import one.chartsy.study.StudyPresentationPlan;
 import one.chartsy.study.StudyPlotDescriptor;
 import org.netbeans.swing.outline.Outline;
 import org.junit.jupiter.api.Test;
@@ -53,7 +50,7 @@ class IndicatorChooserPanelTest {
         assertThat(table.getRowCount()).isEqualTo(2);
         assertThat(table.getValueAt(0, 0).toString()).isEqualTo("Bands");
         assertThat(table.getValueAt(0, 1)).isEqualTo("Overlay");
-        assertThat(table.getValueAt(0, 2)).isEqualTo("Main chart");
+        assertThat(table.getValueAt(0, 2).toString()).isEqualTo("Main chart");
         assertThat(table.getValueAt(1, 0).toString()).isEqualTo("Result");
         assertThat(table.getValueAt(1, 3)).isEqualTo(Boolean.TRUE);
         assertThat(table.getValueAt(1, 6)).isEqualTo(Color.RED);
@@ -118,7 +115,7 @@ class IndicatorChooserPanelTest {
     }
 
     @Test
-    void everyAvailableStudyPlot_has_editable_visibility() throws Exception {
+    void everyAvailableStudyPlot_has_editable_visibility_and_panel() throws Exception {
         IndicatorChooserPanel panel = createPanel();
         StudyRegistry registry = StudyRegistry.getDefault();
         List<Indicator> indicators = registry.getIndicatorsList();
@@ -131,6 +128,12 @@ class IndicatorChooserPanelTest {
             if (!"".equals(table.getValueAt(row, 1)))
                 continue;
             plotCount++;
+            assertThat(table.getValueAt(row, 2))
+                    .as("panel value at row %s (%s)", row, table.getValueAt(row, 0))
+                    .isInstanceOf(PlotObjectTreeTable.PanelChoice.class);
+            assertThat(table.isCellEditable(row, 2))
+                    .as("editable panel at row %s (%s)", row, table.getValueAt(row, 0))
+                    .isTrue();
             assertThat(table.getValueAt(row, 3))
                     .as("visibility value at row %s (%s)", row, table.getValueAt(row, 0))
                     .isInstanceOf(Boolean.class);
@@ -159,7 +162,7 @@ class IndicatorChooserPanelTest {
                 .containsEntry(StudyPlotDescriptor.visibilityParameterId("cmo"), Boolean.FALSE);
         hidden.setDataset(sampleDataset(40));
         hidden.calculate();
-        assertThat(hidden.getPlots()).doesNotContainKey("CMO");
+        assertThat(hidden.getPlots()).doesNotContainKey("cmo");
     }
 
     @Test
@@ -208,8 +211,8 @@ class IndicatorChooserPanelTest {
         hiddenSnapshot.calculate();
         visibleSnapshot.setDataset(dataset);
         visibleSnapshot.calculate();
-        assertThat(hiddenSnapshot.getPlots()).doesNotContainKeys("Inside Neutral", "Inside High");
-        assertThat(visibleSnapshot.getPlots()).containsKeys("Inside Neutral", "Inside High");
+        assertThat(hiddenSnapshot.getPlots()).doesNotContainKeys("insideNeutral", "insideHigh");
+        assertThat(visibleSnapshot.getPlots()).containsKeys("insideNeutral", "insideHigh");
     }
 
     @Test
@@ -228,25 +231,34 @@ class IndicatorChooserPanelTest {
     }
 
     @Test
-    void paneSelector_hides_incompatible_panes_until_force_combine_is_enabled() throws Exception {
+    void panelEditor_moves_study_plots_independently_to_a_new_pane() throws Exception {
         IndicatorChooserPanel panel = createPanel();
-        DummyIndicator left = new DummyIndicator("Left", new StudyAxisDescriptor(Double.NaN, Double.NaN, false, true, new double[]{20, 40}));
-        DummyIndicator right = new DummyIndicator("Right", new StudyAxisDescriptor(Double.NaN, Double.NaN, true, true, new double[]{20, 40}));
-        left.setPanelId(1);
-        right.setPanelId(2);
+        Indicator fractalDimension = StudyRegistry.getDefault().getIndicator("Fractal Dimension");
+        runOnEdt(() -> panel.initForm(
+                List.of(fractalDimension), List.of(fractalDimension), List.of(), List.of()));
 
-        runOnEdt(() -> panel.initForm(List.of(left, right), List.of(left, right), List.of(), List.of()));
+        JTable table = getField(panel, "plotObjectTable", JTable.class);
+        int studyRow = findRow(table, "Fractal Dimension (CLOSE, 30)");
+        int neutralRow = findRow(table, "Inside Neutral");
+        int highRow = findRow(table, "Inside High");
+        assertThat(table.isCellEditable(studyRow, 2)).isTrue();
+        assertThat(table.isCellEditable(neutralRow, 2)).isTrue();
+        assertThat(table.isCellEditable(highRow, 2)).isTrue();
+        assertThat(callOnEdt(() -> table.editCellAt(neutralRow, 2))).isTrue();
+        assertThat(table.getEditorComponent()).isInstanceOf(JComboBox.class);
+        runOnEdt(() -> table.getCellEditor().cancelCellEditing());
 
-        @SuppressWarnings("unchecked")
-        JComboBox<Object> paneSelector = getField(panel, "paneSelector", JComboBox.class);
-        JCheckBox forceCombine = getField(panel, "forceCombineCheckBox", JCheckBox.class);
+        runOnEdt(() -> table.setValueAt(PlotObjectTreeTable.PanelChoice.newPane(2), neutralRow, 2));
 
-        assertThat(paneSelector.getItemCount()).isEqualTo(1);
-
-        runOnEdt(forceCombine::doClick);
-
-        assertThat(paneSelector.getItemCount()).isEqualTo(2);
-        assertThat(paneSelector.getItemAt(1).toString()).contains("Force combine");
+        StudyBackedChartPlugin selected = (StudyBackedChartPlugin) panel.getSelectedIndicators().getFirst();
+        assertThat(selected.getStudyParameterValues())
+                .containsEntry(StudyPlotDescriptor.panelParameterId("insideNeutral"), 2)
+                .containsEntry(
+                        StudyPlotDescriptor.panelParameterId("insideHigh"),
+                        StudyPlotDescriptor.INHERITED_PANEL_ID);
+        assertThat(table.getValueAt(studyRow, 2).toString()).isEqualTo("Mixed");
+        assertThat(table.getValueAt(neutralRow, 2).toString()).isEqualTo("Pane 2");
+        assertThat(table.getValueAt(highRow, 2).toString()).isEqualTo("Pane 1");
     }
 
     @SuppressWarnings("unchecked")
@@ -323,7 +335,7 @@ class IndicatorChooserPanelTest {
 
     private static final class DummyOverlay extends Overlay implements ChartPluginPlotSource {
         private static final List<PlotDescriptor> PLOTS = List.of(
-                new PlotDescriptor("result", "Result", "color", "stroke", "visible"));
+                new PlotDescriptor("result", "Result", "color", "stroke", "visible", "panel"));
 
         @Parameter(name = "Color")
         public Color color = Color.RED;
@@ -333,6 +345,8 @@ class IndicatorChooserPanelTest {
         public Stroke stroke = BasicStrokes.SOLID;
         @Parameter(name = "Visible")
         public boolean visible = true;
+        @Parameter(name = "Panel")
+        public int panel;
 
         private DummyOverlay(String name) {
             super(name);
@@ -361,45 +375,6 @@ class IndicatorChooserPanelTest {
         @Override
         public boolean getMarkerVisibility() {
             return visible;
-        }
-    }
-
-    private static final class DummyIndicator extends Indicator {
-        private final String label;
-        private final StudyAxisDescriptor axis;
-
-        private DummyIndicator(String label, StudyAxisDescriptor axis) {
-            super(label);
-            this.label = label;
-            this.axis = axis;
-            setPresentationPlan(StudyPresentationPlan.empty(axis));
-        }
-
-        @Override
-        public String getLabel() {
-            return label;
-        }
-
-        @Override
-        public DummyIndicator newInstance() {
-            DummyIndicator copy = new DummyIndicator(label, axis);
-            copy.setPanelId(getPanelId());
-            return copy;
-        }
-
-        @Override
-        public void calculate() {
-            setPresentationPlan(StudyPresentationPlan.empty(axis));
-        }
-
-        @Override
-        public boolean getMarkerVisibility() {
-            return false;
-        }
-
-        @Override
-        public double[] getStepValues(ChartContext cf) {
-            return axis.steps();
         }
     }
 

@@ -7,6 +7,7 @@ import one.chartsy.ui.chart.ChartProperties;
 import one.chartsy.ui.chart.Indicator;
 import one.chartsy.ui.chart.Overlay;
 import one.chartsy.ui.chart.internal.IndicatorPaneSupport;
+import one.chartsy.ui.chart.internal.ChartPlotRouting;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -88,7 +89,10 @@ public class ChartTemplate implements Serializable {
     }
 
     private void assignPaneIdIfNeeded(Indicator indicator) {
-        if (IndicatorPaneSupport.isOwnPanelIndicator(indicator) && indicator.getPanelId() <= 0)
-            indicator.setPanelId(IndicatorPaneSupport.nextPanelId(indicators));
+        if (IndicatorPaneSupport.isOwnPanelIndicator(indicator) && indicator.getPanelId() <= 0) {
+            List<ChartPlugin<?>> plugins = new ArrayList<>(overlays);
+            plugins.addAll(indicators);
+            indicator.setPanelId(ChartPlotRouting.nextPanelId(plugins));
+        }
     }
 }

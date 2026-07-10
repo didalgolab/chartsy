@@ -39,7 +39,7 @@ public class Volume extends AbstractOverlay implements ChartPluginPlotSource {
     public static final String VOLUME = "volume";
     public static final String SMA = "sma";
     private static final List<PlotDescriptor> PLOT_DESCRIPTORS = List.of(
-            new PlotDescriptor(VOLUME, "Result", "color", "", "volumeVisibility"));
+            new PlotDescriptor(VOLUME, "Result", "color", "", "volumeVisibility", "volumePanel"));
 
     public Volume() {
         super("Volume");
@@ -104,6 +104,8 @@ public class Volume extends AbstractOverlay implements ChartPluginPlotSource {
     public Color color = new Color(0xFABC7F);
     @Parameter(name = "Volume Visibility")
     public boolean volumeVisibility = true;
+    @Parameter(name = "Volume Panel")
+    public int volumePanel;
     @Parameter(name = "SMA Color")
     public Color smaColor = Color.BLUE;
     @Parameter(name = "Transparency")

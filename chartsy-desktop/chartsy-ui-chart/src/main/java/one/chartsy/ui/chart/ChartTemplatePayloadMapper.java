@@ -10,7 +10,6 @@ import one.chartsy.study.StudyDescriptor;
 import one.chartsy.study.StudyKind;
 import one.chartsy.ui.chart.internal.ChartPluginParameter;
 import one.chartsy.ui.chart.internal.ChartPluginParameterUtils;
-import one.chartsy.ui.chart.internal.IndicatorPaneSupport;
 import one.chartsy.ui.chart.internal.StudyParameterSupport;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -106,7 +105,6 @@ final class ChartTemplatePayloadMapper {
             if (indicator != null)
                 template.addIndicator(indicator);
         }
-        IndicatorPaneSupport.normalizePaneIds(template.getIndicators());
         return template;
     }
 
@@ -160,7 +158,6 @@ final class ChartTemplatePayloadMapper {
                                                        ChartProperties chartProperties,
                                                        List<? extends Overlay> overlays,
                                                        List<? extends Indicator> indicators) {
-        IndicatorPaneSupport.normalizePaneIds(indicators);
         return new StoredChartTemplatePayload(
                 overlays.stream().map(this::toPluginSpec).filter(Objects::nonNull).toList(),
                 indicators.stream().map(this::toPluginSpec).filter(Objects::nonNull).toList(),

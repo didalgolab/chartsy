@@ -84,12 +84,22 @@ class StudyRegistryTest {
                 assertThat(descriptor.parameter(plot.visibilityParameterId()).defaultValue())
                         .as("visibility default for %s/%s", descriptor.name(), plot.label())
                         .isEqualTo(Boolean.toString(plot.visibleByDefault()));
+                assertThat(descriptor.parameter(plot.panelParameterId()).effectiveValueType())
+                        .as("integer panel for %s/%s", descriptor.name(), plot.label())
+                        .isEqualTo(Integer.class);
+                assertThat(descriptor.parameter(plot.panelParameterId()).defaultValue())
+                        .as("panel default for %s/%s", descriptor.name(), plot.label())
+                        .isEqualTo(Integer.toString(StudyPlotDescriptor.INHERITED_PANEL_ID));
             }
             if (descriptor.hasCustomBuilder() && descriptor.plots().isEmpty()) {
                 assertThat(descriptor.parameter(StudyPlotDescriptor.RESULT_VISIBILITY_PARAMETER_ID)
                         .effectiveValueType())
                         .as("aggregate visibility for %s", descriptor.name())
                         .isEqualTo(Boolean.class);
+                assertThat(descriptor.parameter(StudyPlotDescriptor.RESULT_PANEL_PARAMETER_ID)
+                        .effectiveValueType())
+                        .as("aggregate panel for %s", descriptor.name())
+                        .isEqualTo(Integer.class);
             }
         }
     }

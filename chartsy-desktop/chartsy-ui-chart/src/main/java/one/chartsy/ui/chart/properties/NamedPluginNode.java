@@ -5,10 +5,13 @@
 package one.chartsy.ui.chart.properties;
 
 import one.chartsy.ui.chart.ChartPlugin;
+import one.chartsy.ui.chart.ChartPluginPlotSource;
 import one.chartsy.ui.chart.internal.ChartPluginParameter;
 import one.chartsy.ui.chart.internal.ChartPluginParameterUtils;
 
 import java.beans.PropertyEditor;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.openide.ErrorManager;
 import org.openide.nodes.Node;
@@ -95,7 +98,14 @@ public class NamedPluginNode<T extends ChartPlugin<T>> extends AbstractPropertie
         Sheet.Set set = getPropertiesSet();
         sets[0] = set;
 
+        Set<String> tableManagedParameters = plugin instanceof ChartPluginPlotSource plotSource
+                ? plotSource.getPlotDescriptors().stream()
+                        .map(ChartPluginPlotSource.PlotDescriptor::panelParameterId)
+                        .collect(Collectors.toSet())
+                : Set.of();
         for (ChartPluginParameter parameter : ChartPluginParameterUtils.getParameters(plugin)) {
+            if (tableManagedParameters.contains(parameter.id()))
+                continue;
             ParameterProperty property = new ParameterProperty(parameter);
             property.setName(parameter.id());
             property.setDisplayName(parameter.name());

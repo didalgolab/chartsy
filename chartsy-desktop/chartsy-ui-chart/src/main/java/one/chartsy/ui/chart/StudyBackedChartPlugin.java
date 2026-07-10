@@ -24,7 +24,8 @@ public interface StudyBackedChartPlugin extends ChartPluginPlotSource {
                         plot.label(),
                         plot.colorParameter(),
                         plot.strokeParameter(),
-                        plot.visibilityParameterId()))
+                        plot.visibilityParameterId(),
+                        plot.panelParameterId()))
                 .toList();
         if (!plots.isEmpty())
             return plots;
@@ -33,6 +34,16 @@ public interface StudyBackedChartPlugin extends ChartPluginPlotSource {
                 "Result",
                 "",
                 "",
-                StudyPlotDescriptor.RESULT_VISIBILITY_PARAMETER_ID));
+                StudyPlotDescriptor.RESULT_VISIBILITY_PARAMETER_ID,
+                StudyPlotDescriptor.RESULT_PANEL_PARAMETER_ID));
+    }
+
+    @Override
+    default String getPlotLabel(String plotId) {
+        return getStudyPresentationPlan().plots().stream()
+                .filter(plot -> plot.id().equals(plotId))
+                .map(plot -> plot.label())
+                .findFirst()
+                .orElseGet(() -> ChartPluginPlotSource.super.getPlotLabel(plotId));
     }
 }

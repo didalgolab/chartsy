@@ -26,11 +26,16 @@ class StudyDescriptorTest {
 
         StudyPlotDescriptor plot = descriptor.plots().getFirst();
         String visibilityParameter = StudyPlotDescriptor.visibilityParameterId("baseline");
+        String panelParameter = StudyPlotDescriptor.panelParameterId("baseline");
         assertThat(plot.visibilityParameterId()).isEqualTo(visibilityParameter);
         assertThat(descriptor.parameter(visibilityParameter))
                 .extracting(StudyParameterDescriptor::effectiveValueType,
                         StudyParameterDescriptor::defaultValue)
                 .containsExactly(Boolean.class, "false");
+        assertThat(descriptor.parameter(panelParameter))
+                .extracting(StudyParameterDescriptor::effectiveValueType,
+                        StudyParameterDescriptor::defaultValue)
+                .containsExactly(Integer.class, Integer.toString(StudyPlotDescriptor.INHERITED_PANEL_ID));
     }
 
     @Test
@@ -44,6 +49,10 @@ class StudyDescriptorTest {
                 .extracting(StudyParameterDescriptor::effectiveValueType,
                         StudyParameterDescriptor::defaultValue)
                 .containsExactly(Boolean.class, "true");
+        assertThat(descriptor.parameter(StudyPlotDescriptor.RESULT_PANEL_PARAMETER_ID))
+                .extracting(StudyParameterDescriptor::effectiveValueType,
+                        StudyParameterDescriptor::defaultValue)
+                .containsExactly(Integer.class, Integer.toString(StudyPlotDescriptor.INHERITED_PANEL_ID));
     }
 
     @Test

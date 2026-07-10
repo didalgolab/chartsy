@@ -16,7 +16,9 @@ public record StudyPlotDescriptor(
         boolean visibleByDefault,
         StudyMarkerType marker
 ) {
+    public static final int INHERITED_PANEL_ID = -1;
     public static final String RESULT_VISIBILITY_PARAMETER_ID = visibilityParameterId("result");
+    public static final String RESULT_PANEL_PARAMETER_ID = panelParameterId("result");
 
     public StudyPlotDescriptor {
         if (id == null || id.isBlank())
@@ -45,7 +47,17 @@ public record StudyPlotDescriptor(
         return "plot." + plotId + ".visible";
     }
 
+    public static String panelParameterId(String plotId) {
+        if (plotId == null || plotId.isBlank())
+            throw new IllegalArgumentException("plotId is blank");
+        return "plot." + plotId + ".panel";
+    }
+
     public String visibilityParameterId() {
         return visibilityParameterId(id);
+    }
+
+    public String panelParameterId() {
+        return panelParameterId(id);
     }
 }

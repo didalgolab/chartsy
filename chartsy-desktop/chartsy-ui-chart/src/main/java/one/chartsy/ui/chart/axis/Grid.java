@@ -17,6 +17,7 @@ import one.chartsy.core.Range;
 import one.chartsy.ui.chart.ChartContext;
 import one.chartsy.ui.chart.ChartData;
 import one.chartsy.ui.chart.ChartProperties;
+import one.chartsy.ui.chart.Indicator;
 import one.chartsy.ui.chart.components.IndicatorPanel;
 import one.chartsy.ui.chart.data.VisualRange;
 import one.chartsy.ui.chart.internal.CoordCalc;
@@ -93,13 +94,14 @@ public class Grid extends JPanel implements Serializable {
                         g2.setColor(cp.getGridHorizontalColor());
                         g2.setStroke(cp.getGridHorizontalStroke());
                         
-                        if (!panel.isMinimized()) {
+                        Indicator indicator = panel.getIndicator();
+                        if (!panel.isMinimized() && indicator != null) {
                             Rectangle indicatorBounds = panel.getBounds();
                             indicatorBounds.setLocation(0, 0);
-                            VisualRange indicatorRange = panel.getIndicator().getRange(chartFrame);
-                            
-                            if (panel.getIndicator().paintValues()) {
-                                double[] stepValues = panel.getIndicator().getStepValues(chartFrame);
+                            VisualRange indicatorRange = indicator.getRange(chartFrame);
+
+                            if (indicator.paintValues()) {
+                                double[] stepValues = indicator.getStepValues(chartFrame);
                                 for (double stepValue : stepValues) {
                                     y = cd.getY(stepValue, indicatorRange.range(), indicatorBounds, panel.getInsets(), indicatorRange.isLogarithmic());
                                     if (indicatorBounds.contains(2, y)) {

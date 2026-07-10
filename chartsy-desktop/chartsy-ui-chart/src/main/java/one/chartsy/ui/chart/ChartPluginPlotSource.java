@@ -11,12 +11,21 @@ public interface ChartPluginPlotSource {
 
     List<PlotDescriptor> getPlotDescriptors();
 
+    default String getPlotLabel(String plotId) {
+        return getPlotDescriptors().stream()
+                .filter(plot -> plot.id().equals(plotId))
+                .map(PlotDescriptor::label)
+                .findFirst()
+                .orElse(plotId);
+    }
+
     record PlotDescriptor(
             String id,
             String label,
             String colorParameterId,
             String strokeParameterId,
-            String visibilityParameterId) {
+            String visibilityParameterId,
+            String panelParameterId) {
 
         public PlotDescriptor {
             if (id == null || id.isBlank())
@@ -27,6 +36,8 @@ public interface ChartPluginPlotSource {
             strokeParameterId = strokeParameterId == null ? "" : strokeParameterId;
             if (visibilityParameterId == null || visibilityParameterId.isBlank())
                 throw new IllegalArgumentException("visibilityParameterId is blank");
+            if (panelParameterId == null || panelParameterId.isBlank())
+                throw new IllegalArgumentException("panelParameterId is blank");
         }
     }
 }

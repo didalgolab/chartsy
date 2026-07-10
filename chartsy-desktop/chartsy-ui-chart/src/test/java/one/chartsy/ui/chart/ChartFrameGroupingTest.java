@@ -9,6 +9,8 @@ import one.chartsy.data.CandleSeries;
 import one.chartsy.data.DataQuery;
 import one.chartsy.data.provider.DataProvider;
 import one.chartsy.time.Chronological;
+import one.chartsy.ui.chart.components.IndicatorPanel;
+import one.chartsy.ui.chart.internal.ChartPlotRouting;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 
@@ -25,7 +27,7 @@ class ChartFrameGroupingTest {
     void chartFrameGroupsOwnPanelIndicatorsWithSharedPanelIdIntoOnePane() {
         ChartFrame frame = createFrame(fixtureDataset(), groupedTemplate(1));
 
-        assertSingleIndicatorPane(frame);
+        assertSingleIndicatorPane(frame, 1);
     }
 
     @Test
@@ -38,12 +40,12 @@ class ChartFrameGroupingTest {
         assertThat(payload.indicators()).hasSize(2);
         assertThat(payload.indicators())
                 .extracting(spec -> spec.parametersView().get("panelId"))
-                .containsOnly(new StoredParameterValue("INTEGER", "1"));
+                .containsOnly(new StoredParameterValue("INTEGER", "2"));
 
         ChartTemplate restoredTemplate = ChartTemplatePayloadMapper.getDefault()
                 .toChartTemplate(template.getName(), payload);
 
-        assertSingleIndicatorPane(createFrame(dataset, restoredTemplate));
+        assertSingleIndicatorPane(createFrame(dataset, restoredTemplate), 2);
     }
 
     @Test
@@ -53,7 +55,28 @@ class ChartFrameGroupingTest {
 
         ChartTemplate snapshot = source.snapshotVisibleTemplate("Grouped Snapshot");
 
-        assertSingleIndicatorPane(createFrame(dataset, snapshot));
+        assertSingleIndicatorPane(createFrame(dataset, snapshot), 3);
+    }
+
+    @Test
+    void chartFrame_routes_oneStudyAcross_mainChartAndMultiplePanes() {
+        ChartTemplate template = ChartTemplateDefaults.basicChartTemplate();
+        Indicator indicator = template.getIndicators().getFirst();
+        indicator.setPanelId(1);
+        ChartPlotRouting.setPanelId(indicator, "insideNeutral", 2);
+        ChartPlotRouting.setPanelId(indicator, "insideHigh", 0);
+
+        ChartFrame frame = createFrame(fixtureDataset(), template);
+
+        assertThat(frame.getMainStackPanel().getIndicatorsList()).containsExactly(indicator);
+        assertThat(frame.getMainStackPanel().getIndicatorPanels())
+                .extracting(IndicatorPanel::getId)
+                .containsExactly(1, 2);
+        assertThat(frame.getMainStackPanel().getIndicatorPanels())
+                .allSatisfy(panel -> assertThat(panel.getPlotOwners()).containsExactly(indicator));
+        assertThat(ChartPlotRouting.routesForPanel(List.of(indicator), 0))
+                .extracting(ChartPlotRouting.Route::plotId)
+                .contains("insideHigh");
     }
 
     private static ChartTemplate groupedTemplate(int sharedPaneId) {
@@ -79,13 +102,13 @@ class ChartFrameGroupingTest {
         );
     }
 
-    private static void assertSingleIndicatorPane(ChartFrame frame) {
+    private static void assertSingleIndicatorPane(ChartFrame frame, int panelId) {
         var panes = frame.getMainStackPanel().getIndicatorPanels();
         assertThat(panes).hasSize(1);
-        assertThat(panes.getFirst().getId()).isEqualTo(1);
+        assertThat(panes.getFirst().getId()).isEqualTo(panelId);
         assertThat(panes.getFirst().getIndicators())
                 .extracting(Indicator::getPanelId)
-                .containsOnly(1);
+                .containsOnly(panelId);
         assertThat(panes.getFirst().getIndicators()).hasSize(2);
     }
 

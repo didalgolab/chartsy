@@ -50,12 +50,16 @@ public record StudyDescriptor(
             orderedParameters.putAll(parameters);
 
         plots = plots == null ? List.of() : List.copyOf(plots);
-        addPlotVisibilityParameters(plots, orderedParameters);
+        addPlotVisualParameters(plots, orderedParameters);
         if (plots.isEmpty() && builderType != StudyPresentationBuilder.class) {
             addVisibilityParameter(
                     orderedParameters, StudyPlotDescriptor.RESULT_VISIBILITY_PARAMETER_ID, "Result", true);
+            addPanelParameter(
+                    orderedParameters, StudyPlotDescriptor.RESULT_PANEL_PARAMETER_ID, "Result");
             requireBooleanVisibilityParameter(
                     StudyPlotDescriptor.RESULT_VISIBILITY_PARAMETER_ID, orderedParameters);
+            requireIntegerPanelParameter(
+                    StudyPlotDescriptor.RESULT_PANEL_PARAMETER_ID, orderedParameters);
         }
 
         parameters = Collections.unmodifiableSequencedMap(orderedParameters);
@@ -112,15 +116,19 @@ public record StudyDescriptor(
             requireKnownParameter(plot.strokeParameter(), parameters, "stroke parameter");
             requireKnownParameter(plot.visibilityParameterId(), parameters, "visibility parameter");
             requireBooleanVisibilityParameter(plot.visibilityParameterId(), parameters);
+            requireKnownParameter(plot.panelParameterId(), parameters, "panel parameter");
+            requireIntegerPanelParameter(plot.panelParameterId(), parameters);
         }
     }
 
-    private static void addPlotVisibilityParameters(
+    private static void addPlotVisualParameters(
             List<StudyPlotDescriptor> plots,
             LinkedHashMap<String, StudyParameterDescriptor> parameters) {
-        for (StudyPlotDescriptor plot : plots)
+        for (StudyPlotDescriptor plot : plots) {
             addVisibilityParameter(
                     parameters, plot.visibilityParameterId(), plot.label(), plot.visibleByDefault());
+            addPanelParameter(parameters, plot.panelParameterId(), plot.label());
+        }
     }
 
     private static void addVisibilityParameter(
@@ -141,6 +149,23 @@ public record StudyDescriptor(
                 StudyStereotype.NONE));
     }
 
+    private static void addPanelParameter(
+            LinkedHashMap<String, StudyParameterDescriptor> parameters,
+            String parameterId,
+            String plotLabel) {
+        parameters.putIfAbsent(parameterId, new StudyParameterDescriptor(
+                parameterId,
+                plotLabel + " Panel",
+                "Selects the chart panel used by the " + plotLabel + " plot",
+                StudyParameterScope.VISUAL,
+                StudyParameterType.INTEGER,
+                Integer.class,
+                Void.class,
+                Integer.toString(StudyPlotDescriptor.INHERITED_PANEL_ID),
+                Integer.MAX_VALUE,
+                StudyStereotype.NONE));
+    }
+
     private static void requireBooleanVisibilityParameter(
             String parameterId,
             SequencedMap<String, StudyParameterDescriptor> parameters) {
@@ -150,6 +175,16 @@ public record StudyDescriptor(
                 && parameter.effectiveValueType() != boolean.class)
             throw new IllegalArgumentException(
                     "Visibility parameter must be boolean: " + parameterId);
+    }
+
+    private static void requireIntegerPanelParameter(
+            String parameterId,
+            SequencedMap<String, StudyParameterDescriptor> parameters) {
+        StudyParameterDescriptor parameter = parameters.get(parameterId);
+        if (parameter != null
+                && parameter.effectiveValueType() != Integer.class
+                && parameter.effectiveValueType() != int.class)
+            throw new IllegalArgumentException("Panel parameter must be integer: " + parameterId);
     }
 
     private static void requireKnownOutput(String outputId,

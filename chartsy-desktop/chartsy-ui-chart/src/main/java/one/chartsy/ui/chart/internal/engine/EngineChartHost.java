@@ -23,6 +23,7 @@ import one.chartsy.core.Range;
 import one.chartsy.data.CandleSeries;
 import one.chartsy.ui.chart.ChartContext;
 import one.chartsy.ui.chart.ChartFonts;
+import one.chartsy.ui.chart.ChartPlugin;
 import one.chartsy.ui.chart.ChartProperties;
 import one.chartsy.ui.chart.Indicator;
 import one.chartsy.ui.chart.Overlay;
@@ -31,6 +32,7 @@ import one.chartsy.ui.chart.PlotRenderContext;
 import one.chartsy.ui.chart.PriceChartStyle;
 import one.chartsy.ui.chart.PixelPerfectCandleGeometry;
 import one.chartsy.ui.chart.data.VisualRange;
+import one.chartsy.ui.chart.internal.ChartPlotRouting;
 import one.chartsy.TimeFrameHelper;
 
 import javax.swing.BorderFactory;
@@ -45,6 +47,7 @@ import java.awt.Point;
 import java.awt.Rectangle;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.List;
 
@@ -72,11 +75,11 @@ public final class EngineChartHost implements AutoCloseable {
         return legend;
     }
 
-    public boolean rendersNatively(ChartContext context, Overlay overlay) {
-        return overlay != null && !overlay.getPlots().isEmpty();
-    }
-
-    public void configurePriceChart(ChartContext context, List<Overlay> overlays, boolean showTimeScale) {
+    public void configurePriceChart(
+            ChartContext context,
+            List<? extends Overlay> overlays,
+            List<? extends Indicator> indicators,
+            boolean showTimeScale) {
         if (isDisposed())
             return;
         chart.unSynchronizeAxis(Axis.X_AXIS);
@@ -90,16 +93,16 @@ public final class EngineChartHost implements AutoCloseable {
         applyPriceSeries(context);
         updateLastPriceAnnotation(context);
 
-        for (Overlay overlay : overlays) {
-            if (rendersNatively(context, overlay))
-                renderPlots(context, overlay.getLabel(), overlay.getPlots());
-        }
+        renderRoutes(context, ChartPlotRouting.routes(overlays, indicators).stream()
+                .filter(route -> route.panelId() == ChartPlotRouting.MAIN_PANEL_ID)
+                .toList());
 
         finishConfiguration();
     }
 
     public void configureIndicatorChart(ChartContext context,
-                                        List<? extends Indicator> indicators,
+                                        int panelId,
+                                        List<? extends ChartPlugin<?>> owners,
                                         VisualRange visualRange,
                                         boolean showTimeScale,
                                         one.chartsy.charting.Chart masterChart) {
@@ -120,8 +123,7 @@ public final class EngineChartHost implements AutoCloseable {
         if (visualRange.isLogarithmic())
             chart.getYAxis(0).setTransformer(createViewportLogarithmicTransformer());
 
-        for (Indicator indicator : indicators)
-            renderPlots(context, indicator.getLabel(), indicator.getPlots());
+        renderRoutes(context, ChartPlotRouting.routesForPanel(owners, panelId));
 
         finishConfiguration();
     }
@@ -474,30 +476,34 @@ public final class EngineChartHost implements AutoCloseable {
         return new PlotStyle[] { wickStyle, wickStyle, riseStyle, fallStyle };
     }
 
-    private void renderPlots(ChartContext context, String ownerLabel, Map<String, ? extends Plot> plots) {
-        if (plots.isEmpty())
+    private void renderRoutes(ChartContext context, List<ChartPlotRouting.Route> routes) {
+        if (routes.isEmpty())
             return;
 
+        Map<ChartPlugin<?>, List<ChartPlotRouting.Route>> routesByOwner = new LinkedHashMap<>();
+        for (ChartPlotRouting.Route route : routes)
+            routesByOwner.computeIfAbsent(route.owner(), ignored -> new ArrayList<>()).add(route);
+
         var target = new EnginePlotRenderTarget(chart);
-        boolean legendClaimed = false;
-        int plotOrder = 0;
-        for (var entry : plots.entrySet()) {
-            Plot plot = entry.getValue();
-            if (plot == null)
-                continue;
-            boolean legended = plot.supportsLegend() && !legendClaimed;
-            if (legended)
-                legendClaimed = true;
-            plot.render(target, new PlotRenderContext(
-                    context,
-                    entry.getKey(),
-                    primaryLegendName(ownerLabel, entry.getKey()),
-                    plotOrder++,
-                    context.getChartData().getHistoricalSlotCount(),
-                    context.getChartData().getTotalSlotCount(),
-                    EngineSeriesAdapter.widthPercent(context),
-                    legended
-            ));
+        for (var ownerEntry : routesByOwner.entrySet()) {
+            boolean legendClaimed = false;
+            int plotOrder = 0;
+            for (ChartPlotRouting.Route route : ownerEntry.getValue()) {
+                Plot plot = route.plot();
+                boolean legended = plot.supportsLegend() && !legendClaimed;
+                if (legended)
+                    legendClaimed = true;
+                plot.render(target, new PlotRenderContext(
+                        context,
+                        route.label(),
+                        primaryLegendName(ownerEntry.getKey().getLabel(), route.label()),
+                        plotOrder++,
+                        context.getChartData().getHistoricalSlotCount(),
+                        context.getChartData().getTotalSlotCount(),
+                        EngineSeriesAdapter.widthPercent(context),
+                        legended
+                ));
+            }
         }
     }
 

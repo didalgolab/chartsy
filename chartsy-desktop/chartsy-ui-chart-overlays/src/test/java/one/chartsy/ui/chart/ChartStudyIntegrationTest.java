@@ -15,6 +15,7 @@ import one.chartsy.core.Range;
 import one.chartsy.data.CandleSeries;
 import one.chartsy.data.provider.DataProvider;
 import one.chartsy.ui.chart.overlays.Volume;
+import one.chartsy.ui.chart.internal.ChartPlotRouting;
 import one.chartsy.ui.chart.type.CandlestickChart;
 import org.junit.jupiter.api.Test;
 
@@ -81,8 +82,13 @@ class ChartStudyIntegrationTest {
                 .satisfies(plot -> {
                     assertThat(plot.id()).isEqualTo(Volume.VOLUME);
                     assertThat(plot.visibilityParameterId()).isEqualTo("volumeVisibility");
+                    assertThat(plot.panelParameterId()).isEqualTo("volumePanel");
                 });
         assertThat(volume.getPlots()).containsOnlyKeys(Volume.VOLUME);
+        volume.volumePanel = 2;
+        assertThat(ChartPlotRouting.routes(volume))
+                .singleElement()
+                .satisfies(route -> assertThat(route.panelId()).isEqualTo(2));
 
         volume.volumeVisibility = false;
         volume.calculate();
@@ -93,6 +99,7 @@ class ChartStudyIntegrationTest {
     void volumeVisibility_roundTrips_through_chart_templates() {
         Volume volume = new Volume();
         volume.volumeVisibility = false;
+        volume.volumePanel = 3;
         ChartTemplate source = new ChartTemplate("Source");
         source.addOverlay(volume);
 
@@ -102,7 +109,10 @@ class ChartStudyIntegrationTest {
         assertThat(restored.getOverlays())
                 .singleElement()
                 .isInstanceOfSatisfying(Volume.class,
-                        restoredVolume -> assertThat(restoredVolume.volumeVisibility).isFalse());
+                        restoredVolume -> {
+                            assertThat(restoredVolume.volumeVisibility).isFalse();
+                            assertThat(restoredVolume.volumePanel).isEqualTo(3);
+                        });
     }
 
     @Test

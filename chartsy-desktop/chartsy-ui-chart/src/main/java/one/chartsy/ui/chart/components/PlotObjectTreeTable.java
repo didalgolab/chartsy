@@ -7,6 +7,7 @@ package one.chartsy.ui.chart.components;
 import one.chartsy.ui.chart.BasicStrokes;
 import one.chartsy.ui.chart.ChartPlugin;
 import one.chartsy.ui.chart.internal.ChartPluginParameter;
+import one.chartsy.ui.chart.internal.ChartPlotRouting;
 import org.netbeans.swing.outline.DefaultOutlineModel;
 import org.netbeans.swing.outline.Outline;
 import org.netbeans.swing.outline.RenderDataProvider;
@@ -16,6 +17,7 @@ import javax.swing.BorderFactory;
 import javax.swing.DefaultCellEditor;
 import javax.swing.Icon;
 import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
 import javax.swing.JPanel;
 import javax.swing.JTable;
 import javax.swing.ListSelectionModel;
@@ -28,7 +30,6 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
 import java.awt.BasicStroke;
-import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Font;
@@ -44,17 +45,20 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.function.IntSupplier;
 
 /**
  * Tree-table view of selected studies and their visual plot objects.
  */
 final class PlotObjectTreeTable extends Outline {
     private static final String VISIBILITY_PROPERTY = "plotObjectVisibility";
+    private static final String PANEL_PROPERTY = "plotObjectPanel";
     private static final int TREE_COLUMN = 0;
     private static final int TREE_COLUMN_WIDTH = 330;
     private static final int ROW_HEIGHT = 22;
 
     private final PlotObjectTreeModel treeModel = new PlotObjectTreeModel();
+    private List<PanelChoice> panelChoices = List.of(PanelChoice.mainChart(), PanelChoice.newPane(1));
 
     PlotObjectTreeTable() {
         setName("indicatorChooser.plotTable");
@@ -83,12 +87,22 @@ final class PlotObjectTreeTable extends Outline {
         restoreExpansion(expandedPlugins);
     }
 
+    void setPanelChoices(List<PanelChoice> panelChoices) {
+        this.panelChoices = List.copyOf(panelChoices);
+        getColumnModel().getColumn(Column.PANEL.tableIndex()).setCellEditor(createPanelEditor());
+        repaint();
+    }
+
     int getPlotObjectCount() {
         return treeModel.getPlotObjectCount();
     }
 
     void addVisibilityChangeListener(PropertyChangeListener listener) {
         addPropertyChangeListener(VISIBILITY_PROPERTY, listener);
+    }
+
+    void addPanelChangeListener(PropertyChangeListener listener) {
+        addPropertyChangeListener(PANEL_PROPERTY, listener);
     }
 
     ChartPlugin<?> getPluginAt(int viewRow) {
@@ -130,6 +144,8 @@ final class PlotObjectTreeTable extends Outline {
         visibleColumn.setCellRenderer(new VisibilityCellRenderer());
         visibleColumn.setCellEditor(createVisibilityEditor());
 
+        getColumnModel().getColumn(Column.PANEL.tableIndex()).setCellEditor(createPanelEditor());
+
         TableColumn colorColumn = getColumnModel().getColumn(Column.COLOR.tableIndex());
         colorColumn.setMinWidth(68);
         colorColumn.setMaxWidth(84);
@@ -141,6 +157,11 @@ final class PlotObjectTreeTable extends Outline {
         checkBox.setHorizontalAlignment(SwingConstants.CENTER);
         checkBox.setOpaque(true);
         return new DefaultCellEditor(checkBox);
+    }
+
+    private DefaultCellEditor createPanelEditor() {
+        JComboBox<PanelChoice> choices = new JComboBox<>(panelChoices.toArray(PanelChoice[]::new));
+        return new DefaultCellEditor(choices);
     }
 
     private void expandAllStudies() {
@@ -170,7 +191,7 @@ final class PlotObjectTreeTable extends Outline {
         return value instanceof PlotObjectTreeNode node ? node : null;
     }
 
-    record Study(ChartPlugin<?> plugin, String type, String panel, List<Plot> plots) {
+    record Study(ChartPlugin<?> plugin, String type, List<Plot> plots) {
         Study {
             plots = List.copyOf(plots);
         }
@@ -180,11 +201,49 @@ final class PlotObjectTreeTable extends Outline {
         }
     }
 
-    record Plot(String label, Stroke stroke, Color color, VisibilityBinding visibility) {
-        static Plot withVisibility(String label, Stroke stroke, Color color, ChartPluginParameter parameter) {
-            return new Plot(label, stroke, color, VisibilityBinding.of(parameter));
+    record Plot(
+            String label,
+            Stroke stroke,
+            Color color,
+            VisibilityBinding visibility,
+            PanelBinding panel) {
+        static Plot withBindings(
+                String label,
+                Stroke stroke,
+                Color color,
+                ChartPluginParameter visibility,
+                ChartPluginParameter panel,
+                IntSupplier inheritedPanelId) {
+            return new Plot(
+                    label,
+                    stroke,
+                    color,
+                    VisibilityBinding.of(visibility),
+                    PanelBinding.of(panel, inheritedPanelId));
+        }
+    }
+
+    record PanelChoice(int panelId, String label, boolean createsPane) {
+        static PanelChoice mainChart() {
+            return new PanelChoice(ChartPlotRouting.MAIN_PANEL_ID, "Main chart", false);
         }
 
+        static PanelChoice pane(int panelId, int paneNumber) {
+            return new PanelChoice(panelId, "Pane " + paneNumber, false);
+        }
+
+        static PanelChoice newPane(int panelId) {
+            return new PanelChoice(panelId, "New Pane", true);
+        }
+
+        static PanelChoice mixed() {
+            return new PanelChoice(-1, "Mixed", false);
+        }
+
+        @Override
+        public String toString() {
+            return label;
+        }
     }
 
     private record VisibilityBinding(Boolean initialValue, ChartPluginParameter parameter) {
@@ -215,6 +274,34 @@ final class PlotObjectTreeTable extends Outline {
         private static Boolean read(ChartPluginParameter parameter) {
             if (parameter != null && parameter.canRead() && parameter.getValue() instanceof Boolean value)
                 return value;
+            return null;
+        }
+    }
+
+    private record PanelBinding(Integer initialValue, ChartPluginParameter parameter, IntSupplier inheritedPanelId) {
+        static PanelBinding of(ChartPluginParameter parameter, IntSupplier inheritedPanelId) {
+            return new PanelBinding(read(parameter), parameter, inheritedPanelId);
+        }
+
+        int value() {
+            Integer value = read(parameter);
+            if (value == null)
+                value = initialValue;
+            return value != null && value >= 0 ? value : inheritedPanelId.getAsInt();
+        }
+
+        boolean isEditable() {
+            return parameter != null && parameter.canWrite();
+        }
+
+        void setValue(int value) {
+            if (isEditable())
+                parameter.setValue(value);
+        }
+
+        private static Integer read(ChartPluginParameter parameter) {
+            if (parameter != null && parameter.canRead() && parameter.getValue() instanceof Number value)
+                return value.intValue();
             return null;
         }
     }
@@ -326,13 +413,14 @@ final class PlotObjectTreeTable extends Outline {
             if (plot == null) {
                 return switch (column) {
                     case TYPE -> node.study().type();
-                    case PANEL -> node.study().panel();
+                    case PANEL -> studyPanelChoice(node.study());
                     default -> null;
                 };
             }
 
             return switch (column) {
-                case TYPE, PANEL -> "";
+                case TYPE -> "";
+                case PANEL -> panelChoice(plot.panel().value());
                 case VISIBLE -> plot.visibility().value();
                 case STYLE -> describeStroke(plot.stroke());
                 case WIDTH -> describeWidth(plot.stroke());
@@ -342,25 +430,62 @@ final class PlotObjectTreeTable extends Outline {
 
         @Override
         public boolean isCellEditable(Object value, int columnIndex) {
-            return Column.at(columnIndex) == Column.VISIBLE
-                    && value instanceof PlotObjectTreeNode node
-                    && node.plot() != null
-                    && node.plot().visibility().isEditable();
+            if (!(value instanceof PlotObjectTreeNode node))
+                return false;
+            return switch (Column.at(columnIndex)) {
+                case VISIBLE -> node.plot() != null && node.plot().visibility().isEditable();
+                case PANEL -> node.plot() != null
+                        ? node.plot().panel().isEditable()
+                        : node.study() != null && node.study().plots().stream().anyMatch(plot -> plot.panel().isEditable());
+                default -> false;
+            };
         }
 
         @Override
         public void setValueFor(Object value, int columnIndex, Object newValue) {
-            if (Column.at(columnIndex) != Column.VISIBLE
-                    || !(value instanceof PlotObjectTreeNode node)
-                    || node.plot() == null
-                    || !(newValue instanceof Boolean visible))
+            if (!(value instanceof PlotObjectTreeNode node))
                 return;
 
-            VisibilityBinding visibility = node.plot().visibility();
-            Boolean oldValue = visibility.value();
-            visibility.setValue(visible);
-            repaint();
-            firePropertyChange(VISIBILITY_PROPERTY, oldValue, visibility.value());
+            if (Column.at(columnIndex) == Column.PANEL && newValue instanceof PanelChoice panel) {
+                PanelChoice oldValue = node.plot() != null
+                        ? panelChoice(node.plot().panel().value())
+                        : studyPanelChoice(node.study());
+                if (node.plot() != null)
+                    node.plot().panel().setValue(panel.panelId());
+                else if (node.study() != null)
+                    node.study().plots().forEach(plot -> plot.panel().setValue(panel.panelId()));
+                repaint();
+                firePropertyChange(PANEL_PROPERTY, oldValue, panel);
+                return;
+            }
+
+            if (Column.at(columnIndex) == Column.VISIBLE
+                    && node.plot() != null
+                    && newValue instanceof Boolean visible) {
+                VisibilityBinding visibility = node.plot().visibility();
+                Boolean oldValue = visibility.value();
+                visibility.setValue(visible);
+                repaint();
+                firePropertyChange(VISIBILITY_PROPERTY, oldValue, visibility.value());
+            }
+        }
+
+        private PanelChoice studyPanelChoice(Study study) {
+            if (study == null || study.plots().isEmpty())
+                return null;
+            int panelId = study.plots().getFirst().panel().value();
+            for (Plot plot : study.plots()) {
+                if (plot.panel().value() != panelId)
+                    return PanelChoice.mixed();
+            }
+            return panelChoice(panelId);
+        }
+
+        private PanelChoice panelChoice(int panelId) {
+            return panelChoices.stream()
+                    .filter(choice -> !choice.createsPane() && choice.panelId() == panelId)
+                    .findFirst()
+                    .orElseGet(() -> new PanelChoice(panelId, "Pane " + panelId, false));
         }
     }
 
@@ -460,7 +585,7 @@ final class PlotObjectTreeTable extends Outline {
             if (!(value instanceof PlotObjectTreeNode node) || node.study() == null)
                 return null;
             return node.isStudy()
-                    ? node.study().type() + " - " + node.study().panel()
+                    ? node.study().type() + " - " + treeModel.studyPanelChoice(node.study())
                     : node.label();
         }
 
@@ -489,30 +614,31 @@ final class PlotObjectTreeTable extends Outline {
         }
     }
 
-    private static final class VisibilityCellRenderer extends JPanel implements TableCellRenderer {
+    private static final class VisibilityCellRenderer implements TableCellRenderer {
         private final JCheckBox checkBox = new JCheckBox();
+        private final JPanel emptyCell = new JPanel();
 
         private VisibilityCellRenderer() {
-            super(new BorderLayout());
-            setOpaque(true);
+            checkBox.setOpaque(true);
             checkBox.setHorizontalAlignment(SwingConstants.CENTER);
             checkBox.setBorderPainted(false);
             checkBox.setFocusPainted(false);
-            checkBox.setOpaque(true);
-            add(checkBox, BorderLayout.CENTER);
+            emptyCell.setOpaque(true);
         }
 
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus,
                                                        int row, int column) {
             Color background = cellBackground(table, row, isSelected);
-            setBackground(background);
+            if (!(value instanceof Boolean)) {
+                emptyCell.setBackground(background);
+                return emptyCell;
+            }
             checkBox.setBackground(background);
-            checkBox.setVisible(value instanceof Boolean);
             checkBox.setSelected(Boolean.TRUE.equals(value));
             checkBox.setEnabled(table.isCellEditable(row, column));
-            checkBox.setToolTipText(value instanceof Boolean ? "Toggle plot visibility" : null);
-            return this;
+            checkBox.setToolTipText("Toggle plot visibility");
+            return checkBox;
         }
     }
 

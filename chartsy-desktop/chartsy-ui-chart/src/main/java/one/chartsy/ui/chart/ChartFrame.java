@@ -20,7 +20,6 @@ import one.chartsy.ui.chart.components.SharedDateAxisFooter;
 import one.chartsy.ui.chart.data.SymbolResourceLoaderTask;
 import one.chartsy.ui.chart.internal.ChartPluginParameterUtils;
 import one.chartsy.ui.chart.internal.ChartFrameDropTarget;
-import one.chartsy.ui.chart.internal.IndicatorPaneSupport;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.netbeans.api.progress.ProgressHandle;
@@ -248,7 +247,6 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
 
     public void setChartTemplate(ChartTemplate chartTemplate) {
         Objects.requireNonNull(chartTemplate, "chartTemplate");
-        IndicatorPaneSupport.normalizePaneIds(chartTemplate.getIndicators());
         this.chartTemplate = chartTemplate;
         withTemplateStateRefreshSuspended(() -> {
             applyTemplateState(chartTemplate);
@@ -259,7 +257,6 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
     }
 
     public void setIndicators(List<Indicator> newIndicators) {
-        IndicatorPaneSupport.normalizePaneIds(newIndicators);
         Indicator[] current = getMainStackPanel().getIndicators();
         for (Indicator indicator : current)
             indicatorRemoved(indicator);

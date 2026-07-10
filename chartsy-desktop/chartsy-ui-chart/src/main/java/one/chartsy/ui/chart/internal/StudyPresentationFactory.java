@@ -70,15 +70,10 @@ public final class StudyPresentationFactory {
 
     public static List<PlotEntry> createPlots(StudyPresentationPlan plan) {
         List<PlotEntry> plots = new ArrayList<>();
-        Map<String, Integer> labelCounts = new LinkedHashMap<>();
         for (StudyPlotDefinition plotDefinition : plan.plots()) {
             if (!plotDefinition.visible())
                 continue;
-
-            String baseKey = plotDefinition.label();
-            int count = labelCounts.merge(baseKey, 1, Integer::sum);
-            String key = count == 1 ? baseKey : baseKey + " [" + count + ']';
-            plots.add(new PlotEntry(key, toPlot(plotDefinition)));
+            plots.add(new PlotEntry(plotDefinition.id(), toPlot(plotDefinition)));
         }
         return List.copyOf(plots);
     }
