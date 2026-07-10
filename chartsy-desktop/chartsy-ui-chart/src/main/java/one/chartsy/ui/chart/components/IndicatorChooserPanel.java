@@ -5,6 +5,7 @@
 package one.chartsy.ui.chart.components;
 
 import one.chartsy.ui.chart.ChartPlugin;
+import one.chartsy.ui.chart.ChartPluginPlotSource;
 import one.chartsy.ui.chart.Indicator;
 import one.chartsy.ui.chart.Overlay;
 import one.chartsy.ui.chart.StudyBackedChartPlugin;
@@ -60,13 +61,10 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.SequencedMap;
-import java.util.Set;
 
 /**
  * A reusable chooser surface for chart studies that stays renderable off-screen for visual verification.
@@ -873,115 +871,39 @@ public class IndicatorChooserPanel extends JPanel {
     }
 
     private List<PlotObjectTreeTable.Plot> describePlotObjects(ChartPlugin<?> plugin) {
-        if (plugin instanceof StudyBackedChartPlugin studyPlugin)
-            return describeStudyPlotObjects(plugin, studyPlugin);
-
-        Map<String, VisualDescriptor> descriptors = new LinkedHashMap<>();
-        Map<String, ChartPluginParameter> visibilityDescriptors = new LinkedHashMap<>();
-
-        for (ChartPluginParameter parameter : ChartPluginParameterUtils.getParameters(plugin)) {
-            Object value = parameter.getValue();
-            String parameterName = parameter.name();
-            if (value instanceof Color color) {
-                descriptors.computeIfAbsent(elementNameForColor(parameterName), ignored -> new VisualDescriptor()).color = color;
-            } else if (value instanceof Stroke stroke) {
-                descriptors.computeIfAbsent(elementNameForStroke(parameterName), ignored -> new VisualDescriptor()).stroke = stroke;
-            } else if (value instanceof Boolean) {
-                visibilityDescriptors.put(elementNameForVisibility(parameterName), parameter);
-            }
-        }
-
-        List<PlotObjectTreeTable.Plot> plots = new ArrayList<>();
-        Set<String> consumedVisibilityKeys = new LinkedHashSet<>();
-        ChartPluginParameter singleVisibility = visibilityDescriptors.size() == 1
-                ? visibilityDescriptors.values().iterator().next()
-                : null;
-        for (Map.Entry<String, VisualDescriptor> entry : descriptors.entrySet()) {
-            String elementName = entry.getKey();
-            ChartPluginParameter visibilityParameter = resolveVisibilityParameter(
-                    elementName, visibilityDescriptors, singleVisibility, consumedVisibilityKeys);
-            plots.add(PlotObjectTreeTable.Plot.withVisibility(
-                    elementName, entry.getValue().stroke, entry.getValue().color, visibilityParameter));
-        }
-
-        for (Map.Entry<String, ChartPluginParameter> entry : visibilityDescriptors.entrySet()) {
-            if (consumedVisibilityKeys.contains(entry.getKey()))
-                continue;
-            plots.add(PlotObjectTreeTable.Plot.withVisibility(entry.getKey(), null, null, entry.getValue()));
-        }
-
-        if (plots.isEmpty())
-            plots.add(PlotObjectTreeTable.Plot.withoutVisibility("Result", null, null));
-        return plots;
+        if (plugin instanceof ChartPluginPlotSource plotSource)
+            return describeDeclaredPlotObjects(plugin, plotSource);
+        return List.of();
     }
 
-    private List<PlotObjectTreeTable.Plot> describeStudyPlotObjects(
-            ChartPlugin<?> plugin, StudyBackedChartPlugin studyPlugin) {
-        List<PlotObjectTreeTable.Plot> plots = new ArrayList<>();
-        SequencedMap<String, Object> parameterValues = studyPlugin.getStudyParameterValues();
-        Map<String, ChartPluginParameter> parametersById = new LinkedHashMap<>();
+    private List<PlotObjectTreeTable.Plot> describeDeclaredPlotObjects(
+            ChartPlugin<?> plugin, ChartPluginPlotSource plotSource) {
+        Map<String, ChartPluginParameter> parametersById = parametersById(plugin);
+        return plotSource.getPlotDescriptors().stream()
+                .map(plot -> PlotObjectTreeTable.Plot.withVisibility(
+                        plot.label(),
+                        parameterValue(parametersById, plot.strokeParameterId(), Stroke.class),
+                        parameterValue(parametersById, plot.colorParameterId(), Color.class),
+                        parametersById.get(plot.visibilityParameterId())))
+                .toList();
+    }
+
+    private static Map<String, ChartPluginParameter> parametersById(ChartPlugin<?> plugin) {
+        Map<String, ChartPluginParameter> parameters = new LinkedHashMap<>();
         for (ChartPluginParameter parameter : ChartPluginParameterUtils.getParameters(plugin))
-            parametersById.put(parameter.id(), parameter);
-        for (var plot : studyPlugin.getStudyDescriptor().plots()) {
-            Color color = plot.colorParameter().isBlank() ? null : (Color) parameterValues.get(plot.colorParameter());
-            Stroke stroke = plot.strokeParameter().isBlank() ? null : (Stroke) parameterValues.get(plot.strokeParameter());
-            if (plot.visibleParameter().isBlank()) {
-                plots.add(PlotObjectTreeTable.Plot.withoutVisibility(plot.label(), stroke, color));
-                continue;
-            }
-
-            ChartPluginParameter visibilityParameter = parametersById.get(plot.visibleParameter());
-            if (visibilityParameter == null) {
-                plots.add(PlotObjectTreeTable.Plot.withReadOnlyVisibility(
-                        plot.label(), stroke, color, (Boolean) parameterValues.get(plot.visibleParameter())));
-            } else {
-                plots.add(PlotObjectTreeTable.Plot.withVisibility(
-                        plot.label(), stroke, color, visibilityParameter));
-            }
-        }
-        if (plots.isEmpty())
-            plots.add(PlotObjectTreeTable.Plot.withoutVisibility("Result", null, null));
-        return plots;
+            parameters.put(parameter.id(), parameter);
+        return parameters;
     }
 
-    private static String elementNameForColor(String parameterName) {
-        return normalizeElementName(parameterName, "Color");
-    }
-
-    private static String elementNameForStroke(String parameterName) {
-        return normalizeElementName(parameterName, "Style", "Stroke", "Pen Style");
-    }
-
-    private static String elementNameForVisibility(String parameterName) {
-        return normalizeElementName(parameterName, "Visibility", "Visible");
-    }
-
-    private static String normalizeElementName(String parameterName, String... suffixes) {
-        String trimmedName = parameterName == null ? "" : parameterName.trim();
-        for (String suffix : suffixes) {
-            if (trimmedName.equalsIgnoreCase(suffix))
-                return "Result";
-            String token = " " + suffix;
-            if (trimmedName.length() > token.length() && trimmedName.regionMatches(true, trimmedName.length() - token.length(), token, 0, token.length()))
-                return trimmedName.substring(0, trimmedName.length() - token.length()).trim();
-        }
-        return trimmedName.isBlank() ? "Result" : trimmedName;
-    }
-
-    private static ChartPluginParameter resolveVisibilityParameter(
-            String elementName,
-            Map<String, ChartPluginParameter> visibilityDescriptors,
-            ChartPluginParameter singleVisibility,
-            Set<String> consumedVisibilityKeys) {
-        String normalizedElement = elementName.toLowerCase(Locale.ROOT);
-        for (Map.Entry<String, ChartPluginParameter> entry : visibilityDescriptors.entrySet()) {
-            String normalizedVisibility = entry.getKey().toLowerCase(Locale.ROOT);
-            if (!normalizedVisibility.isEmpty() && (normalizedElement.equals(normalizedVisibility) || normalizedElement.startsWith(normalizedVisibility))) {
-                consumedVisibilityKeys.add(entry.getKey());
-                return entry.getValue();
-            }
-        }
-        return singleVisibility;
+    private static <T> T parameterValue(
+            Map<String, ChartPluginParameter> parameters,
+            String parameterId,
+            Class<T> valueType) {
+        if (parameterId == null || parameterId.isBlank())
+            return null;
+        ChartPluginParameter parameter = parameters.get(parameterId);
+        Object value = parameter == null ? null : parameter.getValue();
+        return valueType.isInstance(value) ? valueType.cast(value) : null;
     }
 
     private static String describePluginType(ChartPlugin<?> plugin) {
@@ -1009,11 +931,6 @@ public class IndicatorChooserPanel extends JPanel {
             return "Pane";
         }
         return PluginKind.from(plugin).placementLabel();
-    }
-
-    private static final class VisualDescriptor {
-        private Color color;
-        private Stroke stroke;
     }
 
     private record PaneCandidate(IndicatorPaneSupport.PaneGroup group, IndicatorPaneSupport.Compatibility compatibility) {

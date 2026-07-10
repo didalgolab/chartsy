@@ -48,15 +48,7 @@ class ChartStudyIntegrationTest {
         template.setChart(new CandlestickChart());
         template.addOverlay(new Volume());
 
-        CandleSeries dataset = CandleSeries.of(
-                SymbolResource.of(SymbolIdentity.of("TEST"), TimeFrame.Period.DAILY).withDataType(Candle.class),
-                List.of(
-                        Candle.of(LocalDate.of(2026, 1, 1).atStartOfDay(), 100, 104, 98, 103, 1_000),
-                        Candle.of(LocalDate.of(2026, 1, 2).atStartOfDay(), 103, 106, 101, 105, 6_000),
-                        Candle.of(LocalDate.of(2026, 1, 3).atStartOfDay(), 105, 107, 102, 104, 3_500),
-                        Candle.of(LocalDate.of(2026, 1, 4).atStartOfDay(), 104, 108, 103, 107, 8_000)
-                )
-        );
+        CandleSeries dataset = volumeDataset();
 
         ChartFrame chartFrame = ChartExporter.createChartFrame(DataProvider.EMPTY, dataset, template, new Dimension(1280, 800));
         Volume volume = (Volume) chartFrame.getMainPanel().getChartPanel().getOverlays().stream()
@@ -76,6 +68,41 @@ class ChartStudyIntegrationTest {
 
         assertThat(range.contains(0.0)).isTrue();
         assertThat(zeroY).isBetween(overlayBounds.getMinY(), overlayBounds.getMaxY() + 1.0);
+    }
+
+    @Test
+    void volumeVisibility_controls_its_explicit_plot() {
+        Volume volume = new Volume();
+        volume.setDataset(volumeDataset());
+
+        volume.calculate();
+        assertThat(volume.getPlotDescriptors())
+                .singleElement()
+                .satisfies(plot -> {
+                    assertThat(plot.id()).isEqualTo(Volume.VOLUME);
+                    assertThat(plot.visibilityParameterId()).isEqualTo("volumeVisibility");
+                });
+        assertThat(volume.getPlots()).containsOnlyKeys(Volume.VOLUME);
+
+        volume.volumeVisibility = false;
+        volume.calculate();
+        assertThat(volume.getPlots()).isEmpty();
+    }
+
+    @Test
+    void volumeVisibility_roundTrips_through_chart_templates() {
+        Volume volume = new Volume();
+        volume.volumeVisibility = false;
+        ChartTemplate source = new ChartTemplate("Source");
+        source.addOverlay(volume);
+
+        StoredChartTemplatePayload payload = ChartTemplatePayloadMapper.getDefault().fromChartTemplate(source);
+        ChartTemplate restored = ChartTemplatePayloadMapper.getDefault().toChartTemplate("Restored", payload);
+
+        assertThat(restored.getOverlays())
+                .singleElement()
+                .isInstanceOfSatisfying(Volume.class,
+                        restoredVolume -> assertThat(restoredVolume.volumeVisibility).isFalse());
     }
 
     @Test
@@ -129,5 +156,16 @@ class ChartStudyIntegrationTest {
         } catch (Exception ex) {
             throw new IllegalStateException("Unable to flush EDT", ex);
         }
+    }
+
+    private static CandleSeries volumeDataset() {
+        return CandleSeries.of(
+                SymbolResource.of(SymbolIdentity.of("TEST"), TimeFrame.Period.DAILY).withDataType(Candle.class),
+                List.of(
+                        Candle.of(LocalDate.of(2026, 1, 1).atStartOfDay(), 100, 104, 98, 103, 1_000),
+                        Candle.of(LocalDate.of(2026, 1, 2).atStartOfDay(), 103, 106, 101, 105, 6_000),
+                        Candle.of(LocalDate.of(2026, 1, 3).atStartOfDay(), 105, 107, 102, 104, 3_500),
+                        Candle.of(LocalDate.of(2026, 1, 4).atStartOfDay(), 104, 108, 103, 107, 8_000)
+                ));
     }
 }

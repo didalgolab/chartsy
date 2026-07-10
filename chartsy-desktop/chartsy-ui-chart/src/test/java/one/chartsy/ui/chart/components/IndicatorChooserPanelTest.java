@@ -11,13 +11,16 @@ import one.chartsy.TimeFrame;
 import one.chartsy.data.CandleSeries;
 import one.chartsy.ui.chart.BasicStrokes;
 import one.chartsy.ui.chart.ChartContext;
+import one.chartsy.ui.chart.ChartPluginPlotSource;
 import one.chartsy.ui.chart.DynamicStudyIndicator;
+import one.chartsy.ui.chart.DynamicStudyOverlay;
 import one.chartsy.ui.chart.Indicator;
 import one.chartsy.ui.chart.Overlay;
 import one.chartsy.ui.chart.StudyBackedChartPlugin;
 import one.chartsy.ui.chart.StudyRegistry;
 import one.chartsy.study.StudyAxisDescriptor;
 import one.chartsy.study.StudyPresentationPlan;
+import one.chartsy.study.StudyPlotDescriptor;
 import org.netbeans.swing.outline.Outline;
 import org.junit.jupiter.api.Test;
 
@@ -102,15 +105,79 @@ class IndicatorChooserPanelTest {
         int fdiRow = findRow(table, "FDI");
         assertThat(table.isCellEditable(neutralRow, 3)).isTrue();
         assertThat(table.isCellEditable(highRow, 3)).isTrue();
-        assertThat(table.isCellEditable(fdiRow, 3)).isFalse();
+        assertThat(table.isCellEditable(fdiRow, 3)).isTrue();
 
         runOnEdt(() -> table.setValueAt(Boolean.FALSE, neutralRow, 3));
 
         StudyBackedChartPlugin selectedPlugin = (StudyBackedChartPlugin) panel.getSelectedIndicators().get(0);
-        assertThat(selectedPlugin.getStudyParameterValues().get("insideNeutralVisibility")).isEqualTo(Boolean.FALSE);
-        assertThat(selectedPlugin.getStudyParameterValues().get("insideHighVisibility")).isEqualTo(Boolean.TRUE);
+        assertThat(selectedPlugin.getStudyParameterValues())
+                .containsEntry(StudyPlotDescriptor.visibilityParameterId("insideNeutral"), Boolean.FALSE)
+                .containsEntry(StudyPlotDescriptor.visibilityParameterId("insideHigh"), Boolean.TRUE);
         assertThat(table.getValueAt(neutralRow, 3)).isEqualTo(Boolean.FALSE);
         assertThat(table.getValueAt(highRow, 3)).isEqualTo(Boolean.TRUE);
+    }
+
+    @Test
+    void everyAvailableStudyPlot_has_editable_visibility() throws Exception {
+        IndicatorChooserPanel panel = createPanel();
+        StudyRegistry registry = StudyRegistry.getDefault();
+        List<Indicator> indicators = registry.getIndicatorsList();
+        List<Overlay> overlays = registry.getOverlaysList();
+        runOnEdt(() -> panel.initForm(indicators, indicators, overlays, overlays));
+
+        JTable table = getField(panel, "plotObjectTable", JTable.class);
+        int plotCount = 0;
+        for (int row = 0; row < table.getRowCount(); row++) {
+            if (!"".equals(table.getValueAt(row, 1)))
+                continue;
+            plotCount++;
+            assertThat(table.getValueAt(row, 3))
+                    .as("visibility value at row %s (%s)", row, table.getValueAt(row, 0))
+                    .isInstanceOf(Boolean.class);
+            assertThat(table.isCellEditable(row, 3))
+                    .as("editable visibility at row %s (%s)", row, table.getValueAt(row, 0))
+                    .isTrue();
+        }
+        int expectedPlotCount = registry.getStudyDescriptors().stream()
+                .mapToInt(descriptor -> Math.max(1, descriptor.plots().size()))
+                .sum();
+        assertThat(plotCount).isEqualTo(expectedPlotCount);
+    }
+
+    @Test
+    void implicitVisibility_hides_declared_study_plot() throws Exception {
+        IndicatorChooserPanel panel = createPanel();
+        Indicator cmo = StudyRegistry.getDefault().getIndicator("Chande Momentum Oscillator");
+        runOnEdt(() -> panel.initForm(List.of(cmo), List.of(cmo), List.of(), List.of()));
+
+        JTable table = getField(panel, "plotObjectTable", JTable.class);
+        int cmoRow = findRow(table, "CMO");
+        runOnEdt(() -> table.setValueAt(Boolean.FALSE, cmoRow, 3));
+
+        DynamicStudyIndicator hidden = (DynamicStudyIndicator) panel.getSelectedIndicators().getFirst();
+        assertThat(hidden.getStudyParameterValues())
+                .containsEntry(StudyPlotDescriptor.visibilityParameterId("cmo"), Boolean.FALSE);
+        hidden.setDataset(sampleDataset(40));
+        hidden.calculate();
+        assertThat(hidden.getPlots()).doesNotContainKey("CMO");
+    }
+
+    @Test
+    void aggregateVisibility_hides_custom_builder_result() throws Exception {
+        IndicatorChooserPanel panel = createPanel();
+        Overlay sfora = StudyRegistry.getDefault().getOverlay("Sfora");
+        runOnEdt(() -> panel.initForm(List.of(), List.of(), List.of(sfora), List.of(sfora)));
+
+        JTable table = getField(panel, "plotObjectTable", JTable.class);
+        int resultRow = findRow(table, "Result");
+        runOnEdt(() -> table.setValueAt(Boolean.FALSE, resultRow, 3));
+
+        DynamicStudyOverlay hidden = (DynamicStudyOverlay) panel.getSelectedOverlays().getFirst();
+        assertThat(hidden.getStudyParameterValues())
+                .containsEntry(StudyPlotDescriptor.RESULT_VISIBILITY_PARAMETER_ID, Boolean.FALSE);
+        hidden.setDataset(sampleDataset(80));
+        hidden.calculate();
+        assertThat(hidden.getPlots()).isEmpty();
     }
 
     @Test
@@ -254,9 +321,14 @@ class IndicatorChooserPanelTest {
     private record OverlayFixture(IndicatorChooserPanel panel, JTable table, DummyOverlay overlay) {
     }
 
-    private static final class DummyOverlay extends Overlay {
+    private static final class DummyOverlay extends Overlay implements ChartPluginPlotSource {
+        private static final List<PlotDescriptor> PLOTS = List.of(
+                new PlotDescriptor("result", "Result", "color", "stroke", "visible"));
+
         @Parameter(name = "Color")
         public Color color = Color.RED;
+        @Parameter(name = "Unused Color")
+        public Color unusedColor = Color.BLUE;
         @Parameter(name = "Stroke")
         public Stroke stroke = BasicStrokes.SOLID;
         @Parameter(name = "Visible")
@@ -274,6 +346,11 @@ class IndicatorChooserPanelTest {
         @Override
         public DummyOverlay newInstance() {
             return new DummyOverlay(getName());
+        }
+
+        @Override
+        public List<PlotDescriptor> getPlotDescriptors() {
+            return PLOTS;
         }
 
         @Override
@@ -325,4 +402,5 @@ class IndicatorChooserPanelTest {
             return axis.steps();
         }
     }
+
 }

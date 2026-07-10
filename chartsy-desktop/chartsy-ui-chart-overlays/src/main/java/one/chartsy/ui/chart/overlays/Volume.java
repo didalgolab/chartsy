@@ -7,11 +7,21 @@ package one.chartsy.ui.chart.overlays;
 import java.awt.Color;
 import java.awt.Rectangle;
 import java.text.DecimalFormat;
+import java.util.List;
 
 import one.chartsy.core.Range;
 import one.chartsy.data.CandleSeries;
 import one.chartsy.data.DoubleSeries;
-import one.chartsy.ui.chart.*;
+import one.chartsy.ui.chart.AbstractOverlay;
+import one.chartsy.ui.chart.ChartContext;
+import one.chartsy.ui.chart.ChartFrame;
+import one.chartsy.ui.chart.ChartPluginPlotSource;
+import one.chartsy.ui.chart.ChartProperties;
+import one.chartsy.ui.chart.LegendMarkerSpec;
+import one.chartsy.ui.chart.Overlay;
+import one.chartsy.ui.chart.PixelPerfectCandleGeometry;
+import one.chartsy.ui.chart.PlotRenderContext;
+import one.chartsy.ui.chart.PlotRenderTarget;
 import one.chartsy.ui.chart.data.VisibleValues;
 import one.chartsy.ui.chart.plot.AbstractTimeSeriesPlot;
 import org.openide.util.lookup.ServiceProvider;
@@ -24,10 +34,12 @@ import org.openide.util.lookup.ServiceProvider;
  *
  */
 @ServiceProvider(service = Overlay.class)
-public class Volume extends AbstractOverlay {
+public class Volume extends AbstractOverlay implements ChartPluginPlotSource {
 
     public static final String VOLUME = "volume";
     public static final String SMA = "sma";
+    private static final List<PlotDescriptor> PLOT_DESCRIPTORS = List.of(
+            new PlotDescriptor(VOLUME, "Result", "color", "", "volumeVisibility"));
 
     public Volume() {
         super("Volume");
@@ -68,8 +80,9 @@ public class Volume extends AbstractOverlay {
     
     @Override
     public void calculate() {
+        clearPlots();
         CandleSeries initial = getDataset();
-        if (initial != null) {
+        if (initial != null && volumeVisibility) {
             DoubleSeries volume = initial.volumes();
             Range range = Range.of(0, max(volume));
             double factor = Math.pow(10, String.valueOf(Math.round(range.max())).length() - 1);
@@ -89,6 +102,8 @@ public class Volume extends AbstractOverlay {
 
     @Parameter(name = "Color")
     public Color color = new Color(0xFABC7F);
+    @Parameter(name = "Volume Visibility")
+    public boolean volumeVisibility = true;
     @Parameter(name = "SMA Color")
     public Color smaColor = Color.BLUE;
     @Parameter(name = "Transparency")
@@ -99,6 +114,11 @@ public class Volume extends AbstractOverlay {
     @Override
     public Color[] getColors() {
         return new Color[] { color, smaColor };
+    }
+
+    @Override
+    public List<PlotDescriptor> getPlotDescriptors() {
+        return PLOT_DESCRIPTORS;
     }
     
     @Override

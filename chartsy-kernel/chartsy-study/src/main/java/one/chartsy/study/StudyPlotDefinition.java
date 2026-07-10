@@ -71,4 +71,10 @@ public record StudyPlotDefinition(
         return new StudyPlotDefinition(id, label, order, StudyPlotType.SHAPE, values, null,
                 Double.NaN, Double.NaN, true, color, null, "", visible, marker);
     }
+
+    public StudyPlotDefinition withVisible(boolean visible) {
+        return new StudyPlotDefinition(
+                id, label, order, type, values, secondaryValues, value1, value2,
+                upper, primaryColor, secondaryColor, stroke, visible, marker);
+    }
 }

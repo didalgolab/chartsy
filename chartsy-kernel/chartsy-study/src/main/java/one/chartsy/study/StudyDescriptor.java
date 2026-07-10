@@ -4,7 +4,6 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.SequencedMap;
 import java.util.Set;
 
@@ -44,9 +43,21 @@ public record StudyDescriptor(
         if (factory == null)
             throw new IllegalArgumentException("factory is null");
 
+        builderType = builderType == null ? StudyPresentationBuilder.class : builderType;
+
         var orderedParameters = new LinkedHashMap<String, StudyParameterDescriptor>();
         if (parameters != null)
             orderedParameters.putAll(parameters);
+
+        plots = plots == null ? List.of() : List.copyOf(plots);
+        addPlotVisibilityParameters(plots, orderedParameters);
+        if (plots.isEmpty() && builderType != StudyPresentationBuilder.class) {
+            addVisibilityParameter(
+                    orderedParameters, StudyPlotDescriptor.RESULT_VISIBILITY_PARAMETER_ID, "Result", true);
+            requireBooleanVisibilityParameter(
+                    StudyPlotDescriptor.RESULT_VISIBILITY_PARAMETER_ID, orderedParameters);
+        }
+
         parameters = Collections.unmodifiableSequencedMap(orderedParameters);
 
         var orderedOutputs = new LinkedHashMap<String, StudyOutputDescriptor>();
@@ -55,8 +66,6 @@ public record StudyDescriptor(
         outputs = Collections.unmodifiableSequencedMap(orderedOutputs);
 
         axis = axis == null ? new StudyAxisDescriptor() : axis;
-        plots = plots == null ? List.of() : List.copyOf(plots);
-        builderType = builderType == null ? StudyPresentationBuilder.class : builderType;
 
         validateFactory(factory, parameters);
         validatePlots(plots, parameters, outputs);
@@ -71,7 +80,7 @@ public record StudyDescriptor(
     }
 
     public boolean hasCustomBuilder() {
-        return !Objects.equals(builderType, StudyPresentationBuilder.class);
+        return builderType != StudyPresentationBuilder.class;
     }
 
     private static void validateFactory(StudyFactoryDescriptor factory, SequencedMap<String, StudyParameterDescriptor> parameters) {
@@ -101,8 +110,46 @@ public record StudyDescriptor(
             requireKnownParameter(plot.colorParameter(), parameters, "color parameter");
             requireKnownParameter(plot.secondaryColorParameter(), parameters, "secondary color parameter");
             requireKnownParameter(plot.strokeParameter(), parameters, "stroke parameter");
-            requireKnownParameter(plot.visibleParameter(), parameters, "visibility parameter");
+            requireKnownParameter(plot.visibilityParameterId(), parameters, "visibility parameter");
+            requireBooleanVisibilityParameter(plot.visibilityParameterId(), parameters);
         }
+    }
+
+    private static void addPlotVisibilityParameters(
+            List<StudyPlotDescriptor> plots,
+            LinkedHashMap<String, StudyParameterDescriptor> parameters) {
+        for (StudyPlotDescriptor plot : plots)
+            addVisibilityParameter(
+                    parameters, plot.visibilityParameterId(), plot.label(), plot.visibleByDefault());
+    }
+
+    private static void addVisibilityParameter(
+            LinkedHashMap<String, StudyParameterDescriptor> parameters,
+            String parameterId,
+            String plotLabel,
+            boolean visibleByDefault) {
+        parameters.putIfAbsent(parameterId, new StudyParameterDescriptor(
+                parameterId,
+                plotLabel + " Visibility",
+                "Controls whether the " + plotLabel + " plot is displayed",
+                StudyParameterScope.VISUAL,
+                StudyParameterType.BOOLEAN,
+                Boolean.class,
+                Void.class,
+                Boolean.toString(visibleByDefault),
+                Integer.MAX_VALUE,
+                StudyStereotype.NONE));
+    }
+
+    private static void requireBooleanVisibilityParameter(
+            String parameterId,
+            SequencedMap<String, StudyParameterDescriptor> parameters) {
+        StudyParameterDescriptor parameter = parameters.get(parameterId);
+        if (parameter != null
+                && parameter.effectiveValueType() != Boolean.class
+                && parameter.effectiveValueType() != boolean.class)
+            throw new IllegalArgumentException(
+                    "Visibility parameter must be boolean: " + parameterId);
     }
 
     private static void requireKnownOutput(String outputId,

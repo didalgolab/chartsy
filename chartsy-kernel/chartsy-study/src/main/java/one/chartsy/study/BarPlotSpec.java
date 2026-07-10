@@ -16,7 +16,7 @@ public @interface BarPlotSpec {
     String label();
     String output();
     String colorParameter();
-    String visibleParameter() default "";
+    boolean visibleByDefault() default true;
     int order() default Integer.MAX_VALUE;
 
     @Documented

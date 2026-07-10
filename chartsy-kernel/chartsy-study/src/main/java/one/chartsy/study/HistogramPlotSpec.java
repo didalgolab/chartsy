@@ -17,7 +17,7 @@ public @interface HistogramPlotSpec {
     String output();
     String positiveColorParameter();
     String negativeColorParameter() default "";
-    String visibleParameter() default "";
+    boolean visibleByDefault() default true;
     int order() default Integer.MAX_VALUE;
 
     @Documented

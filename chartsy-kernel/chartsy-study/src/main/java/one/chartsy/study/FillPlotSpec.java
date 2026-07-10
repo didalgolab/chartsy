@@ -19,7 +19,7 @@ public @interface FillPlotSpec {
     double to();
     boolean upper() default true;
     String colorParameter();
-    String visibleParameter() default "";
+    boolean visibleByDefault() default true;
     int order() default Integer.MAX_VALUE;
 
     @Documented

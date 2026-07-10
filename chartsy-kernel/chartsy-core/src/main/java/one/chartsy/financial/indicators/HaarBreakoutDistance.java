@@ -44,7 +44,6 @@ import java.util.List;
 )
 @StudyParameter(id = "distanceColor", name = "Distance Line Color", scope = StudyParameterScope.VISUAL, type = StudyParameterType.COLOR, defaultValue = "#1565C0", order = 100)
 @StudyParameter(id = "distanceStyle", name = "Distance Line Style", scope = StudyParameterScope.VISUAL, type = StudyParameterType.STROKE, defaultValue = "THIN_SOLID", order = 110)
-@StudyParameter(id = "showCorrelations", name = "Show Correlations", scope = StudyParameterScope.VISUAL, type = StudyParameterType.BOOLEAN, defaultValue = "false", order = 120)
 @StudyParameter(id = "pearsonColor", name = "Pearson Line Color", scope = StudyParameterScope.VISUAL, type = StudyParameterType.COLOR, defaultValue = "#2E7D32", order = 130)
 @StudyParameter(id = "pearsonStyle", name = "Pearson Line Style", scope = StudyParameterScope.VISUAL, type = StudyParameterType.STROKE, defaultValue = "ULTRATHIN_DOTTED", order = 140)
 @StudyParameter(id = "spearmanColor", name = "Spearman Line Color", scope = StudyParameterScope.VISUAL, type = StudyParameterType.COLOR, defaultValue = "#EF6C00", order = 150)
@@ -53,8 +52,8 @@ import java.util.List;
 @StudyParameter(id = "zeroLineStyle", name = "Zero Line Style", scope = StudyParameterScope.VISUAL, type = StudyParameterType.STROKE, defaultValue = "ULTRATHIN_DOTTED", order = 180)
 @LinePlotSpec(id = "distancePlot", label = "Distance", output = "distance", colorParameter = "distanceColor", strokeParameter = "distanceStyle", order = 10)
 @HorizontalLinePlotSpec(id = "zeroLine", label = "Zero", value = 0.0, colorParameter = "zeroLineColor", strokeParameter = "zeroLineStyle", order = 20)
-@LinePlotSpec(id = "pearsonPlot", label = "Pearson", output = "pearson", colorParameter = "pearsonColor", strokeParameter = "pearsonStyle", visibleParameter = "showCorrelations", order = 30)
-@LinePlotSpec(id = "spearmanPlot", label = "Spearman", output = "spearman", colorParameter = "spearmanColor", strokeParameter = "spearmanStyle", visibleParameter = "showCorrelations", order = 40)
+@LinePlotSpec(id = "pearsonPlot", label = "Pearson", output = "pearson", colorParameter = "pearsonColor", strokeParameter = "pearsonStyle", visibleByDefault = false, order = 30)
+@LinePlotSpec(id = "spearmanPlot", label = "Spearman", output = "spearman", colorParameter = "spearmanColor", strokeParameter = "spearmanStyle", visibleByDefault = false, order = 40)
 public class HaarBreakoutDistance extends AbstractCandleIndicator {
     public static final int WINDOW = 256;
     private static final String COEFFICIENTS_RESOURCE = "HaarBreakoutDistance.jsonl";

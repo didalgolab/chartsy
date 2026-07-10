@@ -17,4 +17,12 @@ public record StudyPresentationPlan(
     public static StudyPresentationPlan empty(StudyAxisDescriptor axis) {
         return new StudyPresentationPlan(axis, List.of());
     }
+
+    public StudyPresentationPlan withPlotsVisible(boolean visible) {
+        if (visible)
+            return this;
+        return new StudyPresentationPlan(axis, plots.stream()
+                .map(plot -> plot.withVisible(false))
+                .toList());
+    }
 }

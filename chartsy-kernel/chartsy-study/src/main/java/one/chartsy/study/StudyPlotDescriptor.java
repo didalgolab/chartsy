@@ -13,9 +13,11 @@ public record StudyPlotDescriptor(
         String colorParameter,
         String secondaryColorParameter,
         String strokeParameter,
-        String visibleParameter,
+        boolean visibleByDefault,
         StudyMarkerType marker
 ) {
+    public static final String RESULT_VISIBILITY_PARAMETER_ID = visibilityParameterId("result");
+
     public StudyPlotDescriptor {
         if (id == null || id.isBlank())
             throw new IllegalArgumentException("id is blank");
@@ -33,9 +35,17 @@ public record StudyPlotDescriptor(
             secondaryColorParameter = "";
         if (strokeParameter == null)
             strokeParameter = "";
-        if (visibleParameter == null)
-            visibleParameter = "";
         if (marker == null)
             marker = StudyMarkerType.NONE;
+    }
+
+    public static String visibilityParameterId(String plotId) {
+        if (plotId == null || plotId.isBlank())
+            throw new IllegalArgumentException("plotId is blank");
+        return "plot." + plotId + ".visible";
+    }
+
+    public String visibilityParameterId() {
+        return visibilityParameterId(id);
     }
 }

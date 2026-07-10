@@ -17,7 +17,7 @@ public @interface InsideFillPlotSpec {
     String upperOutput();
     String lowerOutput();
     String colorParameter();
-    String visibleParameter() default "";
+    boolean visibleByDefault() default true;
     int order() default Integer.MAX_VALUE;
 
     @Documented

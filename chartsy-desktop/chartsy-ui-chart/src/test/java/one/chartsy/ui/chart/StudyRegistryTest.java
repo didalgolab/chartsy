@@ -6,7 +6,10 @@ package one.chartsy.ui.chart;
 
 import one.chartsy.financial.indicators.FramaTrendWhispers;
 import one.chartsy.study.StudyDescriptor;
+import one.chartsy.study.StudyPlotDescriptor;
 import org.junit.jupiter.api.Test;
+
+import java.util.HashSet;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -64,5 +67,30 @@ class StudyRegistryTest {
 
         assertThat(firstIndicator).isNotSameAs(secondIndicator).isInstanceOf(DynamicStudyIndicator.class);
         assertThat(firstOverlay).isNotSameAs(secondOverlay).isInstanceOf(DynamicStudyOverlay.class);
+    }
+
+    @Test
+    void everyRegisteredPlotHasUniqueBooleanVisibilityConfiguration() {
+        for (StudyDescriptor descriptor : StudyRegistry.getDefault().getStudyDescriptors()) {
+            var visibilityParameters = new HashSet<String>();
+            for (StudyPlotDescriptor plot : descriptor.plots()) {
+                assertThat(plot.visibilityParameterId()).isNotBlank();
+                assertThat(visibilityParameters.add(plot.visibilityParameterId()))
+                        .as("unique visibility for %s/%s", descriptor.name(), plot.label())
+                        .isTrue();
+                assertThat(descriptor.parameter(plot.visibilityParameterId()).effectiveValueType())
+                        .as("boolean visibility for %s/%s", descriptor.name(), plot.label())
+                        .isEqualTo(Boolean.class);
+                assertThat(descriptor.parameter(plot.visibilityParameterId()).defaultValue())
+                        .as("visibility default for %s/%s", descriptor.name(), plot.label())
+                        .isEqualTo(Boolean.toString(plot.visibleByDefault()));
+            }
+            if (descriptor.hasCustomBuilder() && descriptor.plots().isEmpty()) {
+                assertThat(descriptor.parameter(StudyPlotDescriptor.RESULT_VISIBILITY_PARAMETER_ID)
+                        .effectiveValueType())
+                        .as("aggregate visibility for %s", descriptor.name())
+                        .isEqualTo(Boolean.class);
+            }
+        }
     }
 }

@@ -17,7 +17,7 @@ public @interface LinePlotSpec {
     String output();
     String colorParameter();
     String strokeParameter() default "";
-    String visibleParameter() default "";
+    boolean visibleByDefault() default true;
     int order() default Integer.MAX_VALUE;
 
     @Documented

@@ -43,9 +43,8 @@ import java.util.function.Consumer;
 @StudyParameter(id = "upperBandColor", name = "Upper Band Color", scope = StudyParameterScope.VISUAL, type = StudyParameterType.COLOR, defaultValue = "#3B82F6", order = 100)
 @StudyParameter(id = "lowerBandColor", name = "Lower Band Color", scope = StudyParameterScope.VISUAL, type = StudyParameterType.COLOR, defaultValue = "#EF4444", order = 110)
 @StudyParameter(id = "bandStroke", name = "Band Stroke", scope = StudyParameterScope.VISUAL, type = StudyParameterType.STROKE, defaultValue = "THICK_SOLID", order = 120)
-@StudyParameter(id = "fillBands", name = "Fill Bands", scope = StudyParameterScope.VISUAL, type = StudyParameterType.BOOLEAN, defaultValue = "true", order = 130)
 @StudyParameter(id = "fillColor", name = "Fill Color", scope = StudyParameterScope.VISUAL, type = StudyParameterType.COLOR, defaultValue = "#0093C5FD", order = 140)
-@InsideFillPlotSpec(id = "bandFill", label = "Band Fill", upperOutput = "upperBand", lowerOutput = "lowerBand", colorParameter = "fillColor", visibleParameter = "fillBands", order = 10)
+@InsideFillPlotSpec(id = "bandFill", label = "Band Fill", upperOutput = "upperBand", lowerOutput = "lowerBand", colorParameter = "fillColor", order = 10)
 @LinePlotSpec(id = "upperBandPlot", label = "Upper Band", output = "upperBand", colorParameter = "upperBandColor", strokeParameter = "bandStroke", order = 20)
 @LinePlotSpec(id = "lowerBandPlot", label = "Lower Band", output = "lowerBand", colorParameter = "lowerBandColor", strokeParameter = "bandStroke", order = 30)
 public class SentimentBands extends AbstractBandValueIndicator<SentimentBands.Values> implements Consumer<Candle> {

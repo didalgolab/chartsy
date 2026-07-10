@@ -16,7 +16,7 @@ public @interface ShapePlotSpec {
     String label();
     String output();
     String colorParameter();
-    String visibleParameter() default "";
+    boolean visibleByDefault() default true;
     StudyMarkerType marker();
     int order() default Integer.MAX_VALUE;
 

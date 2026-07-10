@@ -185,13 +185,6 @@ final class PlotObjectTreeTable extends Outline {
             return new Plot(label, stroke, color, VisibilityBinding.of(parameter));
         }
 
-        static Plot withReadOnlyVisibility(String label, Stroke stroke, Color color, Boolean visible) {
-            return new Plot(label, stroke, color, VisibilityBinding.readOnly(visible));
-        }
-
-        static Plot withoutVisibility(String label, Stroke stroke, Color color) {
-            return new Plot(label, stroke, color, VisibilityBinding.none());
-        }
     }
 
     private record VisibilityBinding(Boolean initialValue, ChartPluginParameter parameter) {
@@ -203,10 +196,6 @@ final class PlotObjectTreeTable extends Outline {
 
         static VisibilityBinding of(ChartPluginParameter parameter) {
             return parameter == null ? none() : new VisibilityBinding(read(parameter), parameter);
-        }
-
-        static VisibilityBinding readOnly(Boolean value) {
-            return value == null ? none() : new VisibilityBinding(value, null);
         }
 
         Boolean value() {

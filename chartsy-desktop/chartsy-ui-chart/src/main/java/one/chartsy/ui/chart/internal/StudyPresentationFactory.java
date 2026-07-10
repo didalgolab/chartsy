@@ -59,7 +59,13 @@ public final class StudyPresentationFactory {
                 StudyPresentationContext.of(descriptor, dataset, neutralParameters, neutralOutputs),
                 defaultPlan
         );
-        return plan != null ? plan : defaultPlan;
+        StudyPresentationPlan resolvedPlan = plan != null ? plan : defaultPlan;
+        if (descriptor.plots().isEmpty()) {
+            boolean visible = resolveVisibility(
+                    StudyPlotDescriptor.RESULT_VISIBILITY_PARAMETER_ID, neutralParameters);
+            return resolvedPlan.withPlotsVisible(visible);
+        }
+        return resolvedPlan;
     }
 
     public static List<PlotEntry> createPlots(StudyPresentationPlan plan) {
@@ -128,9 +134,13 @@ public final class StudyPresentationFactory {
     }
 
     private static boolean resolveVisibility(StudyPlotDescriptor plot, Map<String, Object> parameters) {
-        if (plot.visibleParameter().isBlank())
+        return resolveVisibility(plot.visibilityParameterId(), parameters);
+    }
+
+    private static boolean resolveVisibility(String parameterId, Map<String, Object> parameters) {
+        if (parameterId == null || parameterId.isBlank())
             return true;
-        Object visible = parameters.get(plot.visibleParameter());
+        Object visible = parameters.get(parameterId);
         return !(visible instanceof Boolean bool) || bool;
     }
 

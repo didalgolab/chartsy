@@ -32,11 +32,10 @@ import one.chartsy.study.StudyPlacement;
 @StudyParameter(id = "lineStyle", name = "Line Style", scope = StudyParameterScope.VISUAL, type = StudyParameterType.STROKE, defaultValue = "THIN_SOLID", order = 110)
 @StudyParameter(id = "zeroLineColor", name = "Zero Line Color", scope = StudyParameterScope.VISUAL, type = StudyParameterType.COLOR, defaultValue = "#000000", order = 120)
 @StudyParameter(id = "zeroLineStyle", name = "Zero Line Style", scope = StudyParameterScope.VISUAL, type = StudyParameterType.STROKE, defaultValue = "ULTRATHIN_DOTTED", order = 130)
-@StudyParameter(id = "fillVisibility", name = "Fill Visibility", scope = StudyParameterScope.VISUAL, type = StudyParameterType.BOOLEAN, defaultValue = "true", order = 140)
 @StudyParameter(id = "bullishColor", name = "Bullish Zone Color", scope = StudyParameterScope.VISUAL, type = StudyParameterType.COLOR, defaultValue = "#00CCFFCC", order = 150)
 @StudyParameter(id = "bearishColor", name = "Bearish Zone Color", scope = StudyParameterScope.VISUAL, type = StudyParameterType.COLOR, defaultValue = "#00FFCCCC", order = 160)
-@FillPlotSpec(id = "fillBullish", label = "Bullish Zone", output = "value", from = 0.0, to = 1.0, upper = true, colorParameter = "bullishColor", visibleParameter = "fillVisibility", order = 10)
-@FillPlotSpec(id = "fillBearish", label = "Bearish Zone", output = "value", from = -1.0, to = 0.0, upper = true, colorParameter = "bearishColor", visibleParameter = "fillVisibility", order = 20)
+@FillPlotSpec(id = "fillBullish", label = "Bullish Zone", output = "value", from = 0.0, to = 1.0, upper = true, colorParameter = "bullishColor", order = 10)
+@FillPlotSpec(id = "fillBearish", label = "Bearish Zone", output = "value", from = -1.0, to = 0.0, upper = true, colorParameter = "bearishColor", order = 20)
 @LinePlotSpec(id = "usi", label = "USI", output = "value", colorParameter = "lineColor", strokeParameter = "lineStyle", order = 30)
 @HorizontalLinePlotSpec(id = "zero", label = "Zero", value = 0.0, colorParameter = "zeroLineColor", strokeParameter = "zeroLineStyle", order = 40)
 public class UltimateStrengthIndex extends AbstractDoubleIndicator {

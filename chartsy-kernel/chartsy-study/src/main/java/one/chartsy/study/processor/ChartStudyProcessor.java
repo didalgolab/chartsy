@@ -265,7 +265,7 @@ public class ChartStudyProcessor extends AbstractProcessor {
                         plot.colorParameter(),
                         plot.secondaryColorParameter(),
                         plot.strokeParameter(),
-                        plot.visibleParameter(),
+                        plot.visibleByDefault(),
                         plot.marker().name()
                 ))
                 .sorted(Comparator.comparingInt(PlotModel::order).thenComparing(PlotModel::label))
@@ -407,40 +407,40 @@ public class ChartStudyProcessor extends AbstractProcessor {
                     LinePlotSpec spec = (LinePlotSpec) annotation;
                     target.add(new PlotModel(spec.id(), spec.label(), spec.order(), type.name(), spec.output(), "",
                             "Double.NaN", "Double.NaN", true, spec.colorParameter(), "", spec.strokeParameter(),
-                            spec.visibleParameter(), "NONE"));
+                            spec.visibleByDefault(), "NONE"));
                 }
                 case HISTOGRAM -> {
                     HistogramPlotSpec spec = (HistogramPlotSpec) annotation;
                     target.add(new PlotModel(spec.id(), spec.label(), spec.order(), type.name(), spec.output(), "",
                             "Double.NaN", "Double.NaN", true, spec.positiveColorParameter(), spec.negativeColorParameter(), "",
-                            spec.visibleParameter(), "NONE"));
+                            spec.visibleByDefault(), "NONE"));
                 }
                 case BAR -> {
                     BarPlotSpec spec = (BarPlotSpec) annotation;
                     target.add(new PlotModel(spec.id(), spec.label(), spec.order(), type.name(), spec.output(), "",
-                            "Double.NaN", "Double.NaN", true, spec.colorParameter(), "", "", spec.visibleParameter(), "NONE"));
+                            "Double.NaN", "Double.NaN", true, spec.colorParameter(), "", "", spec.visibleByDefault(), "NONE"));
                 }
                 case HORIZONTAL_LINE -> {
                     HorizontalLinePlotSpec spec = (HorizontalLinePlotSpec) annotation;
                     target.add(new PlotModel(spec.id(), spec.label(), spec.order(), type.name(), "", "",
                             doubleLiteral(spec.value()), "Double.NaN", true, spec.colorParameter(), "", spec.strokeParameter(),
-                            spec.visibleParameter(), "NONE"));
+                            spec.visibleByDefault(), "NONE"));
                 }
                 case FILL -> {
                     FillPlotSpec spec = (FillPlotSpec) annotation;
                     target.add(new PlotModel(spec.id(), spec.label(), spec.order(), type.name(), spec.output(), "",
                             doubleLiteral(spec.from()), doubleLiteral(spec.to()), spec.upper(), spec.colorParameter(), "", "",
-                            spec.visibleParameter(), "NONE"));
+                            spec.visibleByDefault(), "NONE"));
                 }
                 case INSIDE_FILL -> {
                     InsideFillPlotSpec spec = (InsideFillPlotSpec) annotation;
                     target.add(new PlotModel(spec.id(), spec.label(), spec.order(), type.name(), spec.upperOutput(), spec.lowerOutput(),
-                            "Double.NaN", "Double.NaN", true, spec.colorParameter(), "", "", spec.visibleParameter(), "NONE"));
+                            "Double.NaN", "Double.NaN", true, spec.colorParameter(), "", "", spec.visibleByDefault(), "NONE"));
                 }
                 case SHAPE -> {
                     ShapePlotSpec spec = (ShapePlotSpec) annotation;
                     target.add(new PlotModel(spec.id(), spec.label(), spec.order(), type.name(), spec.output(), "",
-                            "Double.NaN", "Double.NaN", true, spec.colorParameter(), "", "", spec.visibleParameter(), spec.marker().name()));
+                            "Double.NaN", "Double.NaN", true, spec.colorParameter(), "", "", spec.visibleByDefault(), spec.marker().name()));
                 }
             }
         }
@@ -659,7 +659,7 @@ public class ChartStudyProcessor extends AbstractProcessor {
                         .append(stringLiteral(plot.colorParameter())).append(", ")
                         .append(stringLiteral(plot.secondaryColorParameter())).append(", ")
                         .append(stringLiteral(plot.strokeParameter())).append(", ")
-                        .append(stringLiteral(plot.visibleParameter())).append(", ")
+                        .append(plot.visibleByDefault()).append(", ")
                         .append("StudyMarkerType.").append(plot.marker()).append("));\n");
             }
             out.append("        var axis = new StudyAxisDescriptor(")
@@ -824,7 +824,7 @@ public class ChartStudyProcessor extends AbstractProcessor {
             String colorParameter,
             String secondaryColorParameter,
             String strokeParameter,
-            String visibleParameter,
+            boolean visibleByDefault,
             String marker
     ) {
     }
