@@ -9,18 +9,21 @@ import one.chartsy.data.provider.DataProvider;
 import one.chartsy.ui.chart.components.AnnotationPanel;
 import one.chartsy.ui.chart.components.IndicatorPanel;
 import one.chartsy.ui.chart.components.SharedDateAxisFooter;
+import one.chartsy.ui.chart.type.CandlestickChart;
 import org.junit.jupiter.api.Test;
 
 import javax.swing.JComponent;
 import javax.swing.JLayer;
 import javax.swing.SwingUtilities;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Dimension;
-import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.event.MouseEvent;
+import java.awt.image.BufferedImage;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -29,26 +32,66 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class StandardCrosshairRendererLayerAlignmentTest {
+    private static final double HIDPI_SCALE = 1.25d;
+    private static final int UNIFORM_CANDLE_COUNT = 180;
+    private static final double UNIFORM_OPEN = 100.0;
+    private static final double UNIFORM_HIGH = 110.0;
+    private static final double UNIFORM_LOW = 90.0;
+    private static final double UNIFORM_CLOSE = 105.0;
+    private static final double UNIFORM_VOLUME = 1_000.0;
 
     @Test
-    void verticalCrosshair_snaps_to_candle_slot_center() throws Exception {
-        SlotFixture fixture = chartFrameWithFractionalSlotCenter();
-        ChartFrame chartFrame = fixture.chartFrame();
+    void vertical_crosshair_matches_rendered_candle_center_at_scaled_and_scrolled_viewport() {
+        Dimension size = new Dimension(1009, 800);
+        ChartFrame chartFrame = ChartExporter.createChartFrame(
+                DataProvider.EMPTY,
+                uniformCandleDataset(),
+                crosshairAlignmentTemplate(),
+                size
+        );
+        renderScaledImage(chartFrame, size, HIDPI_SCALE);
+        ChartData chartData = chartFrame.getChartData();
+        int scrolledStart = Math.min(17, chartData.getMaxVisibleStart());
+        assertThat(scrolledStart).isPositive();
+        chartData.setVisibleStartSlot(scrolledStart);
+        assertThat(chartData.getVisibleStartSlot()).isEqualTo(scrolledStart);
+        chartFrame.refreshChartView();
+        ChartExporter.layoutRecursively(chartFrame);
+
+        BufferedImage baseline = renderScaledImage(chartFrame, size, HIDPI_SCALE);
         var crosshairLayer = findCrosshairLayer(chartFrame);
         var crosshair = (StandardCrosshairRendererLayer) crosshairLayer.getUI();
         AnnotationPanel pane = chartFrame.getMainStackPanel().getChartPanel().getAnnotationPanel();
         Rectangle plotBounds = pane.getRenderBounds();
-        int slot = fixture.slot();
-        int x = (int) Math.round(chartFrame.getChartData().getSlotCenterX(slot, plotBounds));
+        Rectangle plotInFrame = SwingUtilities.convertRectangle(pane, plotBounds, chartFrame);
+        int wickY = upperWickDeviceY(chartFrame, pane, plotBounds, HIDPI_SCALE);
+        SlotPixel target = findDoubleRoundingMismatch(
+                chartFrame, pane, plotBounds, plotInFrame, HIDPI_SCALE);
+
+        assertThat(target)
+                .as("fixture must exercise the former logical-before-device rounding path")
+                .isNotNull();
+        assertThat(target.roundedLogicalX()).isNotEqualTo(target.candleX());
+        assertThat(baseline.getRGB(target.candleX(), wickY))
+                .as("rendered upper wick at slot %s", target.slot())
+                .isNotEqualTo(Color.WHITE.getRGB());
+
+        int x = (int) Math.round(target.logicalCenterX());
         int y = plotBounds.y + plotBounds.height / 2;
-        long when = System.currentTimeMillis();
+        moveCrosshair(crosshair, crosshairLayer, pane, x, y);
 
-        crosshair.eventDispatched(new MouseEvent(pane, MouseEvent.MOUSE_ENTERED, when, 0, x, y, 0, false, MouseEvent.NOBUTTON), crosshairLayer);
-        crosshair.eventDispatched(new MouseEvent(pane, MouseEvent.MOUSE_MOVED, when + 1, 0, x, y, 0, false, MouseEvent.NOBUTTON), crosshairLayer);
+        BufferedImage withCrosshair = paintScaled(chartFrame, size, HIDPI_SCALE);
+        ColumnDifference crosshairDifference = mostChangedColumn(
+                baseline, withCrosshair, toDeviceBounds(plotInFrame, HIDPI_SCALE));
 
-        Point hoverPoint = hoverPoint(crosshair);
-        Point expectedLayerPoint = SwingUtilities.convertPoint(pane, x, y, crosshairLayer);
-        assertThat(hoverPoint.x).isEqualTo(expectedLayerPoint.x);
+        assertThat(crosshairDifference.changedPixels())
+                .as("vertical crosshair must be present in the rendered plot")
+                .isGreaterThan(plotInFrame.height / 4);
+        assertThat(crosshairDifference.x())
+                .as("slot=%s logicalCenter=%s scale=%s visibleStart=%s roundedLogicalDeviceX=%s",
+                        target.slot(), target.logicalCenterX(), HIDPI_SCALE,
+                        chartData.getVisibleStartSlot(), target.roundedLogicalX())
+                .isEqualTo(target.candleX());
     }
 
     @Test
@@ -169,6 +212,147 @@ class StandardCrosshairRendererLayerAlignmentTest {
         return -1;
     }
 
+    private static ChartTemplate crosshairAlignmentTemplate() {
+        ChartProperties properties = new ChartProperties();
+        properties.setBackgroundColor(Color.WHITE);
+        properties.setAxisColor(Color.WHITE);
+        properties.setBarColor(Color.BLACK);
+        properties.setBarUpColor(Color.BLACK);
+        properties.setBarDownColor(Color.BLACK);
+        properties.setAxisLogarithmicFlag(false);
+        properties.setGridHorizontalVisibility(false);
+        properties.setGridVerticalVisibility(false);
+
+        ChartTemplate template = new ChartTemplate("Crosshair Alignment");
+        template.setChartProperties(properties);
+        template.setChart(new CandlestickChart());
+        return template;
+    }
+
+    private static CandleSeries uniformCandleDataset() {
+        SymbolResource<Candle> resource = SymbolResource.of(
+                SymbolIdentity.of("CROSSHAIR-HIDPI"), TimeFrame.Period.DAILY);
+        List<Candle> candles = new ArrayList<>(UNIFORM_CANDLE_COUNT);
+        LocalDate date = LocalDate.of(2025, 1, 2);
+        for (int i = 0; i < UNIFORM_CANDLE_COUNT; i++) {
+            candles.add(Candle.of(date.plusDays(i).atStartOfDay(),
+                    UNIFORM_OPEN, UNIFORM_HIGH, UNIFORM_LOW, UNIFORM_CLOSE, UNIFORM_VOLUME));
+        }
+        return CandleSeries.of(resource, candles);
+    }
+
+    private static SlotPixel findDoubleRoundingMismatch(ChartFrame chartFrame,
+                                                        AnnotationPanel pane,
+                                                        Rectangle plotBounds,
+                                                        Rectangle plotInFrame,
+                                                        double scale) {
+        ChartData chartData = chartFrame.getChartData();
+        int plotStartDevice = toDevice(plotInFrame.x, scale);
+        int plotEndDevice = toDevice(plotInFrame.x + plotInFrame.width - 1, scale);
+        int paneX = SwingUtilities.convertPoint(pane, 0, 0, chartFrame).x;
+        double plotSpan = plotBounds.width - 1.0;
+        int first = chartData.getVisibleStartSlot();
+        int last = Math.min(chartData.getVisibleEndSlot(), chartData.getHistoricalSlotCount());
+
+        for (int slot = first; slot < last; slot++) {
+            double logicalCenter = chartData.getSlotCenterX(slot, plotBounds);
+            double fraction = (logicalCenter - plotBounds.x) / plotSpan;
+            int candleX = plotStartDevice
+                    + (int) Math.round(fraction * (plotEndDevice - plotStartDevice));
+            int roundedLogicalX = toDevice(paneX + Math.round(logicalCenter), scale);
+            if (candleX != roundedLogicalX)
+                return new SlotPixel(slot, logicalCenter, candleX, roundedLogicalX);
+        }
+        return null;
+    }
+
+    private static int upperWickDeviceY(ChartFrame chartFrame,
+                                        AnnotationPanel pane,
+                                        Rectangle plotBounds,
+                                        double scale) {
+        ChartData chartData = chartFrame.getChartData();
+        int paneY = SwingUtilities.convertPoint(pane, 0, 0, chartFrame).y;
+        double highY = chartData.getY(UNIFORM_HIGH, plotBounds, chartData.getVisibleRange(), false);
+        double closeY = chartData.getY(UNIFORM_CLOSE, plotBounds, chartData.getVisibleRange(), false);
+        int highDeviceY = toDevice(paneY + highY, scale);
+        int closeDeviceY = toDevice(paneY + closeY, scale);
+        return (highDeviceY + closeDeviceY) / 2;
+    }
+
+    private static BufferedImage renderScaledImage(ChartFrame chartFrame, Dimension size, double scale) {
+        chartFrame.setPreferredSize(size);
+        chartFrame.setSize(size);
+        ChartExporter.layoutRecursively(chartFrame);
+
+        paintScaled(chartFrame, size, scale);
+        flushEdt();
+        ChartExporter.layoutRecursively(chartFrame);
+        return paintScaled(chartFrame, size, scale);
+    }
+
+    private static BufferedImage paintScaled(ChartFrame chartFrame, Dimension size, double scale) {
+        int deviceWidth = Math.max(1, (int) Math.ceil(size.width * scale));
+        int deviceHeight = Math.max(1, (int) Math.ceil(size.height * scale));
+        BufferedImage image = new BufferedImage(deviceWidth, deviceHeight, BufferedImage.TYPE_INT_ARGB);
+        var graphics = image.createGraphics();
+        try {
+            graphics.scale(scale, scale);
+            graphics.setColor(Color.WHITE);
+            graphics.fillRect(0, 0, size.width, size.height);
+            chartFrame.paint(graphics);
+            return image;
+        } finally {
+            graphics.dispose();
+        }
+    }
+
+    private static ColumnDifference mostChangedColumn(BufferedImage baseline,
+                                                      BufferedImage changed,
+                                                      Rectangle bounds) {
+        int bestX = -1;
+        int bestCount = -1;
+        int firstX = Math.max(0, bounds.x);
+        int lastX = Math.min(baseline.getWidth(), bounds.x + bounds.width);
+        int firstY = Math.max(0, bounds.y);
+        int lastY = Math.min(baseline.getHeight(), bounds.y + bounds.height);
+        for (int x = firstX; x < lastX; x++) {
+            int count = 0;
+            for (int y = firstY; y < lastY; y++) {
+                if (baseline.getRGB(x, y) != changed.getRGB(x, y))
+                    count++;
+            }
+            if (count > bestCount) {
+                bestX = x;
+                bestCount = count;
+            }
+        }
+        return new ColumnDifference(bestX, bestCount);
+    }
+
+    private static Rectangle toDeviceBounds(Rectangle logicalBounds, double scale) {
+        int x = (int) Math.floor(logicalBounds.x * scale);
+        int y = (int) Math.floor(logicalBounds.y * scale);
+        int lastX = toDevice(logicalBounds.x + logicalBounds.width - 1, scale);
+        int lastY = toDevice(logicalBounds.y + logicalBounds.height - 1, scale);
+        return new Rectangle(x, y, Math.max(1, lastX - x + 1), Math.max(1, lastY - y + 1));
+    }
+
+    private static int toDevice(double logicalCoordinate, double scale) {
+        return (int) Math.round(logicalCoordinate * scale);
+    }
+
+    private static void flushEdt() {
+        try {
+            if (!SwingUtilities.isEventDispatchThread())
+                SwingUtilities.invokeAndWait(() -> { });
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            throw new AssertionError("Interrupted while waiting for EDT", ex);
+        } catch (InvocationTargetException ex) {
+            throw new AssertionError("EDT flush failed", ex);
+        }
+    }
+
     private static CandleSeries fixtureDataset() {
         SymbolResource<Candle> resource = SymbolResource.of(SymbolIdentity.of("CROSSHAIR-ALIGNMENT"), TimeFrame.Period.DAILY);
         List<Candle> candles = new ArrayList<>(180);
@@ -206,10 +390,7 @@ class StandardCrosshairRendererLayerAlignmentTest {
         Rectangle plotBounds = pane.getRenderBounds();
         int x = plotBounds.x + (int) Math.round(plotBounds.width * 0.72d);
         int y = plotBounds.y + (int) Math.round(plotBounds.height * 0.42d);
-        long when = System.currentTimeMillis();
-
-        crosshair.eventDispatched(new MouseEvent(pane, MouseEvent.MOUSE_ENTERED, when, 0, x, y, 0, false, MouseEvent.NOBUTTON), layer);
-        crosshair.eventDispatched(new MouseEvent(pane, MouseEvent.MOUSE_MOVED, when + 1, 0, x, y, 0, false, MouseEvent.NOBUTTON), layer);
+        moveCrosshair(crosshair, layer, pane, x, y);
 
         Field overlayField = StandardCrosshairRendererLayer.class.getDeclaredField("valueLabelOverlay");
         overlayField.setAccessible(true);
@@ -221,12 +402,24 @@ class StandardCrosshairRendererLayerAlignmentTest {
         return new Rectangle((Rectangle) boundsMethod.invoke(overlay));
     }
 
-    private static Point hoverPoint(StandardCrosshairRendererLayer crosshair) throws Exception {
-        Field hoverPointField = StandardCrosshairRendererLayer.class.getDeclaredField("hoverPoint");
-        hoverPointField.setAccessible(true);
-        return new Point((Point) hoverPointField.get(crosshair));
+    private static void moveCrosshair(StandardCrosshairRendererLayer crosshair,
+                                      JLayer<? extends JComponent> layer,
+                                      AnnotationPanel pane,
+                                      int x,
+                                      int y) {
+        long when = System.currentTimeMillis();
+        crosshair.eventDispatched(new MouseEvent(pane, MouseEvent.MOUSE_ENTERED,
+                when, 0, x, y, 0, false, MouseEvent.NOBUTTON), layer);
+        crosshair.eventDispatched(new MouseEvent(pane, MouseEvent.MOUSE_MOVED,
+                when + 1, 0, x, y, 0, false, MouseEvent.NOBUTTON), layer);
     }
 
     private record SlotFixture(ChartFrame chartFrame, int slot) {
+    }
+
+    private record SlotPixel(int slot, double logicalCenterX, int candleX, int roundedLogicalX) {
+    }
+
+    private record ColumnDifference(int x, int changedPixels) {
     }
 }

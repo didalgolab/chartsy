@@ -5,6 +5,7 @@ package one.chartsy.ui.chart;
 import one.chartsy.Candle;
 import one.chartsy.charting.LabelRenderer;
 import one.chartsy.charting.Scale;
+import one.chartsy.charting.util.DevicePixelSnapper;
 import one.chartsy.ui.chart.components.AnnotationPanel;
 import one.chartsy.ui.chart.components.ChartPanel;
 import one.chartsy.ui.chart.components.IndicatorPanel;
@@ -18,14 +19,14 @@ import javax.swing.JLayer;
 import javax.swing.SwingUtilities;
 import javax.swing.plaf.LayerUI;
 import java.awt.AWTEvent;
-import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.Rectangle;
-import java.awt.Stroke;
+import java.awt.Shape;
 import java.awt.event.MouseEvent;
+import java.awt.geom.AffineTransform;
 import java.awt.geom.Dimension2D;
 import java.awt.geom.Rectangle2D;
 import java.text.DecimalFormat;
@@ -43,13 +44,12 @@ public class StandardCrosshairRendererLayer extends LayerUI<JComponent> {
     private static final Color CROSSHAIR_LABEL_BACKGROUND = new Color(0x2D8CFF);
     private static final Color CROSSHAIR_LABEL_BORDER = new Color(0x1666C5);
     private static final Color CROSSHAIR_LABEL_FOREGROUND = Color.WHITE;
+    private static final double CROSSHAIR_DASH_LENGTH = 4.0;
 
-    private final Stroke lineStroke = new BasicStroke(1.0f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL,
-            0, new float[] {4}, 0);
     private final DecimalFormat decimalFormat = new DecimalFormat("#,##0.00");
     private final DecimalFormat preciseDecimalFormat = new DecimalFormat("#,##0.0000");
     private final LabelRenderer valueAnnotationRenderer = createAnnotationRenderer();
-    private final Point hoverPoint = new Point(-1, -1);
+    private CrosshairPosition hoverPosition;
     private Candle hoverCandle;
     private ValueLabelOverlay valueLabelOverlay;
 
@@ -78,14 +78,15 @@ public class StandardCrosshairRendererLayer extends LayerUI<JComponent> {
     public void paint(Graphics g, JComponent c) {
         super.paint(g, c);
 
-        if (hoverPoint.x < 0 && valueLabelOverlay == null)
+        CrosshairPosition position = hoverPosition;
+        if (position == null && valueLabelOverlay == null)
             return;
 
         Graphics2D g2 = (Graphics2D) g.create();
         try {
-            if (hoverPoint.x >= 0) {
+            if (position != null) {
                 configureCrosshairGraphics(g2);
-                drawCrossLines(g2, c);
+                paintCrosshair(g2, c, position);
             }
         } finally {
             g2.dispose();
@@ -94,44 +95,95 @@ public class StandardCrosshairRendererLayer extends LayerUI<JComponent> {
             paintValueLabel((Graphics2D) g, c);
     }
 
-    public void drawCrossLines(int x, int y, JLayer<?> layer) {
-        int x0 = hoverPoint.x;
-        int y0 = hoverPoint.y;
-        if (x0 < 0 && x < 0)
+    private void updateCrosshair(CrosshairPosition newPosition, JLayer<?> layer) {
+        CrosshairPosition oldPosition = hoverPosition;
+        if (oldPosition == null && newPosition == null)
             return;
 
         Graphics2D g2 = (Graphics2D) layer.getGraphics();
         if (g2 == null) {
-            hoverPoint.setLocation(x, y);
+            hoverPosition = newPosition;
             layer.repaint();
             return;
         }
         try {
             configureCrosshairGraphics(g2);
-            if (x0 >= 0)
-                drawCrossLines(g2, layer, x0, y0);
-            hoverPoint.setLocation(x, y);
-            if (x >= 0)
-                drawCrossLines(g2, layer, x, y);
+            if (oldPosition != null)
+                paintCrosshair(g2, layer, oldPosition);
+            hoverPosition = newPosition;
+            if (newPosition != null)
+                paintCrosshair(g2, layer, newPosition);
         } finally {
             g2.dispose();
         }
         layer.getToolkit().sync();
     }
 
-    protected void drawCrossLines(Graphics g, JComponent c) {
-        drawCrossLines(g, c, hoverPoint.x, hoverPoint.y);
+    private void paintCrosshair(Graphics2D g2, JComponent c, CrosshairPosition position) {
+        DevicePixelSnapper devicePixels = new DevicePixelSnapper(g2);
+        int top = devicePixels.snapY(0.0);
+        int bottom = devicePixels.snapY(c.getHeight());
+        int left = devicePixels.snapX(0.0);
+        int right = devicePixels.snapX(c.getWidth());
+        int dashHeight = devicePixels.deviceHeightRounded(CROSSHAIR_DASH_LENGTH);
+        int dashWidth = devicePixels.deviceWidthRounded(CROSSHAIR_DASH_LENGTH);
+
+        Graphics2D deviceGraphics = createDeviceSpaceGraphics(g2);
+        try {
+            paintVerticalDashes(deviceGraphics, position.xAnchor().deviceX(devicePixels), top, bottom, dashHeight);
+            paintHorizontalDashes(deviceGraphics, devicePixels.snapY(position.y()), left, right, dashWidth);
+        } finally {
+            deviceGraphics.dispose();
+        }
     }
 
-    private void drawCrossLines(Graphics g, JComponent c, int x, int y) {
-        if (x < 0 || y < 0)
-            return;
-        g.drawLine(x, 0, x, c.getHeight());
-        g.drawLine(0, y, c.getWidth(), y);
+    private void paintVerticalDashes(Graphics2D g2,
+                                     int x,
+                                     int firstY,
+                                     int lastY,
+                                     int dashSize) {
+        int top = Math.min(firstY, lastY);
+        int bottom = Math.max(firstY, lastY);
+        for (int y = top; y < bottom; y += dashSize * 2) {
+            int height = Math.min(dashSize, bottom - y);
+            g2.fillRect(x, y, 1, height);
+        }
+    }
+
+    private void paintHorizontalDashes(Graphics2D g2,
+                                       int y,
+                                       int firstX,
+                                       int lastX,
+                                       int dashSize) {
+        int left = Math.min(firstX, lastX);
+        int right = Math.max(firstX, lastX);
+        for (int x = left; x < right; x += dashSize * 2) {
+            int width = Math.min(dashSize, right - x);
+            g2.fillRect(x, y, width, 1);
+        }
+    }
+
+    /**
+     * Creates an integer device-coordinate view of {@code userGraphics} while preserving its clip.
+     *
+     * <p>On accelerated Windows surfaces, XOR-filling a one-device-pixel rectangle after mapping
+     * it back to a fractional user-space width can rasterize to no pixels at some 125% scaling
+     * phases. Painting the dashes directly on the device grid avoids that driver-dependent gap.</p>
+     */
+    static Graphics2D createDeviceSpaceGraphics(Graphics2D userGraphics) {
+        Shape userClip = userGraphics.getClip();
+        AffineTransform userToDevice = userGraphics.getTransform();
+        Shape deviceClip = (userClip != null) ? userToDevice.createTransformedShape(userClip) : null;
+
+        Graphics2D deviceGraphics = (Graphics2D) userGraphics.create();
+        deviceGraphics.setClip(null);
+        deviceGraphics.setTransform(new AffineTransform());
+        if (deviceClip != null)
+            deviceGraphics.clip(deviceClip);
+        return deviceGraphics;
     }
 
     private void configureCrosshairGraphics(Graphics2D g2) {
-        g2.setStroke(lineStroke);
         g2.setColor(CROSSHAIR_LINE_COLOR);
         g2.setXORMode(Color.WHITE);
     }
@@ -163,11 +215,13 @@ public class StandardCrosshairRendererLayer extends LayerUI<JComponent> {
         }
 
         Point mouseLayerPoint = SwingUtilities.convertPoint(pane, e.getPoint(), layer);
-        Point layerPoint = new Point(resolveSlotLayerX(chartData, slot, plotBounds, pane, layer), mouseLayerPoint.y);
-        int alignedLayerY = updateScaleAnnotations(pane, chartData, slot, e.getY(), layer);
+        SlotXAnchor xAnchor = resolveSlotXAnchor(chartData, slot, plotBounds, pane, layer);
+        int layerY = mouseLayerPoint.y;
+        updateFooterHover(pane.getChartFrame(), slot);
+        int alignedLayerY = updateValueAnnotation(pane, e.getY(), layer);
         if (alignedLayerY >= 0)
-            layerPoint.y = alignedLayerY;
-        drawCrossLines(layerPoint.x, layerPoint.y, layer);
+            layerY = alignedLayerY;
+        updateCrosshair(new CrosshairPosition(xAnchor, layerY), layer);
     }
 
     private void clearHover(JLayer<? extends JComponent> layer, ChartContext chartFrame) {
@@ -176,16 +230,7 @@ public class StandardCrosshairRendererLayer extends LayerUI<JComponent> {
         hoverCandle = null;
         replaceValueLabel(null, layer);
         clearFooterHover(chartFrame);
-        drawCrossLines(-1, -1, layer);
-    }
-
-    private int updateScaleAnnotations(AnnotationPanel pane,
-                                       ChartData chartData,
-                                       int slot,
-                                       int mouseY,
-                                       JLayer<? extends JComponent> layer) {
-        updateFooterHover(pane.getChartFrame(), slot);
-        return updateValueAnnotation(pane, mouseY, layer);
+        updateCrosshair(null, layer);
     }
 
     private int updateValueAnnotation(AnnotationPanel pane, int mouseY, JLayer<? extends JComponent> layer) {
@@ -237,13 +282,17 @@ public class StandardCrosshairRendererLayer extends LayerUI<JComponent> {
             footer.clearHover();
     }
 
-    private int resolveSlotLayerX(ChartData chartData,
-                                  int slot,
-                                  Rectangle plotBounds,
-                                  AnnotationPanel pane,
-                                  JLayer<? extends JComponent> layer) {
-        int x = (int) Math.round(chartData.getSlotCenterX(slot, plotBounds));
-        return SwingUtilities.convertPoint(pane, x, 0, layer).x;
+    private SlotXAnchor resolveSlotXAnchor(ChartData chartData,
+                                          int slot,
+                                          Rectangle plotBounds,
+                                          AnnotationPanel pane,
+                                          JLayer<? extends JComponent> layer) {
+        Point plotOrigin = SwingUtilities.convertPoint(pane, plotBounds.x, plotBounds.y, layer);
+        double plotSpan = Math.max(0.0, plotBounds.width - 1.0);
+        double fraction = (plotSpan > 0.0)
+                ? (chartData.getSlotCenterX(slot, plotBounds) - plotBounds.x) / plotSpan
+                : 0.0;
+        return new SlotXAnchor(plotOrigin.x, plotOrigin.x + plotSpan, fraction);
     }
 
     private String formatValue(double value) {
@@ -378,6 +427,15 @@ public class StandardCrosshairRendererLayer extends LayerUI<JComponent> {
     }
 
     private record ValueScaleHit(Scale scale, double value, int layerY) {
+    }
+
+    private record SlotXAnchor(double startX, double endX, double fraction) {
+        private int deviceX(DevicePixelSnapper devicePixels) {
+            return devicePixels.interpolateX(startX, endX, fraction);
+        }
+    }
+
+    private record CrosshairPosition(SlotXAnchor xAnchor, int y) {
     }
 
     @Override

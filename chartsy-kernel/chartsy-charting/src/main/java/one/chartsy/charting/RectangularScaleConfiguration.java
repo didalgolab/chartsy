@@ -2,7 +2,6 @@ package one.chartsy.charting;
 
 import java.awt.BasicStroke;
 import java.awt.Graphics2D;
-import java.awt.GraphicsConfiguration;
 import java.awt.Paint;
 import java.awt.Graphics;
 import java.awt.Rectangle;
@@ -12,6 +11,7 @@ import java.awt.geom.Rectangle2D;
 
 import one.chartsy.charting.internal.CartesianProjector;
 import one.chartsy.charting.internal.PolarProjector;
+import one.chartsy.charting.util.DevicePixelSnapper;
 import one.chartsy.charting.util.GraphicUtil;
 import one.chartsy.charting.util.MathUtil;
 
@@ -55,64 +55,6 @@ class RectangularScaleConfiguration extends DefaultScaleConfiguration {
     RectangularScaleConfiguration() {
     }
 
-    /// Converts one-pixel axis lines into device-aligned fill rectangles.
-    ///
-    /// [#drawAxis(Graphics)] uses this helper when the current [PlotStyle] resolves to a
-    /// one-device-pixel [BasicStroke]. The helper tracks both the graphics transform and the
-    /// device's default transform so HiDPI scaling still lands the axis on exact device pixels.
-    private static final class DevicePixelSnapper {
-        private final double scaleX;
-        private final double scaleY;
-        private final double translateX;
-        private final double translateY;
-
-        /// Captures the effective device and user transforms from `g2`.
-        private DevicePixelSnapper(Graphics2D g2) {
-            var transform = g2.getTransform();
-            GraphicsConfiguration configuration = g2.getDeviceConfiguration();
-            double graphicsScaleX = 1.0;
-            double graphicsScaleY = 1.0;
-            if (configuration != null) {
-                var defaultTransform = configuration.getDefaultTransform();
-                graphicsScaleX = Math.abs(defaultTransform.getScaleX());
-                graphicsScaleY = Math.abs(defaultTransform.getScaleY());
-            }
-            double transformScaleX = Math.abs(transform.getScaleX());
-            double transformScaleY = Math.abs(transform.getScaleY());
-            scaleX = normalizeScale(Math.max(transformScaleX, graphicsScaleX));
-            scaleY = normalizeScale(Math.max(transformScaleY, graphicsScaleY));
-            translateX = transform.getTranslateX();
-            translateY = transform.getTranslateY();
-        }
-
-        /// Normalizes missing or degenerate scale factors to `1.0`.
-        private static double normalizeScale(double scale) {
-            if (!Double.isFinite(scale) || scale <= 0.0)
-                return 1.0;
-            return scale;
-        }
-
-        /// Snaps one user-space x coordinate to the nearest device pixel.
-        private int snapX(double userX) {
-            return (int) Math.round(userX * scaleX + translateX);
-        }
-
-        /// Snaps one user-space y coordinate to the nearest device pixel.
-        private int snapY(double userY) {
-            return (int) Math.round(userY * scaleY + translateY);
-        }
-
-        /// Converts a device-pixel rectangle back into user coordinates for painting.
-        private Rectangle2D toUserRect(int deviceX, int deviceY, int deviceWidth, int deviceHeight) {
-            return new Rectangle2D.Double(
-                    (deviceX - translateX) / scaleX,
-                    (deviceY - translateY) / scaleY,
-                    deviceWidth / scaleX,
-                    deviceHeight / scaleY
-            );
-        }
-    }
-    
     /// Returns the default crossing edge for this scale when no explicit crossing was configured.
     ///
     /// The x axis defaults to [Axis#MIN_VALUE]. For cartesian y axes, the primary y axis defaults

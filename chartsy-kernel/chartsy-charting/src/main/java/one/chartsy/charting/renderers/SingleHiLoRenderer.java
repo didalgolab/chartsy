@@ -2,7 +2,6 @@ package one.chartsy.charting.renderers;
 
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.GraphicsConfiguration;
 import java.awt.Paint;
 import java.awt.RenderingHints;
 import java.awt.Rectangle;
@@ -20,6 +19,7 @@ import one.chartsy.charting.data.DataPoints;
 import one.chartsy.charting.data.DataSet;
 import one.chartsy.charting.graphic.DataRenderingHint;
 import one.chartsy.charting.renderers.internal.HiLoDataSet;
+import one.chartsy.charting.util.DevicePixelSnapper;
 import one.chartsy.charting.util.java2d.ShapeUtil;
 
 /// Single-series renderer that paints one logical series from paired dataset values.
@@ -238,14 +238,12 @@ public class SingleHiLoRenderer extends SingleChartRenderer implements VariableW
             if (!Double.isFinite(dataCenterX) || !Double.isFinite(visibleLength) || visibleLength <= 0.0)
                 return devicePixels.snapX((super.getX(0) + super.getX(1)) / 2.0);
 
-            int left = devicePixels.snapX(plotRect.x);
-            int right = devicePixels.snapX(plotRect.x + plotRect.width - 1.0);
-            int axisLength = right - left;
-            if (axisLength <= 0)
+            double right = plotRect.x + plotRect.width - 1.0;
+            if (devicePixels.snapX(right) <= devicePixels.snapX(plotRect.x))
                 return devicePixels.snapX((super.getX(0) + super.getX(1)) / 2.0);
 
             double relative = (dataCenterX - visibleRange.getMin()) / visibleLength;
-            return left + (int) Math.round(relative * axisLength);
+            return devicePixels.interpolateX(plotRect.x, right, relative);
         }
 
         private void drawSnappedRect(Graphics2D g2, DevicePixelSnapper devicePixels, Paint paint,
@@ -269,57 +267,6 @@ public class SingleHiLoRenderer extends SingleChartRenderer implements VariableW
                 pixels = (Math.abs(width - lowerOdd) <= Math.abs(upperOdd - width)) ? lowerOdd : upperOdd;
             }
             return pixels;
-        }
-    }
-
-    private static final class DevicePixelSnapper {
-        private final double scaleX;
-        private final double scaleY;
-        private final double translateX;
-        private final double translateY;
-
-        private DevicePixelSnapper(Graphics2D g2) {
-            var transform = g2.getTransform();
-            GraphicsConfiguration configuration = g2.getDeviceConfiguration();
-            double graphicsScaleX = 1.0;
-            double graphicsScaleY = 1.0;
-            if (configuration != null) {
-                var defaultTransform = configuration.getDefaultTransform();
-                graphicsScaleX = Math.abs(defaultTransform.getScaleX());
-                graphicsScaleY = Math.abs(defaultTransform.getScaleY());
-            }
-            double transformScaleX = Math.abs(transform.getScaleX());
-            double transformScaleY = Math.abs(transform.getScaleY());
-            scaleX = normalizeScale(Math.max(transformScaleX, graphicsScaleX));
-            scaleY = normalizeScale(Math.max(transformScaleY, graphicsScaleY));
-            translateX = transform.getTranslateX();
-            translateY = transform.getTranslateY();
-        }
-
-        private static double normalizeScale(double scale) {
-            if (!Double.isFinite(scale) || scale <= 0.0)
-                return 1.0;
-            return scale;
-        }
-
-        private int snapX(double userX) {
-            return (int) Math.round(userX * scaleX + translateX);
-        }
-
-        private int snapY(double userY) {
-            return (int) Math.round(userY * scaleY + translateY);
-        }
-
-        private double deviceWidth(double userWidth) {
-            return userWidth * scaleX;
-        }
-
-        private Rectangle2D toUserRect(int deviceX, int deviceY, int deviceWidth, int deviceHeight) {
-            return new Rectangle2D.Double(
-                    (deviceX - translateX) / scaleX,
-                    (deviceY - translateY) / scaleY,
-                    deviceWidth / scaleX,
-                    deviceHeight / scaleY);
         }
     }
 
