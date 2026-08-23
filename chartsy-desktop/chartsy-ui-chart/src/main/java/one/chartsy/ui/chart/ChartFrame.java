@@ -10,6 +10,7 @@ import one.chartsy.TimeFrame;
 import one.chartsy.core.event.ListenerList;
 import one.chartsy.data.CandleSeries;
 import one.chartsy.data.Series;
+import one.chartsy.data.provider.DataProviderException;
 import one.chartsy.ui.chart.annotation.GraphicLayer;
 import one.chartsy.ui.chart.components.AnnotationPanel;
 import one.chartsy.ui.chart.components.ChartStackPanel;
@@ -746,10 +747,14 @@ public class ChartFrame extends JPanel implements ChartContext, MouseWheelListen
         if (activeLoader.get() != task)
             return;
 
-        if (quotes != null)
+        if (quotes != null && quotes.length() > 0)
             datasetLoaded(quotes);
-        else
-            datasetLoadingFailed(resource.symbol(), exception);
+        else {
+            Throwable loadingFailure = exception != null
+                    ? exception
+                    : new DataProviderException("No data returned for " + resource.symbol().name());
+            datasetLoadingFailed(resource.symbol(), loadingFailure);
+        }
 
         revalidate();
         repaint();

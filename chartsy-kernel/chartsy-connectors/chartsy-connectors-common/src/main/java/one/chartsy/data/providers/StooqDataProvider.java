@@ -4,7 +4,6 @@ package one.chartsy.data.providers;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
@@ -25,6 +24,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalDouble;
+import java.util.StringJoiner;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 import com.github.mizosoft.methanol.MoreBodyHandlers;
@@ -55,19 +56,39 @@ import static one.chartsy.TimeFrameHelper.isIntraday;
 })
 public class StooqDataProvider extends AbstractDataProvider implements SymbolProposalProvider {
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(5);
+    private static final Duration DEFAULT_A2_SESSION_MATURATION_DELAY = Duration.ofSeconds(5);
+    private static final Duration DEFAULT_EMPTY_RESPONSE_RETRY_DELAY = Duration.ofSeconds(1);
+    private static final int EMPTY_RESPONSE_RETRIES = 2;
+    private static final URI DEFAULT_STOOQ_ROOT = URI.create("https://stooq.pl");
     private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
             + "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0 Safari/537.36";
-    private static final String AUTH_COOKIE_PREFIX = "auth=";
+    private static final String AUTH_COOKIE_NAME = "auth";
+    private static final String AUTH_COOKIE_PREFIX = AUTH_COOKIE_NAME + "=";
     private static final Pattern VERIFICATION_CHALLENGE_PATTERN = Pattern.compile("const\\s+c=\"([^\"]+)\",d=(\\d+)");
+    private static final Pattern COOKIE_MAX_AGE_ZERO_PATTERN = Pattern.compile(
+            "(?:^|;)\\s*Max-Age\\s*=\\s*0(?:;|$)", Pattern.CASE_INSENSITIVE);
 
     /** The Http Client used to execute the service requests. */
     private final HttpClient httpClient = newHttpClient();
+    private final URI stooqRoot;
+    private final Duration a2SessionMaturationDelay;
+    private final Duration emptyResponseRetryDelay;
     private final Object verificationLock = new Object();
-    private volatile String verificationCookie;
+    private final Object a2SessionLock = new Object();
+    private final SessionCookieJar sessionCookies = new SessionCookieJar();
+    /** Guarded by {@link #a2SessionLock}; {@code null} means no usable bootstrap exists. */
+    private A2Session a2Session;
 
 
     public StooqDataProvider() {
+        this(DEFAULT_STOOQ_ROOT, DEFAULT_A2_SESSION_MATURATION_DELAY, DEFAULT_EMPTY_RESPONSE_RETRY_DELAY);
+    }
+
+    StooqDataProvider(URI stooqRoot, Duration a2SessionMaturationDelay, Duration emptyResponseRetryDelay) {
         super("Stooq");
+        this.stooqRoot = stooqRoot;
+        this.a2SessionMaturationDelay = a2SessionMaturationDelay;
+        this.emptyResponseRetryDelay = emptyResponseRetryDelay;
         lookupContent.add(this);
     }
 
@@ -79,29 +100,29 @@ public class StooqDataProvider extends AbstractDataProvider implements SymbolPro
         return HttpClient.newBuilder();
     }
 
-    private static final Map<TimeFrame, String> intervals = new LinkedHashMap<>();
-    private static final List<TimeFrame> supportedTimeFrames;
+    private static final Map<TimeFrame, String> INTERVAL_CODES = new LinkedHashMap<>();
+    private static final List<TimeFrame> SUPPORTED_TIME_FRAMES;
     static {
-        intervals.put(TimeFrame.Period.QUARTERLY, "q");
-        intervals.put(TimeFrame.Period.MONTHLY, "m");
-        intervals.put(TimeFrame.Period.WEEKLY, "w");
-        intervals.put(TimeFrame.Period.DAILY, "d");
-        intervals.put(TimeFrame.Period.H6, "360");
-        intervals.put(TimeFrame.Period.H4, "240");
-        intervals.put(TimeFrame.Period.H2, "120");
-        intervals.put(TimeFrame.Period.H1, "60");
-        intervals.put(TimeFrame.Period.M30, "30");
-        intervals.put(TimeFrame.Period.M15, "15");
-        intervals.put(TimeFrame.Period.M10, "10");
-        intervals.put(TimeFrame.Period.M5, "5");
-        intervals.put(TimeFrame.Period.M3, "3");
-        intervals.put(TimeFrame.Period.M1, "1");
-        supportedTimeFrames = List.copyOf(intervals.keySet());
+        INTERVAL_CODES.put(TimeFrame.Period.QUARTERLY, "q");
+        INTERVAL_CODES.put(TimeFrame.Period.MONTHLY, "m");
+        INTERVAL_CODES.put(TimeFrame.Period.WEEKLY, "w");
+        INTERVAL_CODES.put(TimeFrame.Period.DAILY, "d");
+        INTERVAL_CODES.put(TimeFrame.Period.H6, "360");
+        INTERVAL_CODES.put(TimeFrame.Period.H4, "240");
+        INTERVAL_CODES.put(TimeFrame.Period.H2, "120");
+        INTERVAL_CODES.put(TimeFrame.Period.H1, "60");
+        INTERVAL_CODES.put(TimeFrame.Period.M30, "30");
+        INTERVAL_CODES.put(TimeFrame.Period.M15, "15");
+        INTERVAL_CODES.put(TimeFrame.Period.M10, "10");
+        INTERVAL_CODES.put(TimeFrame.Period.M5, "5");
+        INTERVAL_CODES.put(TimeFrame.Period.M3, "3");
+        INTERVAL_CODES.put(TimeFrame.Period.M1, "1");
+        SUPPORTED_TIME_FRAMES = List.copyOf(INTERVAL_CODES.keySet());
     }
 
     @Override
     public List<TimeFrame> getAvailableTimeFrames(SymbolIdentity symbol) {
-        return supportedTimeFrames;
+        return SUPPORTED_TIME_FRAMES;
     }
 
     @SuppressWarnings("unchecked")
@@ -112,7 +133,10 @@ public class StooqDataProvider extends AbstractDataProvider implements SymbolPro
                 case "one.chartsy.Candle", "one.chartsy.data.SimpleCandle" -> (Flux<T>) fetchCandles((DataQuery<Candle>) query);
                 default -> throw new DataProviderException("Unsupported data type: " + type.getSimpleName());
             };
-        } catch (IOException | InterruptedException e) {
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new DataProviderException("Query interrupted", e);
+        } catch (IOException e) {
             throw new DataProviderException("Query failed", e);
         }
     }
@@ -120,25 +144,154 @@ public class StooqDataProvider extends AbstractDataProvider implements SymbolPro
     //@Override
     public Flux<Candle> fetchCandles(DataQuery<Candle> query) throws IOException, InterruptedException {
         SymbolResource<Candle> resource = query.resource();
-        String sym = resource.symbol().name().toLowerCase();
-        if (query.currency() != null) {
-            if (Currency.USD.equals(query.currency()) && !sym.endsWith(".us"))
-                sym += ".us";
-        }
-        sym = URLEncoder.encode(sym, StandardCharsets.UTF_8);
-        String itv = null;
-        TimeFrame baseTimeFrame = null;
-        for (Map.Entry<TimeFrame, String> interval : intervals.entrySet())
-            if (resource.timeFrame().isAssignableFrom(interval.getKey())) {
-                baseTimeFrame = interval.getKey();
-                itv = interval.getValue();
-                break;
-            }
-        if (baseTimeFrame == null)
-            throw new IOException("Unsupported time frame: " + resource.timeFrame());
+        String symbol = resource.symbol().name().toLowerCase();
+        if (Currency.USD.equals(query.currency()) && !symbol.endsWith(".us"))
+            symbol += ".us";
+        String encodedSymbol = URLEncoder.encode(symbol, StandardCharsets.UTF_8);
+        StooqInterval interval = resolveInterval(resource.timeFrame())
+                .orElseThrow(() -> new IOException("Unsupported time frame: " + resource.timeFrame()));
+        TimeFrame baseTimeFrame = interval.timeFrame();
 
-        var uri = URI.create("https://stooq.pl/q/a2/d/?s=" + sym + "&i=" + itv);
-        var response = sendVerified(stooqGet(uri));
+        URI dataUri = candleDataUri(stooqRoot, encodedSymbol, interval.code());
+        A2Session session = ensureA2Session(encodedSymbol);
+        var response = requestCandleData(dataUri);
+        if (isSuccessfulEmpty(response)) {
+            recoverA2Session(encodedSymbol, session);
+            response = requestCandleData(dataUri);
+        }
+        String responseBody = validateCandleResponse(response, resource.symbol());
+        List<Candle> items = parseCandles(responseBody, baseTimeFrame);
+
+        if (items.isEmpty())
+            throw new IOException("Stooq returned no candle data for symbol `" + resource.symbol().name() + "`");
+
+        //items.sort(Comparator.naturalOrder());
+        if (query.endTime() != null) {
+            long endTime = Chronological.toEpochNanos(query.endTime());
+            items.removeIf(item -> item.time() > endTime);
+        }
+
+        int itemCount = items.size();
+        int itemLimit = query.limit();
+        if (itemLimit > 0 && itemLimit < itemCount)
+            items = items.subList(itemCount - itemLimit, itemCount);
+
+        return Flux.fromIterable(items);
+    }
+
+    static Optional<StooqInterval> resolveInterval(TimeFrame timeFrame) {
+        for (Map.Entry<TimeFrame, String> interval : INTERVAL_CODES.entrySet())
+            if (timeFrame.isAssignableFrom(interval.getKey()))
+                return Optional.of(new StooqInterval(interval.getKey(), interval.getValue()));
+
+        return Optional.empty();
+    }
+
+    static URI candleDataUri(String encodedSymbol, String interval) {
+        return candleDataUri(DEFAULT_STOOQ_ROOT, encodedSymbol, interval);
+    }
+
+    static URI chartUri(String encodedSymbol) {
+        return chartUri(DEFAULT_STOOQ_ROOT, encodedSymbol);
+    }
+
+    private static URI candleDataUri(URI stooqRoot, String encodedSymbol, String interval) {
+        return stooqRoot.resolve("/q/a2/d/?s=" + encodedSymbol + "&i=" + interval);
+    }
+
+    private static URI chartUri(URI stooqRoot, String encodedSymbol) {
+        return stooqRoot.resolve("/q/a2/?s=" + encodedSymbol);
+    }
+
+    private A2Session ensureA2Session(String encodedSymbol) throws IOException, InterruptedException {
+        while (true) {
+            A2Session session;
+            synchronized (a2SessionLock) {
+                if (a2Session == null)
+                    a2Session = establishA2Session(encodedSymbol);
+                session = a2Session;
+            }
+            if (awaitA2SessionMaturation(session))
+                return session;
+        }
+    }
+
+    /** Performs the serialized browser bootstrap while {@link #a2SessionLock} is held. */
+    private A2Session establishA2Session(String encodedSymbol) throws IOException, InterruptedException {
+        URI chartUri = chartUri(stooqRoot, encodedSymbol);
+        ensureVerificationCookie(chartUri);
+        // q/a2/d remains empty until /uu advances cookie_uu and the resulting
+        // cookie_user identity is about five seconds old.
+        requireSuccessful("Stooq chart consent request", send(chartGet(chartUri)));
+        requireSuccessful("Stooq chart consent image request", send(consentImageGet(stooqRoot.resolve("/uu/"), chartUri)));
+        sessionCookies.put("privacy", Long.toString(System.currentTimeMillis() / 1_000));
+        requireSuccessful("Stooq chart session request", send(chartGet(chartUri)));
+        if (!sessionCookies.contains("cookie_user"))
+            throw new IOException("Stooq did not establish a chart data session");
+
+        return new A2Session(System.nanoTime() + a2SessionMaturationDelay.toNanos());
+    }
+
+    private void recoverA2Session(String encodedSymbol, A2Session failedSession) throws IOException, InterruptedException {
+        synchronized (a2SessionLock) {
+            if (a2Session == failedSession) {
+                a2Session = null;
+                sessionCookies.clear();
+                a2Session = establishA2Session(encodedSymbol);
+            }
+        }
+        ensureA2Session(encodedSymbol);
+    }
+
+    private HttpResponse<String> requestCandleData(URI dataUri) throws IOException, InterruptedException {
+        var response = sendVerified(stooqGet(dataUri));
+        for (int retry = 0; isSuccessfulEmpty(response) && retry < EMPTY_RESPONSE_RETRIES; retry++) {
+            Thread.sleep(emptyResponseRetryDelay);
+            response = sendVerified(stooqGet(dataUri));
+        }
+        return response;
+    }
+
+    private void ensureVerificationCookie(URI challengedUri) throws IOException, InterruptedException {
+        if (sessionCookies.contains(AUTH_COOKIE_NAME))
+            return;
+
+        var response = send(stooqGet(challengedUri));
+        var challenge = parseVerificationChallenge(response.body())
+                .orElseThrow(() -> new IOException("Stooq did not return a browser verification challenge"));
+        synchronized (verificationLock) {
+            if (!sessionCookies.contains(AUTH_COOKIE_NAME))
+                requestVerificationCookie(challengedUri, challenge);
+        }
+    }
+
+    private boolean awaitA2SessionMaturation(A2Session session) throws InterruptedException {
+        long remaining = session.readyAtNanos() - System.nanoTime();
+        if (remaining > 0)
+            TimeUnit.NANOSECONDS.sleep(remaining);
+        synchronized (a2SessionLock) {
+            return a2Session == session;
+        }
+    }
+
+    private static boolean isEmpty(String body) {
+        return body == null || body.isBlank();
+    }
+
+    private static boolean isSuccessfulEmpty(HttpResponse<String> response) {
+        return isSuccessful(response.statusCode()) && isEmpty(response.body());
+    }
+
+    private static boolean isSuccessful(int statusCode) {
+        return statusCode >= 200 && statusCode < 300;
+    }
+
+    private static void requireSuccessful(String requestName, HttpResponse<?> response) throws IOException {
+        if (!isSuccessful(response.statusCode()))
+            throw new IOException(requestName + " failed with HTTP status " + response.statusCode());
+    }
+
+    static List<Candle> parseCandles(String responseBody, TimeFrame baseTimeFrame) throws IOException {
         var execContext = new ExecutionContext();
         var fileFormat = FlatFileFormat.builder()
                 .lineMapper(new SimpleCandleLineMapper.Type(
@@ -153,27 +306,11 @@ public class StooqDataProvider extends AbstractDataProvider implements SymbolPro
         FlatFileItemReader<Candle> itemReader = new FlatFileItemReader<>();
         itemReader.setLineMapper((LineMapper<Candle>) fileFormat.getLineMapper().createLineMapper(execContext));
         itemReader.setLinesToSkip(fileFormat.getSkipFirstLines());
-        itemReader.setInputStreamSource(() -> new ByteArrayInputStream(response.body().getBytes(StandardCharsets.UTF_8)));
+        itemReader.setInputStreamSource(() -> new ByteArrayInputStream(responseBody.getBytes(StandardCharsets.UTF_8)));
 
         try {
             itemReader.open();
-            List<Candle> items = itemReader.readAll();
-
-            //items.sort(Comparator.naturalOrder());
-            if (query.endTime() != null) {
-                long endTime = Chronological.toEpochNanos(query.endTime());
-                items.removeIf(item -> item.time() > endTime);
-            }
-
-            int itemCount = items.size();
-            int itemLimit = query.limit();
-            if (itemLimit > 0 && itemLimit < itemCount)
-                items = items.subList(itemCount - itemLimit, itemCount);
-
-            return Flux.fromIterable(items);
-
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            return itemReader.readAll();
         } finally {
             itemReader.close();
         }
@@ -189,14 +326,29 @@ public class StooqDataProvider extends AbstractDataProvider implements SymbolPro
 //        return candleAlignment;
 //    }
     
-    private static void maybeSymbolNotFound(Symbol symbol, List<String> skippedLines) throws IOException {
-        if (skippedLines.size() == 1 && "-".equals(skippedLines.get(0)))
-            throw new IOException("Symbol `" + symbol + "` not found");
+    static String validateCandleResponse(HttpResponse<String> response, SymbolIdentity symbol) throws IOException {
+        return validateCandleResponse(response.statusCode(), response.body(), symbol);
+    }
+
+    static String validateCandleResponse(int statusCode, String body, SymbolIdentity symbol) throws IOException {
+        if (!isSuccessful(statusCode))
+            throw new IOException("Stooq data request failed with HTTP status " + statusCode);
+
+        if (isEmpty(body))
+            throw new IOException("Stooq returned an empty data response for symbol `" + symbol.name() + "`");
+
+        String trimmedBody = body.strip();
+        if ("-".equals(trimmedBody) || trimmedBody.contains("__nodata__"))
+            throw new IOException("Symbol `" + symbol.name() + "` not found at Stooq");
+        if (trimmedBody.startsWith("<") && !trimmedBody.startsWith("<span id=f10>"))
+            throw new IOException("Stooq returned HTML instead of candle data for symbol `" + symbol.name() + "`");
+
+        return body;
     }
 
     //@Override
     public List<Symbol> getProposals(String p) throws IOException, InterruptedException {
-        var uri = URI.create("https://stooq.pl/cmp/?q=" + URLEncoder.encode(p, StandardCharsets.UTF_8));
+        var uri = stooqRoot.resolve("/cmp/?q=" + URLEncoder.encode(p, StandardCharsets.UTF_8));
         var response = sendVerified(stooqGet(uri));
         return parseAutocompletionResponse(response.body());
     }
@@ -209,40 +361,74 @@ public class StooqDataProvider extends AbstractDataProvider implements SymbolPro
                 .build();
     }
 
+    private static HttpRequest chartGet(URI uri) {
+        return HttpRequest.newBuilder(uri)
+                .timeout(REQUEST_TIMEOUT)
+                .header("User-Agent", USER_AGENT)
+                .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+                .header("Sec-Fetch-Dest", "document")
+                .header("Sec-Fetch-Mode", "navigate")
+                .header("Sec-Fetch-Site", "none")
+                .header("Sec-Fetch-User", "?1")
+                .header("Upgrade-Insecure-Requests", "1")
+                .GET()
+                .build();
+    }
+
+    private static HttpRequest consentImageGet(URI consentImageUri, URI referer) {
+        return HttpRequest.newBuilder(consentImageUri)
+                .timeout(REQUEST_TIMEOUT)
+                .header("User-Agent", USER_AGENT)
+                .header("Accept", "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8")
+                .header("Referer", referer.toString())
+                .header("Sec-Fetch-Dest", "image")
+                .header("Sec-Fetch-Mode", "no-cors")
+                .header("Sec-Fetch-Site", "same-origin")
+                .GET()
+                .build();
+    }
+
     HttpResponse<String> sendVerified(HttpRequest request) throws IOException, InterruptedException {
-        var response = send(withVerificationCookie(request));
+        long initialAuthRevision = sessionCookies.authRevision();
+        var response = send(request);
         var challenge = parseVerificationChallenge(response.body());
         if (challenge.isEmpty())
             return response;
 
         synchronized (verificationLock) {
-            verificationCookie = requestVerificationCookie(request.uri(), challenge.orElseThrow());
+            if (sessionCookies.authRevision() == initialAuthRevision
+                    || !sessionCookies.contains(AUTH_COOKIE_NAME))
+                requestVerificationCookie(request.uri(), challenge.orElseThrow());
         }
-        response = send(withVerificationCookie(request));
+        response = send(request);
         if (parseVerificationChallenge(response.body()).isPresent())
             throw new IOException("Stooq browser verification challenge was not accepted");
         return response;
     }
 
     private HttpResponse<String> send(HttpRequest request) throws IOException, InterruptedException {
-        return httpClient.send(request, MoreBodyHandlers.decoding(BodyHandlers.ofString()));
+        var response = httpClient.send(withSessionCookies(request), MoreBodyHandlers.decoding(BodyHandlers.ofString()));
+        sessionCookies.store(response.headers());
+        return response;
     }
 
-    private String requestVerificationCookie(URI challengedUri, VerificationChallenge challenge) throws IOException, InterruptedException {
+    private void requestVerificationCookie(URI challengedUri, VerificationChallenge challenge) throws IOException, InterruptedException {
         long nonce = solveVerificationNonce(challenge);
         var request = HttpRequest.newBuilder(challengedUri.resolve("/__verify"))
                 .timeout(REQUEST_TIMEOUT)
                 .header("User-Agent", USER_AGENT)
+                .header("Origin", stooqRoot.toString())
+                .header("Referer", challengedUri.toString())
                 .header("Content-Type", "application/x-www-form-urlencoded")
                 .POST(HttpRequest.BodyPublishers.ofString(verificationForm(challenge, nonce)))
                 .build();
 
-        var verificationResponse = httpClient.send(request, BodyHandlers.discarding());
-        if (verificationResponse.statusCode() < 200 || verificationResponse.statusCode() >= 300)
+        var verificationResponse = send(request);
+        if (!isSuccessful(verificationResponse.statusCode()))
             throw new IOException("Stooq browser verification failed with HTTP status " + verificationResponse.statusCode());
 
-        return extractVerificationCookie(verificationResponse.headers())
-                .orElseThrow(() -> new IOException("Stooq browser verification did not return an auth cookie"));
+        if (extractVerificationCookie(verificationResponse.headers()).isEmpty())
+            throw new IOException("Stooq browser verification did not return an auth cookie");
     }
 
     private static String verificationForm(VerificationChallenge challenge, long nonce) {
@@ -250,9 +436,9 @@ public class StooqDataProvider extends AbstractDataProvider implements SymbolPro
                 + "&n=" + nonce;
     }
 
-    private HttpRequest withVerificationCookie(HttpRequest request) {
-        String cookie = verificationCookie;
-        if (cookie == null || request.headers().firstValue("Cookie").isPresent())
+    private HttpRequest withSessionCookies(HttpRequest request) {
+        String cookieHeader = sessionCookies.headerValue();
+        if (cookieHeader.isEmpty() || request.headers().firstValue("Cookie").isPresent())
             return request;
 
         var builder = HttpRequest.newBuilder(request.uri());
@@ -263,9 +449,55 @@ public class StooqDataProvider extends AbstractDataProvider implements SymbolPro
             if (!"Cookie".equalsIgnoreCase(name))
                 values.forEach(value -> builder.header(name, value));
         });
-        builder.header("Cookie", cookie);
+        builder.header("Cookie", cookieHeader);
         builder.method(request.method(), request.bodyPublisher().orElse(HttpRequest.BodyPublishers.noBody()));
         return builder.build();
+    }
+
+    private static final class SessionCookieJar {
+        private final Map<String, String> cookies = new LinkedHashMap<>();
+        private long authRevision;
+
+        synchronized void store(HttpHeaders headers) {
+            for (String header : headers.allValues("Set-Cookie")) {
+                String cookie = firstCookiePair(header);
+                int separator = cookie.indexOf('=');
+                if (separator > 0) {
+                    String name = cookie.substring(0, separator);
+                    String value = cookie.substring(separator + 1);
+                    if (value.isEmpty() || COOKIE_MAX_AGE_ZERO_PATTERN.matcher(header).find())
+                        cookies.remove(name);
+                    else
+                        cookies.put(name, value);
+                    if (AUTH_COOKIE_NAME.equals(name))
+                        authRevision++;
+                }
+            }
+        }
+
+        synchronized void clear() {
+            if (cookies.containsKey(AUTH_COOKIE_NAME))
+                authRevision++;
+            cookies.clear();
+        }
+
+        synchronized long authRevision() {
+            return authRevision;
+        }
+
+        synchronized void put(String name, String value) {
+            cookies.put(name, value);
+        }
+
+        synchronized boolean contains(String name) {
+            return cookies.containsKey(name);
+        }
+
+        synchronized String headerValue() {
+            var header = new StringJoiner("; ");
+            cookies.forEach((name, value) -> header.add(name + "=" + value));
+            return header.toString();
+        }
     }
 
     static Optional<String> extractVerificationCookie(HttpHeaders headers) {
@@ -316,6 +548,10 @@ public class StooqDataProvider extends AbstractDataProvider implements SymbolPro
     }
 
     record VerificationChallenge(String token, int leadingZeroes) {}
+
+    record StooqInterval(TimeFrame timeFrame, String code) {}
+
+    private record A2Session(long readyAtNanos) {}
     
     List<Symbol> parseAutocompletionResponse(String response) {
         int i = response.indexOf('\''), j = response.lastIndexOf('\'');

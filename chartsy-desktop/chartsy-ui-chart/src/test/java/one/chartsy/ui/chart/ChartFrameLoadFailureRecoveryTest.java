@@ -9,6 +9,7 @@ import one.chartsy.TimeFrame;
 import one.chartsy.data.CandleSeries;
 import one.chartsy.data.DataQuery;
 import one.chartsy.data.provider.DataProvider;
+import one.chartsy.data.provider.DataProviderException;
 import one.chartsy.time.Chronological;
 import one.chartsy.ui.chart.type.CandlestickChart;
 import org.junit.jupiter.api.Test;
@@ -23,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -66,6 +68,28 @@ class ChartFrameLoadFailureRecoveryTest {
             assertThat(frame.getHistory().hasBackHistory()).isFalse();
             assertThat(frame.getHistory().getNextActions()).isEmpty();
             assertThat(frame.getHistory().go(0).getSymbol()).isEqualTo(initialDataset.getResource().symbol());
+            assertWaitLayerCleared(frame);
+        });
+    }
+
+    @Test
+    void finishDatasetLoading_empty_series_restores_previous_chart_as_a_load_failure() {
+        CandleSeries initialDataset = fixtureDataset("RECOVERY-EMPTY");
+        SymbolIdentity missingSymbol = SymbolIdentity.of("RECOVERY-EMPTY-MISSING");
+        var provider = new FailingNavigationProvider(
+                Map.of(initialDataset.getResource().symbol(), initialDataset), missingSymbol, FailureMode.RETURN_EMPTY_SERIES);
+        TestChartFrame frame = loadedChartFrame(initialDataset, provider, NotifyDescriptor.YES_OPTION);
+
+        onEdt(() -> frame.symbolChanged(missingSymbol));
+
+        awaitFailureHandling(frame);
+
+        onEdt(() -> {
+            assertThat(frame.lastFailure())
+                    .isInstanceOf(DataProviderException.class)
+                    .hasMessageContaining("No data returned for " + missingSymbol.name());
+            assertThat(frame.dialogCalls()).isEqualTo(1);
+            assertDisplayedChart(frame, initialDataset);
             assertWaitLayerCleared(frame);
         });
     }
@@ -201,8 +225,18 @@ class ChartFrameLoadFailureRecoveryTest {
         return template;
     }
 
+    private enum FailureMode {
+        THROW_EXCEPTION,
+        RETURN_EMPTY_SERIES
+    }
+
     private record FailingNavigationProvider(Map<SymbolIdentity, CandleSeries> datasets,
-                                             SymbolIdentity failingSymbol) implements DataProvider {
+                                             SymbolIdentity failingSymbol,
+                                             FailureMode failureMode) implements DataProvider {
+        private FailingNavigationProvider(Map<SymbolIdentity, CandleSeries> datasets, SymbolIdentity failingSymbol) {
+            this(datasets, failingSymbol, FailureMode.THROW_EXCEPTION);
+        }
+
         @Override
         public String getName() {
             return "Failure Recovery Fixture";
@@ -220,8 +254,11 @@ class ChartFrameLoadFailureRecoveryTest {
         public <T extends Chronological> Flux<T> query(Class<T> type, DataQuery<T> request) {
             if (!Candle.class.isAssignableFrom(type))
                 return Flux.empty();
-            if (failingSymbol.equals(request.resource().symbol()))
+            if (failingSymbol.equals(request.resource().symbol())) {
+                if (failureMode == FailureMode.RETURN_EMPTY_SERIES)
+                    return Flux.empty();
                 throw new IllegalStateException("Missing dataset for " + failingSymbol.name());
+            }
             CandleSeries dataset = datasets.get(request.resource().symbol());
             if (dataset == null)
                 return Flux.empty();
@@ -232,6 +269,7 @@ class ChartFrameLoadFailureRecoveryTest {
     private static final class TestChartFrame extends ChartFrame {
         private final Object dialogResult;
         private final AtomicInteger dialogCalls = new AtomicInteger();
+        private final AtomicReference<Throwable> lastFailure = new AtomicReference<>();
 
         private TestChartFrame(Object dialogResult) {
             this.dialogResult = dialogResult;
@@ -239,6 +277,16 @@ class ChartFrameLoadFailureRecoveryTest {
 
         int dialogCalls() {
             return dialogCalls.get();
+        }
+
+        Throwable lastFailure() {
+            return lastFailure.get();
+        }
+
+        @Override
+        void datasetLoadingFailed(SymbolIdentity symbol, Throwable x) {
+            lastFailure.set(x);
+            super.datasetLoadingFailed(symbol, x);
         }
 
         @Override

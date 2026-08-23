@@ -29,9 +29,14 @@ public abstract class AbstractTimeSeriesPlot extends AbstractPlot implements Tim
 
     @Override
     public VisibleValues getVisibleData(ChartContext cf) {
-        if (timeSeries != null)
-            return cf.getChartData().getVisible().getVisibleDataset(timeSeries);
-        return null;
+        if (timeSeries == null)
+            return null;
+
+        var visible = cf.getChartData().getVisible();
+        if (visible == null)
+            return null;
+
+        return visible.getVisibleDataset(timeSeries);
     }
 
     @Override
