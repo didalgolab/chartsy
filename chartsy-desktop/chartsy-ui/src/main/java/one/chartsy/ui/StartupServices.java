@@ -2,6 +2,8 @@
  * SPDX-License-Identifier: Apache-2.0 */
 package one.chartsy.ui;
 
+import one.chartsy.data.provider.DataProvider;
+import one.chartsy.data.providers.StooqDataProvider;
 import one.chartsy.kernel.Kernel;
 import one.chartsy.kernel.StartupMetrics;
 import one.chartsy.kernel.boot.FrontEnd;
@@ -23,12 +25,13 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.sql.DataSource;
+import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -43,6 +46,7 @@ public final class StartupServices {
     private static volatile CompletableFuture<ConfigurableApplicationContext> symbolsFuture;
     private static volatile CompletableFuture<Kernel> chartTemplateWarmupFuture;
     private static volatile CompletableFuture<Kernel> runnerWarmupFuture;
+    private static volatile CompletableFuture<Void> stooqPrewarmFuture;
     private static volatile CompletableFuture<ChartTemplateCatalog.LoadedTemplate> builtInTemplateFuture;
     private static volatile CompletableFuture<List<ChartTemplateSummary>> chartTemplatesFuture;
     private static volatile boolean kernelSymbolBridgeInstalled;
@@ -54,6 +58,7 @@ public final class StartupServices {
         symbols();
         kernel();
         builtInTemplate();
+        prewarmStooqSession();
     }
 
     public static void prewarmFullStack() {
@@ -97,6 +102,13 @@ public final class StartupServices {
                 () -> kernelFuture,
                 future -> kernelFuture = future,
                 StartupServices::createKernelFuture);
+    }
+
+    private static CompletableFuture<Void> prewarmStooqSession() {
+        return getOrCreateFuture(
+                () -> stooqPrewarmFuture,
+                future -> stooqPrewarmFuture = future,
+                StartupServices::createStooqPrewarmFuture);
     }
 
     private static void bridgeKernelSymbolEvents(ConfigurableApplicationContext symbolsContext) {
@@ -149,6 +161,38 @@ public final class StartupServices {
 
     private static CompletableFuture<Kernel> createKernelFuture() {
         return CompletableFuture.supplyAsync(Kernel::getDefault, EXECUTOR);
+    }
+
+    private static CompletableFuture<Void> createStooqPrewarmFuture() {
+        return CompletableFuture.runAsync(() -> {
+                    StartupMetrics.mark("stooqSession:start");
+                    // Resolve through the registration used by NewChartDialog so both share one session.
+                    StooqDataProvider provider = Lookup.getDefault().lookupAll(DataProvider.class).stream()
+                            .filter(StooqDataProvider.class::isInstance)
+                            .map(StooqDataProvider.class::cast)
+                            .findFirst()
+                            .orElse(null);
+                    if (provider == null) {
+                        StartupMetrics.mark("stooqSession:skipped");
+                        return;
+                    }
+
+                    try {
+                        provider.prewarmSession();
+                        StartupMetrics.mark("stooqSession:ready");
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw new CompletionException(e);
+                    } catch (IOException e) {
+                        throw new CompletionException(e);
+                    }
+                }, EXECUTOR)
+                .whenComplete((ignored, error) -> {
+                    if (error != null) {
+                        StartupMetrics.mark("stooqSession:failed");
+                        log.debug("Unable to prewarm the Stooq session", error);
+                    }
+                });
     }
 
     private static CompletableFuture<Kernel> createPersistenceWarmupFuture(
