@@ -24,6 +24,10 @@ public class ExplorationResult extends AbstractTableModel {
 
 
     public void addExplorationFragment(ExplorationFragment fragment) {
+        if (!EventQueue.isDispatchThread()) {
+            EventQueue.invokeLater(() -> addExplorationFragment(fragment));
+            return;
+        }
         rows.add(fragment);
 
         boolean newColumn = false;
@@ -31,10 +35,13 @@ public class ExplorationResult extends AbstractTableModel {
             if (!columnNames.contains(columnName))
                 newColumn |= columnNames.add(columnName);
 
-        if (newColumn)
-            EventQueue.invokeLater(this::fireTableStructureChanged);
-        else if (!notifyTimer.isRunning() || nextRowToNotify == rows.size())
-            notifyTimer.restart();
+        if (newColumn) {
+            notifyTimer.stop();
+            nextRowToNotify = rows.size();
+            fireTableStructureChanged();
+        } else if (!notifyTimer.isRunning()) {
+            notifyTimer.start();
+        }
     }
 
     public Stream<ExplorationFragment> rows() {
@@ -46,15 +53,21 @@ public class ExplorationResult extends AbstractTableModel {
         return Comparable.class;
     }
 
-    volatile int nextRowToNotify;
-    Timer notifyTimer = new Timer(100, e -> {
-        int lastRow = getRowCount() - 1;
-        int firstRow = nextRowToNotify;
-        nextRowToNotify = lastRow;
-
-        fireTableRowsInserted(firstRow, lastRow);
-    });
+    private int nextRowToNotify;
+    private final Timer notifyTimer = new Timer(100, e -> flushPendingRows());
     { notifyTimer.setRepeats(false); }
+
+    void flushPendingRows() {
+        if (!EventQueue.isDispatchThread()) {
+            EventQueue.invokeLater(this::flushPendingRows);
+            return;
+        }
+        notifyTimer.stop();
+        int firstRow = nextRowToNotify;
+        nextRowToNotify = rows.size();
+        if (firstRow < nextRowToNotify)
+            fireTableRowsInserted(firstRow, nextRowToNotify - 1);
+    }
 
     @Override
     public int getRowCount() {

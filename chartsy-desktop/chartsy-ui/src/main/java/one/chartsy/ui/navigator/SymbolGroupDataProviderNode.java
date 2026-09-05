@@ -38,7 +38,7 @@ public class SymbolGroupDataProviderNode extends SymbolGroupNode {
 
     @Override
     public Action[] getActions(boolean context) {
-        return new Action[] {
+        return ProviderFolderActions.append(getLookup(), new Action[] {
                 //SystemAction.get(Actions.UpgradeFile.class),
                 SystemAction.get(NewAction.class),
                 SystemAction.get(Actions.AddSymbolGroup.class),
@@ -54,6 +54,6 @@ public class SymbolGroupDataProviderNode extends SymbolGroupNode {
                 null,
                 SystemAction.get(NodeActions.ExpandAll.class),
                 //SystemAction.get(Actions.CloseFolder.class)
-        };
+        });
     }
 }

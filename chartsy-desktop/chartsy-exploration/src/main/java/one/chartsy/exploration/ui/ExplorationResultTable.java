@@ -131,7 +131,7 @@ public class ExplorationResultTable extends ETable implements ExplorationListene
 
     @Override
     public void explorationFinished() {
-
+        result.flushPendingRows();
     }
 
     protected void installEventListeners() {

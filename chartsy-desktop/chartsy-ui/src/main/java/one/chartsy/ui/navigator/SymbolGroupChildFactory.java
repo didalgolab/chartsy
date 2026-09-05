@@ -3,6 +3,9 @@
 package one.chartsy.ui.navigator;
 
 import java.util.List;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.Optional;
 
 import one.chartsy.*;
@@ -63,6 +66,25 @@ public class SymbolGroupChildFactory extends ChildFactory<SymbolGroupContent> im
         return null;
     }
 
+    /** Resolves this whole directory off the event thread without constructing Swing nodes. */
+    public List<Symbol> collectSymbols() {
+        var repository = context.getBean(SymbolGroupRepository.class);
+        var loader = context.getBean(DataProviderLoader.class);
+        var pending = new ArrayDeque<SymbolGroupContent>();
+        var symbols = new LinkedHashSet<Symbol>();
+        pending.add(group);
+        while (!pending.isEmpty()) {
+            var item = pending.removeFirst();
+            var symbol = item.getAsSymbol();
+            if (symbol.isPresent())
+                symbols.add(symbol.get());
+            else
+                pending.addAll(item.getContent(repository, loader));
+        }
+        var result = new ArrayList<>(symbols);
+        result.sort(SymbolIdentity.comparator());
+        return List.copyOf(result);
+    }
     @Override
     public void refresh() {
         super.refresh(false);

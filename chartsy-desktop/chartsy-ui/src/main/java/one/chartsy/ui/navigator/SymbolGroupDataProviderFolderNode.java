@@ -70,12 +70,12 @@ public class SymbolGroupDataProviderFolderNode extends AbstractNode implements E
     
     @Override
     public Action[] getActions(boolean context) {
-        return new Action[] {
+        return ProviderFolderActions.append(getLookup(), new Action[] {
 //                SystemAction.get(Actions.NewChart.class),
                 SystemAction.get(Actions.ChartAllInFolder.class),
 //                SystemAction.get(Actions.AddSymbol.class),
                 SystemAction.get(NodeActions.ExpandAll.class),
-        };
+        });
     }
     
     @Override
