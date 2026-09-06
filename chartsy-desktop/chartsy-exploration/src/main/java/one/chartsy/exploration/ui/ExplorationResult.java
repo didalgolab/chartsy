@@ -22,13 +22,16 @@ public class ExplorationResult extends AbstractTableModel {
 
     private final List<ExplorationFragment> rows = Collections.synchronizedList(new ArrayList<>());
 
+    // EDT-only arrivals become visible with their table notification, keeping sorted mappings valid.
+    private final List<ExplorationFragment> pendingRows = new ArrayList<>();
+
 
     public void addExplorationFragment(ExplorationFragment fragment) {
         if (!EventQueue.isDispatchThread()) {
             EventQueue.invokeLater(() -> addExplorationFragment(fragment));
             return;
         }
-        rows.add(fragment);
+        pendingRows.add(fragment);
 
         boolean newColumn = false;
         for (String columnName : fragment.columnValues().keySet())
@@ -37,7 +40,8 @@ public class ExplorationResult extends AbstractTableModel {
 
         if (newColumn) {
             notifyTimer.stop();
-            nextRowToNotify = rows.size();
+            rows.addAll(pendingRows);
+            pendingRows.clear();
             fireTableStructureChanged();
         } else if (!notifyTimer.isRunning()) {
             notifyTimer.start();
@@ -53,7 +57,6 @@ public class ExplorationResult extends AbstractTableModel {
         return Comparable.class;
     }
 
-    private int nextRowToNotify;
     private final Timer notifyTimer = new Timer(100, e -> flushPendingRows());
     { notifyTimer.setRepeats(false); }
 
@@ -63,10 +66,24 @@ public class ExplorationResult extends AbstractTableModel {
             return;
         }
         notifyTimer.stop();
-        int firstRow = nextRowToNotify;
-        nextRowToNotify = rows.size();
-        if (firstRow < nextRowToNotify)
-            fireTableRowsInserted(firstRow, nextRowToNotify - 1);
+        if (!pendingRows.isEmpty()) {
+            int firstRow = rows.size();
+            rows.addAll(pendingRows);
+            pendingRows.clear();
+            fireTableRowsInserted(firstRow, rows.size() - 1);
+        }
+    }
+
+    void clearRows() {
+        if (!EventQueue.isDispatchThread()) {
+            EventQueue.invokeLater(this::clearRows);
+            return;
+        }
+        flushPendingRows();
+        int count = rows.size();
+        rows.clear();
+        if (count > 0)
+            fireTableRowsDeleted(0, count - 1);
     }
 
     @Override

@@ -15,7 +15,6 @@ import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.TableCellRenderer;
-import javax.swing.table.TableModel;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -25,7 +24,10 @@ import java.util.Map;
 
 public class ExplorationResultTable extends ETable implements ExplorationListener {
 
+    public static final String STATUS_PROPERTY = "explorationStatus";
     private final ExplorationResult result;
+    private String explorationStatus = "Preparing exploration…";
+    private boolean failed;
 
     public ExplorationResultTable() {
         this(new ExplorationResult());
@@ -131,7 +133,51 @@ public class ExplorationResultTable extends ETable implements ExplorationListene
 
     @Override
     public void explorationFinished() {
-        result.flushPendingRows();
+        onEventThread(() -> {
+            result.flushPendingRows();
+            if (!failed)
+                setExplorationStatus("Completed — " + result.getRowCount() + " results");
+        });
+    }
+
+    @Override
+    public void explorationResultsReset() {
+        onEventThread(() -> {
+            clearSelection();
+            result.clearRows();
+        });
+    }
+
+    @Override
+    public void explorationStatusChanged(String status) {
+        onEventThread(() -> setExplorationStatus(status));
+    }
+
+    @Override
+    public void explorationFailed(Throwable failure) {
+        onEventThread(() -> {
+            failed = true;
+            result.flushPendingRows();
+            String message = failure.getMessage();
+            setExplorationStatus("Incomplete — " + (message == null ? "exploration failed" : message));
+        });
+    }
+
+    public String getExplorationStatus() {
+        return explorationStatus;
+    }
+
+    private void setExplorationStatus(String status) {
+        String old = explorationStatus;
+        explorationStatus = status;
+        firePropertyChange(STATUS_PROPERTY, old, status);
+    }
+
+    private static void onEventThread(Runnable action) {
+        if (EventQueue.isDispatchThread())
+            action.run();
+        else
+            EventQueue.invokeLater(action);
     }
 
     protected void installEventListeners() {

@@ -28,6 +28,7 @@ import java.util.Arrays;
 public class ExplorationResultTab extends TopComponent {
     /** The master table where the exploration result list is displayed. */
     private final ExplorationResultTable resultTable = new ExplorationResultTable();
+    private final JLabel statusLabel = new JLabel(resultTable.getExplorationStatus());
 
 
     /**
@@ -42,6 +43,11 @@ public class ExplorationResultTab extends TopComponent {
         scrollPane.setViewportView(resultTable);
         scrollPane.setBorder(null);
         scrollPane.setViewportBorder(null);
+        resultTable.addPropertyChangeListener(ExplorationResultTable.STATUS_PROPERTY, event -> {
+            String status = (String) event.getNewValue();
+            statusLabel.setText(status);
+            statusLabel.setToolTipText(status);
+        });
 
         associateLookup(Lookups.fixed(resultTable));
     }
@@ -56,6 +62,8 @@ public class ExplorationResultTab extends TopComponent {
         scrollPane = new JScrollPane();
         scrollPane.setVerticalScrollBarPolicy(javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
         add(scrollPane, BorderLayout.CENTER);
+        statusLabel.setBorder(BorderFactory.createEmptyBorder(3, 6, 3, 6));
+        add(statusLabel, BorderLayout.SOUTH);
     }
 
     private JScrollPane scrollPane;

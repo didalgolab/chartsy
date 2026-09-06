@@ -8,34 +8,180 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import javax.swing.event.TableModelEvent;
+import javax.swing.table.TableColumn;
 import one.chartsy.Symbol;
 import one.chartsy.SymbolIdentity;
 import one.chartsy.kernel.ExplorationFragment;
 import org.junit.jupiter.api.Test;
+import org.netbeans.swing.etable.ETableColumnModel;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class ExplorationResultTableTest {
     @Test
-    void explorationFinished_preserves_sorted_selection_across_appended_batches() throws Exception {
-        var table = onEdt(ExplorationResultTable::new);
-        table.explorationFragmentCreated(row("ALPHA"));
+    void pending_rows_stay_out_of_sorted_view_until_the_insert_notification() throws Exception {
         onEdt(() -> {
+            var table = new ExplorationResultTable();
+            table.explorationFragmentCreated(row("MIKE"));
             table.setColumnSorted(0, true, 1);
             table.setRowSelectionInterval(0, 0);
+
+            for (String name : List.of("ZULU", "BRAVO", "ALPHA")) {
+                table.explorationFragmentCreated(row(name));
+                assertThat(table.getModel().getRowCount()).isEqualTo(1);
+                assertThat(table.getRowCount()).isEqualTo(1);
+                assertThat(table.getValueAt(table.getSelectedRow(), 0).toString()).isEqualTo("MIKE");
+                assertThat(table.convertRowIndexToModel(0)).isZero();
+                assertThat(table.convertRowIndexToView(0)).isZero();
+            }
+
+            table.getModel().flushPendingRows();
+            assertThat(table.getRowCount()).isEqualTo(4);
+            assertThat(table.getSelectedRow()).isEqualTo(2);
+            assertThat(table.getValueAt(table.getSelectedRow(), 0).toString()).isEqualTo("MIKE");
+            var visibleNames = new ArrayList<String>();
+            for (int view = 0; view < table.getRowCount(); view++) {
+                int model = table.convertRowIndexToModel(view);
+                assertThat(table.convertRowIndexToView(model)).isEqualTo(view);
+                visibleNames.add(table.getValueAt(view, 0).toString());
+            }
+            assertThat(visibleNames).containsExactly("ALPHA", "BRAVO", "MIKE", "ZULU");
             return null;
         });
+    }
 
-        for (String name : List.of("BRAVO", "CHARLIE")) {
-            table.explorationFragmentCreated(row(name));
+    @Test
+    void new_column_publishes_earlier_pending_rows_in_order_without_duplicate_notifications() throws Exception {
+        onEdt(() -> {
+            var model = new ExplorationResult();
+            model.addExplorationFragment(row("ALPHA"));
+            var events = new ArrayList<Notification>();
+            model.addTableModelListener(event -> events.add(new Notification(
+                    event.getType(), event.getFirstRow(), event.getLastRow(), EventQueue.isDispatchThread())));
+            model.addExplorationFragment(row("BRAVO"));
+            assertThat(model.getRowCount()).isEqualTo(1);
+            model.addExplorationFragment(rowWithDetail("CHARLIE"));
+            model.flushPendingRows();
+            assertThat(model.getRowCount()).isEqualTo(3);
+            assertThat(model.getColumnCount()).isEqualTo(2);
+            assertThat(model.getValueAt(0, 0).toString()).isEqualTo("ALPHA");
+            assertThat(model.getValueAt(1, 0).toString()).isEqualTo("BRAVO");
+            assertThat(model.getValueAt(2, 0).toString()).isEqualTo("CHARLIE");
+            assertThat(events).containsExactly(new Notification(TableModelEvent.UPDATE, -1, -1, true));
+            return null;
+        });
+    }
+
+    @Test
+    void explorationResultsReset_preserves_columns_and_sorting_but_clears_deleted_selection() throws Exception {
+        var table = onEdt(ExplorationResultTable::new);
+        table.explorationFragmentCreated(row("OLD"));
+        TableColumn column = onEdt(() -> {
+            table.setColumnSorted(0, true, 1);
+            table.setRowSelectionInterval(0, 0);
+            var first = table.getColumnModel().getColumn(0);
+            first.setPreferredWidth(240);
+            // This row has not yet received its batched INSERT event.
+            table.explorationFragmentCreated(row("PENDING"));
+            table.explorationResultsReset();
+            return first;
+        });
+        table.explorationFragmentCreated(row("ZULU"));
+        table.explorationFragmentCreated(row("ALPHA"));
+        table.explorationFinished();
+        onEdt(() -> {
+            assertThat(table.getModel().getRowCount()).isEqualTo(2);
+            assertThat(table.getSelectedRow()).isEqualTo(-1);
+            assertThat(table.getColumnModel().getColumn(0)).isSameAs(column);
+            assertThat(column.getPreferredWidth()).isEqualTo(240);
+            assertThat(table.getValueAt(0, 0).toString()).isEqualTo("ALPHA");
+            assertThat(table.getValueAt(1, 0).toString()).isEqualTo("ZULU");
+            return null;
+        });
+    }
+
+    @Test
+    void explorationResultsReset_orders_queued_rows_and_emits_valid_delete_ranges_on_edt() throws Exception {
+        var table = onEdt(ExplorationResultTable::new);
+        var events = new ArrayList<Notification>();
+        table.explorationFragmentCreated(row("OLD"));
+        onEdt(() -> {
+            table.getModel().addTableModelListener(event -> events.add(new Notification(
+                    event.getType(), event.getFirstRow(), event.getLastRow(), EventQueue.isDispatchThread())));
+            var producer = new FutureTask<>(() -> {
+                table.explorationFragmentCreated(row("PENDING"));
+                table.explorationResultsReset();
+                table.explorationResultsReset();
+                table.explorationFragmentCreated(row("CURRENT"));
+                table.explorationFinished();
+                return null;
+            });
+            new Thread(producer, "Exploration reset producer").start();
+            producer.get();
+            return null;
+        });
+        onEdt(() -> {
+            assertThat(events).containsExactly(
+                    new Notification(TableModelEvent.INSERT, 1, 1, true),
+                    new Notification(TableModelEvent.DELETE, 0, 1, true),
+                    new Notification(TableModelEvent.INSERT, 0, 0, true));
+            assertThat(table.getValueAt(0, 0).toString()).isEqualTo("CURRENT");
+            return null;
+        });
+    }
+
+    @Test
+    void explorationFailed_flushes_partial_results_and_does_not_report_success() throws Exception {
+        var table = onEdt(ExplorationResultTable::new);
+        var statuses = new ArrayList<String>();
+        onEdt(() -> {
+            table.addPropertyChangeListener(ExplorationResultTable.STATUS_PROPERTY, event -> {
+                assertThat(EventQueue.isDispatchThread()).isTrue();
+                statuses.add((String) event.getNewValue());
+            });
+            return null;
+        });
+        table.explorationStatusChanged("Reading latest session…");
+        table.explorationFragmentCreated(row("ALPHA"));
+        table.explorationFragmentCreated(row("BRAVO"));
+        table.explorationFailed(new IllegalStateException("Source data changed; run again"));
+        table.explorationFinished();
+        onEdt(() -> {
+            assertThat(table.getRowCount()).isEqualTo(2);
+            assertThat(table.getExplorationStatus()).isEqualTo("Incomplete — Source data changed; run again");
+            assertThat(statuses).containsExactly("Reading latest session…", "Incomplete — Source data changed; run again");
+            return null;
+        });
+    }
+
+    @Test
+    void explorationFinished_preserves_sorted_selection_across_appended_batches() throws Exception {
+        var table = onEdt(ExplorationResultTable::new);
+        table.explorationFragmentCreated(rowWithDetail("MIKE"));
+        TableColumn[] columns = onEdt(() -> {
+            table.setColumnSorted(0, true, 1);
+            table.setRowSelectionInterval(0, 0);
+            var model = (ETableColumnModel) table.getColumnModel();
+            var symbol = model.getColumn(0);
+            var detail = model.getColumn(1);
+            symbol.setPreferredWidth(230);
+            model.setColumnHidden(detail, true);
+            return new TableColumn[] {symbol, detail};
+        });
+
+        for (String name : List.of("BRAVO", "ZULU", "ALPHA")) {
+            table.explorationFragmentCreated(rowWithDetail(name));
             table.explorationFinished();
             onEdt(() -> {
-                assertThat(table.getSelectedRow()).isZero();
-                assertThat(table.getValueAt(table.getSelectedRow(), 0).toString()).isEqualTo("ALPHA");
+                assertThat(table.getSelectedRow()).isGreaterThanOrEqualTo(0);
+                assertThat(table.getValueAt(table.getSelectedRow(), 0).toString()).isEqualTo("MIKE");
+                assertThat(table.getColumnModel().getColumn(0)).isSameAs(columns[0]);
+                assertThat(columns[0].getPreferredWidth()).isEqualTo(230);
+                assertThat(((ETableColumnModel) table.getColumnModel()).isColumnHidden(columns[1])).isTrue();
                 return null;
             });
         }
-        assertThat(onEdt(table::getRowCount)).isEqualTo(3);
+        assertThat(onEdt(table::getRowCount)).isEqualTo(4);
     }
 
     @Test
@@ -113,6 +259,13 @@ class ExplorationResultTableTest {
     private static ExplorationFragment row(String name) {
         var fragment = ExplorationFragment.builder(new Symbol(SymbolIdentity.of(name), null));
         fragment.addColumn("Symbol", name);
+        return fragment.build();
+    }
+
+    private static ExplorationFragment rowWithDetail(String name) {
+        var fragment = ExplorationFragment.builder(new Symbol(SymbolIdentity.of(name), null));
+        fragment.addColumn("Symbol", name);
+        fragment.addColumn("Details", name + " details");
         return fragment.build();
     }
 

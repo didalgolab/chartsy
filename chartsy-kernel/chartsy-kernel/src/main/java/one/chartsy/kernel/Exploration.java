@@ -31,6 +31,27 @@ public abstract class Exploration {
     private ExplorationFragment.Builder resultFragment;
 
     /**
+     * Whether results must share the latest candle period in the selected universe.
+     * The symbol-only filter defines this universe. The runner determines its
+     * latest period before the per-series filter, so a short
+     * history can establish the reference even when it produces no result row.
+     * Intraday scans compare timestamps; other scans compare UTC trading dates.
+     *
+     * <p>Results are delivered incrementally. Providers with inexpensive last-candle
+     * metadata resolve the reference before calculation, keeping published rows
+     * stable. Other providers advance the reference while scanning and reset older
+     * published rows when a newer period is found. Implementations should calculate
+     * each symbol independently. A failed scan leaves incomplete results and does
+     * not emit successful completion. This is a dataset-relative freshness rule,
+     * not a determination of an instrument's listing status.
+     *
+     * @return {@code false} by default, preserving each symbol's own latest candle
+     */
+    public boolean requiresLatestCandle() {
+        return false;
+    }
+
+    /**
      * Allows to programmatically exclude a symbol from the exploration.
      *
      * @param symbol
