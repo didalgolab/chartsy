@@ -47,6 +47,7 @@ import one.chartsy.core.Range;
 import one.chartsy.data.CandleSeries;
 import one.chartsy.ui.chart.*;
 import one.chartsy.ui.chart.action.ChartAction;
+import one.chartsy.ui.chart.action.ChartActions;
 import one.chartsy.ui.chart.internal.ColorServices;
 import one.chartsy.ui.chart.internal.Graphics2DHelper;
 import one.chartsy.ui.chart.internal.engine.EngineChartHost;
@@ -77,6 +78,9 @@ public class ChartPanel extends JLayeredPane implements Serializable {
     public ChartPanel(ChartContext frame, Scale sharedTimeScale) {
         chartFrame = frame;
         engineHost = new EngineChartHost(sharedTimeScale);
+        if (frame instanceof ChartFrame chart)
+            engineHost.onLegendDoubleClick(study -> ChartActions.openIndicators(chart, study).actionPerformed(
+                    new ActionEvent(this, ActionEvent.ACTION_PERFORMED, "legendDoubleClick")));
         nativeLegend = engineHost.legend();
         initializeUIElements();
     }

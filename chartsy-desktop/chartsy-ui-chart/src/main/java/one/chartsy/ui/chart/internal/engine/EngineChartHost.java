@@ -1,7 +1,10 @@
 package one.chartsy.ui.chart.internal.engine;
 
 import one.chartsy.charting.Axis;
+import one.chartsy.charting.Chart;
 import one.chartsy.charting.ChartLayout;
+import one.chartsy.charting.ChartRenderer;
+import one.chartsy.charting.ChartRendererLegendItem;
 import one.chartsy.charting.DefaultDataRangePolicy;
 import one.chartsy.charting.DefaultStepsDefinition;
 import one.chartsy.charting.HiLoOpenCloseRendererLegendItem;
@@ -33,6 +36,7 @@ import one.chartsy.ui.chart.PriceChartStyle;
 import one.chartsy.ui.chart.PixelPerfectCandleGeometry;
 import one.chartsy.ui.chart.data.VisualRange;
 import one.chartsy.ui.chart.internal.ChartPlotRouting;
+import one.chartsy.ui.chart.internal.MouseListenerBinding;
 import one.chartsy.TimeFrameHelper;
 
 import javax.swing.BorderFactory;
@@ -45,18 +49,26 @@ import java.awt.Font;
 import java.awt.Insets;
 import java.awt.Point;
 import java.awt.Rectangle;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.List;
+import java.util.Objects;
+import java.util.function.Consumer;
 
 public final class EngineChartHost implements AutoCloseable {
     private static final int PRICE_SCALE_MARGIN = 55;
 
-    private final one.chartsy.charting.Chart chart = new one.chartsy.charting.Chart();
+    private final Chart chart = new Chart();
     private final Scale sharedTimeScale;
     private final Legend legend = new Legend();
+    private final MouseListenerBinding legendMouseBinding;
+    private Consumer<ChartPlugin<?>> legendDoubleClickHandler = ignored -> {};
+    private final Map<ChartRenderer, ChartPlugin<?>> studyOwnersByRenderer = new IdentityHashMap<>();
     private ScaleAnnotation lastPriceAnnotation;
     private Font legendRegularFont;
     private Font legendEmphasisFont;
@@ -65,9 +77,34 @@ public final class EngineChartHost implements AutoCloseable {
     public EngineChartHost(Scale sharedTimeScale) {
         this.sharedTimeScale = sharedTimeScale;
         initializeChart();
+        legendMouseBinding = installLegendInteraction();
     }
 
-    public one.chartsy.charting.Chart chart() {
+    /**
+     * Replaces the legend double-click handler. The handler receives the exact
+     * study instance, or {@code null} for the price title and legend background.
+     * Register on the Swing event dispatch thread.
+     */
+    public void onLegendDoubleClick(Consumer<ChartPlugin<?>> handler) {
+        legendDoubleClickHandler = Objects.requireNonNull(handler, "handler");
+    }
+
+    private MouseListenerBinding installLegendInteraction() {
+        var doubleClickListener = new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent event) {
+                if (event.isConsumed() || event.getClickCount() != 2 || !SwingUtilities.isLeftMouseButton(event))
+                    return;
+                ChartPlugin<?> owner = event.getComponent() instanceof ChartRendererLegendItem entry
+                        ? studyOwnersByRenderer.get(entry.getRenderer()) : null;
+                event.consume();
+                legendDoubleClickHandler.accept(owner);
+            }
+        };
+        return MouseListenerBinding.bindMouseListener(legend, doubleClickListener);
+    }
+
+    public Chart chart() {
         return chart;
     }
 
@@ -105,7 +142,7 @@ public final class EngineChartHost implements AutoCloseable {
                                         List<? extends ChartPlugin<?>> owners,
                                         VisualRange visualRange,
                                         boolean showTimeScale,
-                                        one.chartsy.charting.Chart masterChart) {
+                                        Chart masterChart) {
         if (isDisposed())
             return;
         emphasizeFirstLegendEntry = false;
@@ -141,6 +178,9 @@ public final class EngineChartHost implements AutoCloseable {
 
     @Override
     public void close() {
+        legendMouseBinding.close();
+        legendDoubleClickHandler = ignored -> {};
+        studyOwnersByRenderer.clear();
         if (isDisposed())
             return;
         chart.unSynchronizeAxis(Axis.X_AXIS);
@@ -165,7 +205,7 @@ public final class EngineChartHost implements AutoCloseable {
         chart.getChartArea().setTopMargin(0);
         chart.setDataRangePolicy(new DefaultDataRangePolicy() {
             @Override
-            protected boolean shouldAdjust(one.chartsy.charting.Chart chart, Axis axis) {
+            protected boolean shouldAdjust(Chart chart, Axis axis) {
                 return false;
             }
         });
@@ -202,6 +242,7 @@ public final class EngineChartHost implements AutoCloseable {
             chart.removeDecoration(decoration);
         detachLastPriceAnnotation();
         legend.removeAll();
+        studyOwnersByRenderer.clear();
     }
 
     private boolean isDisposed() {
@@ -486,6 +527,7 @@ public final class EngineChartHost implements AutoCloseable {
 
         var target = new EnginePlotRenderTarget(chart);
         for (var ownerEntry : routesByOwner.entrySet()) {
+            int firstStudyRendererIndex = chart.getRendererCount();
             boolean legendClaimed = false;
             int plotOrder = 0;
             for (ChartPlotRouting.Route route : ownerEntry.getValue()) {
@@ -504,6 +546,8 @@ public final class EngineChartHost implements AutoCloseable {
                         legended
                 ));
             }
+            for (int index = firstStudyRendererIndex; index < chart.getRendererCount(); index++)
+                studyOwnersByRenderer.put(chart.getRenderer(index), ownerEntry.getKey());
         }
     }
 

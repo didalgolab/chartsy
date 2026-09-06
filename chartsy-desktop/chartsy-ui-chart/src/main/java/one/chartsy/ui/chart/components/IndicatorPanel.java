@@ -8,6 +8,7 @@ import one.chartsy.charting.Legend;
 import one.chartsy.charting.Scale;
 import one.chartsy.core.Range;
 import one.chartsy.ui.chart.ChartContext;
+import one.chartsy.ui.chart.ChartFrame;
 import one.chartsy.ui.chart.ChartPlugin;
 import one.chartsy.ui.chart.IconResource;
 import one.chartsy.ui.chart.Indicator;
@@ -74,6 +75,9 @@ public class IndicatorPanel extends JPanel {
         this.id = paneId;
         this.plotOwners.addAll(plotOwners);
         this.engineHost = new EngineChartHost(sharedTimeScale);
+        if (frame instanceof ChartFrame chart)
+            engineHost.onLegendDoubleClick(study -> ChartActions.openIndicators(chart, study).actionPerformed(
+                    new ActionEvent(this, ActionEvent.ACTION_PERFORMED, "legendDoubleClick")));
         this.nativeLegend = engineHost.legend();
         initializeUIElements();
     }
@@ -244,7 +248,7 @@ public class IndicatorPanel extends JPanel {
         return new AbstractAction("Edit Indicators", IconResource.getIcon("settings")) {
             @Override
             public void actionPerformed(ActionEvent e) {
-                ChartActions.openIndicators((one.chartsy.ui.chart.ChartFrame) frame).actionPerformed(e);
+                ChartActions.openIndicators((ChartFrame) frame).actionPerformed(e);
             }
         };
     }

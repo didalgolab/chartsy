@@ -5,6 +5,7 @@ package one.chartsy.ui.chart.action;
 import one.chartsy.ui.chart.Annotation;
 import one.chartsy.ui.chart.ChartContext;
 import one.chartsy.ui.chart.ChartFrame;
+import one.chartsy.ui.chart.ChartPlugin;
 import one.chartsy.ui.chart.components.ChartToolbar;
 
 import javax.swing.*;
@@ -40,7 +41,14 @@ public final class ChartActions {
     }
 
     public static Action openIndicators(ChartFrame chartFrame) {
-        return ChartAction.find("IndicatorsOpen", chartFrame);
+        return openIndicators(chartFrame, null);
+    }
+
+    public static Action openIndicators(ChartFrame chartFrame, ChartPlugin<?> initialSelection) {
+        // Preserve the one-argument lookup contract for existing action providers.
+        return initialSelection == null
+                ? ChartAction.find("IndicatorsOpen", chartFrame)
+                : ChartAction.find("IndicatorsOpen", chartFrame, initialSelection);
     }
 
     public static Action annotationPopup(ChartFrame chartFrame) {

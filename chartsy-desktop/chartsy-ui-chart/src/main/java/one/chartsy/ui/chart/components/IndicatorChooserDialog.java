@@ -4,6 +4,7 @@
  */
 package one.chartsy.ui.chart.components;
 
+import one.chartsy.ui.chart.ChartPlugin;
 import one.chartsy.ui.chart.Indicator;
 import one.chartsy.ui.chart.Overlay;
 import org.openide.util.NbBundle;
@@ -97,7 +98,15 @@ public class IndicatorChooserDialog extends JDialog {
                          Collection<? extends Indicator> selectedIndicators,
                          Collection<? extends Overlay> allOverlays,
                          Collection<? extends Overlay> selectedOverlays) {
-        chooserPanel.initForm(allIndicators, selectedIndicators, allOverlays, selectedOverlays);
+        initForm(allIndicators, selectedIndicators, allOverlays, selectedOverlays, null);
+    }
+
+    public void initForm(Collection<? extends Indicator> allIndicators,
+                         Collection<? extends Indicator> selectedIndicators,
+                         Collection<? extends Overlay> allOverlays,
+                         Collection<? extends Overlay> selectedOverlays,
+                         ChartPlugin<?> initialSelection) {
+        chooserPanel.initForm(allIndicators, selectedIndicators, allOverlays, selectedOverlays, initialSelection);
         pack();
         applyInitialSizeConstraints();
         positionWithinScreenBounds();

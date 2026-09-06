@@ -10,6 +10,7 @@ import one.chartsy.SymbolResource;
 import one.chartsy.TimeFrame;
 import one.chartsy.data.CandleSeries;
 import one.chartsy.ui.chart.BasicStrokes;
+import one.chartsy.ui.chart.ChartPlugin;
 import one.chartsy.ui.chart.ChartPluginPlotSource;
 import one.chartsy.ui.chart.DynamicStudyIndicator;
 import one.chartsy.ui.chart.DynamicStudyOverlay;
@@ -40,6 +41,90 @@ import java.util.concurrent.FutureTask;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class IndicatorChooserPanelTest {
+
+    @Test
+    void initForm_preselects_second_overlay_instance_with_same_name() throws Exception {
+        IndicatorChooserPanel panel = createPanel();
+        Overlay first = StudyRegistry.getDefault().getOverlay("Sfora");
+        Overlay second = StudyRegistry.getDefault().getOverlay("Sfora");
+
+        runOnEdt(() -> panel.initForm(List.of(), List.of(), List.of(first), List.of(first, second), second));
+
+        JComboBox<?> selector = getField(panel, "pluginSelector", JComboBox.class);
+        PlotObjectTreeTable table = getField(panel, "plotObjectTable", PlotObjectTreeTable.class);
+        runOnEdt(() -> {
+            assertThat(first).isNotSameAs(second);
+            assertThat(first.getLabel()).isEqualTo(second.getLabel());
+            assertThat(selector.getSelectedIndex()).isEqualTo(1);
+            assertThat(selector.getSelectedItem()).isNotSameAs(second);
+            assertThat(table.getPluginAt(table.getSelectedRow())).isSameAs(selector.getSelectedItem());
+        });
+    }
+
+    @Test
+    void initForm_preselects_requested_indicator_among_other_studies() throws Exception {
+        IndicatorChooserPanel panel = createPanel();
+        Indicator first = StudyRegistry.getDefault().getIndicator("Chande Momentum Oscillator");
+        Indicator second = StudyRegistry.getDefault().getIndicator("Fractal Dimension");
+        Overlay overlay = StudyRegistry.getDefault().getOverlay("Sfora");
+
+        runOnEdt(() -> panel.initForm(
+                List.of(first, second), List.of(first, second), List.of(overlay), List.of(overlay), second));
+
+        JComboBox<?> selector = getField(panel, "pluginSelector", JComboBox.class);
+        PlotObjectTreeTable table = getField(panel, "plotObjectTable", PlotObjectTreeTable.class);
+        runOnEdt(() -> {
+            assertThat(selector.getSelectedIndex()).isEqualTo(1);
+            assertThat(((ChartPlugin<?>) selector.getSelectedItem()).getName()).isEqualTo(second.getName());
+            assertThat(selector.getSelectedItem()).isNotSameAs(second);
+            assertThat(table.getPluginAt(table.getSelectedRow())).isSameAs(selector.getSelectedItem());
+        });
+    }
+
+    @Test
+    void initForm_without_initial_selection_selects_first_study() throws Exception {
+        IndicatorChooserPanel panel = createPanel();
+        Indicator indicator = StudyRegistry.getDefault().getIndicator("Fractal Dimension");
+        Overlay overlay = StudyRegistry.getDefault().getOverlay("Sfora");
+
+        runOnEdt(() -> panel.initForm(List.of(indicator), List.of(indicator), List.of(overlay), List.of(overlay)));
+
+        JComboBox<?> selector = getField(panel, "pluginSelector", JComboBox.class);
+        runOnEdt(() -> {
+            assertThat(selector.getSelectedIndex()).isZero();
+            assertThat(((ChartPlugin<?>) selector.getSelectedItem()).getName()).isEqualTo(indicator.getName());
+        });
+    }
+
+    @Test
+    void initForm_unmatched_initial_selection_falls_back_to_first_study() throws Exception {
+        IndicatorChooserPanel panel = createPanel();
+        Overlay first = StudyRegistry.getDefault().getOverlay("Sfora");
+        Overlay second = StudyRegistry.getDefault().getOverlay("Sfora");
+        Overlay unmatched = StudyRegistry.getDefault().getOverlay("Sfora");
+
+        runOnEdt(() -> panel.initForm(List.of(), List.of(), List.of(first), List.of(first, second), unmatched));
+
+        JComboBox<?> selector = getField(panel, "pluginSelector", JComboBox.class);
+        runOnEdt(() -> {
+            assertThat(selector.getSelectedIndex()).isZero();
+            assertThat(selector.getItemCount()).isEqualTo(2);
+        });
+    }
+
+    @Test
+    void initForm_without_applied_studies_has_no_preselection() throws Exception {
+        IndicatorChooserPanel panel = createPanel();
+        Overlay overlay = StudyRegistry.getDefault().getOverlay("Sfora");
+
+        runOnEdt(() -> panel.initForm(List.of(), List.of(), List.of(overlay), List.of(), overlay));
+
+        JComboBox<?> selector = getField(panel, "pluginSelector", JComboBox.class);
+        runOnEdt(() -> {
+            assertThat(selector.getSelectedItem()).isNull();
+            assertThat(selector.getItemCount()).isZero();
+        });
+    }
 
     @Test
     void plotObjects_groups_visuals_under_expandable_studies() throws Exception {

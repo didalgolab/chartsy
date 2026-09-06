@@ -4,6 +4,7 @@ package one.chartsy.ui.chart.action;
 
 import one.chartsy.ui.chart.Annotation;
 import one.chartsy.ui.chart.ChartFrame;
+import one.chartsy.ui.chart.ChartPlugin;
 import one.chartsy.ui.chart.IconResource;
 import one.chartsy.ui.chart.Indicator;
 import one.chartsy.ui.chart.IndicatorManager;
@@ -99,7 +100,7 @@ public class DefaultChartActionServices implements ChartActionServices {
         }
     }
 
-    private static void openStudyChooser(ChartFrame chart) {
+    private static void openStudyChooser(ChartFrame chart, ChartPlugin<?> initialSelection) {
         Collection<Indicator> allIndicators = IndicatorManager.getDefault().getIndicatorsList();
         Collection<Indicator> selectedIndicators = chart.getMainStackPanel().getIndicatorsList();
         Collection<Overlay> allOverlays = OverlayManager.getDefault().getOverlaysList();
@@ -107,19 +108,25 @@ public class DefaultChartActionServices implements ChartActionServices {
 
         IndicatorChooserDialog dialog = new IndicatorChooserDialog(chart,
                 selection -> chart.setChartPlugins(selection.indicators(), selection.overlays()));
-        dialog.setLocationRelativeTo(chart);
-        dialog.initForm(allIndicators, selectedIndicators, allOverlays, selectedOverlays);
+        dialog.initForm(allIndicators, selectedIndicators, allOverlays, selectedOverlays, initialSelection);
         dialog.setVisible(true);
     }
 
     public static class IndicatorsOpen extends AbstractChartFrameAction {
+        private final ChartPlugin<?> initialSelection;
+
         public IndicatorsOpen(ChartFrame chart) {
+            this(chart, null);
+        }
+
+        public IndicatorsOpen(ChartFrame chart, ChartPlugin<?> initialSelection) {
             super(chart);
+            this.initialSelection = initialSelection;
         }
 
         @Override
         public void actionPerformed(ActionEvent e) {
-            openStudyChooser(chart);
+            openStudyChooser(chart, initialSelection);
         }
     }
 
@@ -130,7 +137,7 @@ public class DefaultChartActionServices implements ChartActionServices {
 
         @Override
         public void actionPerformed(ActionEvent e) {
-            openStudyChooser(chart);
+            openStudyChooser(chart, null);
         }
     }
 

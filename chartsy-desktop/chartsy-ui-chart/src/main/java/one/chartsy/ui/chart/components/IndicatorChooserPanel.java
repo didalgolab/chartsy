@@ -65,6 +65,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 /**
  * A reusable chooser surface for chart studies that stays renderable off-screen for visual verification.
@@ -121,16 +122,39 @@ public class IndicatorChooserPanel extends JPanel {
                          Collection<? extends Indicator> selectedIndicators,
                          Collection<? extends Overlay> allOverlays,
                          Collection<? extends Overlay> selectedOverlays) {
+        initForm(allIndicators, selectedIndicators, allOverlays, selectedOverlays, null);
+    }
+
+    public void initForm(Collection<? extends Indicator> allIndicators,
+                         Collection<? extends Indicator> selectedIndicators,
+                         Collection<? extends Overlay> allOverlays,
+                         Collection<? extends Overlay> selectedOverlays,
+                         ChartPlugin<?> initialSelection) {
         availablePlugins.clear();
         this.selectedPlugins.clear();
 
         allIndicators.stream().filter(Objects::nonNull).map(plugin -> (ChartPlugin<?>) plugin).sorted(PLUGIN_COMPARATOR).forEach(availablePlugins::add);
         allOverlays.stream().filter(Objects::nonNull).map(plugin -> (ChartPlugin<?>) plugin).sorted(PLUGIN_COMPARATOR).forEach(availablePlugins::add);
-        selectedIndicators.stream().filter(Objects::nonNull).map(plugin -> (ChartPlugin<?>) plugin).map(this::duplicatePluginConfiguration).forEach(selectedPlugins::add);
-        selectedOverlays.stream().filter(Objects::nonNull).map(plugin -> (ChartPlugin<?>) plugin).map(this::duplicatePluginConfiguration).forEach(selectedPlugins::add);
+        ChartPlugin<?> initialSelectionCopy = addSelectedPluginCopies(selectedIndicators, selectedOverlays, initialSelection);
 
         rebuildAvailableTree();
-        refreshSelectedPlugins(this.selectedPlugins.isEmpty() ? null : this.selectedPlugins.get(0));
+        refreshSelectedPlugins(initialSelectionCopy);
+    }
+
+    private ChartPlugin<?> addSelectedPluginCopies(Collection<? extends Indicator> selectedIndicators,
+                                                   Collection<? extends Overlay> selectedOverlays,
+                                                   ChartPlugin<?> initialSelection) {
+        List<ChartPlugin<?>> sources = Stream.<ChartPlugin<?>>concat(selectedIndicators.stream(), selectedOverlays.stream())
+                .filter(Objects::nonNull).toList();
+        ChartPlugin<?> initialSelectionCopy = null;
+        for (ChartPlugin<?> source : sources) {
+            ChartPlugin<?> copy = duplicatePluginConfiguration(source);
+            selectedPlugins.add(copy);
+            // The chooser edits copies, and study labels need not be unique.
+            if (source == initialSelection)
+                initialSelectionCopy = copy;
+        }
+        return initialSelectionCopy;
     }
 
     public ChartPluginSelection getSelection() {
