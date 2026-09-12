@@ -13,6 +13,8 @@ import java.util.Optional;
  *
  */
 public class StyledValue implements Comparable<StyledValue> {
+    /** The original value, retained for renderers of structured values. */
+    private final Object originalValue;
     /** The number value of the object. */
     private final Number numberValue;
     /** The string value of the object. */
@@ -31,6 +33,14 @@ public class StyledValue implements Comparable<StyledValue> {
             return Optional.ofNullable((T)foreground);
 
         return Optional.empty();
+    }
+
+    /**
+     * Returns the original value supplied to the factory, before formatting or
+     * numeric parsing. {@link #toRawValue()} retains its existing export behavior.
+     */
+    public Object value() {
+        return originalValue;
     }
 
     public Number numberValue() {
@@ -115,10 +125,11 @@ public class StyledValue implements Comparable<StyledValue> {
             }
         }
 
-        return new StyledValue(numberValue, stringValue, fgColor, bgColor);
+        return new StyledValue(value, numberValue, stringValue, fgColor, bgColor);
     }
 
-    private StyledValue(Number numberValue, String stringValue, Color fgColor, Color bgColor) {
+    private StyledValue(Object originalValue, Number numberValue, String stringValue, Color fgColor, Color bgColor) {
+        this.originalValue = originalValue;
         this.numberValue = numberValue;
         this.stringValue = stringValue;
         this.foreground = fgColor;
