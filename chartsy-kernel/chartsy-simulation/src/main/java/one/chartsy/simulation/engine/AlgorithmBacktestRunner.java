@@ -16,7 +16,8 @@ import one.chartsy.trade.service.AlgorithmEngine;
 import one.chartsy.trade.service.connector.TradeConnectorContext;
 import one.chartsy.trade.service.connector.TradeConnectorProxy;
 
-import java.util.concurrent.ArrayBlockingQueue;
+import java.time.ZoneOffset;
+import java.util.ArrayDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -60,18 +61,22 @@ public class AlgorithmBacktestRunner {
      * @param configuration the algorithm and the backtest run configurations
      */
     public BacktestReport run(AlgorithmBacktestContext configuration) {
+        return runDetailed(configuration).report();
+    }
+
+    public AlgorithmBacktestResult runDetailed(AlgorithmBacktestContext configuration) {
         var startTime = System.nanoTime();
-        var clock = new PlaybackClock();
+        var clock = new PlaybackClock(ZoneOffset.UTC, 0);
         var queue = new QueuedMessageBuffer<>(1024);
         var engine = new AlgorithmEngine(clock);
         var context = new DefaultAlgorithmContext(configuration.algorithmName(), clock, queue, engine, engine.getSequenceGenerator());
         var algorithm = configuration.algorithmFactory().create(context);
         var priceService = new PlaybackMarketPriceService();
         var tradingContext = new TradeConnectorContext("SIMULATOR", clock, priceService, engine);
-        var tradingSimulator = new TradingSimulator(tradingContext);
-        var tradingServiceProxy = new TradeConnectorProxy(tradingSimulator, new ArrayBlockingQueue<>(1024));
+        var tradingSimulator = new TradingSimulator(tradingContext, configuration.executionOptions());
+        var tradingServiceProxy = new TradeConnectorProxy(tradingSimulator, new ArrayDeque<>());
         var tradingWorker = tradingServiceProxy.getWorker();
-        var worker = new PlaybackAlgorithmWorker(algorithm, queue, configuration.marketSupplierFactory().create(), clock, priceService, tradingSimulator, tradingWorker);
+        var worker = new PlaybackAlgorithmWorker(algorithm, queue, configuration.marketSupplierFactory().create(), clock, priceService, tradingSimulator, tradingServiceProxy::dispatchPendingMessages);
 
         context.addShutdownResponseHandler(engine);
         engine.addAlgorithm(algorithm);
@@ -80,9 +85,19 @@ public class AlgorithmBacktestRunner {
         try {
             worker.onOpen();
             tradingWorker.onOpen();
-            while (worker.doWork() > 0)
-                if (engine.isShutdown())
+            while (!worker.isMarketExhausted() && !engine.isShutdown())
+                worker.doWork();
+
+            // Market exhaustion alone is not completion: broker requests, callback work and
+            // precommitted exits must all settle before the algorithm is closed or equity returned.
+            for (int pass = 0; ; pass++) {
+                int work = tradingServiceProxy.dispatchPendingMessages() + tradingSimulator.finish();
+                work += worker.isMarketExhausted() ? worker.doWork() : 0;
+                if (work == 0)
                     break;
+                if (pass == 1024)
+                    throw new IllegalStateException("Algorithm keeps producing orders after end of data");
+            }
 
         } finally {
             worker.onClose();
@@ -92,12 +107,17 @@ public class AlgorithmBacktestRunner {
         long elapsedMillis = (System.nanoTime() - startTime) / 1_000_000;
         double elapsedSeconds = elapsedMillis / 1000.0;
         System.out.println("Elapsed time [sec]: " + elapsedSeconds);
-        return createBacktestReport(tradingSimulator, elapsedSeconds);
+        return new AlgorithmBacktestResult(createBacktestReport(tradingSimulator, elapsedSeconds),
+                tradingSimulator.getExecutions(), tradingSimulator.getEquityCurve(),
+                tradingSimulator.getTotalEquity(), tradingSimulator.getOpenPositions(),
+                tradingSimulator.getTargetDecisions(), tradingSimulator.getRealizedPnL(),
+                tradingSimulator.getUnrealizedPnL(), tradingSimulator.getMaintenanceDecisions(), tradingSimulator.getCloseDecisions(),
+                tradingSimulator.getStopUpdateDecisions());
     }
 
     private BacktestReport createBacktestReport(TradingSimulator tradingSimulator, double elapsedSeconds) {
         return new BacktestReport.Of(
-                tradingSimulator.getDefaultAccount().getEquityStatistics(),
+                tradingSimulator.getEquityStatistics(),
                 elapsedSeconds,
                 runNumber.incrementAndGet(),
                 tradingSimulator.getId(),

@@ -86,6 +86,8 @@ public class Order implements java.io.Serializable, Cloneable, CustomValuesHolde
     private String referenceOrderId;
     /** The client request creation time (epoch nanos). */
     private long requestTime;
+    /** Optional protective stop and holding period committed at entry. */
+    private ExitRules exitRules;
 
     /** The list of {@code OrderStatusListener}'s associated with this order. */
     private OrderStatusListener[] listeners = EMPTY_LISTENER_LIST;
@@ -749,6 +751,7 @@ public class Order implements java.io.Serializable, Cloneable, CustomValuesHolde
         o.minQuantity = req.minQuantity();
         o.referenceOrderId = req.referenceOrderId();
         o.requestTime = req.time();
+        o.exitRules = req.exitRules();
         return o;
     }
 
@@ -776,6 +779,7 @@ public class Order implements java.io.Serializable, Cloneable, CustomValuesHolde
         private long validSinceTime = Long.MIN_VALUE;
         private double minQuantity;
         private String referenceOrderId;
+        private ExitRules exitRules;
         private final Clock clock;
         private final SequenceGenerator orderIdGenerator;
 
@@ -868,6 +872,11 @@ public class Order implements java.io.Serializable, Cloneable, CustomValuesHolde
             return this;
         }
 
+        public Builder exitRules(ExitRules exitRules) {
+            this.exitRules = exitRules;
+            return this;
+        }
+
         protected long time() {
             if (time != 0)
                 return time;
@@ -902,7 +911,8 @@ public class Order implements java.io.Serializable, Cloneable, CustomValuesHolde
                     expirationTime,
                     validSinceTime,
                     minQuantity,
-                    referenceOrderId
+                    referenceOrderId,
+                    exitRules
             );
         }
 
@@ -931,8 +941,17 @@ public class Order implements java.io.Serializable, Cloneable, CustomValuesHolde
             long expirationTime,
             long validSinceTime,
             double minQuantity,
-            String referenceOrderId
-    ) implements OrderRequestEvent { }
+            String referenceOrderId,
+            ExitRules exitRules
+    ) implements OrderRequestEvent {
+        public New(long time, String orderId, String sourceId, String destinationId, String accountId,
+                   SymbolIdentity symbol, OrderType type, Side side, double quantity, String currency,
+                   TimeInForce timeInForce, long expirationTime, long validSinceTime,
+                   double minQuantity, String referenceOrderId) {
+            this(time, orderId, sourceId, destinationId, accountId, symbol, type, side, quantity,
+                    currency, timeInForce, expirationTime, validSinceTime, minQuantity, referenceOrderId, null);
+        }
+    }
 
     public record Replacement (String originalOrderId, New newOrder) implements OrderRequestEvent {
 
@@ -985,11 +1004,6 @@ public class Order implements java.io.Serializable, Cloneable, CustomValuesHolde
             double cumulativeQuantity,
             double averagePrice
     ) implements OrderReportEvent, OrderTrade {
-
-        @Override
-        public long time() {
-            return time();
-        }
 
         @Override
         public boolean isBuy() {

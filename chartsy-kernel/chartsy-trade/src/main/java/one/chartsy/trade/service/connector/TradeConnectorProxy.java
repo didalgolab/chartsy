@@ -6,6 +6,10 @@ package one.chartsy.trade.service.connector;
 import one.chartsy.data.stream.Message;
 import one.chartsy.data.stream.QueuedMessageBuffer;
 import one.chartsy.trade.Order;
+import one.chartsy.trade.PositionTarget;
+import one.chartsy.trade.PositionMaintenance;
+import one.chartsy.trade.PositionClose;
+import one.chartsy.trade.PositionStopUpdate;
 
 import java.util.Queue;
 
@@ -14,6 +18,8 @@ public class TradeConnectorProxy implements TradeConnector {
     private final String id;
     private final Queue<Message> queue;
     private final TradeConnectorWorker worker;
+    private final QueuedMessageBuffer<Message> buffer;
+    private final TradeConnectorInvoker invoker;
 
     public TradeConnectorProxy(TradeConnector target, Queue<Message> queue) {
         this(target.getId(), target, queue);
@@ -22,11 +28,23 @@ public class TradeConnectorProxy implements TradeConnector {
     protected TradeConnectorProxy(String id, TradeConnector target, Queue<Message> queue) {
         this.id = id;
         this.queue = queue;
-        this.worker = createWorker(target, queue);
+        this.buffer = new QueuedMessageBuffer<>(queue);
+        this.invoker = new TradeConnectorInvoker(target);
+        this.worker = new TradeConnectorWorker(target, buffer, invoker, TradeConnectorWorker.DEFAULT_POLL_LIMIT);
     }
 
-    private static TradeConnectorWorker createWorker(TradeConnector target, Queue<Message> queue) {
-        return new TradeConnectorWorker(target, new QueuedMessageBuffer<>(queue));
+    /**
+     * Dispatches the messages queued at this boundary, without an asynchronous worker quota.
+     * Used by single-threaded playback before matching a complete decision batch. Messages
+     * enqueued by handlers are beyond the captured size and wait for another dispatch.
+     * The caller must own a FIFO queue with no concurrent consumer during this call.
+     * This performs message delivery only; service-worker lifecycle hooks are not invoked.
+     *
+     * @return the number of messages dispatched
+     */
+    public final int dispatchPendingMessages() {
+        int pending = queue.size();
+        return buffer.read(invoker, pending);
     }
 
     @Override
@@ -51,6 +69,26 @@ public class TradeConnectorProxy implements TradeConnector {
     @Override
     public void onOrderPlacement(Order.New order) {
         offer(order);
+    }
+
+    @Override
+    public void onPositionStopUpdate(PositionStopUpdate request) {
+        offer(request);
+    }
+
+    @Override
+    public void onPositionClose(PositionClose request) {
+        offer(request);
+    }
+
+    @Override
+    public void onPositionMaintenance(PositionMaintenance request) {
+        offer(request);
+    }
+
+    @Override
+    public void onPositionTarget(PositionTarget target) {
+        offer(target);
     }
 
     @Override

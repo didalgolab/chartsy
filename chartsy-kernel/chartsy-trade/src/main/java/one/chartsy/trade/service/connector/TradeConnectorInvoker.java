@@ -7,6 +7,10 @@ import one.chartsy.core.event.AbstractInvoker;
 import one.chartsy.data.stream.Message;
 import one.chartsy.data.stream.MessageHandler;
 import one.chartsy.trade.Order;
+import one.chartsy.trade.PositionTarget;
+import one.chartsy.trade.PositionMaintenance;
+import one.chartsy.trade.PositionClose;
+import one.chartsy.trade.PositionStopUpdate;
 import one.chartsy.trade.data.OrderReportEvent;
 import one.chartsy.trade.data.OrderRequestEvent;
 import one.chartsy.trade.service.OrderReportHandler;
@@ -47,6 +51,10 @@ public class TradeConnectorInvoker extends AbstractInvoker implements MessageHan
         var handler = getHandler(OrderRequestHandler.class);
         switch (request) {
             case Order.New order -> handler.onOrderPlacement(order);
+            case PositionTarget target -> handler.onPositionTarget(target);
+            case PositionMaintenance maintenance -> handler.onPositionMaintenance(maintenance);
+            case PositionClose close -> handler.onPositionClose(close);
+            case PositionStopUpdate update -> handler.onPositionStopUpdate(update);
             case Order.Replacement replacement -> throw new UnsupportedOperationException(); // TODO
             case Order.Cancellation cancellation -> throw new UnsupportedOperationException(); // TODO
             default -> throw new IllegalArgumentException(

@@ -8,11 +8,18 @@ import one.chartsy.messaging.common.handlers.ShutdownResponseHandler;
 import one.chartsy.service.Service;
 import one.chartsy.time.Clock;
 import one.chartsy.trade.Order;
+import one.chartsy.trade.PositionTarget;
+import one.chartsy.trade.PositionMaintenance;
+import one.chartsy.trade.PositionClose;
+import one.chartsy.trade.PositionRequest;
+import one.chartsy.trade.PositionStopUpdate;
 import one.chartsy.trade.algorithm.Algorithm;
 import one.chartsy.trade.service.connector.TradeConnector;
 import one.chartsy.trade.service.engine.EngineServiceRegistry;
 import one.chartsy.trade.service.engine.OrderRoutingStrategy;
 import one.chartsy.util.SequenceGenerator;
+
+import java.util.Locale;
 
 /**
  * Mode-agnostic engine that orchestrates a trading {@link Algorithm} and its surrounding
@@ -66,6 +73,38 @@ public class AlgorithmEngine implements OrderHandler, ShutdownResponseHandler {
         }
 
         serviceRegistry.getOrderRequestService(destinationId).onOrderPlacement(order);
+    }
+
+    @Override
+    public void onPositionStopUpdate(PositionStopUpdate request) {
+        destinationOf(request, "Position stop update").onPositionStopUpdate(request);
+    }
+
+    @Override
+    public void onPositionClose(PositionClose request) {
+        destinationOf(request, "Position close").onPositionClose(request);
+    }
+
+    @Override
+    public void onPositionMaintenance(PositionMaintenance request) {
+        destinationOf(request, "Position maintenance").onPositionMaintenance(request);
+    }
+
+    @Override
+    public void onPositionTarget(PositionTarget target) {
+        destinationOf(target, "Position target").onPositionTarget(target);
+    }
+
+    /** Position requests are never routed by strategy: their destination owns the position. */
+    private OrderRequestHandler destinationOf(PositionRequest request, String requestName) {
+        String destinationId = request.destinationId();
+        if (destinationId == null)
+            throw new IllegalArgumentException(requestName + " requires an explicit destination");
+        var handler = serviceRegistry.getOrderRequestService(destinationId);
+        if (handler == null)
+            throw new IllegalArgumentException("Unknown " + requestName.toLowerCase(Locale.ROOT)
+                    + " destination: " + destinationId);
+        return handler;
     }
 
     @Override

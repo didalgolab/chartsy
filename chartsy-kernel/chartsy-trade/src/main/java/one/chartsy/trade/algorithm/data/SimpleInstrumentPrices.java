@@ -6,6 +6,7 @@ package one.chartsy.trade.algorithm.data;
 import one.chartsy.SymbolIdentity;
 import one.chartsy.messaging.MarketEvent;
 import one.chartsy.messaging.data.BestBidOfferEvent;
+import one.chartsy.messaging.data.BarOpen;
 import one.chartsy.messaging.data.TradeBar;
 import one.chartsy.messaging.data.TradeTick;
 
@@ -31,7 +32,9 @@ public class SimpleInstrumentPrices extends AbstractInstrumentData {
 
     @Override
     public void onMarketMessage(MarketEvent event) {
-        if (event instanceof TradeBar bar) {
+        if (event instanceof BarOpen open) {
+            onBarOpen(open);
+        } else if (event instanceof TradeBar bar) {
             onTradeBar(bar);
         } else if (event instanceof TradeTick tick) {
             onTradeTick(tick);
@@ -40,6 +43,11 @@ public class SimpleInstrumentPrices extends AbstractInstrumentData {
         } else {
             onCustomEvent(event);
         }
+    }
+
+    public void onBarOpen(BarOpen open) {
+        this.lastTradePrice = open.open();
+        this.lastTradeTime = open.time();
     }
 
     public void onTradeBar(TradeBar bar) {

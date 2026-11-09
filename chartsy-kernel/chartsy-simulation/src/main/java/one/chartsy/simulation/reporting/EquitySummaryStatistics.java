@@ -69,6 +69,12 @@ public class EquitySummaryStatistics {
     private long endTime = Long.MIN_VALUE;
     /** The annualized risk-free rate (e.g., 0.01 for 1%). */
     private final double annualRiskFreeRate;
+    /** Explicit opt-in; the public constructor retains its original domain. */
+    private final boolean signedEquity;
+    /** Once false, a later recovery cannot restore whole-path wealth statistics. */
+    private boolean relativeReturnsDefined;
+    /** A percentage observation needs a strictly positive running equity peak. */
+    private boolean drawdownPercentDefined = true;
     /** The highest equity value reached in the data points. */
     private double totalEquityHigh;
     /** The lowest equity value reached in the data points. */
@@ -115,6 +121,36 @@ public class EquitySummaryStatistics {
      * @param annualRiskFreeRate the assumed annual risk-free rate (e.g. 0.01 for 1%)
      */
     public EquitySummaryStatistics(double initialEquity, double annualRiskFreeRate) {
+        this(initialEquity, annualRiskFreeRate, false);
+    }
+
+    /**
+     * Creates a collector that retains finite signed equity, including gap losses beyond capital.
+     * No funding, sizing or liquidation rule is implied by this reporting choice.
+     *
+     * <p>Daily and annual relative-return measures and log-equity correlation return {@code NaN}
+     * once the initial value or any value passed to {@link #add(double, long)} is nonpositive,
+     * even after recovery. This describes collector observations, not unobserved opening or
+     * intrabar equity. Absolute money, drawdowns and ordinary time/equity correlation continue.
+     *
+     * <p>Drawdown percentages retain the existing negative convention: a drop from 100 to -20
+     * is -120%. An added observation without a positive running peak makes whole-history
+     * maximum and average drawdown percentages permanently undefined; their time is -1.
+     *
+     * @param initialEquity finite starting equity, which may be zero or negative
+     * @param annualRiskFreeRate finite assumed annual risk-free rate
+     * @return a collector for finite signed observations
+     * @throws IllegalArgumentException if either argument is nonfinite
+     */
+    public static EquitySummaryStatistics forSignedEquity(double initialEquity, double annualRiskFreeRate) {
+        return new EquitySummaryStatistics(initialEquity, annualRiskFreeRate, true);
+    }
+
+    private EquitySummaryStatistics(double initialEquity, double annualRiskFreeRate, boolean signedEquity) {
+        if (signedEquity && (!Double.isFinite(initialEquity) || !Double.isFinite(annualRiskFreeRate)))
+            throw new IllegalArgumentException("Signed equity statistics require finite equity and risk-free rate");
+        this.signedEquity = signedEquity;
+        this.relativeReturnsDefined = !signedEquity || initialEquity > 0;
         this.startingEquity = initialEquity;
         this.totalEquityHigh = initialEquity;
         this.totalEquityLow = initialEquity;
@@ -143,10 +179,16 @@ public class EquitySummaryStatistics {
      *
      * @param equity the new equity value to add
      * @param time the time associated with the equity value
-     * @throws IllegalArgumentException if {@code equity} is negative
+     * @throws IllegalArgumentException if {@code equity} is negative in the default domain,
+     *         or nonfinite in the signed domain
      */
     public void add(double equity, long time) {
-        if (equity < 0) {
+        if (signedEquity) {
+            if (!Double.isFinite(equity))
+                throw new IllegalArgumentException("Equity must be finite: " + equity);
+            if (equity <= 0)
+                relativeReturnsDefined = false;
+        } else if (equity < 0) {
             throw new IllegalArgumentException("Equity cannot be negative: " + equity);
         }
         if (startTime == Long.MIN_VALUE) {
@@ -155,11 +197,12 @@ public class EquitySummaryStatistics {
         endTime = Math.max(endTime, time);
 
         // If we've crossed into a new day, compute daily return.
-        maybeAddDailyReturn(time);
+        if (relativeReturnsDefined)
+            maybeAddDailyReturn(time);
         dataPoints++;
         endingEquity = equity;
         timeEquityRegression.addData(time, equity);
-        if (equity > 0.0) {
+        if (relativeReturnsDefined && equity > 0.0) {
             timeLogEquityRegression.addData(time, Math.log(equity));
         }
         if (equity > totalEquityHigh) {
@@ -170,7 +213,13 @@ public class EquitySummaryStatistics {
             totalEquityLow = equity;
         }
         double currentDrawdown = equity - totalEquityHigh;
-        double currentDrawdownPercent = (totalEquityHigh == 0.0) ? 0.0 : (currentDrawdown / totalEquityHigh) * 100.0;
+        double currentDrawdownPercent;
+        if (signedEquity && totalEquityHigh <= 0) {
+            currentDrawdownPercent = Double.NaN;
+            drawdownPercentDefined = false;
+        } else {
+            currentDrawdownPercent = (totalEquityHigh == 0.0) ? 0.0 : (currentDrawdown / totalEquityHigh) * 100.0;
+        }
         if (currentDrawdown < maxDrawdown) {
             maxDrawdown = currentDrawdown;
             maxDrawdownTime = time;
@@ -217,6 +266,8 @@ public class EquitySummaryStatistics {
      * @return the most recent daily return
      */
     public double getLastDayReturn() {
+        if (!relativeReturnsDefined)
+            return Double.NaN;
         return (endingEquity - yesterdayClose) / yesterdayClose;
     }
 
@@ -237,6 +288,8 @@ public class EquitySummaryStatistics {
     }
 
     public double getCAGR() {
+        if (!relativeReturnsDefined)
+            return Double.NaN;
         double years = getYearsElapsed();
         if (Double.isNaN(years) || years <= 0.0)
             return Double.NaN;
@@ -247,6 +300,8 @@ public class EquitySummaryStatistics {
     }
 
     public double getAnnualizedVolatility() {
+        if (!relativeReturnsDefined)
+            return Double.NaN;
         if (dailyReturnStats.getN() < 2)
             return Double.NaN;
 
@@ -254,6 +309,8 @@ public class EquitySummaryStatistics {
     }
 
     public double getCalmarRatio() {
+        if (!relativeReturnsDefined)
+            return Double.NaN;
         if (maxDrawdownPercent <= 0.0)
             return Double.NaN;
 
@@ -320,7 +377,11 @@ public class EquitySummaryStatistics {
      * @return the maximum drawdown percentage
      */
     public double getMaxDrawdownPercent() {
-        return maxDrawdownPercent;
+        return hasDefinedDrawdownPercent() ? maxDrawdownPercent : Double.NaN;
+    }
+
+    private boolean hasDefinedDrawdownPercent() {
+        return drawdownPercentDefined && (!signedEquity || totalEquityHigh > 0);
     }
 
     /**
@@ -339,6 +400,8 @@ public class EquitySummaryStatistics {
      * @return the average drawdown percentage
      */
     public double getAverageDrawdownPercent() {
+        if (!hasDefinedDrawdownPercent())
+            return Double.NaN;
         var dataPoints = getDataPoints();
         return (dataPoints == 0) ? 0 : drawdownPercentTotals / dataPoints;
     }
@@ -388,7 +451,7 @@ public class EquitySummaryStatistics {
      *         or {@code -1} if none was recorded
      */
     public long getMaxDrawdownPercentTime() {
-        return maxDrawdownPercentTime;
+        return hasDefinedDrawdownPercent() ? maxDrawdownPercentTime : -1;
     }
 
     /**
@@ -406,6 +469,8 @@ public class EquitySummaryStatistics {
      * @return the average daily return, or {@code Double.NaN} if no daily returns have been recorded
      */
     public double getAverageDailyReturn() {
+        if (!relativeReturnsDefined)
+            return Double.NaN;
         long n = dailyReturnStats.getN();
         return (dailyReturnStats.getMean() * n + getLastDayReturn()) / (n + 1);
     }
@@ -422,6 +487,8 @@ public class EquitySummaryStatistics {
      * @return the annual Sharpe ratio, or {@code Double.NaN} if insufficient data
      */
     public double getAnnualSharpeRatio() {
+        if (!relativeReturnsDefined)
+            return Double.NaN;
         long n = dailyReturnStats.getN();
         if (n < 1) {
             return Double.NaN;
@@ -454,6 +521,8 @@ public class EquitySummaryStatistics {
      * @return the annual Sortino ratio, or {@code Double.NaN} if insufficient data
      */
     public double getAnnualSortinoRatio() {
+        if (!relativeReturnsDefined)
+            return Double.NaN;
         if (dailyReturnStats.getN() < 1) {
             return Double.NaN;
         }
@@ -483,11 +552,14 @@ public class EquitySummaryStatistics {
 
     /**
      * Returns the correlation coefficient between time (nanoseconds) and log(equity).
-     * If equity was ever 0.0, that data point is skipped due to undefined logarith.
+     * The default domain skips zero observations. The signed domain returns {@code NaN}
+     * after any initial or added nonpositive equity, including after recovery.
      *
      * @return correlation coefficient or {@code NaN} if fewer than 2 data points
      */
     public double getTimeLogEquityCorrelation() {
+        if (!relativeReturnsDefined)
+            return Double.NaN;
         return (timeLogEquityRegression.getN() < 2) ? Double.NaN : timeLogEquityRegression.getR();
     }
 
@@ -511,13 +583,15 @@ public class EquitySummaryStatistics {
                 totalEquityLow,
                 endingEquity,
                 maxDrawdown,
-                maxDrawdownPercent,
+                getMaxDrawdownPercent(),
                 getAverageDrawdown(),
                 getAverageDrawdownPercent(),
                 dataPoints,
                 getAnnualSharpeRatio(),
                 getAnnualSortinoRatio(),
-                Math.max(getTimeEquityCorrelation(), getTimeLogEquityCorrelation())
+                signedEquity && !relativeReturnsDefined
+                        ? getTimeEquityCorrelation()
+                        : Math.max(getTimeEquityCorrelation(), getTimeLogEquityCorrelation())
         );
     }
 }

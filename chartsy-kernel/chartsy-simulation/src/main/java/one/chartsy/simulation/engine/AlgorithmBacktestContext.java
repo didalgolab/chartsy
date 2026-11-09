@@ -25,7 +25,8 @@ import java.util.Objects;
 public record AlgorithmBacktestContext(
         String algorithmName,
         AlgorithmFactory<? extends Algorithm> algorithmFactory,
-        MarketSupplierFactory marketSupplierFactory
+        MarketSupplierFactory marketSupplierFactory,
+        BacktestExecutionOptions executionOptions
 ) {
 
     /**
@@ -35,10 +36,16 @@ public record AlgorithmBacktestContext(
      * @param algorithmFactory       the factory to instantiate algorithm implementations; must be non-null
      * @param marketSupplierFactory  the factory to produce {@link MarketSupplier} instances; must be non-null
      */
+    public AlgorithmBacktestContext(String algorithmName, AlgorithmFactory<? extends Algorithm> algorithmFactory,
+                                    MarketSupplierFactory marketSupplierFactory) {
+        this(algorithmName, algorithmFactory, marketSupplierFactory, BacktestExecutionOptions.DEFAULT);
+    }
+
     public AlgorithmBacktestContext {
         Objects.requireNonNull(algorithmName, "algorithmName must not be null");
         Objects.requireNonNull(algorithmFactory, "algorithmFactory must not be null");
         Objects.requireNonNull(marketSupplierFactory, "marketSupplierFactory must not be null");
+        Objects.requireNonNull(executionOptions, "executionOptions must not be null");
         if (algorithmName.isBlank())
             throw new IllegalArgumentException("algorithmName must not be blank");
     }
@@ -62,6 +69,7 @@ public record AlgorithmBacktestContext(
         private String algorithmName = "Custom Algorithm";
         private AlgorithmFactory<? extends Algorithm> algorithmFactory;
         private MarketSupplierFactory marketSupplierFactory;
+        private BacktestExecutionOptions executionOptions = BacktestExecutionOptions.DEFAULT;
 
         /**
          * Sets the algorithm's unique identifier.
@@ -96,6 +104,12 @@ public record AlgorithmBacktestContext(
             return this;
         }
 
+        /** Sets the initial balance, spread and end-of-data position policy. */
+        public Builder executionOptions(BacktestExecutionOptions options) {
+            this.executionOptions = options;
+            return this;
+        }
+
         /**
          * Constructs a validated {@link AlgorithmBacktestContext} instance from the provided values.
          *
@@ -104,7 +118,7 @@ public record AlgorithmBacktestContext(
          * @throws IllegalArgumentException if any property validation fails
          */
         public AlgorithmBacktestContext build() {
-            return new AlgorithmBacktestContext(algorithmName, algorithmFactory, marketSupplierFactory);
+            return new AlgorithmBacktestContext(algorithmName, algorithmFactory, marketSupplierFactory, executionOptions);
         }
     }
 }

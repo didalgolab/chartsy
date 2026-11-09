@@ -28,6 +28,7 @@ public class AccountBalanceEntry {
     private static final double QUANTITY_EPSILON = 0.000000005;
     /** The starting/initial account capital. */
     private final double startingBalance;
+    private final ProfitConversion profitConversion;
     /** The current total realized profit/loss for the account. */
     private double realizedPnL;
     /** The current total unrealized profit/loss across all open positions. */
@@ -38,7 +39,14 @@ public class AccountBalanceEntry {
     private final ListenerList<PositionValueChangeListener> positionValueChangeListeners = ListenerList.of(PositionValueChangeListener.class);
 
     public AccountBalanceEntry(double startingBalance) {
+        this(startingBalance, ProfitConversion.QUOTE_CURRENCY);
+    }
+
+    /** All realized and unrealized totals use account currency; entry prices and quantities keep their original units. */
+    public AccountBalanceEntry(double startingBalance, ProfitConversion profitConversion) {
+        if (profitConversion == null) throw new IllegalArgumentException("Profit conversion is required");
         this.startingBalance = startingBalance;
+        this.profitConversion = profitConversion;
     }
 
     /**
@@ -154,24 +162,25 @@ public class AccountBalanceEntry {
             Direction direction = event.isBuy() ? Direction.LONG : Direction.SHORT;
             position = new Position(this, event.symbol(), direction, tradeQuantity, tradePrice, tradeTime);
             openPosition(position, tradePrice, tradeTime);
-        } else {
-            double tradeQuantityDelta = tradeQuantity * (position.getDirection().isLong() == event.isBuy() ? 1 : -1);
-            double oldQuantity = position.getQuantity();
-            double newQuantity = oldQuantity + tradeQuantityDelta;
+            return;
+        }
+        double tradeQuantityDelta = tradeQuantity * (position.getDirection().isLong() == event.isBuy() ? 1 : -1);
+        double oldQuantity = position.getQuantity();
+        double newQuantity = oldQuantity + tradeQuantityDelta;
 
-            if (newQuantity < -QUANTITY_EPSILON) { // Position reversal
-                closePosition(position, tradePrice, tradeTime);
-
-                Direction direction = position.getDirection().reversed();
-                position = new Position(this, event.symbol(), direction, -newQuantity, tradePrice, tradeTime);
-                openPosition(position, tradePrice, tradeTime);
-            } else if (newQuantity < QUANTITY_EPSILON) { // Position closed
-                closePosition(position, tradePrice, tradeTime);
-            } else if (tradeQuantityDelta < 0) { // Scale out
-                scaleOutPosition(position, tradePrice, tradeTime, newQuantity);
-            } else { // Scale in
-                scaleInPosition(position, tradePrice, tradeTime, newQuantity);
-            }
+        if (newQuantity < -QUANTITY_EPSILON) { // Position reversal
+            Position replacement = new Position(this, event.symbol(), position.getDirection().reversed(),
+                    -newQuantity, tradePrice, tradeTime);
+            double closingProfit = position.profitAt(tradePrice, tradeTime);
+            double openingProfit = replacement.profitAt(tradePrice, tradeTime);
+            closePosition(position, tradePrice, tradeTime, closingProfit);
+            openPosition(replacement, tradePrice, tradeTime, openingProfit);
+        } else if (newQuantity < QUANTITY_EPSILON) { // Position closed
+            closePosition(position, tradePrice, tradeTime);
+        } else if (tradeQuantityDelta < 0) { // Scale out
+            scaleOutPosition(position, tradePrice, tradeTime, newQuantity);
+        } else { // Scale in
+            scaleInPosition(position, tradePrice, tradeTime, newQuantity);
         }
     }
 
@@ -180,24 +189,32 @@ public class AccountBalanceEntry {
         double oldQtyRatio = oldQuantity / newQuantity;
         double oldAvgPrice = position.getAveragePrice();
         double newAvgPrice = oldQtyRatio * oldAvgPrice + (1 - oldQtyRatio) * tradePrice;
+        double newProfit = position.profitAt(tradePrice, tradeTime, newQuantity, newAvgPrice);
         position.setAveragePrice(newAvgPrice);
         position.setQuantity(newQuantity);
-        unrealizedPnL += position.updateProfit(tradePrice, tradeTime);
+        unrealizedPnL += position.applyProfit(tradePrice, tradeTime, newProfit);
         firePositionValueChanged(position);
     }
 
     private void scaleOutPosition(Position position, double tradePrice, long tradeTime, double newQuantity) {
-        unrealizedPnL += position.updateProfit(tradePrice, tradeTime);
+        // Both conversions must succeed before either the account or position is changed.
+        double wholeProfit = position.profitAt(tradePrice, tradeTime);
+        double remainingProfit = position.profitAt(tradePrice, tradeTime, newQuantity, position.getAveragePrice());
+        unrealizedPnL += position.applyProfit(tradePrice, tradeTime, wholeProfit);
         position.setQuantity(newQuantity);
-        double realizedProfit = -position.updateProfit(tradePrice, tradeTime);
+        double realizedProfit = -position.applyProfit(tradePrice, tradeTime, remainingProfit);
         unrealizedPnL -= realizedProfit;
         realizedPnL += realizedProfit;
         firePositionValueChanged(position);
     }
 
     private void closePosition(Position position, double tradePrice, long tradeTime) {
+        closePosition(position, tradePrice, tradeTime, position.profitAt(tradePrice, tradeTime));
+    }
+
+    private void closePosition(Position position, double tradePrice, long tradeTime, double closingProfit) {
         unrealizedPnL -= position.getProfit();
-        position.updateProfit(tradePrice, tradeTime);
+        position.applyProfit(tradePrice, tradeTime, closingProfit);
         realizedPnL += position.getProfit() - position.getExtraCommission();
         instruments.remove(position.getSymbol());
         position.setClosed();
@@ -205,8 +222,12 @@ public class AccountBalanceEntry {
     }
 
     private void openPosition(Position position, double tradePrice, long tradeTime) {
+        openPosition(position, tradePrice, tradeTime, position.profitAt(tradePrice, tradeTime));
+    }
+
+    private void openPosition(Position position, double tradePrice, long tradeTime, double openingProfit) {
         instruments.put(position.getSymbol(), position);
-        unrealizedPnL += position.updateProfit(tradePrice, tradeTime);
+        unrealizedPnL += position.applyProfit(tradePrice, tradeTime, openingProfit);
         firePositionValueChanged(position);
     }
 
@@ -259,12 +280,12 @@ public class AccountBalanceEntry {
         Direction direction = desiredDirection.isLong() ? Direction.LONG : Direction.SHORT;
         Position position = getPosition(symbol);
         if (position == null || position.getDirection() != direction) {
+            Position replacement = new Position(this, symbol, direction, desiredQuantity, tradePrice, tradeTime);
+            double closingProfit = position == null ? 0 : position.profitAt(tradePrice, tradeTime);
+            double openingProfit = replacement.profitAt(tradePrice, tradeTime);
             if (position != null)
-                closePosition(position, tradePrice, tradeTime);
-            if (desiredQuantity > QUANTITY_EPSILON) {
-                Position newPosition = new Position(this, symbol, direction, desiredQuantity, tradePrice, tradeTime);
-                openPosition(newPosition, tradePrice, tradeTime);
-            }
+                closePosition(position, tradePrice, tradeTime, closingProfit);
+            openPosition(replacement, tradePrice, tradeTime, openingProfit);
         } else {
             double qtyDifference = desiredQuantity - position.getQuantity();
             if (qtyDifference > QUANTITY_EPSILON)
@@ -403,10 +424,26 @@ public class AccountBalanceEntry {
          * @return the <i>change</i> in unrealized PnL since the last update
          */
         protected double updateProfit(double marketPrice, long marketTime) {
+            return applyProfit(marketPrice, marketTime, profitAt(marketPrice, marketTime));
+        }
+
+        private double profitAt(double marketPrice, long marketTime) {
+            return profitAt(marketPrice, marketTime, quantity, averagePrice);
+        }
+
+        private double profitAt(double marketPrice, long marketTime, double quantity, double averagePrice) {
+            double quoteProfit = (marketPrice - averagePrice) * quantity * direction.intValue();
+            double converted = balanceEntry.profitConversion.toAccountCurrency(symbol, quoteProfit, marketPrice, marketTime);
+            if (!Double.isFinite(converted))
+                throw new ArithmeticException("Profit conversion returned a non-finite amount for " + symbol);
+            return converted;
+        }
+
+        private double applyProfit(double marketPrice, long marketTime, double newProfit) {
             double delta = -profit;
             this.marketPrice = marketPrice;
             this.marketTime = marketTime;
-            profit = (marketPrice - averagePrice) * quantity * direction.intValue();
+            profit = newProfit;
             maxFavorableExcursion = Math.max(profit, maxFavorableExcursion);
             maxAdverseExcursion = Math.min(profit, maxAdverseExcursion);
             return delta + profit;

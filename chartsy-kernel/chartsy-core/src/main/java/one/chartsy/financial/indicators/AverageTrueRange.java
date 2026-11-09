@@ -22,10 +22,12 @@ public class AverageTrueRange extends AbstractCandleIndicator {
     public void accept(Candle bar) {
         if (!Double.isNaN(this.closePrevious)) {
             double tr = Math.max(bar.high(), this.closePrevious) - Math.min(bar.low(), this.closePrevious);
-            if (++count >= periods) {
+            if (++count == 1) {
+                last = tr;
+            } else if (count >= periods) {
                 last = (last *(periodsAsDouble - 1.0) + tr)/periodsAsDouble;
             } else {
-                last = (count == 1) ? tr : last + (tr - last)/count;
+                last = last + (tr - last)/count;
             }
         }
         closePrevious = bar.close();

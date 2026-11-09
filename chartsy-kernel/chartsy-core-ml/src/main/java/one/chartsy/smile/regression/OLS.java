@@ -202,7 +202,7 @@ public class OLS implements Regression<double[]>, Serializable {
             svd.solve(y, w1);
         } else {
             try {
-                qr = X.qr();
+                qr = X.copy().qr();
                 qr.solve(y, w1);
             } catch (RuntimeException e) {
                 logger.warn("Matrix is not of full rank, try SVD instead");

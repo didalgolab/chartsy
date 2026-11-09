@@ -4,15 +4,11 @@ import one.chartsy.Candle;
 import one.chartsy.SymbolIdentity;
 import one.chartsy.SymbolResource;
 import one.chartsy.TimeFrame;
-import one.chartsy.base.Disposable;
 import one.chartsy.context.ExecutionContext;
 import one.chartsy.data.DataQuery;
 import one.chartsy.data.DataSubscription;
 import one.chartsy.data.provider.FlatFileDataProvider;
-import one.chartsy.data.structures.PriorityMap;
-import one.chartsy.messaging.MarketEvent;
 import one.chartsy.messaging.MarketMessageHandler;
-import one.chartsy.messaging.MarketMessageSource;
 import one.chartsy.trade.algorithm.MarketSupplier;
 
 import java.time.Instant;
@@ -21,23 +17,34 @@ import java.time.ZoneOffset;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * Stable merge of flat-file source events. Existing constructors retain raw source timestamps
+ * and event types. Supply a BarSession explicitly for causal phase replay. Its input is the
+ * provider's candle timestamp, which can already be a period-end timestamp rather than a date label.
+ */
 public class FlatFileDataMarketSupplier implements MarketSupplier {
 
     private final FlatFileDataProvider dataProvider;
     private final DataSubscription subscription;
     private final Instant startTime;
 
-    private final PriorityMap<MarketEvent, MarketMessageSource> subscribers;
+    private final MarketReplayMerge subscribers = new MarketReplayMerge();
+    private final BarSession sessions;
 
     public FlatFileDataMarketSupplier(FlatFileDataProvider dataProvider, DataSubscription subscription) {
         this(dataProvider, subscription, null);
     }
 
     public FlatFileDataMarketSupplier(FlatFileDataProvider dataProvider, DataSubscription subscription, Instant startTime) {
+        this(dataProvider, subscription, startTime, (BarSession) null);
+    }
+
+    public FlatFileDataMarketSupplier(FlatFileDataProvider dataProvider, DataSubscription subscription,
+                                      Instant startTime, BarSession sessions) {
         this.dataProvider = dataProvider;
         this.subscription = subscription;
         this.startTime = startTime;
-        this.subscribers = new PriorityMap<>();
+        this.sessions = sessions;
     }
 
     @Override
@@ -51,49 +58,24 @@ public class FlatFileDataMarketSupplier implements MarketSupplier {
             queryBuilder.startTime(LocalDateTime.ofInstant(startTime, ZoneOffset.UTC));
 
         ExecutionContext context = new ExecutionContext();
-        subscribers.clear();
-        for (var symbol : symbols) {
+        subscribers.close();
+        int ordinal = 0;
+        for (var symbol : symbols.stream().sorted().toList()) {
             var query = queryBuilder
                     .resource(SymbolResource.of(symbol, TimeFrame.Period.DAILY))
                     .build();
             var messageSource = dataProvider.iterator(query, context);
-            var firstMessage = messageSource.getMessage();
-            if (firstMessage != null)
-                subscribers.put(firstMessage, messageSource);
+            subscribers.add(sessions == null ? messageSource : new BarReplaySource(messageSource, sessions), ordinal++);
         }
     }
 
     @Override
     public int poll(MarketMessageHandler handler, int pollLimit) {
-        int count = 0;
-
-        var current = subscribers.peekKey();
-        if (current != null) {
-            while (count < pollLimit) {
-                var subscriber = subscribers.remove();
-                var lastTime = current.time();
-                handler.onMarketMessage(current);
-                count++;
-
-                var next = subscriber.getMessage();
-                if (next != null) {
-                    subscribers.put(next, subscriber);
-                } else {
-                    subscriber.close();
-                }
-
-                current = subscribers.peekKey();
-                if (current == null || current.time() != lastTime) {
-                    break;
-                }
-            }
-        }
-        return count;
+        return subscribers.poll(handler, pollLimit);
     }
 
     @Override
     public void close() {
-        subscribers.forEachValue(Disposable::close);
-        subscribers.clear();
+        subscribers.close();
     }
 }

@@ -4,6 +4,10 @@
 package one.chartsy.trade.service;
 
 import one.chartsy.trade.Order;
+import one.chartsy.trade.PositionTarget;
+import one.chartsy.trade.PositionMaintenance;
+import one.chartsy.trade.PositionClose;
+import one.chartsy.trade.PositionStopUpdate;
 
 /**
  * Receives order entry requests originating from a client, strategy, or orchestration layer, such as
@@ -34,4 +38,20 @@ import one.chartsy.trade.Order;
 public interface OrderRequestHandler {
 
     void onOrderPlacement(Order.New order);
+
+    default void onPositionStopUpdate(PositionStopUpdate request) {
+        throw new UnsupportedOperationException("Position stop updates are not supported by this trading service");
+    }
+
+    default void onPositionClose(PositionClose request) {
+        throw new UnsupportedOperationException("Position close is not supported by this trading service");
+    }
+
+    default void onPositionMaintenance(PositionMaintenance request) {
+        throw new UnsupportedOperationException("Position maintenance is not supported by this trading service");
+    }
+
+    default void onPositionTarget(PositionTarget target) {
+        throw new UnsupportedOperationException("Position targets are not supported by this trading service");
+    }
 }

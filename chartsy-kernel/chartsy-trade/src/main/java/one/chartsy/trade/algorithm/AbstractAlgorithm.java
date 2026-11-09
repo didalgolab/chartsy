@@ -10,6 +10,10 @@ import one.chartsy.time.Chronological;
 import one.chartsy.time.Clock;
 import one.chartsy.time.DateChangeSignal;
 import one.chartsy.trade.Order;
+import one.chartsy.trade.PositionTarget;
+import one.chartsy.trade.PositionMaintenance;
+import one.chartsy.trade.PositionClose;
+import one.chartsy.trade.PositionStopUpdate;
 import one.chartsy.trade.OrderType;
 import one.chartsy.trade.algorithm.data.DefaultInstrumentRanker;
 import one.chartsy.trade.algorithm.data.DefaultMarketDataProcessor;
@@ -158,6 +162,58 @@ public abstract class AbstractAlgorithm<I extends InstrumentData> implements Alg
     protected void submitOrder(Order.New order) {
         validateOrderRequest(order);
         context.getOrderHandler().onOrderPlacement(order);
+    }
+
+    protected PositionTarget makePositionTarget(Order.Side side, SymbolIdentity symbol, double riskFraction,
+                                                double stopDistance, PositionTarget.StopUpdatePolicy stopPolicy,
+                                                String destinationId) {
+        return new PositionTarget(getClock().time(), generateOrderId(), getId(), destinationId,
+                null, symbol, side, riskFraction, stopDistance, stopPolicy);
+    }
+
+    /** Persistent bracket; same-side RESET_FROM_OPEN retains quantity and replaces both barriers. */
+    protected PositionTarget makePositionTarget(Order.Side side, SymbolIdentity symbol, double riskFraction,
+                                                double stopDistance, double takeProfitDistance,
+                                                PositionTarget.StopUpdatePolicy stopPolicy,
+                                                PositionTarget.IntrabarExitPolicy intrabarPolicy,
+                                                String destinationId) {
+        return new PositionTarget(getClock().time(), generateOrderId(), getId(), destinationId,
+                null, symbol, side, riskFraction, stopDistance, stopPolicy, takeProfitDistance, intrabarPolicy);
+    }
+
+    protected PositionStopUpdate makePositionStopUpdate(SymbolIdentity symbol, double stopDistance,
+                                                         PositionTarget.StopUpdatePolicy stopPolicy,
+                                                         String destinationId) {
+        return new PositionStopUpdate(getClock().time(), generateOrderId(), getId(), destinationId,
+                null, symbol, stopDistance, stopPolicy);
+    }
+
+    /** Requests the current position's original entry distance without maintaining a second position book. */
+    protected PositionStopUpdate makePositionEntryStopUpdate(SymbolIdentity symbol,
+                                                              PositionTarget.StopUpdatePolicy stopPolicy,
+                                                              String destinationId) {
+        return PositionStopUpdate.fromPositionEntry(getClock().time(), generateOrderId(), getId(), destinationId,
+                null, symbol, stopPolicy);
+    }
+
+    protected void submitPositionStopUpdate(PositionStopUpdate request) {
+        context.getOrderHandler().onPositionStopUpdate(request);
+    }
+
+    protected PositionClose makePositionClose(SymbolIdentity symbol, String destinationId) {
+        return new PositionClose(getClock().time(), generateOrderId(), getId(), destinationId, null, symbol);
+    }
+
+    protected void submitPositionClose(PositionClose request) {
+        context.getOrderHandler().onPositionClose(request);
+    }
+
+    protected void submitPositionMaintenance(PositionMaintenance request) {
+        context.getOrderHandler().onPositionMaintenance(request);
+    }
+
+    protected void submitPositionTarget(PositionTarget target) {
+        context.getOrderHandler().onPositionTarget(target);
     }
 
     @Override
