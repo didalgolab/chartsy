@@ -10,6 +10,7 @@ import one.chartsy.SymbolIdentity;
 import one.chartsy.SymbolResource;
 import one.chartsy.TimeFrame;
 import one.chartsy.data.DataQuery;
+import one.chartsy.data.provider.file.FlatFileParseException;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -30,6 +31,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIOException;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 class StooqDataProviderTest {
@@ -124,6 +126,46 @@ class StooqDataProviderTest {
         assertThat(candles.getLast().low()).isEqualTo(58.0);
         assertThat(candles.getLast().close()).isEqualTo(59.9);
         assertThat(candles.getLast().volume()).isEqualTo(11714.0);
+    }
+
+    @Test
+    void parseCandles_optional_volume_accepts_empty_and_missing_values() throws Exception {
+        String response = """
+                <span id=f10>NQ.F</span>
+                20260820,000000,1,2,1,2,,0
+                20260821,000000,2,3,2,3,
+                20260822,000000,3,4,3,4
+                20260823,000000,4,5,4,5,123,0
+                """;
+
+        List<Candle> candles = StooqDataProvider.parseCandles(response, TimeFrame.Period.DAILY);
+
+        assertThat(candles).extracting(Candle::volume).containsExactly(0.0, 0.0, 0.0, 123.0);
+        assertThat(candles.getFirst().close()).isEqualTo(2.0);
+    }
+
+    @Test
+    void parseCandles_empty_required_price_is_rejected() {
+        String response = """
+                <span id=f10>NQ.F</span>
+                20260820,000000,1,2,1,,0
+                """;
+
+        assertThatThrownBy(
+                () -> StooqDataProvider.parseCandles(response, TimeFrame.Period.DAILY))
+                .isInstanceOf(FlatFileParseException.class);
+    }
+
+    @Test
+    void fetchCandles_live_nq_f_returns_daily_data() throws Exception {
+        assumeTrue(Boolean.getBoolean("stooq.live"));
+        StooqDataProvider provider = new StooqDataProvider();
+
+        List<Candle> candles = provider.fetchCandles(DataQuery.of(SymbolResource.of("NQ.F", TimeFrame.Period.DAILY)))
+                .collectList().block();
+
+        assertThat(candles).isNotEmpty();
+        assertThat(candles.getLast().close()).isPositive();
     }
 
     @Test

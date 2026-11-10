@@ -243,6 +243,9 @@ public class SimpleCandleLineMapper implements LineMapper<SimpleCandle> {
 
             // Consume one token for this spec.
             CharSequence token = tokens.get(j++);
+            if (fs.optional && token.isEmpty())
+                continue;
+
             switch (fs.name) {
                 case "DATE" -> date = readDate(token);
                 case "DATE_TIME" -> {
